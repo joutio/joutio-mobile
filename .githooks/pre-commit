@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Bloque tout fichier d'environnement ou matériel de signature avant commit.
+# Activer une fois par clone : git config core.hooksPath .githooks
+set -euo pipefail
+
+blocked=$(
+  git diff --cached --name-only --diff-filter=ACM \
+    | grep -E '(^|/)\.env($|\.)|\.(p12|jks|keystore|pem|key)$' \
+    | grep -vE '(^|/)\.env\.example$' || true
+)
+
+if [ -n "$blocked" ]; then
+  echo "Commit refusé : fichiers sensibles détectés :" >&2
+  echo "$blocked" >&2
+  echo "Retire-les de l'index (git restore --staged <fichier>) et garde-les hors du dépôt." >&2
+  exit 1
+fi
+
+if command -v gitleaks >/dev/null 2>&1; then
+  gitleaks protect --staged --redact --no-banner
+fi

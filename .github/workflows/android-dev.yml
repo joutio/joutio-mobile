@@ -1,0 +1,53 @@
+name: Android dev APK
+
+# APK de validation sans secrets de signature release (signature debug).
+# À utiliser pour tester l'UI et le comportement clavier sur un vrai build ;
+# l'APK de production reste produit par Release avec le keystore release.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: npm
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Expo prebuild (Android)
+        env:
+          EXPO_PUBLIC_API_URL: https://api.joutio.com
+          EXPO_PUBLIC_IDENTITY_URL: https://identity.joutio.com
+          EXPO_PUBLIC_OIDC_AUTHORITY: https://identity.joutio.com
+          EXPO_PUBLIC_OIDC_CLIENT_ID: mobile
+          EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID: ${{ vars.JOUTIO_GOOGLE_WEB_CLIENT_ID }}
+          EXPO_PUBLIC_FACEBOOK_APP_ID: ${{ vars.JOUTIO_FACEBOOK_APP_ID }}
+          EXPO_PUBLIC_FACEBOOK_CLIENT_TOKEN: ${{ vars.JOUTIO_FACEBOOK_CLIENT_TOKEN }}
+        run: npx expo prebuild --platform android --no-install --clean
+
+      - name: Build debug APK
+        run: |
+          cd android
+          ./gradlew assembleDebug --no-daemon --build-cache --parallel -PreactNativeArchitectures=arm64-v8a
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: joutio-dev-debug
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 14
