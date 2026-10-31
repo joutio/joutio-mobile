@@ -21,6 +21,7 @@ export const queryKeys = {
     facets: (params: TopicFacetsParams) =>
       ["topics", "facets", params] as const,
     overview: (topicId: string) => ["topics", "overview", topicId] as const,
+    questions: (topicId: string) => ["topics", "questions", topicId] as const,
     leaderboard: (topicId: string, params: TopicLeaderboardParams) =>
       ["topics", "leaderboard", topicId, params] as const,
   },

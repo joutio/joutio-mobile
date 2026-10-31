@@ -1,12 +1,14 @@
 import { Redirect, Tabs } from "expo-router";
 import { useMe } from "@/features/auth/hooks/useMe";
 import { ChallengesTabBadge } from "@/features/challenges/components/challenges-tab-badge";
+import { useNotificationPrompt } from "@/features/notifications/hooks/useNotificationPrompt";
 import { JoTabBar } from "@/ui/jo/jo-tab-bar";
 
 const BADGES = { "(challenges)": <ChallengesTabBadge /> };
 
 export default function TabsLayout() {
   const me = useMe();
+  useNotificationPrompt();
 
   if (me.data && !me.data.onboardingCompleted) {
     return <Redirect href="/(app)/onboarding" />;

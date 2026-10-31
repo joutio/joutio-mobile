@@ -11,7 +11,7 @@ import { useActiveGames } from "@/features/duel/hooks/useActiveGames";
 import { useHome } from "@/features/home/hooks/useHome";
 import type { Language, TopicCardView } from "@/shared/types/bff";
 import { JoBanner } from "@/ui/jo/jo-banner";
-import { JoLoading } from "@/ui/jo/jo-loading";
+import { JoSkeleton } from "@/ui/jo/jo-skeleton";
 import { JoSectionHeader } from "@/ui/jo/jo-section-header";
 import { JoTopicCard } from "@/ui/jo/jo-topic-card";
 import { useNativeTheme } from "@/ui/theme";
@@ -91,7 +91,23 @@ export function HomeScreen() {
       ) : null}
 
       {home.isPending ? (
-        <JoLoading />
+        <>
+          <View style={styles.section}>
+            <JoSkeleton width={160} height={24} radius={4} />
+            <View style={styles.skeletons}>
+              <View style={styles.skeleton}>
+                <JoSkeleton height={220} />
+              </View>
+              <View style={styles.skeleton}>
+                <JoSkeleton height={220} />
+              </View>
+            </View>
+          </View>
+          <View style={styles.section}>
+            <JoSkeleton width={140} height={24} radius={4} />
+            <JoSkeleton height={128} />
+          </View>
+        </>
       ) : !home.data ? (
         <>
           <JoBanner
@@ -103,8 +119,12 @@ export function HomeScreen() {
             onAction={() => void home.refetch()}
           />
           <View style={styles.skeletons}>
-            <View style={[styles.skeleton, { backgroundColor: theme.colors.surface }]} />
-            <View style={[styles.skeleton, { backgroundColor: theme.colors.surface }]} />
+            <View style={styles.skeleton}>
+              <JoSkeleton height={220} />
+            </View>
+            <View style={styles.skeleton}>
+              <JoSkeleton height={220} />
+            </View>
           </View>
         </>
       ) : (
@@ -164,7 +184,7 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 32, gap: 24 },
   section: { gap: 12 },
   skeletons: { flexDirection: "row", gap: 12 },
-  skeleton: { flex: 1, height: 220, borderRadius: 16 },
+  skeleton: { flex: 1 },
   rail: { marginHorizontal: -16 },
   railContent: { gap: 12, paddingHorizontal: 16 },
   list: { borderRadius: 16, overflow: "hidden" },

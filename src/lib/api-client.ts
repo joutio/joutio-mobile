@@ -52,8 +52,9 @@ export function createApiClient(clientConfig: ApiClientConfig) {
     const url = buildUrl(baseUrl, path, params);
     void absolute;
 
+    const multipart = body instanceof FormData;
     const headers: Record<string, string> = {
-      "Content-Type": "application/json",
+      ...(multipart ? {} : { "Content-Type": "application/json" }),
       ...defaultHeaders,
       ...(reqHeaders as Record<string, string> | undefined),
     };
@@ -63,7 +64,11 @@ export function createApiClient(clientConfig: ApiClientConfig) {
     const response = await fetch(url, {
       method,
       headers,
-      body: body !== undefined ? JSON.stringify(body) : undefined,
+      body: multipart
+        ? body
+        : body !== undefined
+          ? JSON.stringify(body)
+          : undefined,
       ...fetchOptions,
     });
 

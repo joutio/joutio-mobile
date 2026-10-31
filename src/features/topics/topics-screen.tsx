@@ -22,15 +22,17 @@ import {
 import { useDebounce } from "@/shared/hooks/useDebounce";
 import { AppButton } from "@/ui/button";
 import { JoChip } from "@/ui/jo/jo-chip";
+import { JoSkeleton } from "@/ui/jo/jo-skeleton";
 import { JoSearchField } from "@/ui/jo/jo-search-field";
 import { JoIconButton } from "@/ui/jo/jo-icon-button";
-import { JoLoading } from "@/ui/jo/jo-loading";
 import { JoTopicCard } from "@/ui/jo/jo-topic-card";
 import { AppText } from "@/ui/text";
 import { useNativeTheme } from "@/ui/theme";
 
 const GUTTER = 16;
 const GAP = 12;
+
+const SKELETONS = [1, 2, 3, 4, 5, 6];
 
 export function TopicsScreen() {
   const router = useRouter();
@@ -147,7 +149,13 @@ export function TopicsScreen() {
         onEndReachedThreshold={0.4}
         ListEmptyComponent={
           topicsQuery.isPending ? (
-            <JoLoading />
+            <View style={styles.skeletons}>
+              {SKELETONS.map((key) => (
+                <View key={key} style={{ width: cardWidth }}>
+                  <JoSkeleton height={180} />
+                </View>
+              ))}
+            </View>
           ) : (
             <View style={styles.empty}>
               <AppText variant="headline">Aucun sujet ne correspond</AppText>
@@ -197,6 +205,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
   },
+  skeletons: { flexDirection: "row", flexWrap: "wrap", gap: GAP },
   empty: { alignItems: "center", gap: 12, paddingVertical: 56 },
   footer: { paddingVertical: 16, alignItems: "center" },
 });

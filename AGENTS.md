@@ -37,7 +37,8 @@ Application mobile Joutio. **UI v4 = chrome Joutio + 5 onglets** :
 - UI v3 livrée : coque native, écrans principaux, duel ; validation Expo Go à faire.
 - À venir : Social complet (M3) ; progression (M4) ; STOMP/push (M5).
 
-Hors périmètre : création de sujets/questions, mur de thème/chat.
+Création et gestion de sujet livrées (`features/topic-authoring`) ; équipe de sujet et explication
+de question en attente du backend. Hors périmètre : mur de thème/chat.
 
 ---
 
@@ -54,6 +55,11 @@ Hors périmètre : création de sujets/questions, mur de thème/chat.
   onglets : on en sort par `leaveDuelFlow`, on y enchaîne par `replace`, jamais de `push` depuis le duel.
 - **Feuilles** : `JoSheet` sur `Modal` React Native. La feuille `@expo/ui`, même avec `RNHostView`,
   ne recevait aucune touche dans Expo Go (SDK 58) : ne pas y revenir sans test sur appareil.
+- **Assets générés** : `npm run render:medals`, `render:frames` (`assets/medals`, `assets/frames`,
+  depuis `design/assets` et `Elo Avatar`) et `generate:centroids` (positions de la carte). Ne pas
+  remplacer ces images par du SVG ou un canvas par avatar : les listes en souffrent.
+- **Icônes** : toujours via `@/ui/phosphor` (imports unitaires) ; le paquet entier pèse 3 000
+  modules au démarrage. Ajouter l'icône à ce fichier.
 - **Fond et transitions** : `ThemeProvider` et `SystemUI.setBackgroundColorAsync` à la racine, sinon
   la navigation montre son fond clair derrière chaque transition. Chargements via `JoLoading`.
 - **Clavier** : `KeyboardProvider` à la racine, avec `statusBarTranslucent`,
@@ -415,11 +421,9 @@ mobile.
   (release `MCWQysuDe8tc/MALWl90JGgF0kk=` + debug) et app Live / Test users.
 - **Google** : clients Web/Android/iOS créés dans le projet `13717769562` (§ 4) ;
   valider la connexion native sur appareil.
-- **Écrans portés sur `src/ui/jo/`** : tout le parcours joueur (auth, onboarding, Accueil, recherche,
-  Sujets, Fiche sujet, duel complet, résultat et revue, Social, fiche joueur, Défis, inbox, Profil,
-  collection, cérémonies, avatar, Réglages, suppression de compte, Premium « bientôt », états
-  système). **Absents** : autorisation
-  des notifications et push, création, équipe et modération de sujet, mur et chat (V1.1).
+- **Écrans portés sur `src/ui/jo/`** : tout le parcours joueur, autorisation des notifications,
+  création, édition et modération de sujet. **Absents** : envoi de push, équipe de sujet (aucun
+  endpoint BFF), mur et chat (V1.1).
 - **Lot 2** : tab bar, barres de titre, Défis et inbox non validés sur appareil. La
   suppression et le repassage en non-lu de l'inbox, ainsi que « Défier un abonné », « Suivre »
   et « Relancer », ne sont pas livrés. Le quota « sur 5 possibles » n'est pas affiché : le BFF

@@ -124,6 +124,7 @@ export function useTopicLeaderboard(
 export function useTopicGames(
   userId: string | null | undefined,
   params: Omit<ProfileGamesParams, "page" | "size">,
+  active = true,
 ) {
   return useInfiniteQuery({
     queryKey: queryKeys.profiles.games(userId ?? "", params),
@@ -136,7 +137,7 @@ export function useTopicGames(
     initialPageParam: 0,
     getNextPageParam: (lastPage) =>
       lastPage.last ? undefined : lastPage.page + 1,
-    enabled: !!userId,
+    enabled: !!userId && active,
     staleTime: HISTORY_STALE_MS,
     placeholderData: keepPreviousData,
   });

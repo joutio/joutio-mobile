@@ -20,6 +20,15 @@ export default function AppLayout() {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="index" />
         <Stack.Screen name="onboarding" options={{ gestureEnabled: false }} />
+        <Stack.Screen name="topic-editor" options={{ presentation: "modal" }} />
+        <Stack.Screen
+          name="question-editor"
+          options={{ presentation: "modal" }}
+        />
+        <Stack.Screen
+          name="notification-permission"
+          options={{ presentation: "fullScreenModal", gestureEnabled: false }}
+        />
         <Stack.Screen
           name="room/[roomId]"
           options={{

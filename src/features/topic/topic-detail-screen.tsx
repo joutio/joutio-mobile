@@ -110,7 +110,7 @@ export function TopicDetailScreen() {
   const [playOpen, setPlayOpen] = useState(false);
   const overviewQuery = useTopicOverview(id);
   const toggleFollow = useToggleTopicFollow(id);
-  const gamesQuery = useTopicGames(me.data?.userId, { topicId: id });
+  const gamesQuery = useTopicGames(me.data?.userId, { topicId: id }, tab === "progress");
   const leaderboardQuery = useTopicLeaderboard(id, { period, scope: "WORLD" });
   const language = me.data?.language ?? "fr";
 
@@ -222,6 +222,36 @@ export function TopicDetailScreen() {
             icon={<Lightning size={20} color={colors.onAccent} weight="fill" />}
             onPress={() => setPlayOpen(true)}
           />
+          {overviewQuery.data.canManage ? (
+            <View style={styles.manage}>
+              <AppButton
+                label="Modifier"
+                variant="secondary"
+                size="md"
+                fullWidth
+                style={styles.manageButton}
+                onPress={() =>
+                  router.push({
+                    pathname: "/(app)/topic-editor",
+                    params: { topicId: id },
+                  })
+                }
+              />
+              <AppButton
+                label="Modération"
+                variant="secondary"
+                size="md"
+                fullWidth
+                style={styles.manageButton}
+                onPress={() =>
+                  router.push({
+                    pathname: "/topic-moderation",
+                    params: { topicId: id },
+                  })
+                }
+              />
+            </View>
+          ) : null}
           <JoSegmented options={TABS} value={tab} onChange={setTab} />
         </View>
 
@@ -357,6 +387,8 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   scroll: { paddingBottom: 32 },
+  manage: { flexDirection: "row", gap: 8 },
+  manageButton: { flex: 1, width: undefined },
   cover: {
     height: 220,
     alignItems: "center",

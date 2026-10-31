@@ -205,6 +205,7 @@ function Result() {
             name={me.data?.pseudonym ?? "Toi"}
             avatarOptions={me.data?.avatarOptions}
             size={72}
+            animated
             tier={
               result.progression.provisional
                 ? null
@@ -238,6 +239,7 @@ function Result() {
             name={opponentName}
             avatarOptions={result.opponent?.avatarOptions}
             size={72}
+            animated
             tier={
               result.opponentRated ? eloTier(result.opponentRating) : null
             }

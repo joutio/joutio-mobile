@@ -110,6 +110,7 @@ export function PlayerScreen() {
           name={data.pseudonym}
           avatarOptions={data.avatarOptions}
           size={96}
+          animated
           tier={provisional ? null : tier}
         />
         <AppText variant="title1" weight="bold" style={styles.centered}>

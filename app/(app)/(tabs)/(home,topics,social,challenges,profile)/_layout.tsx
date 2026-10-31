@@ -1,5 +1,5 @@
 import { Stack, useRouter } from "expo-router";
-import { GearSix, MagnifyingGlass } from "@/ui/phosphor";
+import { GearSix, MagnifyingGlass, Plus } from "@/ui/phosphor";
 import { ChallengesNavBar } from "@/features/challenges/components/challenges-nav-bar";
 import { MarkAllReadButton } from "@/features/notifications/components/mark-all-read-button";
 import { NotificationBell } from "@/features/notifications/components/notification-bell";
@@ -67,7 +67,21 @@ function RootBar({ segment }: { segment: string }) {
     );
   }
   if (segment === "(topics)") {
-    return <JoNavBar title="Sujets" actions={<NotificationBell />} />;
+    return (
+      <JoNavBar
+        title="Sujets"
+        actions={
+          <>
+            <JoIconButton
+              label="Créer un sujet"
+              icon={<Plus size={24} color={colors.label} />}
+              onPress={() => router.push("/(app)/topic-editor")}
+            />
+            <NotificationBell />
+          </>
+        }
+      />
+    );
   }
   if (segment === "(social)") {
     return <JoNavBar title="Social" actions={<NotificationBell />} />;
