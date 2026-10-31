@@ -8,8 +8,8 @@
 > Interface **mobile React Native (Expo)** de Joutio — **UI v4 marque Joutio**,
 > mobile-only. Référence : `design/` + `design/tokens.json`. Geist/Geist Mono, ambre,
 > surfaces plates, chrome custom (tab bar/nav bar) avec **barres système réelles**.
-> La logique auth/BFF est conservée. Conventions : `best-practices/.frontend/` +
-> `FIDELITY.md`.
+> La logique auth/BFF est conservée. Conventions de code : `best-practices/.frontend/`.
+> **La référence visuelle est uniquement le dossier `design/`.**
 
 > **Décisions du 30/10/2026** : Android d'abord ; Premium « bientôt » (aucun IAP, pub
 > ou ATT) ; chat post-duel, blocage joueur et mur de sujet en **V1.1** ; pas de retour
@@ -17,7 +17,7 @@
 > composants `src/ui/` ; le lot 2 a livré la navigation cible (tab bar et barres de titre
 > custom, onglet Défis, cloche et inbox). Les §§ 6-7 décrivent l'historique v2/v3.
 > **Décision du 31/10/2026** : `NativeTabs`, encore en place, est remplacée par la barre custom
-> `JoTabBar` (`FIDELITY.md`).
+> `JoTabBar`, conforme à `design/assets/components/Jo Tab Bar.dc.html`.
 
 ---
 
@@ -329,7 +329,7 @@ mobile.
 - 1 composant = 1 fichier, export nommé, `interface` pour les props, **jamais `any`**.
 - Server state React Query, UI state Zustand, local `useState`. Pas de fetch dans `useEffect`.
 
-> **Fidélité** : la référence est l'UI native iOS/Android documentée dans `FIDELITY.md`.
+> **Référence visuelle** : uniquement le dossier `design/`.
 
 ---
 
