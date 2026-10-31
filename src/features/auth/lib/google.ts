@@ -1,4 +1,4 @@
-import Constants from "expo-constants";
+import Constants, { ExecutionEnvironment } from "expo-constants";
 import { Platform } from "react-native";
 import { config } from "@/lib/config";
 
@@ -28,7 +28,10 @@ export class GoogleSignInError extends Error {
  * iOS n'est exposé que lorsqu'un client iOS est configuré. L'OTP reste disponible partout.
  */
 export function isGoogleSignInAvailable(): boolean {
-  const isExpoGo = Constants.expoGoConfig != null;
+  // `expoGoConfig` est non nul dans un build standalone (manifest embarqué) :
+  // seul `ExecutionEnvironment.StoreClient` identifie réellement Expo Go.
+  const isExpoGo =
+    Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
   const platformConfigured =
     Platform.OS === "android" ||
     (Platform.OS === "ios" && Boolean(config.googleIosClientId));

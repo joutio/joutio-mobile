@@ -1,4 +1,4 @@
-import Constants from "expo-constants";
+import Constants, { ExecutionEnvironment } from "expo-constants";
 import { Platform } from "react-native";
 import { config } from "@/lib/config";
 
@@ -22,7 +22,10 @@ export class FacebookSignInError extends Error {
  * Le bouton est masqué si l'App ID ou le Client Token public manque.
  */
 export function isFacebookSignInAvailable(): boolean {
-  const isExpoGo = Constants.expoGoConfig != null;
+  // `expoGoConfig` est non nul dans un build standalone (manifest embarqué) :
+  // seul `ExecutionEnvironment.StoreClient` identifie réellement Expo Go.
+  const isExpoGo =
+    Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
   return (
     (Platform.OS === "ios" || Platform.OS === "android") &&
     !isExpoGo &&
