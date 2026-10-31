@@ -5,6 +5,7 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
+import { useIsFocused } from "expo-router";
 import { queryKeys } from "@/lib/query-keys";
 import {
   profilesService,
@@ -18,6 +19,7 @@ export function usePeople(
   direction: FollowDirection,
   q: string,
 ) {
+  const focused = useIsFocused();
   return useInfiniteQuery({
     queryKey: queryKeys.profiles.people(userId ?? "", direction, q),
     queryFn: ({ pageParam }) =>
@@ -27,7 +29,7 @@ export function usePeople(
       lastPage.last ? undefined : lastPage.page + 1,
     enabled: !!userId,
     staleTime: 0,
-    refetchInterval: PEOPLE_POLL_MS,
+    refetchInterval: focused ? PEOPLE_POLL_MS : false,
     placeholderData: keepPreviousData,
   });
 }

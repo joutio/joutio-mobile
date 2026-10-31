@@ -20,6 +20,7 @@ import { JoLoading } from "@/ui/jo/jo-loading";
 import { JoPlayerRow } from "@/ui/jo/jo-player-row";
 import { JoSegmented } from "@/ui/jo/jo-segmented";
 import { tierLabel } from "@/ui/tokens";
+import { useUserRefresh } from "@/shared/hooks/useUserRefresh";
 import { useNativeTheme } from "@/ui/theme";
 import { usePeople } from "./hooks/usePeople";
 
@@ -45,6 +46,7 @@ export function SocialScreen() {
   const [target, setTarget] = useState<PlayerCardView | null>(null);
   const debounced = useDebounce(query, 300);
   const people = usePeople(me.data?.userId, direction, debounced);
+  const userRefresh = useUserRefresh(people.refetch);
 
   const players = useMemo(
     () =>
@@ -97,8 +99,8 @@ export function SocialScreen() {
         ListHeaderComponent={header}
         refreshControl={
           <RefreshControl
-            refreshing={people.isRefetching && !people.isFetchingNextPage}
-            onRefresh={() => void people.refetch()}
+            refreshing={userRefresh.refreshing}
+            onRefresh={userRefresh.onRefresh}
             tintColor={colors.accent}
             colors={[colors.accent]}
           />

@@ -16,8 +16,9 @@
 > à HeroUI/Uniwind/Tailwind. Le lot 0 a basculé les jetons, Geist, les icônes et les
 > composants `src/ui/` ; le lot 2 a livré la navigation cible (tab bar et barres de titre
 > custom, onglet Défis, cloche et inbox). Les §§ 6-7 décrivent l'historique v2/v3.
-> **Décision du 31/10/2026** : `NativeTabs`, encore en place, est remplacée par la barre custom
-> `JoTabBar`, conforme à `design/assets/components/Jo Tab Bar.dc.html`.
+> **Décision du 31/10/2026** : `NativeTabs` est remplacée par la barre custom `JoTabBar`, conforme
+> à `design/assets/components/Jo Tab Bar.dc.html`. Les onglets se montent à la demande et sont
+> gelés hors focus.
 
 ---
 
@@ -61,7 +62,7 @@ Hors périmètre : création de sujets/questions, mur de thème/chat.
   sur tout formulaire, standard Expo. Android est edge-to-edge : `KeyboardAvoidingView` sans
   `behavior` et `softwareKeyboardLayoutMode` ne remontent pas le contenu. Validé dans
   **Expo Go**, malgré la doc Expo qui l'annonce absent.
-- **UI** : `NativeTabs` personnalisée, feuilles `JoSheet`, animations Reanimated
+- **UI** : `Tabs` expo-router avec `JoTabBar`, feuilles `JoSheet`, animations Reanimated
   CSS (`src/ui/motion.ts`), stacks natifs avec `JoNavBar` passé en `header`, composants RN de contenu (`View`, `Text`, `Pressable`, `TextInput`, `Switch`,
   `FlatList`, `Modal`). Aucun composant UI web.
 - **Thème** : **Geist / Geist Mono** via `@expo-google-fonts/geist`, jetons

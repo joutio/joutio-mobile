@@ -49,7 +49,6 @@ export function usePendingChallenges() {
     now,
     isPending: challenges.isPending || rooms.isPending,
     isError: challenges.isError || rooms.isError,
-    isRefetching: challenges.isRefetching || rooms.isRefetching,
     refetch: () =>
       Promise.all([challenges.refetch(), rooms.refetch()]),
   };

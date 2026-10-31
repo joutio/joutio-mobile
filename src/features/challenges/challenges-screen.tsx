@@ -19,6 +19,7 @@ import { JoIconButton } from "@/ui/jo/jo-icon-button";
 import { JoLoading } from "@/ui/jo/jo-loading";
 import { JoPlayerRow } from "@/ui/jo/jo-player-row";
 import { AppListRow } from "@/ui/list-row";
+import { useUserRefresh } from "@/shared/hooks/useUserRefresh";
 import { useNativeTheme } from "@/ui/theme";
 import { remainingLabel } from "./domain/challenge";
 import {
@@ -38,6 +39,7 @@ export function ChallengesScreen() {
   const theme = useNativeTheme();
   const me = useMe();
   const pending = usePendingChallenges();
+  const userRefresh = useUserRefresh(pending.refetch);
   const accept = useAcceptChallenge();
   const decline = useDeclineChallenge();
   const cancel = useCancelChallenge();
@@ -70,8 +72,8 @@ export function ChallengesScreen() {
 
   const refresh = (
     <RefreshControl
-      refreshing={pending.isRefetching}
-      onRefresh={() => void pending.refetch()}
+      refreshing={userRefresh.refreshing}
+      onRefresh={userRefresh.onRefresh}
       tintColor={theme.colors.accent}
       colors={[theme.colors.accent]}
     />
