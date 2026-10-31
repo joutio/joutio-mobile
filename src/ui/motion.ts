@@ -51,3 +51,9 @@ export const spin: CSSAnimationKeyframes = {
   from: { transform: [{ rotate: "0deg" }] },
   to: { transform: [{ rotate: "360deg" }] },
 };
+
+/** `tq-out` */
+export const questionOut: CSSAnimationKeyframes = {
+  from: { transform: [{ translateY: 0 }], opacity: 1 },
+  to: { transform: [{ translateY: -24 }], opacity: 0 },
+};

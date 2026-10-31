@@ -20,7 +20,41 @@ const RING: Partial<Record<RoundDot, string>> = {
 };
 
 /** Bilan des manches : vert juste, rouge faux, cerclé ambre pour le bonus. */
-export function RoundDots({ dots, size = 24 }: { dots: RoundDot[]; size?: number }) {
+export function RoundDots({
+  dots,
+  size = 24,
+  compact = false,
+}: {
+  dots: RoundDot[];
+  size?: number;
+  /** Version de l'annonce de manche : barrettes de 8 px, manche en cours allongée. */
+  compact?: boolean;
+}) {
+  if (compact) {
+    return (
+      <View accessibilityLabel="Manches" style={[styles.row, styles.compact]}>
+        {dots.map((dot, index) => {
+          const current = dot === "current" || dot === "bonus";
+          return (
+            <View
+              key={index}
+              style={[
+                styles.bar,
+                {
+                  width: current ? 22 : 8,
+                  backgroundColor: current
+                    ? "#FFFFFF"
+                    : dot === "upcoming"
+                      ? "#2A2A2E"
+                      : FILL[dot],
+                },
+              ]}
+            />
+          );
+        })}
+      </View>
+    );
+  }
   return (
     <View
       accessibilityLabel="Manches"
@@ -54,6 +88,8 @@ export function RoundDots({ dots, size = 24 }: { dots: RoundDot[]; size?: number
 
 const styles = StyleSheet.create({
   row: { flexDirection: "row", alignItems: "center" },
+  compact: { gap: 8 },
+  bar: { height: 8, borderRadius: 4 },
   dot: { alignItems: "center", justifyContent: "center" },
   bonus: { color: "#E8B04A", fontSize: 10, lineHeight: 12 },
 });

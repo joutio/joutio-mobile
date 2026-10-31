@@ -30,7 +30,14 @@ import { JoBanner } from "@/ui/jo/jo-banner";
 import { JoEmptyState } from "@/ui/jo/jo-empty-state";
 import { JoSheet } from "@/ui/jo/jo-sheet";
 import { AppText } from "@/ui/text";
-import { EASE, EASE_POP, gainFloat, popIn, questionIn } from "@/ui/motion";
+import {
+  EASE,
+  EASE_POP,
+  gainFloat,
+  popIn,
+  questionIn,
+  questionOut,
+} from "@/ui/motion";
 import { tierLabel } from "@/ui/tokens";
 import { DarkTheme } from "@/ui/theme";
 import { AnswerCard, type AnswerState } from "./components/answer-card";
@@ -40,7 +47,7 @@ import {
   SecondsLeft,
   type ScoreTone,
 } from "./components/duel-scoreboard";
-import { FaceOff } from "./components/face-off";
+import { FACE_OFF_EXIT_MS, FaceOff } from "./components/face-off";
 import { RoundIntro } from "./components/round-intro";
 import { TimerBar } from "./components/timer-bar";
 import {
@@ -50,10 +57,13 @@ import {
   roundNumber,
 } from "./domain/game";
 import { useGameState } from "./hooks/useGameState";
+import { usePlayer } from "@/features/social/hooks/usePeople";
+import { categoryColor } from "@/shared/utils/categories";
 
 const CHOICES: GameChoice[] = ["A", "B", "C", "D"];
 const ROUND_MS = 10_000;
 const ROUND_INTRO_MS = 1_900;
+const QUESTION_OUT_MS = 400;
 const LOW_TIME_MS = 3_000;
 const MAX_SCORE = 160;
 const BG = "#0B0B0B";
@@ -98,6 +108,9 @@ function ArenaScreen() {
   const language = me.data?.language ?? "fr";
   const { game, isLoading, isError, refresh } = useGameState(gameId);
   const topicQuery = useTopicOverview(game.topicId ?? "");
+  const opponentId = (game.player1Id === userId ? game.player2Id : game.player1Id) ?? null;
+  const vsBot = game.player2Type === "BOT";
+  const opponentProfile = usePlayer(vsBot ? "" : (opponentId ?? "")).data;
   const network = useNetworkState();
   const offline = network.isConnected === false;
   const wasOffline = useRef(false);
@@ -140,8 +153,6 @@ function ArenaScreen() {
     [currentRound, language],
   );
   const isPlayer1 = game.player1Id === userId;
-  const opponentId = isPlayer1 ? game.player2Id : game.player1Id;
-  const vsBot = game.player2Type === "BOT";
   const myName = me.data?.pseudonym ?? "Toi";
   const opponentName = vsBot
     ? "Bot"
@@ -188,8 +199,11 @@ function ArenaScreen() {
       ? currentRound.nextRoundAt
       : null
     : game.firstRoundAt;
-  const introReached = useReached(
-    nextRoundAt ? Date.parse(nextRoundAt) - ROUND_INTRO_MS : null,
+  const introAt = nextRoundAt ? Date.parse(nextRoundAt) - ROUND_INTRO_MS : null;
+  const introReached = useReached(introAt);
+  const questionLeaving = useReached(introAt ? introAt - QUESTION_OUT_MS : null);
+  const shuttersOpen = useReached(
+    !currentRound && introAt ? introAt - FACE_OFF_EXIT_MS : null,
   );
 
   useEffect(() => {
@@ -332,10 +346,19 @@ function ArenaScreen() {
         : 1
       : null;
 
-  if (!currentRound && introRound === null) {
-    return (
+  const opponentRating = opponentProfile?.progression;
+  const opponentTier =
+    opponentRating && !opponentRating.provisional
+      ? eloTier(opponentRating.rating)
+      : null;
+  const topicColor = topic?.color ?? categoryColor(topic?.category ?? "");
+  const faceOff =
+    !currentRound && introRound === null ? (
       <FaceOff
         topic={topicLabel}
+        category={topic?.category}
+        color={topicColor}
+        leaving={shuttersOpen}
         me={{
           name: myName,
           tier: myTier,
@@ -345,10 +368,17 @@ function ArenaScreen() {
               ? `${tierLabel(myTier)} · ${rating}`
               : undefined,
         }}
-        opponent={{ name: opponentName }}
+        opponent={{
+          name: opponentName,
+          tier: opponentTier,
+          avatarOptions: opponentProfile?.avatarOptions,
+          detail:
+            opponentTier && opponentRating
+              ? `${tierLabel(opponentTier)} · ${opponentRating.rating}`
+              : undefined,
+        }}
       />
-    );
-  }
+    ) : null;
 
   const myTone: ScoreTone =
     revealed && myAnswer ? (myAnswer.correct ? "correct" : "wrong") : "rest";
@@ -371,6 +401,24 @@ function ArenaScreen() {
     return selectedChoice ? "unchosen" : "rest";
   };
 
+  const answerTimes = Object.values(currentRound?.playerAnswers ?? {}).map(
+    (entry) => entry.timeMs,
+  );
+  const firstAnswer =
+    answerTimes.length > 0
+      ? Math.max(0, 1 - Math.min(...answerTimes) / ROUND_MS)
+      : null;
+  const stageExit = questionLeaving && introAt !== null
+    ? {
+        animationName: questionOut,
+        animationDuration: QUESTION_OUT_MS,
+        animationTimingFunction: EASE,
+        animationFillMode: "both" as const,
+      }
+    : undefined;
+  const questionMeta = currentRound
+    ? `${topicLabel} · question ${roundNumber(currentRound.round)} sur 7`
+    : "";
   const illustrated = Boolean(currentRound?.imageUrl);
   const roundKey = currentRound?.round ?? "intro";
   const myGain = myAnswer?.points ?? 0;
@@ -402,11 +450,13 @@ function ArenaScreen() {
         running={answersOpen && !revealed}
         frozen={revealed}
         low={low}
+        first={firstAnswer}
       />
 
       <DuelScoreboard
         deadline={deadline}
         frozen={revealed}
+        reading={!answersOpen}
         low={low}
         me={{
           name: myName,
@@ -415,7 +465,13 @@ function ArenaScreen() {
           tier: myTier,
           avatarOptions: me.data?.avatarOptions,
         }}
-        opponent={{ name: opponentName, score: theirScore, tone: theirTone }}
+        opponent={{
+          name: opponentName,
+          score: theirScore,
+          tone: theirTone,
+          tier: opponentTier,
+          avatarOptions: opponentProfile?.avatarOptions,
+        }}
       />
 
       <View style={[styles.stage, { paddingBottom: insets.bottom + 16 }]}>
@@ -426,10 +482,12 @@ function ArenaScreen() {
           <RoundIntro
             round={introRound}
             topic={topicLabel}
+            category={topic?.category}
+            color={topicColor}
             dots={roundDots(game, userId, introRound)}
           />
         ) : illustrated && currentRound?.imageUrl ? (
-          <View style={styles.illustrated}>
+          <Animated.View style={[styles.illustrated, stageExit]}>
             <AppText variant="title2" weight="semibold" style={styles.question}>
               {localized.questionText}
             </AppText>
@@ -447,10 +505,13 @@ function ArenaScreen() {
                 </>
               ) : null}
             </View>
-          </View>
+          </Animated.View>
         ) : (
-          <>
+          <Animated.View style={[styles.flexStage, stageExit]}>
             <View style={styles.questionZone}>
+              <AppText variant="caption" style={[styles.muted, styles.meta]}>
+                {questionMeta}
+              </AppText>
               <Animated.View
                 key={roundKey}
                 style={{
@@ -509,7 +570,7 @@ function ArenaScreen() {
               ) : null}
             </View>
             <View style={styles.answers}>{answersOpen ? cards : null}</View>
-          </>
+          </Animated.View>
         )}
 
       </View>
@@ -524,6 +585,8 @@ function ArenaScreen() {
         }}
         style={[styles.quitZone, { top: insets.top }]}
       />
+
+      {faceOff}
 
       <JoSheet
         visible={quitOpen}
@@ -602,7 +665,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: 8,
   },
-  question: { textAlign: "center", color: "#FFFFFF" },
+  flexStage: { flex: 1, minHeight: 0 },
+  meta: { textAlign: "center", marginBottom: 12 },
+  question: { textAlign: "center", color: "#FFFFFF", lineHeight: 28 },
   answers: { minHeight: 316, justifyContent: "flex-end", gap: 12 },
   illustrated: { flex: 1, minHeight: 0, gap: 16 },
   image: { flex: 1, minHeight: 0, borderRadius: 12 },
