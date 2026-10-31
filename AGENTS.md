@@ -115,7 +115,8 @@ Variables (`.env`) : `EXPO_PUBLIC_API_URL` (BFF), `EXPO_PUBLIC_OIDC_AUTHORITY`
 localhost dans le `.env` principal**, elle serait embarquée dans l'APK), `EXPO_PUBLIC_OIDC_CLIENT_ID`,
 `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` (client OAuth2 Web Google, audience des ID tokens),
 `EXPO_PUBLIC_GOOGLE_SIGN_IN_ENABLED` (`false` masque Google sans retirer l'ID client),
-`EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` / `EXPO_PUBLIC_GOOGLE_IOS_URL_SCHEME` (iOS, plus tard),
+`EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` / `EXPO_PUBLIC_GOOGLE_IOS_URL_SCHEME` (iOS ; les deux
+sont requis ensemble),
 `EXPO_PUBLIC_FACEBOOK_APP_ID` (App ID Meta public), `EXPO_PUBLIC_FACEBOOK_CLIENT_TOKEN`
 (Client Token public du SDK), `EXPO_PUBLIC_FACEBOOK_SIGN_IN_ENABLED` (`false` masque Facebook).
 Le client Google n'a **aucun fallback en dur** : vide ⇒ bouton Google masqué.
@@ -193,41 +194,45 @@ Les access tokens sont les **mêmes JWT** que le flux web (mêmes claims `sub`, 
 `email`, `roles`, même audience) : le BFF ne change pas. Aucun ID token n'est émis pour le
 mobile ; les scopes natifs sont `profile email`.
 
-### Google Android — configuration Cloud (manuelle)
+### Google (Android + iOS) — configuration Cloud
 
 `@react-native-google-signin/google-signin` (module natif, **pas Expo Go**) utilise le client
 OAuth2 **Web** comme `webClientId` (audience des ID tokens) ; le client **Android** n'est
-jamais référencé dans le code, Google le résout par **package + SHA-1**.
+jamais référencé dans le code, Google le résout par **package + SHA-1**. Sur iOS, le client
+iOS et son URL scheme inversé sont passés via `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` et
+`EXPO_PUBLIC_GOOGLE_IOS_URL_SCHEME` (le plugin natif n'est ajouté que si le scheme est défini).
 
-**État actuel** : le client Android **n'est pas encore créé** ; l'écran de login affiche un
-message explicite et l'OTP reste utilisable. Protocole à appliquer quand l'accès à la console
-est disponible :
+**État actuel** : clients créés dans le projet Google Cloud **`13717769562`** (Web, Android
+release et iOS). Le bouton Google reste masqué si `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` est vide.
 
-1. Projet Google Cloud **`TODO_GOOGLE_PROJECT`** (celui du client Web
-   `TODO_GOOGLE_WEB_CLIENT_ID`). Rôle
-   `roles/oauthconfig.editor` (ou Owner/Editor) requis.
-2. **Google Auth Platform → Branding / Audience / Data Access** : app `Joutio`, audience
+1. **Google Auth Platform → Branding / Audience / Data Access** : app `Joutio`, audience
    `External` (ou `Internal`), scopes `openid`,
    `https://www.googleapis.com/auth/userinfo.email`,
    `https://www.googleapis.com/auth/userinfo.profile`.
    En mode **Testing**, ajouter le compte Google du téléphone dans **Test users**.
-3. **Google Auth Platform → Clients → Create client → Android** :
-   - nom `Joutio Android release` ;
-   - package `com.joutio.app` ;
-   - SHA-1 release
-     `A7:86:D9:27:A3:D7:05:6D:AD:2C:F1:67:D5:A9:2F:87:00:4E:24:B4`.
-   Ne pas créer ce client dans un autre projet : l'ID token doit garder l'audience du client
+2. **Clients** (tous dans le projet `13717769562`) :
+   - **Web** : `13717769562-f0lmfij51imcthmn3rudsijjh6r4bll7.apps.googleusercontent.com`
+     — audience des ID tokens (`EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`).
+   - **Android release** : `13717769562-jjgajgpm6rp91d9nio1fkqct81ag2ff8.apps.googleusercontent.com`
+     — package `com.joutio.app`, SHA-1 release
+     `30:25:90:CA:CB:83:7B:CB:5C:FC:C0:0B:5A:5F:74:24:68:05:D2:49`.
+   - **iOS** : `13717769562-pi67m17nqa3bv9p3h01kk43d5h27i5j5.apps.googleusercontent.com`
+     — bundle `com.joutio.app`, URL scheme inversé
+     `com.googleusercontent.apps.13717769562-pi67m17nqa3bv9p3h01kk43d5h27i5j5`
+     (`EXPO_PUBLIC_GOOGLE_IOS_URL_SCHEME`).
+   Ne pas créer ces clients dans un autre projet : l'ID token doit garder l'audience du client
    Web existant. Aucun `google-services.json` ni secret n'est nécessaire.
-4. Attendre la propagation (5 min à quelques heures), désinstaller/réinstaller l'APK.
-5. Pour un build debug local, ajouter l'empreinte du debug keystore :
+3. Attendre la propagation (5 min à quelques heures), désinstaller/réinstaller l'APK.
+4. Pour un build debug local, ajouter l'empreinte du debug keystore :
    `keytool -exportcert -rfc -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android | openssl x509 -noout -fingerprint -sha1`.
    Pour une distribution Play, ajouter l'empreinte **Play App Signing**.
-6. Diagnostic : `npx @react-native-google-signin/config-doctor`, `apksigner verify --print-certs`
+5. Diagnostic : `npx @react-native-google-signin/config-doctor`, `apksigner verify --print-certs`
    sur l'APK, `adb logcat | grep -iE 'GoogleSignIn|DEVELOPER_ERROR'`. Un `DEVELOPER_ERROR`
    signifie package/SHA-1/projet incohérent ; l'app le traduit par un message actionnable.
 
 L'OTP fonctionne aussi dans Expo Go ; Google nécessite un build natif/APK
-(`npx expo run:android` ou l'APK de release).
+(`npx expo run:android` ou l'APK de release). iOS nécessite `npx expo prebuild --clean
+--platform ios` puis `npx expo run:ios`.
 
 ### Facebook natif (Android + iOS Limited Login)
 
@@ -241,11 +246,11 @@ build ; sinon il est masqué et le plugin natif n'est **pas** ajouté (`app.conf
   audience, expiration et nonce via le JWKS Facebook.
 - Les deux flux retournent la **même session mobile** que l'OTP/Google (access + refresh).
 
-**Configuration Meta** (App ID `TODO_FACEBOOK_APP_ID`) :
+**Configuration Meta** (App ID `2122240041993058`) :
 
 1. Plateforme **Android** : package `com.joutio.app`, key hash release
-   `p4bZJ6PXBW2tLPFn1akvhwBOJLQ=` (SHA-1 release
-   `A7:86:D9:27:A3:D7:05:6D:AD:2C:F1:67:D5:A9:2F:87:00:4E:24:B4`), key hash debug
+   `MCWQysuDe8tc/MALWl90JGgF0kk=` (SHA-1 release
+   `30:25:90:CA:CB:83:7B:CB:5C:FC:C0:0B:5A:5F:74:24:68:05:D2:49`), key hash debug
    (commande ci-dessous). En mode **Development**, ajouter le compte Facebook du téléphone
    dans **Test users** (ou passer l'app en Live).
 2. Plateforme **iOS** : bundle `com.joutio.app`, Limited Login activé.
@@ -258,10 +263,10 @@ build ; sinon il est masqué et le plugin natif n'est **pas** ajouté (`app.conf
 
 **Configuration mobile** :
 
-- `.env` : `EXPO_PUBLIC_FACEBOOK_APP_ID=TODO_FACEBOOK_APP_ID`,
-  `EXPO_PUBLIC_FACEBOOK_CLIENT_TOKEN=<Client Token public>` (configuré),
+- `.env` : `EXPO_PUBLIC_FACEBOOK_APP_ID=2122240041993058`,
+  `EXPO_PUBLIC_FACEBOOK_CLIENT_TOKEN=<Client Token public>` (à rotationner),
   `EXPO_PUBLIC_FACEBOOK_SIGN_IN_ENABLED=true`.
-- GitHub : variable de dépôt `JOUTIO_FACEBOOK_CLIENT_TOKEN` (configurée, consommée par
+- GitHub : variable de dépôt `JOUTIO_FACEBOOK_CLIENT_TOKEN` (à configurer, consommée par
   `.github/workflows/release.yml`). **Vide = APK sans Facebook** (bouton masqué, plugin absent).
 - Après changement : `npx expo prebuild --clean` puis build natif
   (`npx expo run:android` ou APK). Le plugin ajoute `facebook_app_id`,
@@ -274,8 +279,9 @@ Erreurs identity : `401 urn:joutio:auth:invalidFacebookToken` (token invalide/ex
 `422 urn:joutio:auth:facebookEmailMissing` (email absent), `503 urn:joutio:auth:facebookUnavailable`
 (Facebook/identity indisponible). L'app retombe sur l'OTP/Google.
 
-iOS sera ajouté plus tard (client iOS + URL scheme inversé via
-`EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` / `EXPO_PUBLIC_GOOGLE_IOS_URL_SCHEME`).
+iOS : client et URL scheme déjà créés (projet `13717769562`) ; renseigner
+`EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` / `EXPO_PUBLIC_GOOGLE_IOS_URL_SCHEME`, puis
+`npx expo prebuild --clean --platform ios`.
 
 ---
 
@@ -403,9 +409,10 @@ mobile.
   performances) — pas d'`adb`/émulateur dans l'environnement de dev courant.
 - **UI v4** : valider sur build natif (tab bar, barres de titre, back gestures, transitions) ;
   le web ne représente pas les composants natifs.
-- **Facebook** : Client Token configuré ; valider sur appareil après key hashes Meta
-  (release `p4bZJ6PXBW2tLPFn1akvhwBOJLQ=` + debug) et app Live / Test users.
-- **Google** : client Android Cloud encore à créer (§ 4).
+- **Facebook** : Client Token à rotationner ; valider sur appareil après key hashes Meta
+  (release `MCWQysuDe8tc/MALWl90JGgF0kk=` + debug) et app Live / Test users.
+- **Google** : clients Web/Android/iOS créés dans le projet `13717769562` (§ 4) ;
+  valider la connexion native sur appareil.
 - **Écrans portés sur `src/ui/jo/`** : tout le parcours joueur (auth, onboarding, Accueil, recherche,
   Sujets, Fiche sujet, duel complet, résultat et revue, Social, fiche joueur, Défis, inbox, Profil,
   collection, cérémonies, avatar, Réglages, suppression de compte, Premium « bientôt », états
