@@ -1,3 +1,19 @@
+## [1.2.0](https://github.com/joutio/joutio-mobile/compare/v1.1.2...v1.2.0) (2026-10-31)
+
+### Features
+
+* **design:** écrans restants, cache persistant et listes virtualisées ([439164d](https://github.com/joutio/joutio-mobile/commit/439164d3580ccbad95d6478eba5147b09c83d5e2))
+* **design:** socle Jo conforme aux composants du design ([863be2f](https://github.com/joutio/joutio-mobile/commit/863be2f1cfa4c13c8fdf31610a704973ff4b81a7))
+* **duel:** résultat aligné sur la maquette ([b3a7165](https://github.com/joutio/joutio-mobile/commit/b3a7165ceb90c43525735f1108bf43eb4a450768))
+* **duel:** volets, annonce de manche et états du chrono de la maquette ([f3f52c2](https://github.com/joutio/joutio-mobile/commit/f3f52c20ac350a5edd6a1085b1f116d9d326cc82))
+* **matchmaking:** état trouvé sur le pays réel et carte en texture ([8bb9cd4](https://github.com/joutio/joutio-mobile/commit/8bb9cd4e2287830e98f4ca37602c23f9619cf61a))
+* **topic-authoring:** création, édition et modération de sujet, notifications et squelettes ([b69ce39](https://github.com/joutio/joutio-mobile/commit/b69ce396be30e1987a5e3121ee7ac19b150175cd))
+
+### Performance Improvements
+
+* **medals:** pré-rendre médailles et rubans depuis design/assets ([842986d](https://github.com/joutio/joutio-mobile/commit/842986db21c58627126f7b3bc6957634b3557279))
+* **tabs:** barre custom, onglets à la demande et sondage isolé ([452fd02](https://github.com/joutio/joutio-mobile/commit/452fd025c9c85b24c3f7e293354cde49018e4b14))
+
 ## [1.1.2](https://github.com/joutio/joutio-mobile/compare/v1.1.1...v1.1.2) (2026-10-31)
 
 ### Bug Fixes
