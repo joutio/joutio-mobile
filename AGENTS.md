@@ -15,8 +15,9 @@
 > ou ATT) ; chat post-duel, blocage joueur et mur de sujet en **V1.1** ; pas de retour
 > à HeroUI/Uniwind/Tailwind. Le lot 0 a basculé les jetons, Geist, les icônes et les
 > composants `src/ui/` ; le lot 2 a livré la navigation cible (tab bar et barres de titre
-> custom, onglet Défis, cloche et inbox). Les §§ 6-7 décrivent encore l'historique v2/v3 :
-> `NativeTabs` et les headers natifs ont disparu.
+> custom, onglet Défis, cloche et inbox). Les §§ 6-7 décrivent l'historique v2/v3.
+> **Décision du 31/10/2026** : `NativeTabs`, encore en place, est remplacée par la barre custom
+> `JoTabBar` (`FIDELITY.md`).
 
 ---
 
@@ -424,7 +425,7 @@ mobile.
   ne l'expose pas.
 - **Duel sur appareil** : valider l'arène en temps réel, le wizz reçu et l'appariement
   humain complet sur APK (le smoke web couvre le bot, l'expiration et la salle privée).
-- **STOMP / push** : M5 (les écrans utilisent encore le polling REST).
+- **Push** : M5. STOMP est branché ; le sondage REST reste le filet de rattrapage.
 - **Web** : fallback de debug uniquement, pas une cible produit.
 
 ### Dépendances notables

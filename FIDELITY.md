@@ -34,8 +34,9 @@
 
 - 5 onglets : **Accueil · Sujets · Social · Défis · Profil**.
 - Les notifications passent par la **cloche** de la barre de titre, pas par un onglet.
-- Barre d'onglets **`NativeTabs` personnalisée** (décision qui remplace la barre custom) : couleurs
-  Joutio et badge Défis ; icônes SF/Material, `NativeTabs` n'acceptant pas Phosphor.
+- Barre d'onglets **custom** `JoTabBar`, conforme à `Jo Tab Bar` : icônes Phosphor, verre, filet
+  haut, badge Défis. Remplace `NativeTabs`, dont le rendu Android s'écarte de la maquette et qui
+  monte tous les onglets dès le démarrage. Bascule en cours (lots 1 et 3).
 - Feuilles : `JoSheet` sur `Modal` React Native, la feuille Expo UI ne recevant pas les touches dans
   Expo Go. Les pièces de marque restent en React Native animé.
 - Barres de titre custom, avec bouton retour et grand titre repliable.
@@ -63,10 +64,23 @@
   lignes de sujets et abonnés à la place des parties (non exposés par le BFF sur ces vues).
 - Variantes de bouton : `primary`, `secondary`, `tertiary`, `plain`, `destructiveSoft`,
   `destructive`. Tailles L 52 / M 44 / S 36. Une seule `primary` par écran.
-- Cartes : surface plate, filet 1 px, rayon 16, pas d'ombre.
+- Cartes : surface plate, sans filet ni ombre, rayon 16 (rayon 12 pour les cartes de sujet). Le
+  filet 1 px sépare les lignes et les barres, pas les cartes.
 - États : loading, empty, error, offline, disabled, sélectionné.
 - Cibles ≥ 44 px, contraste, labels a11y, Dynamic Type.
 - Overlays : `Modal` natif / pageSheet iOS, Alert natif pour les confirmations.
+
+## Référence de performance
+
+Toute mesure runtime se fait sur **APK release** (Android milieu de gamme) : un build debug ou Expo
+Go ne vaut pas référence.
+
+| Métrique | Référence | Date |
+|---|---|---|
+| Bundle Hermes Android (`expo export`) | 13,6 Mo | 31/10/2026 |
+| Démarrage à froid | à mesurer sur appareil | |
+| Ouverture Fiche sujet, Badges, Profil, matchmaking | à mesurer sur appareil | |
+| FPS du duel (reveal) | à mesurer sur appareil | |
 
 ## Quality gate
 
