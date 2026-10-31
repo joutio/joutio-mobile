@@ -4,6 +4,12 @@ import { AppText } from "@/ui/text";
 import { useNativeTheme } from "@/ui/theme";
 import { JoEloAvatar } from "./jo-elo-avatar";
 
+const RANK_COLOR: Record<number, string> = {
+  1: "#D9A826",
+  2: "#8C95A3",
+  3: "#B86A32",
+};
+
 interface JoPlayerRowProps {
   name: string;
   /** Nom de l'avatar quand la ligne porte une phrase plutôt qu'un pseudonyme. */
@@ -48,7 +54,7 @@ export function JoPlayerRow({
           backgroundColor: pressed
             ? colors.hover
             : highlight
-              ? colors.accentSoft
+              ? colors.warm
               : "transparent",
           borderBottomWidth: last ? 0 : 1,
           borderBottomColor: colors.border,
@@ -59,7 +65,10 @@ export function JoPlayerRow({
         <AppText
           variant="numeric"
           weight="semibold"
-          style={[styles.rank, rank <= 3 && { color: colors.accentInk }]}
+          style={[
+            styles.rank,
+            { color: RANK_COLOR[rank] ?? colors.secondaryLabel },
+          ]}
         >
           {rank}
         </AppText>
@@ -117,7 +126,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 2,
   },
-  rank: { width: 28, textAlign: "center" },
+  rank: { width: 28, fontSize: 16, lineHeight: 24, textAlign: "center" },
   copy: { flex: 1, minWidth: 0 },
   trailing: { flexDirection: "row", alignItems: "center", gap: 4 },
 });

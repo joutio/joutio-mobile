@@ -1,5 +1,5 @@
-import { useEffect } from "react";
-import { ActivityIndicator, StyleSheet, View } from "react-native";
+import { useEffect, useMemo } from "react";
+import { Pressable, StyleSheet, View } from "react-native";
 import { Image } from "expo-image";
 import { StatusBar } from "expo-status-bar";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -28,7 +28,8 @@ import { JoIconButton } from "@/ui/jo/jo-icon-button";
 import { JoCategoryIcon } from "@/ui/jo/jo-category-icon";
 import { AppText } from "@/ui/text";
 import { EASE, riseIn } from "@/ui/motion";
-import { tierLabel } from "@/ui/tokens";
+import { JoLoading } from "@/ui/jo/jo-loading";
+import { tierHex, tierLabel } from "@/ui/tokens";
 import { DarkTheme } from "@/ui/theme";
 import {
   useCancelMatchmaking,
@@ -38,7 +39,8 @@ import {
 import { useCreateRoom, useStartBotRoom } from "./hooks/useRoom";
 import { MatchmakingMap } from "./components/matchmaking-map";
 
-const SEARCH_MS = 10_000;
+const SEARCH_S = 10;
+const SEARCH_MS = SEARCH_S * 1000;
 const FOUND_MS = 1_200;
 
 function TopicTile({ topic, size }: { topic?: TopicCardView; size: number }) {
@@ -114,16 +116,20 @@ function OpponentFound({ opponentId }: { opponentId: string }) {
           <AppText variant="caption" weight="semibold" style={styles.success}>
             Adversaire trouvé
           </AppText>
-          <AppText variant="headline" weight="semibold" numberOfLines={1}>
+          <AppText
+            variant="headline"
+            numberOfLines={1}
+            style={styles.foundName}
+          >
             {data?.pseudonym ?? "…"}
           </AppText>
-          <AppText variant="caption" style={styles.muted} numberOfLines={1}>
+          <AppText variant="footnote" style={styles.muted} numberOfLines={1}>
             {data ? `${rank}${data.country ? ` · ${data.country}` : ""}` : " "}
           </AppText>
         </View>
         <CheckCircle size={30} color="#4FB286" weight="fill" />
       </View>
-      <AppText variant="caption" style={styles.muted}>
+      <AppText variant="footnote" style={styles.muted}>
         Le duel commence
       </AppText>
     </Animated.View>
@@ -134,7 +140,7 @@ function Hint({ icon, label }: { icon: React.ReactNode; label: string }) {
   return (
     <View style={styles.hint}>
       {icon}
-      <AppText variant="caption" style={styles.muted}>
+      <AppText variant="footnote" style={styles.muted}>
         {label}
       </AppText>
     </View>
@@ -155,6 +161,22 @@ function Search() {
   const topicQuery = useTopicOverview(ticket?.topicId ?? "");
   const topic = topicQuery.data?.topic;
   const label = topic ? topicName(topic.names, me.data?.language ?? "fr") : "";
+  const opponentId =
+    ticket?.status === "COMPLETED" && !ticket.vsBot ? ticket.opponentId : null;
+  const opponent = usePlayer(opponentId ?? "").data;
+  const found = useMemo(() => {
+    if (!opponent) return null;
+    const { rating, provisional } = opponent.progression ?? {
+      rating: 0,
+      provisional: true,
+    };
+    return {
+      name: opponent.pseudonym,
+      avatarOptions: opponent.avatarOptions,
+      country: opponent.country,
+      ring: provisional ? "#313131" : tierHex(eloTier(rating)),
+    };
+  }, [opponent]);
 
   useEffect(() => {
     if (ticket?.status !== "COMPLETED" || !ticket.roomId) return;
@@ -179,7 +201,7 @@ function Search() {
         { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 16 },
       ]}
     >
-      <MatchmakingMap />
+      <MatchmakingMap found={found} />
       <View style={styles.top}>
         <View style={styles.close}>
           <JoIconButton
@@ -198,7 +220,9 @@ function Search() {
       <View style={styles.spacer} />
 
       {ticketQuery.isPending ? (
-        <ActivityIndicator color="#E8B04A" style={styles.spinner} />
+        <View style={styles.spinner}>
+          <JoLoading />
+        </View>
       ) : !ticket ? (
         <View style={styles.panel}>
           <AppText variant="headline">Recherche introuvable</AppText>
@@ -206,10 +230,12 @@ function Search() {
         </View>
       ) : searching ? (
         <View style={styles.search}>
-          <TopicTile topic={topic} size={60} />
-          <AppText variant="title2" weight="semibold" style={styles.centered}>
-            {label}
-          </AppText>
+          <View style={styles.searchHead}>
+            <TopicTile topic={topic} size={60} />
+            <AppText variant="title2" weight="semibold" style={styles.centered}>
+              {label}
+            </AppText>
+          </View>
           <View style={styles.pill}>
             <AppText variant="callout" weight="semibold" style={styles.ink}>
               Recherche d'un adversaire…
@@ -229,35 +255,44 @@ function Search() {
               label="Sans adversaire : entraînement possible"
             />
           </View>
-          <AppButton
-            label="Annuler"
-            variant="secondary"
-            size="lg"
-            fullWidth
-            loading={cancel.isPending}
+          <Pressable
+            accessibilityRole="button"
+            disabled={cancel.isPending}
             onPress={close}
-          />
+            style={({ pressed }) => [
+              styles.cancel,
+              { transform: [{ scale: pressed ? 0.98 : 1 }] },
+            ]}
+          >
+            <AppText variant="callout" weight="semibold" style={styles.white}>
+              Annuler
+            </AppText>
+          </Pressable>
         </View>
       ) : ticket.status === "COMPLETED" ? (
         ticket.opponentId && !ticket.vsBot ? (
           <OpponentFound opponentId={ticket.opponentId} />
         ) : (
-          <ActivityIndicator color="#E8B04A" style={styles.spinner} />
+          <View style={styles.spinner}>
+          <JoLoading />
+        </View>
         )
       ) : (
         <View style={styles.panel}>
           <View style={styles.panelHead}>
             <TopicTile topic={topic} size={44} />
             <View style={styles.flex}>
-              <AppText variant="headline" weight="semibold">
+              <AppText variant="headline" style={styles.foundName}>
                 {ticket.status === "EXPIRED"
                   ? "Aucun adversaire trouvé"
                   : ticket.status === "FAILED"
                     ? "Recherche impossible"
                     : "Recherche annulée"}
               </AppText>
-              <AppText variant="caption" style={styles.muted} numberOfLines={1}>
-                {label}
+              <AppText variant="footnote" style={styles.muted} numberOfLines={1}>
+                {ticket.status === "EXPIRED"
+                  ? `${label} · ${SEARCH_S} s de recherche`
+                  : label}
               </AppText>
             </View>
           </View>
@@ -269,6 +304,7 @@ function Search() {
             label="S'entraîner contre un robot"
             size="lg"
             fullWidth
+            style={styles.primary}
             icon={<Robot size={20} color="#000000" />}
             loading={startBot.isPending}
             onPress={() =>
@@ -280,7 +316,7 @@ function Search() {
               label="Relancer"
               variant="secondary"
               fullWidth
-              style={styles.flex}
+              style={styles.half}
               loading={retry.isPending}
               onPress={() => retry.mutate(ticket.topicId)}
             />
@@ -288,7 +324,7 @@ function Search() {
               label="Défier un ami"
               variant="secondary"
               fullWidth
-              style={styles.flex}
+              style={styles.half}
               loading={createRoom.isPending}
               onPress={() => createRoom.mutate(ticket.topicId)}
             />
@@ -320,7 +356,23 @@ const styles = StyleSheet.create({
   },
   spacer: { flex: 1 },
   spinner: { marginBottom: 48 },
-  search: { alignItems: "center", gap: 16 },
+  search: { alignItems: "center", gap: 16, paddingBottom: 32 },
+  searchHead: { alignItems: "center", gap: 8 },
+  cancel: {
+    alignSelf: "stretch",
+    height: 50,
+    marginTop: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#313131",
+    backgroundColor: "rgba(31,31,31,0.9)",
+  },
+  white: { color: "#FFFFFF" },
+  foundName: { fontSize: 18, lineHeight: 28, color: "#FFFFFF" },
+  primary: { height: 50 },
+  half: { flex: 1, minWidth: 0, height: 46 },
   tile: {
     borderRadius: 16,
     overflow: "hidden",
@@ -357,7 +409,7 @@ const styles = StyleSheet.create({
   hint: { flexDirection: "row", alignItems: "center", gap: 4 },
   muted: { color: "#9B9B9B" },
   success: { color: "#4FB286" },
-  foundWrap: { alignItems: "center", gap: 16 },
+  foundWrap: { alignItems: "center", gap: 16, paddingBottom: 32 },
   found: {
     alignSelf: "stretch",
     flexDirection: "row",
@@ -370,6 +422,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(24,24,24,0.92)",
   },
   panel: {
+    marginBottom: 32,
     gap: 12,
     padding: 16,
     borderRadius: 24,
