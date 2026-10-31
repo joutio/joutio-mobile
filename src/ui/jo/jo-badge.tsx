@@ -1,8 +1,8 @@
 import { StyleSheet, View } from "react-native";
 import { LockSimple } from "phosphor-react-native";
-import { SvgXml } from "react-native-svg";
+import { Image } from "expo-image";
 import { useNativeTheme } from "@/ui/theme";
-import { BADGE_SVG } from "./medal-assets";
+import { BADGE_IMAGE } from "./medal-assets";
 
 const INK: Record<string, string> = {
   FER: "#101215",
@@ -30,7 +30,12 @@ export function JoBadge({ tier, size = 56, state = "earned", icon }: JoBadgeProp
   const dimmed = state !== "earned";
   return (
     <View style={{ width: size, height, opacity: dimmed ? 0.35 : 1 }}>
-      <SvgXml xml={BADGE_SVG[key] ?? BADGE_SVG.FER} width={size} height={height} />
+      <Image
+        source={BADGE_IMAGE[key] ?? BADGE_IMAGE.FER}
+        style={{ width: size, height }}
+        contentFit="contain"
+        transition={0}
+      />
       <View style={styles.icon}>
         {icon({ size: Math.round(size * 0.3), color: INK[key] ?? INK.OR })}
       </View>

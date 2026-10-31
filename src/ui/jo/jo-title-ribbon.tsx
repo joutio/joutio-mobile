@@ -1,7 +1,7 @@
 import { StyleSheet, View } from "react-native";
-import { SvgXml } from "react-native-svg";
+import { Image } from "expo-image";
 import { AppText } from "@/ui/text";
-import { RIBBON_SVG } from "./medal-assets";
+import { RIBBON_IMAGE } from "./medal-assets";
 
 const INK: Record<string, string> = {
   FER: "#E8EAEE",
@@ -25,7 +25,12 @@ export function JoTitleRibbon({ tier, text, width = 220 }: JoTitleRibbonProps) {
   const height = Math.round((width * 56) / 220);
   return (
     <View style={{ width, height }}>
-      <SvgXml xml={RIBBON_SVG[key] ?? RIBBON_SVG.OR} width={width} height={height} />
+      <Image
+        source={RIBBON_IMAGE[key] ?? RIBBON_IMAGE.OR}
+        style={{ width, height }}
+        contentFit="contain"
+        transition={0}
+      />
       <View style={styles.label}>
         <AppText
           weight="bold"

@@ -45,9 +45,13 @@
     "zustand": "^5.0.8"
   },
   "devDependencies": {
+    "@resvg/resvg-js": "^2.6.2",
     "@types/react": "~19.3.0",
     "babel-preset-expo": "~58.0.0",
-    "typescript": "~6.0.3"
+    "d3-geo": "^3.1.1",
+    "topojson-client": "^3.1.0",
+    "typescript": "~6.0.3",
+    "world-atlas": "^2.0.2"
   },
   "scripts": {
     "start": "expo start",
@@ -55,7 +59,9 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
-    "doctor": "npx expo-doctor"
+    "doctor": "npx expo-doctor",
+    "render:medals": "node scripts/render-medals.mjs",
+    "generate:centroids": "node scripts/generate-country-centroids.mjs"
   },
   "private": true
 }
