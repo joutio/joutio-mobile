@@ -6,6 +6,7 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from "react-native-reanimated";
+import { EASE_POP, popIn } from "@/ui/motion";
 import Svg, { Circle } from "react-native-svg";
 import { useCountUp } from "@/shared/hooks/useCountUp";
 import { AppText } from "@/ui/text";
@@ -25,6 +26,8 @@ interface MasteryRingProps {
   size?: number;
 }
 
+const RING_MS = 1600;
+
 /** Donut de maîtrise après un duel : XP gagnée et XP restante. */
 export function MasteryRing({
   tier,
@@ -37,14 +40,14 @@ export function MasteryRing({
   const { colors } = useNativeTheme();
   const filled = Math.max(0, Math.min(100, percent)) / 100;
   const progress = useSharedValue(0);
-  const xp = useCountUp(gained, 1200);
+  const xp = useCountUp(gained, RING_MS);
   const arc = useAnimatedProps(() => ({
     strokeDashoffset: CIRCUMFERENCE * (1 - progress.value),
   }));
 
   useEffect(() => {
     progress.value = withTiming(filled, {
-      duration: 1200,
+      duration: RING_MS,
       easing: Easing.bezier(0.22, 1, 0.36, 1),
     });
   }, [filled, progress]);
@@ -104,13 +107,22 @@ export function MasteryRing({
         >
           XP gagnée
         </AppText>
-        <AppText
-          variant="numeric"
-          weight="semibold"
-          style={[styles.value, { color: colors.accentInk }]}
+        <Animated.View
+          style={{
+            animationName: popIn,
+            animationDuration: 300,
+            animationDelay: RING_MS,
+            animationTimingFunction: EASE_POP,
+          }}
         >
-          +{xp}
-        </AppText>
+          <AppText
+            variant="numeric"
+            weight="semibold"
+            style={[styles.value, { color: colors.accentInk }]}
+          >
+            +{xp}
+          </AppText>
+        </Animated.View>
       </View>
     </View>
   );

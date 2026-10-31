@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ActivityIndicator, ScrollView, StyleSheet, View } from "react-native";
+import { ScrollView, StyleSheet, View } from "react-native";
 import Animated from "react-native-reanimated";
 import { StatusBar } from "expo-status-bar";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -23,6 +23,7 @@ import { AppButton } from "@/ui/button";
 import { JoBanner } from "@/ui/jo/jo-banner";
 import { JoEloAvatar } from "@/ui/jo/jo-elo-avatar";
 import { JoIconButton } from "@/ui/jo/jo-icon-button";
+import { JoLoading } from "@/ui/jo/jo-loading";
 import { JoStat } from "@/ui/jo/jo-stat";
 import { AppText } from "@/ui/text";
 import { EASE, riseIn } from "@/ui/motion";
@@ -124,7 +125,7 @@ function Result() {
   if (resultQuery.isPending) {
     return (
       <View style={[styles.center, { backgroundColor: colors.background }]}>
-        <ActivityIndicator color={colors.accent} />
+        <JoLoading />
         <AppText variant="callout" tone="secondary">
           Chargement du résultat…
         </AppText>
@@ -273,10 +274,11 @@ function Result() {
 
         <Rise order={3}>
         <View style={styles.stats}>
-          <JoStat label="Score du match" value={result.basePoints} />
-          <JoStat label="Bonus rapidité" value={`+${result.speedBonus}`} />
+          <JoStat label="Score du match" value={result.basePoints} trend="accent" />
+          <JoStat label="Bonus rapidité" value={`+${result.speedBonus}`} trend="up" />
           <JoStat
             label="Bonus victoire"
+            trend="up"
             value={
               result.reward ? `+${result.reward.victoryBonus}` : "…"
             }
@@ -302,7 +304,7 @@ function Result() {
             remaining={progress.tierRemainingXp}
           />
         ) : (
-          <ActivityIndicator color={colors.accent} />
+          <JoLoading />
         )}
         </Rise>
 
@@ -408,7 +410,7 @@ const styles = StyleSheet.create({
   details: { alignSelf: "center" },
   content: { flexGrow: 1, justifyContent: "space-between", gap: 16, paddingHorizontal: 16 },
   heading: { alignItems: "center", gap: 4 },
-  outcome: { fontSize: 48, lineHeight: 56, letterSpacing: -1.9 },
+  outcome: { fontSize: 48, lineHeight: 48, letterSpacing: -1.92 },
   scores: { flexDirection: "row", alignItems: "center", gap: 12 },
   scoreRow: {
     flex: 1,
@@ -417,7 +419,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 12,
   },
-  score: { fontSize: 44, lineHeight: 52 },
+  score: { fontSize: 48, lineHeight: 48 },
   players: { flexDirection: "row", alignItems: "flex-start", gap: 8 },
   player: { flex: 1, minWidth: 0, alignItems: "center", gap: 4 },
   stats: { flexDirection: "row", gap: 8 },
