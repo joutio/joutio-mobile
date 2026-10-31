@@ -5,7 +5,7 @@ import { onlineManager } from "@tanstack/react-query";
 import * as Network from "expo-network";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { QueryClientProvider } from "@tanstack/react-query";
+import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
@@ -25,7 +25,7 @@ import {
 import { SessionRuntime } from "@/features/auth/components/session-runtime";
 import { JoDialogHost } from "@/ui/jo/jo-dialog-host";
 import { ToastHost } from "@/shared/components/toast-host";
-import { createQueryClient } from "@/lib/query-client";
+import { createQueryClient, persistOptions } from "@/lib/query-client";
 import { useNativeTheme } from "@/ui/theme";
 
 void SplashScreen.preventAutoHideAsync().catch(() => undefined);
@@ -91,7 +91,10 @@ export default function RootLayout() {
           preserveEdgeToEdge
         >
           <ThemeProvider value={navigationTheme}>
-          <QueryClientProvider client={queryClient}>
+          <PersistQueryClientProvider
+            client={queryClient}
+            persistOptions={persistOptions}
+          >
               <SessionRuntime />
               <Stack
                 screenOptions={{
@@ -102,7 +105,7 @@ export default function RootLayout() {
               <ToastHost />
               <JoDialogHost />
               <StatusBar style={dark ? "light" : "dark"} />
-            </QueryClientProvider>
+            </PersistQueryClientProvider>
         </ThemeProvider>
         </KeyboardProvider>
       </SafeAreaProvider>

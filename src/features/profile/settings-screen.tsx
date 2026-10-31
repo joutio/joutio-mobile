@@ -94,7 +94,7 @@ export function SettingsScreen() {
           label="Avatar"
           variant="secondary"
           size="sm"
-          onPress={() => router.push("/me/avatar")}
+          onPress={() => router.push("/(app)/avatar")}
         />
       </View>
 

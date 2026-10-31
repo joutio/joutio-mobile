@@ -1,11 +1,5 @@
 import { useState } from "react";
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  View,
-} from "react-native";
+import { FlatList, StyleSheet, View } from "react-native";
 import { Image } from "expo-image";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { CaretLeft, Check, Lightning } from "@/ui/phosphor";
@@ -31,6 +25,7 @@ import type {
 } from "@/shared/types/bff";
 import { AppButton } from "@/ui/button";
 import { JoListRow } from "@/ui/jo/jo-list-row";
+import { JoIconButton } from "@/ui/jo/jo-icon-button";
 import { JoLoading } from "@/ui/jo/jo-loading";
 import { JoPlayerRow } from "@/ui/jo/jo-player-row";
 import { JoProgressBar } from "@/ui/jo/jo-progress-bar";
@@ -115,21 +110,16 @@ export function TopicDetailScreen() {
   const language = me.data?.language ?? "fr";
 
   const back = (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel="Retour"
-      onPress={() =>
-        router.canGoBack()
-          ? router.back()
-          : router.replace(TOPICS_HREF)
-      }
-      style={({ pressed }) => [
-        styles.back,
-        { top: top + 4, opacity: pressed ? 0.7 : 1 },
-      ]}
-    >
-      <CaretLeft size={20} color="#FFFFFF" />
-    </Pressable>
+    <View style={[styles.back, { top: top + 4 }]}>
+      <JoIconButton
+        label="Retour"
+        variant="media"
+        icon={<CaretLeft size={20} color="#FFFFFF" />}
+        onPress={() =>
+          router.canGoBack() ? router.back() : router.replace(TOPICS_HREF)
+        }
+      />
+    </View>
   );
 
   if (overviewQuery.isPending) {
@@ -166,13 +156,34 @@ export function TopicDetailScreen() {
   const entries =
     leaderboardQuery.data?.pages.flatMap((page) => page.entries.content) ?? [];
   const meEntry = leaderboardQuery.data?.pages[0]?.me ?? null;
+  const boardRows = tab === "board" ? entries : [];
 
   return (
     <>
-      <ScrollView
+      <FlatList
         style={{ flex: 1, backgroundColor: colors.background }}
         contentContainerStyle={styles.scroll}
-      >
+        data={boardRows}
+        keyExtractor={(entry) => `${entry.userId}-${entry.rank}`}
+        renderItem={({ item, index }) => (
+          <View
+            style={[
+              styles.boardRow,
+              { backgroundColor: colors.surface },
+              index === 0 && styles.boardFirst,
+              index === boardRows.length - 1 && styles.boardLast,
+            ]}
+          >
+            <BoardRow
+              entry={item}
+              period={period}
+              last={index === boardRows.length - 1}
+              onPress={() => router.push(`/player/${item.userId}`)}
+            />
+          </View>
+        )}
+        ListHeaderComponent={
+        <>
         <View
           style={[
             styles.cover,
@@ -260,40 +271,35 @@ export function TopicDetailScreen() {
             <>
               <JoSegmented options={PERIODS} value={period} onChange={setPeriod} />
               {leaderboardQuery.isPending ? (
-                <ActivityIndicator color={colors.accent} style={styles.spinner} />
+                <JoLoading />
               ) : entries.length === 0 ? (
                 <AppText variant="callout" tone="secondary" style={styles.note}>
                   Le classement apparaîtra après les premiers duels.
                 </AppText>
-              ) : (
-                <>
-                  <View style={[styles.list, { backgroundColor: colors.surface }]}>
-                    {entries.map((entry, index) => (
-                      <BoardRow
-                        key={`${entry.userId}-${entry.rank}`}
-                        entry={entry}
-                        period={period}
-                        last={index === entries.length - 1}
-                        onPress={() => router.push(`/player/${entry.userId}`)}
-                      />
-                    ))}
-                  </View>
-                  {meEntry ? (
-                    <View style={[styles.list, { backgroundColor: colors.surface }]}>
-                      <BoardRow entry={meEntry} period={period} last highlight />
-                    </View>
-                  ) : null}
-                  {leaderboardQuery.hasNextPage ? (
-                    <AppButton
-                      label="Afficher plus"
-                      variant="plain"
-                      fullWidth
-                      loading={leaderboardQuery.isFetchingNextPage}
-                      onPress={() => void leaderboardQuery.fetchNextPage()}
-                    />
-                  ) : null}
-                </>
-              )}
+              ) : null}
+            </>
+          ) : null}
+        </View>
+        </>
+        }
+        ListFooterComponent={
+        <View style={styles.footer}>
+          {tab === "board" && entries.length > 0 ? (
+            <>
+              {meEntry ? (
+                <View style={[styles.list, { backgroundColor: colors.surface }]}>
+                  <BoardRow entry={meEntry} period={period} last highlight />
+                </View>
+              ) : null}
+              {leaderboardQuery.hasNextPage ? (
+                <AppButton
+                  label="Afficher plus"
+                  variant="plain"
+                  fullWidth
+                  loading={leaderboardQuery.isFetchingNextPage}
+                  onPress={() => void leaderboardQuery.fetchNextPage()}
+                />
+              ) : null}
             </>
           ) : null}
 
@@ -366,7 +372,8 @@ export function TopicDetailScreen() {
             />
           ) : null}
         </View>
-      </ScrollView>
+        }
+      />
 
       <NativePlayModeModal
         visible={playOpen}
@@ -387,6 +394,10 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   scroll: { paddingBottom: 32 },
+  footer: { gap: 16, paddingTop: 16, paddingHorizontal: 16 },
+  boardRow: { marginHorizontal: 16 },
+  boardFirst: { borderTopLeftRadius: 16, borderTopRightRadius: 16 },
+  boardLast: { borderBottomLeftRadius: 16, borderBottomRightRadius: 16 },
   manage: { flexDirection: "row", gap: 8 },
   manageButton: { flex: 1, width: undefined },
   cover: {
@@ -395,16 +406,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     overflow: "hidden",
   },
-  back: {
-    position: "absolute",
-    left: 8,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(0,0,0,0.55)",
-  },
+  back: { position: "absolute", left: 8 },
   head: { gap: 12, paddingTop: 16, paddingHorizontal: 16, paddingBottom: 12 },
   titleRow: {
     flexDirection: "row",

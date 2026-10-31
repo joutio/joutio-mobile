@@ -15,10 +15,10 @@ import {
   type AvatarConfig,
 } from "@/shared/utils/avatar";
 import { eloTier } from "@/shared/utils/elo";
-import { AppButton } from "@/ui/button";
 import { JoChip } from "@/ui/jo/jo-chip";
 import { JoEloAvatar } from "@/ui/jo/jo-elo-avatar";
 import { JoListRow } from "@/ui/jo/jo-list-row";
+import { JoModalBar } from "@/ui/jo/jo-modal-bar";
 import { JoSectionHeader } from "@/ui/jo/jo-section-header";
 import { useNativeTheme } from "@/ui/theme";
 
@@ -80,6 +80,14 @@ export function AvatarEditorScreen() {
     setConfig((previous) => ({ ...previous, [key]: value }));
 
   return (
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+    <JoModalBar
+      title="Mon avatar"
+      onCancel={() => router.back()}
+      confirm="Enregistrer"
+      confirmDisabled={save.isPending}
+      onConfirm={() => save.mutate()}
+    />
     <ScrollView
       style={{ flex: 1, backgroundColor: colors.background }}
       contentContainerStyle={styles.content}
@@ -174,14 +182,8 @@ export function AvatarEditorScreen() {
         </View>
       ) : null}
 
-      <AppButton
-        label="Enregistrer"
-        size="lg"
-        fullWidth
-        loading={save.isPending}
-        onPress={() => save.mutate()}
-      />
     </ScrollView>
+    </View>
   );
 }
 

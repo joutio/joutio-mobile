@@ -40,6 +40,7 @@ function inline(title: string): StackOptions {
       <InlineNavBar
         title={options.title ?? title}
         canGoBack={Boolean(back)}
+        backLabel={back?.title}
         actions={options.headerRight?.({ canGoBack: true })}
       />
     ),
@@ -131,7 +132,6 @@ export default function TabStack({ segment }: { segment: string }) {
       <Stack.Screen name="premium" options={inline("Premium")} />
       <Stack.Screen name="delete-account" options={inline("Suppression")} />
       <Stack.Screen name="me/edit" options={inline("Mon profil")} />
-      <Stack.Screen name="me/avatar" options={inline("Mon avatar")} />
       <Stack.Screen name="me/progression" options={inline("Progression")} />
       <Stack.Screen name="me/badges" options={inline("Badges")} />
       <Stack.Screen name="me/titles" options={inline("Titres")} />

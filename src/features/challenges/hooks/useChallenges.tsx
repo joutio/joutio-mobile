@@ -1,6 +1,10 @@
 import { useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "expo-router";
 import { useMe } from "@/features/auth/hooks/useMe";
+import { showDialog } from "@/lib/dialog";
+import { CHALLENGES_HREF } from "@/lib/navigation";
+import { Lightning } from "@/ui/phosphor";
 import { haptic } from "@/lib/haptics";
 import { queryKeys } from "@/lib/query-keys";
 import { challengesService } from "@/lib/services/challenges";
@@ -112,6 +116,7 @@ export function useCancelChallenge() {
 
 /** Défi nominatif : le quota et le doublon reviennent du BFF avec leur message. */
 export function useCreateChallenge() {
+  const router = useRouter();
   const reconcile = useReconcile();
   return useMutation({
     mutationFn: challengesService.create,
@@ -119,16 +124,38 @@ export function useCreateChallenge() {
       haptic("success");
       showToast({ title: "Défi envoyé", tone: "success" });
     },
-    onError: (error: { statusCode?: number }) =>
+    onError: (error: { statusCode?: number }) => {
+      if (error.statusCode === 429) {
+        showDialog({
+          title: "Limite de défis atteinte",
+          message:
+            "Tu as atteint ta limite de défis en attente. Termine ou annule un défi avant d'en lancer un autre.",
+          tone: "accent",
+          icon: <Lightning size={28} color="#E8B04A" weight="fill" />,
+          actions: [
+            {
+              label: "Voir mes défis",
+              variant: "primary",
+              onPress: () => router.navigate(CHALLENGES_HREF),
+            },
+            {
+              label: "Passer Premium",
+              variant: "secondary",
+              onPress: () => router.navigate("/premium"),
+            },
+            { label: "Fermer", variant: "plain" },
+          ],
+        });
+        return;
+      }
       showToast({
         title:
-          error.statusCode === 429
-            ? "Limite de défis atteinte"
-            : error.statusCode === 409
-              ? "Un défi est déjà en attente sur ce sujet"
-              : "Défi impossible, réessaie.",
+          error.statusCode === 409
+            ? "Un défi est déjà en attente sur ce sujet"
+            : "Défi impossible, réessaie.",
         tone: "danger",
-      }),
+      });
+    },
     onSettled: reconcile,
   });
 }

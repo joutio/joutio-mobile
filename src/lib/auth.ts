@@ -267,11 +267,16 @@ export function refreshAccessToken(): Promise<void> {
 }
 
 async function doRestoreSession(): Promise<SessionRestoreResult> {
-  accessToken = await getItem(ACCESS_TOKEN_KEY);
-  refreshToken = await getItem(REFRESH_TOKEN_KEY);
-  userId =
-    (await getItem(USER_ID_KEY)) ??
-    (accessToken ? decodeUserId(accessToken) : null);
+  const [storedAccess, storedRefresh, storedUser, storedExpiry] =
+    await Promise.all([
+      getItem(ACCESS_TOKEN_KEY),
+      getItem(REFRESH_TOKEN_KEY),
+      getItem(USER_ID_KEY),
+      getItem(EXPIRES_AT_KEY),
+    ]);
+  accessToken = storedAccess;
+  refreshToken = storedRefresh;
+  userId = storedUser ?? (accessToken ? decodeUserId(accessToken) : null);
 
   if (!accessToken) {
     if (refreshToken || userId) {
@@ -280,7 +285,7 @@ async function doRestoreSession(): Promise<SessionRestoreResult> {
     return { authenticated: false };
   }
 
-  const expiresAt = Number((await getItem(EXPIRES_AT_KEY)) ?? 0);
+  const expiresAt = Number(storedExpiry ?? 0);
   if (expiresAt > 0 && expiresAt * 1000 <= Date.now()) {
     if (!refreshToken) {
       await clearSession();

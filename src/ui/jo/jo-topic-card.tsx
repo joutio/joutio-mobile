@@ -1,7 +1,10 @@
 import { Image } from "expo-image";
 import { Pressable, StyleSheet, View } from "react-native";
 import { CaretRight } from "@/ui/phosphor";
+import { useQueryClient } from "@tanstack/react-query";
 import { compactNumber } from "@/lib/helpers";
+import { queryKeys } from "@/lib/query-keys";
+import { topicsService } from "@/lib/services/topics";
 import { categoryColor, categoryLabel } from "@/shared/utils/categories";
 import { topicName } from "@/shared/utils/topic-name";
 import type { Language, TopicCardView } from "@/shared/types/bff";
@@ -30,6 +33,15 @@ export function JoTopicCard({
   last = false,
 }: JoTopicCardProps) {
   const { colors } = useNativeTheme();
+  const queryClient = useQueryClient();
+  /** Dès l'appui : la fiche a souvent ses données quand la transition se termine. */
+  const prefetch = () => {
+    void queryClient.prefetchQuery({
+      queryKey: queryKeys.topics.overview(topic.topicId),
+      queryFn: () => topicsService.overview(topic.topicId),
+      staleTime: 30_000,
+    });
+  };
   const name = topicName(topic.names, language);
   const category = topic.category
     ? categoryLabel(topic.category, topic.categoryLabel ?? undefined)
@@ -61,6 +73,7 @@ export function JoTopicCard({
         accessibilityRole="button"
         accessibilityLabel={name}
         onPress={onPress}
+        onPressIn={prefetch}
         style={({ pressed }) => [
           styles.row,
           {

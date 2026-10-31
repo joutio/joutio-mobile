@@ -1,7 +1,8 @@
 import { createContext, useContext, useMemo } from "react";
 import { Platform, useColorScheme } from "react-native";
+import * as SecureStore from "expo-secure-store";
 import { create } from "zustand";
-import { getItem, setItem } from "@/lib/storage";
+import { setItem } from "@/lib/storage";
 import { palette } from "./tokens";
 
 export const ACCENT = palette.dark.accent;
@@ -15,20 +16,25 @@ interface AppearanceState {
   setAppearance: (appearance: Appearance) => void;
 }
 
+/** Lecture synchrone : sinon le premier rendu clignote dans le mauvais thème. */
+function storedAppearance(): Appearance {
+  if (Platform.OS === "web") return "system";
+  try {
+    const value = SecureStore.getItem(APPEARANCE_KEY);
+    return value === "dark" || value === "light" ? value : "system";
+  } catch {
+    return "system";
+  }
+}
+
 /** Réglages › Apparence, conservé sur l'appareil. */
 export const useAppearanceStore = create<AppearanceState>((set) => ({
-  appearance: "system",
+  appearance: storedAppearance(),
   setAppearance: (appearance) => {
     set({ appearance });
     void setItem(APPEARANCE_KEY, appearance);
   },
 }));
-
-void getItem(APPEARANCE_KEY).then((value) => {
-  if (value === "dark" || value === "light" || value === "system") {
-    useAppearanceStore.setState({ appearance: value });
-  }
-});
 
 const ForcedDark = createContext(false);
 

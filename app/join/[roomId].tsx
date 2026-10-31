@@ -19,6 +19,6 @@ export default function JoinRoomRoute() {
 
   if (!ready) return <BootScreen />;
   if (!roomId) return <Redirect href={HOME_HREF} />;
-  if (authenticated) return <Redirect href={`/(app)/room/${roomId}`} />;
+  if (authenticated) return <Redirect href={`/(app)/invite/${roomId}`} />;
   return <Redirect href="/(auth)/login" />;
 }

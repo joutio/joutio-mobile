@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { StyleSheet, View } from "react-native";
 import Animated, {
+  useReducedMotion,
   type CSSAnimationKeyframes,
 } from "react-native-reanimated";
 import Svg, { Defs, RadialGradient, Rect, Stop } from "react-native-svg";
@@ -60,7 +61,7 @@ const LATE_RISE: CSSAnimationKeyframes = {
   to: { transform: [{ translateY: 0 }], opacity: 1 },
 };
 
-function entry(name: CSSAnimationKeyframes, duration: number, delay = 0) {
+function entryStyle(name: CSSAnimationKeyframes, duration: number, delay = 0) {
   return {
     animationName: name,
     animationDuration: duration,
@@ -116,6 +117,10 @@ export function FaceOff({
   color,
   leaving,
 }: FaceOffProps) {
+  const reducedMotion = useReducedMotion();
+  const entry = (name: CSSAnimationKeyframes, duration: number, delay = 0) =>
+    reducedMotion ? undefined : entryStyle(name, duration, delay);
+
   useEffect(() => {
     const timer = setTimeout(() => haptic("medium"), 500);
     return () => clearTimeout(timer);
@@ -218,7 +223,9 @@ export function FaceOff({
       <Animated.View
         style={[
           styles.vs,
-          leaving
+          reducedMotion
+            ? undefined
+            : leaving
             ? {
                 animationName: VS_OUT,
                 animationDuration: FOLD_MS,

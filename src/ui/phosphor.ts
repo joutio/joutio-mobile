@@ -26,6 +26,7 @@ export { Cpu } from "phosphor-react-native/src/icons/Cpu";
 export { Crown } from "phosphor-react-native/src/icons/Crown";
 export { CrownSimple } from "phosphor-react-native/src/icons/CrownSimple";
 export { DotsThree } from "phosphor-react-native/src/icons/DotsThree";
+export { DotsThreeCircle } from "phosphor-react-native/src/icons/DotsThreeCircle";
 export { Export } from "phosphor-react-native/src/icons/Export";
 export { Eye } from "phosphor-react-native/src/icons/Eye";
 export { FacebookLogo } from "phosphor-react-native/src/icons/FacebookLogo";

@@ -29,6 +29,7 @@ import { AppText } from "@/ui/text";
 import { EASE, riseIn } from "@/ui/motion";
 import { DarkTheme, useNativeTheme } from "@/ui/theme";
 import { DuelReviewSheet } from "./components/duel-review-sheet";
+import { RematchOffer } from "./components/rematch-offer";
 import { MasteryRing } from "./components/mastery-ring";
 import { RoundDots } from "./components/round-dots";
 import { roundDots } from "./domain/game";
@@ -371,6 +372,13 @@ function Result() {
         avatarOptions={me.data?.avatarOptions}
         onDone={() => setUnlocks([])}
       />
+      {opponentId && !result.botGame ? (
+        <RematchOffer
+          opponentId={opponentId}
+          topicId={topicId}
+          language={me.data?.language ?? "fr"}
+        />
+      ) : null}
       {result.opponentId ? (
         <ReportPlayerSheet
           visible={reportOpen}

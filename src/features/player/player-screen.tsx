@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
-import { useLocalSearchParams } from "expo-router";
+import { Stack, useLocalSearchParams } from "expo-router";
 import { Lightning, MapPin } from "@/ui/phosphor";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { useMe } from "@/features/auth/hooks/useMe";
@@ -19,7 +19,10 @@ import { topicName } from "@/shared/utils/topic-name";
 import type { GameHistoryOutcome } from "@/shared/types/bff";
 import { AppButton } from "@/ui/button";
 import { JoEloAvatar } from "@/ui/jo/jo-elo-avatar";
-import { JoListRow } from "@/ui/jo/jo-list-row";
+import { JoIconButton } from "@/ui/jo/jo-icon-button";
+import { JoMatchRow } from "@/ui/jo/jo-match-row";
+import { JoMenu } from "@/ui/jo/jo-menu";
+import { DotsThreeCircle, Flag } from "@/ui/phosphor";
 import { JoLoading } from "@/ui/jo/jo-loading";
 import { JoPill } from "@/ui/jo/jo-pill";
 import { JoTitleRibbon } from "@/ui/jo/jo-title-ribbon";
@@ -54,6 +57,7 @@ export function PlayerScreen() {
   const toggleFollow = useToggleFollow(id);
   const [challenging, setChallenging] = useState(false);
   const [reporting, setReporting] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const myId = me.data?.userId;
   const titles = useTitles(id);
   const headToHead = useHeadToHead(myId, id);
@@ -171,19 +175,28 @@ export function PlayerScreen() {
         <View style={styles.section}>
           <JoSectionHeader title={`Tes duels contre ${data.pseudonym}`} />
           <View style={styles.stats}>
-            <JoStat label="Victoires" value={headToHead.data?.wins ?? "—"} />
+            <JoStat
+              label="Victoires"
+              value={headToHead.data?.wins ?? "—"}
+              trend="up"
+            />
             <JoStat label="Nuls" value={headToHead.data?.draws ?? "—"} />
-            <JoStat label="Défaites" value={headToHead.data?.losses ?? "—"} />
+            <JoStat
+              label="Défaites"
+              value={headToHead.data?.losses ?? "—"}
+              trend="down"
+            />
           </View>
           {recent.length > 0 ? (
             <View style={[styles.list, { backgroundColor: colors.surface }]}>
               {recent.map((game, index) => (
-                <JoListRow
+                <JoMatchRow
                   key={game.gameId}
-                  label={topicName(game.topic.names, language)}
-                  sub={OUTCOME[game.outcome] ?? "Partie"}
-                  value={`${game.myScore} · ${game.opponentScore}`}
-                  control="none"
+                  title={topicName(game.topic.names, language)}
+                  subtitle={OUTCOME[game.outcome] ?? "Partie"}
+                  topic={game.topic}
+                  outcome={game.outcome}
+                  score={`${game.myScore} · ${game.opponentScore}`}
                   last={index === recent.length - 1}
                 />
               ))}
@@ -193,13 +206,30 @@ export function PlayerScreen() {
       ) : null}
 
       {canAct ? (
-        <AppButton
-          label="Signaler ce joueur"
-          variant="plain"
-          style={styles.report}
-          onPress={() => setReporting(true)}
+        <Stack.Screen
+          options={{
+            headerRight: () => (
+              <JoIconButton
+                label="Plus d'actions"
+                icon={<DotsThreeCircle size={24} color={colors.label} />}
+                onPress={() => setMenuOpen(true)}
+              />
+            ),
+          }}
         />
       ) : null}
+      <JoMenu
+        visible={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        items={[
+          {
+            label: "Signaler",
+            destructive: true,
+            icon: <Flag size={18} color={colors.danger} />,
+            onPress: () => setReporting(true),
+          },
+        ]}
+      />
 
       <ChallengeTopicSheet
         player={challenging ? data : null}

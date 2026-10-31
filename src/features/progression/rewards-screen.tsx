@@ -110,7 +110,7 @@ export function RewardsScreen() {
             label="Modifier mon avatar"
             size="lg"
             fullWidth
-            onPress={() => router.push("/me/avatar")}
+            onPress={() => router.push("/(app)/avatar")}
           />
         </>
       )}

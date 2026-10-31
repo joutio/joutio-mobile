@@ -60,6 +60,8 @@ de question en attente du backend. Hors périmètre : mur de thème/chat.
   remplacer ces images par du SVG ou un canvas par avatar : les listes en souffrent.
 - **Icônes** : toujours via `@/ui/phosphor` (imports unitaires) ; le paquet entier pèse 3 000
   modules au démarrage. Ajouter l'icône à ce fichier.
+- **Cache** : `me`, `home` et `topics` persistés 24 h (`lib/query-client.ts`, AsyncStorage) ;
+  `queryClient.clear()` à la fin de session les purge aussi du disque.
 - **Fond et transitions** : `ThemeProvider` et `SystemUI.setBackgroundColorAsync` à la racine, sinon
   la navigation montre son fond clair derrière chaque transition. Chargements via `JoLoading`.
 - **Clavier** : `KeyboardProvider` à la racine, avec `statusBarTranslucent`,

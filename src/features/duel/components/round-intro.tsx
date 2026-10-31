@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { StyleSheet, useWindowDimensions, View } from "react-native";
 import Animated, {
+  useReducedMotion,
   type CSSAnimationKeyframes,
 } from "react-native-reanimated";
 import { haptic } from "@/lib/haptics";
@@ -54,12 +55,18 @@ function wipe(distance: number): CSSAnimationKeyframes {
   };
 }
 
-const animate = (animationName: CSSAnimationKeyframes) => ({
-  animationName,
-  animationDuration: DURATION,
-  animationTimingFunction: EASE,
-  animationFillMode: "both" as const,
-});
+function useAnimate() {
+  const reduced = useReducedMotion();
+  return (animationName: CSSAnimationKeyframes) =>
+    reduced
+      ? undefined
+      : {
+          animationName,
+          animationDuration: DURATION,
+          animationTimingFunction: EASE,
+          animationFillMode: "both" as const,
+        };
+}
 
 interface RoundIntroProps {
   round: number;
@@ -73,6 +80,7 @@ interface RoundIntroProps {
 export function RoundIntro({ round, topic, category, color, dots }: RoundIntroProps) {
   const { width } = useWindowDimensions();
   const bonus = round === ROUND_COUNT;
+  const animate = useAnimate();
 
   useEffect(() => {
     haptic(bonus ? "heavy" : "light");
