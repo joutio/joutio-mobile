@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { View } from "react-native";
-import { User } from "phosphor-react-native";
+import { User } from "@/ui/phosphor";
 import { SvgXml } from "react-native-svg";
 import {
   avatarSvg,

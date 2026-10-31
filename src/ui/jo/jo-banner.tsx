@@ -1,12 +1,12 @@
 import { StyleSheet, View } from "react-native";
 import type { ReactNode } from "react";
-import { Robot, Sword } from "phosphor-react-native";
-import { AppButton } from "@/ui/button";
+import { Info, Robot, Sword, WifiSlash } from "@/ui/phosphor";
 import { AppText } from "@/ui/text";
 import { useNativeTheme } from "@/ui/theme";
+import { JoButton } from "./jo-button";
 
 interface JoBannerProps {
-  tone?: "live" | "training" | "error";
+  tone?: "live" | "training" | "error" | "info";
   icon?: ReactNode;
   title: string;
   message?: string;
@@ -30,7 +30,8 @@ export function JoBanner({
       style={[
         styles.banner,
         {
-          backgroundColor: tone === "error" ? colors.surface : colors.warm,
+          backgroundColor:
+            tone === "error" || tone === "info" ? colors.surface : colors.warm,
           borderColor: tone === "training" ? colors.accent : colors.border,
         },
       ]}
@@ -39,24 +40,34 @@ export function JoBanner({
         icon
       ) : tone === "training" ? (
         <Robot size={24} color={colors.accent} />
+      ) : tone === "error" ? (
+        <WifiSlash size={24} color={colors.danger} />
+      ) : tone === "info" ? (
+        <Info size={24} color={colors.secondaryLabel} />
       ) : (
         <Sword size={24} color={colors.accent} weight="fill" />
       )}
       <View style={styles.copy}>
-        <AppText variant="callout" weight="semibold" numberOfLines={1}>
+        <AppText
+          variant="callout"
+          weight="semibold"
+          numberOfLines={1}
+          style={tone === "training" ? { color: colors.accentInk } : undefined}
+        >
           {title}
         </AppText>
         {message ? (
-          <AppText variant="caption" tone="secondary" numberOfLines={1}>
+          <AppText variant="footnote" tone="secondary" numberOfLines={1}>
             {message}
           </AppText>
         ) : null}
       </View>
       {action ? (
-        <AppButton
+        <JoButton
           label={action}
-          size="sm"
-          variant={tone === "error" ? "secondary" : "primary"}
+          size="S"
+          fullWidth={false}
+          variant={tone === "live" ? "primary" : "secondary"}
           onPress={onAction}
         />
       ) : null}

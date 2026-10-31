@@ -3,7 +3,7 @@ import { ActivityIndicator, ScrollView, StyleSheet, View } from "react-native";
 import Animated from "react-native-reanimated";
 import { StatusBar } from "expo-status-bar";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { CaretUp, Flag, Lightning, X } from "phosphor-react-native";
+import { CaretUp, Flag, Lightning, X } from "@/ui/phosphor";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useMe } from "@/features/auth/hooks/useMe";
@@ -250,7 +250,7 @@ function Result() {
             <AppText variant="body" weight="semibold">
               Toi
             </AppText>
-            <AppText variant="caption" tone="secondary">
+            <AppText variant="footnote" tone="secondary">
               Elo {result.progression.rating}
               {result.botGame ? " · non classé" : ""}
             </AppText>
@@ -263,7 +263,7 @@ function Result() {
             <AppText variant="body" weight="semibold" numberOfLines={1}>
               {opponentName}
             </AppText>
-            <AppText variant="caption" tone="secondary">
+            <AppText variant="footnote" tone="secondary">
               {result.botGame ? "non classé" : `Elo ${result.opponentRating}`}
             </AppText>
             <RoundDots dots={roundDots(game, opponentId)} size={10} />

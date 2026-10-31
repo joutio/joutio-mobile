@@ -5,7 +5,7 @@ import {
   CrownSimple,
   Lightning,
   Prohibit,
-} from "phosphor-react-native";
+} from "@/ui/phosphor";
 import { JoListRow } from "@/ui/jo/jo-list-row";
 import { JoPill } from "@/ui/jo/jo-pill";
 import { AppText } from "@/ui/text";

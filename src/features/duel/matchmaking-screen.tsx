@@ -9,7 +9,7 @@ import {
   Robot,
   Users,
   X,
-} from "phosphor-react-native";
+} from "@/ui/phosphor";
 import Animated from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useMe } from "@/features/auth/hooks/useMe";
@@ -25,6 +25,7 @@ import type { TopicCardView } from "@/shared/types/bff";
 import { AppButton } from "@/ui/button";
 import { JoEloAvatar } from "@/ui/jo/jo-elo-avatar";
 import { JoIconButton } from "@/ui/jo/jo-icon-button";
+import { JoCategoryIcon } from "@/ui/jo/jo-category-icon";
 import { AppText } from "@/ui/text";
 import { EASE, riseIn } from "@/ui/motion";
 import { tierLabel } from "@/ui/tokens";
@@ -60,7 +61,7 @@ function TopicTile({ topic, size }: { topic?: TopicCardView; size: number }) {
           contentFit="cover"
         />
       ) : (
-        <AppText style={{ fontSize: size / 2 }}>{topic?.emoji?.trim() || "?"}</AppText>
+        <JoCategoryIcon category={topic?.category} size={size / 2} />
       )}
     </View>
   );

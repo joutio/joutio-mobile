@@ -61,6 +61,7 @@ export interface NativeTheme {
     warm: string;
     border: string;
     glass: string;
+    shadow: string;
     scrim: string;
     danger: string;
     dangerSoft: string;
@@ -134,6 +135,7 @@ export function useNativeTheme(): NativeTheme {
         warm: p.warm,
         border: p.border,
         glass: p.glass,
+        shadow: p.shadow,
         scrim: p.scrim,
         danger: p.wrong,
         dangerSoft: dark ? "rgba(229,100,90,0.18)" : "rgba(194,67,58,0.12)",

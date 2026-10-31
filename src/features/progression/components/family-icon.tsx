@@ -13,7 +13,7 @@ import {
   Target,
   UsersThree,
   type Icon,
-} from "phosphor-react-native";
+} from "@/ui/phosphor";
 
 const ICONS: Record<string, Icon> = {
   VOLUME: Sword,

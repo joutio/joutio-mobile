@@ -9,7 +9,7 @@ import {
 import Animated from "react-native-reanimated";
 import { useNetworkState } from "expo-network";
 import { Image } from "expo-image";
-import { Lightning, UserCircleDashed, WifiSlash } from "phosphor-react-native";
+import { Lightning, UserCircleDashed, WifiSlash } from "@/ui/phosphor";
 import { StatusBar } from "expo-status-bar";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";

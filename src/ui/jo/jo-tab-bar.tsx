@@ -8,7 +8,7 @@ import {
   User,
   UsersThree,
   type Icon,
-} from "phosphor-react-native";
+} from "@/ui/phosphor";
 import { haptic } from "@/lib/haptics";
 import { AppText } from "@/ui/text";
 import { useNativeTheme } from "@/ui/theme";

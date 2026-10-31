@@ -5,7 +5,7 @@ import {
   View,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { CloudSlash } from "phosphor-react-native";
+import { CloudSlash } from "@/ui/phosphor";
 import { useMe } from "@/features/auth/hooks/useMe";
 import { useActiveGames } from "@/features/duel/hooks/useActiveGames";
 import { useHome } from "@/features/home/hooks/useHome";

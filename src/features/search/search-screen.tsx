@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, TextInput, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { useRouter } from "expo-router";
-import { ClockCounterClockwise, MagnifyingGlass } from "phosphor-react-native";
+import { ClockCounterClockwise } from "@/ui/phosphor";
+import { JoSearchField } from "@/ui/jo/jo-search-field";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQuery } from "@tanstack/react-query";
 import { useMe } from "@/features/auth/hooks/useMe";
@@ -85,25 +86,13 @@ export function SearchScreen() {
   return (
     <View style={[styles.root, { paddingTop: top + 4, backgroundColor: colors.background }]}>
       <View style={styles.bar}>
-        <View style={[styles.field, { backgroundColor: colors.raised }]}>
-          <MagnifyingGlass size={20} color={colors.secondaryLabel} />
-          <TextInput
-            value={query}
-            onChangeText={setQuery}
-            autoFocus
-            placeholder="Sujets et joueurs"
-            placeholderTextColor={colors.secondaryLabel}
-            selectionColor={colors.accent}
-            autoCapitalize="none"
-            returnKeyType="search"
-            style={[styles.input, { color: colors.label }]}
-          />
-        </View>
-        <Pressable accessibilityRole="button" hitSlop={12} onPress={() => router.back()}>
-          <AppText variant="callout" weight="semibold" style={{ color: colors.accentInk }}>
-            Annuler
-          </AppText>
-        </Pressable>
+        <JoSearchField
+          value={query}
+          onChangeText={setQuery}
+          placeholder="Sujets et joueurs"
+          autoFocus
+          onCancel={() => router.back()}
+        />
       </View>
 
       <ScrollView
@@ -194,16 +183,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 8,
   },
-  field: {
-    flex: 1,
-    height: 44,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-  },
-  input: { flex: 1, fontFamily: "Geist_400Regular", fontSize: 16 },
   content: { gap: 24, paddingHorizontal: 16, paddingTop: 8, paddingBottom: 32 },
   section: { gap: 12 },
   list: { borderRadius: 16, overflow: "hidden" },

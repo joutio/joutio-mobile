@@ -1,5 +1,5 @@
 import { StyleSheet, View } from "react-native";
-import { Check, Fire } from "phosphor-react-native";
+import { Check, Fire } from "@/ui/phosphor";
 import { AppText } from "@/ui/text";
 import { useNativeTheme } from "@/ui/theme";
 import type { WeekDay } from "../domain/streak";
@@ -34,7 +34,7 @@ export function StreakWeek({ count, hint, week }: StreakWeekProps) {
           <AppText variant="numeric" weight="semibold" style={styles.count}>
             {count} {count > 1 ? "jours" : "jour"}
           </AppText>
-          <AppText variant="caption" tone="secondary">
+          <AppText variant="footnote" tone="secondary">
             {hint}
           </AppText>
         </View>

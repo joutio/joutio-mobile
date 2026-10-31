@@ -1,5 +1,5 @@
 import { useNetworkState } from "expo-network";
-import { WifiSlash } from "phosphor-react-native";
+import { WifiSlash } from "@/ui/phosphor";
 import { View } from "react-native";
 import { JoBanner } from "@/ui/jo/jo-banner";
 import { useNativeTheme } from "@/ui/theme";

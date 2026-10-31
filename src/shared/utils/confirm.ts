@@ -1,4 +1,4 @@
-import { Alert, Platform } from "react-native";
+import { showDialog } from "@/lib/dialog";
 
 interface ConfirmOptions {
   title: string;
@@ -9,7 +9,7 @@ interface ConfirmOptions {
   onConfirm: () => void;
 }
 
-/** Confirmation native : Alert iOS/Android, confirm web (debug). */
+/** Confirmation Joutio : l'action d'abord, l'annulation en retrait. */
 export function confirmAction({
   title,
   message,
@@ -18,21 +18,17 @@ export function confirmAction({
   destructive = false,
   onConfirm,
 }: ConfirmOptions): void {
-  if (Platform.OS === "web") {
-    const confirmFn = (
-      globalThis as { confirm?: (message?: string) => boolean }
-    ).confirm;
-    const text = message ? `${title}\n\n${message}` : title;
-    if (!confirmFn || confirmFn(text)) onConfirm();
-    return;
-  }
-
-  Alert.alert(title, message, [
-    { text: cancelLabel, style: "cancel" },
-    {
-      text: confirmLabel,
-      style: destructive ? "destructive" : "default",
-      onPress: onConfirm,
-    },
-  ]);
+  showDialog({
+    title,
+    message,
+    tone: destructive ? "danger" : "neutral",
+    actions: [
+      {
+        label: confirmLabel,
+        variant: destructive ? "destructive" : "primary",
+        onPress: onConfirm,
+      },
+      { label: cancelLabel, variant: "plain" },
+    ],
+  });
 }

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import { useLocalSearchParams } from "expo-router";
-import { Lightning, MapPin } from "phosphor-react-native";
+import { Lightning, MapPin } from "@/ui/phosphor";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { useMe } from "@/features/auth/hooks/useMe";
 import { ReportPlayerSheet } from "@/features/moderation/report-player-sheet";
@@ -137,7 +137,7 @@ export function PlayerScreen() {
           {data.suspended ? <JoPill label="Compte suspendu" /> : null}
         </View>
         {presenceLabel ? (
-          <AppText variant="caption" tone="secondary">
+          <AppText variant="footnote" tone="secondary">
             {presenceLabel}
           </AppText>
         ) : null}

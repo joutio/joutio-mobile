@@ -1,8 +1,9 @@
 import { cubicBezier } from "react-native-reanimated";
 import type { CSSAnimationKeyframes } from "react-native-reanimated";
+import { motion } from "./tokens";
 
 /** Courbes et keyframes du prototype (`design/Joutio Prototype.dc.html`). */
-export const EASE = cubicBezier(0.22, 1, 0.36, 1);
+export const EASE = cubicBezier(...motion.base.easing);
 export const EASE_POP = cubicBezier(0.2, 0.9, 0.3, 1.2);
 
 export const riseIn: CSSAnimationKeyframes = {
@@ -38,4 +39,15 @@ export const lowPulse: CSSAnimationKeyframes = {
   "0%": { transform: [{ scale: 1 }] },
   "50%": { transform: [{ scale: 1.18 }] },
   "100%": { transform: [{ scale: 1 }] },
+};
+
+export const breathe: CSSAnimationKeyframes = {
+  "0%": { transform: [{ scale: 1 }], opacity: 1 },
+  "50%": { transform: [{ scale: 0.92 }], opacity: 0.6 },
+  "100%": { transform: [{ scale: 1 }], opacity: 1 },
+};
+
+export const spin: CSSAnimationKeyframes = {
+  from: { transform: [{ rotate: "0deg" }] },
+  to: { transform: [{ rotate: "360deg" }] },
 };

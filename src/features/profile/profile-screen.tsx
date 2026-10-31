@@ -11,7 +11,7 @@ import {
   MapPin,
   Medal,
   UserCircle,
-} from "phosphor-react-native";
+} from "@/ui/phosphor";
 import { useMe } from "@/features/auth/hooks/useMe";
 import { familyIcon } from "@/features/progression/components/family-icon";
 import { StreakWeek } from "@/features/progression/components/streak-week";

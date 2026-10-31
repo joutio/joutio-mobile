@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { SectionList, StyleSheet, View } from "react-native";
 import { useRouter } from "expo-router";
-import { Sword } from "phosphor-react-native";
+import { Sword } from "@/ui/phosphor";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { useMe } from "@/features/auth/hooks/useMe";
 import { queryKeys } from "@/lib/query-keys";

@@ -3,11 +3,11 @@ import {
   FlatList,
   RefreshControl,
   StyleSheet,
-  TextInput,
   View,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { MagnifyingGlass, UsersThree } from "phosphor-react-native";
+import { UsersThree } from "@/ui/phosphor";
+import { JoSearchField } from "@/ui/jo/jo-search-field";
 import { useMe } from "@/features/auth/hooks/useMe";
 import { ChallengeTopicSheet } from "@/features/challenges/components/challenge-topic-sheet";
 import type { FollowDirection } from "@/lib/services/profiles";
@@ -58,19 +58,11 @@ export function SocialScreen() {
 
   const header = (
     <View style={styles.header}>
-      <View style={[styles.search, { backgroundColor: colors.raised }]}>
-        <MagnifyingGlass size={20} color={colors.secondaryLabel} />
-        <TextInput
-          value={query}
-          onChangeText={setQuery}
-          placeholder="Chercher un joueur"
-          placeholderTextColor={colors.secondaryLabel}
-          selectionColor={colors.accent}
-          autoCapitalize="none"
-          returnKeyType="search"
-          style={[styles.input, { color: colors.label }]}
-        />
-      </View>
+      <JoSearchField
+        value={query}
+        onChangeText={setQuery}
+        placeholder="Chercher un joueur"
+      />
       <JoSegmented
         value={direction}
         onChange={setDirection}
@@ -164,15 +156,6 @@ export function SocialScreen() {
 const styles = StyleSheet.create({
   content: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 32 },
   header: { gap: 12, paddingBottom: 12 },
-  search: {
-    height: 44,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-  },
-  input: { flex: 1, fontFamily: "Geist_400Regular", fontSize: 16 },
   first: { borderTopLeftRadius: 16, borderTopRightRadius: 16 },
   last: { borderBottomLeftRadius: 16, borderBottomRightRadius: 16 },
 });

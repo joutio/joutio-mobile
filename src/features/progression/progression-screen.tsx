@@ -1,6 +1,6 @@
 import { ScrollView, StyleSheet, View } from "react-native";
 import { useRouter } from "expo-router";
-import { Crown, Medal } from "phosphor-react-native";
+import { Crown, Medal } from "@/ui/phosphor";
 import { useMe } from "@/features/auth/hooks/useMe";
 import {
   ELO_LADDER,

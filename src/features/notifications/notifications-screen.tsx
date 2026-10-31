@@ -5,7 +5,7 @@ import {
   StyleSheet,
   View,
 } from "react-native";
-import { Bell } from "phosphor-react-native";
+import { Bell } from "@/ui/phosphor";
 import { useNow } from "@/shared/hooks/useNow";
 import { AppButton } from "@/ui/button";
 import { AppCard, AppSection } from "@/ui/card";

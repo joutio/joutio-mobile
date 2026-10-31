@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import { Bell } from "phosphor-react-native";
+import { Bell } from "@/ui/phosphor";
 import { JoIconButton } from "@/ui/jo/jo-icon-button";
 import { useNativeTheme } from "@/ui/theme";
 import { useUnreadCount } from "../hooks/useNotifications";

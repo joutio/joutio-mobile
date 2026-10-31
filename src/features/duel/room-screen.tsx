@@ -8,7 +8,7 @@ import {
 } from "react-native";
 import * as Clipboard from "expo-clipboard";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { Copy, Export, UserPlus } from "phosphor-react-native";
+import { Copy, Export, UserPlus } from "@/ui/phosphor";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useMe } from "@/features/auth/hooks/useMe";
 import { useSessionStore } from "@/features/auth/session-store";
@@ -233,7 +233,7 @@ export function RoomScreen() {
             <>
               <View style={[styles.card, { backgroundColor: colors.surface }]}>
                 <AppText
-                  variant="caption"
+                  variant="footnote"
                   tone="secondary"
                   numberOfLines={1}
                   style={styles.mono}
@@ -301,7 +301,7 @@ export function RoomScreen() {
           <View style={styles.spacer} />
           <View style={styles.footer}>
             <View style={styles.expiry}>
-              <AppText variant="caption" tone="secondary">
+              <AppText variant="footnote" tone="secondary">
                 Expire dans
               </AppText>
               <CountdownText deadline={room.expiresAt} />

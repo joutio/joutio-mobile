@@ -1,5 +1,5 @@
 import { StyleSheet, View } from "react-native";
-import { LockSimple } from "phosphor-react-native";
+import { LockSimple } from "@/ui/phosphor";
 import { Image } from "expo-image";
 import { useNativeTheme } from "@/ui/theme";
 import { BADGE_IMAGE } from "./medal-assets";

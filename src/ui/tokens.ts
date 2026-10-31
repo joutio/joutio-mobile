@@ -7,6 +7,7 @@
 
 export const palette = {
   dark: {
+    shadow: "0 16px 48px rgba(19,18,9,0.6)",
     bg: "#000000",
     canvas: "#0C0C0B",
     surface: "#181818",
@@ -26,6 +27,7 @@ export const palette = {
     scrim: "rgba(0,0,0,0.6)",
   },
   light: {
+    shadow: "0 12px 32px rgba(60,50,20,0.12)",
     bg: "#F6F5F1",
     canvas: "#DEDBD2",
     surface: "#FFFFFF",
@@ -108,6 +110,8 @@ export const space = {
   xxxl: 40,
   huge: 48,
   giant: 64,
+  colossal: 80,
+  titan: 96,
 } as const;
 
 export const radius = {
@@ -123,6 +127,7 @@ export const motion = {
   base: { duration: 500, easing: [0.22, 1, 0.36, 1] as const },
   micro: { duration: 250, easing: [0.22, 1, 0.36, 1] as const },
   exit: { duration: 300, easing: [0.55, 0, 0.85, 0.2] as const },
+  sheet: { duration: 500, stiffness: 322, damping: 31 },
   celebration: { duration: 700, easing: [0.34, 1.56, 0.64, 1] as const },
   timer: { duration: 10000, easing: "linear" as const },
 } as const;

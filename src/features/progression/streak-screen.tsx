@@ -66,7 +66,7 @@ export function StreakScreen() {
           <AppText variant="body" weight="semibold" style={styles.month}>
             {month.label}
           </AppText>
-          <AppText variant="caption" tone="secondary">
+          <AppText variant="footnote" tone="secondary">
             {month.activeCount} jours actifs
           </AppText>
         </View>

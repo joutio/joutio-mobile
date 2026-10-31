@@ -89,7 +89,7 @@ export function JoPlayerRow({
           {name}
         </AppText>
         {subtitle ? (
-          <AppText variant="caption" tone="secondary" numberOfLines={1}>
+          <AppText variant="footnote" tone="secondary" numberOfLines={1}>
             {subtitle}
           </AppText>
         ) : null}

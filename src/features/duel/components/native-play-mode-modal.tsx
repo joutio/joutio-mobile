@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { StyleSheet, View } from "react-native";
-import { GlobeHemisphereWest, Link, Robot, UserPlus } from "phosphor-react-native";
+import { GlobeHemisphereWest, Link, Robot, UserPlus } from "@/ui/phosphor";
 import { ContactPickerSheet } from "@/features/challenges/components/contact-picker-sheet";
 import { AppButton } from "@/ui/button";
 import { JoListRow } from "@/ui/jo/jo-list-row";

@@ -1,10 +1,11 @@
 import { Image } from "expo-image";
 import { Pressable, StyleSheet, View } from "react-native";
-import { CaretRight } from "phosphor-react-native";
+import { CaretRight } from "@/ui/phosphor";
 import { compactNumber } from "@/lib/helpers";
 import { categoryColor, categoryLabel } from "@/shared/utils/categories";
 import { topicName } from "@/shared/utils/topic-name";
 import type { Language, TopicCardView } from "@/shared/types/bff";
+import { JoCategoryIcon } from "@/ui/jo/jo-category-icon";
 import { AppText } from "@/ui/text";
 import { useNativeTheme } from "@/ui/theme";
 
@@ -49,7 +50,7 @@ export function JoTopicCard({
           transition={150}
         />
       ) : (
-        <AppText style={styles.emoji}>{topic.emoji?.trim() || "?"}</AppText>
+        <JoCategoryIcon category={topic.category} size={size === "row" ? 22 : size === "S" ? 32 : 30} />
       )}
     </>
   );
@@ -74,7 +75,7 @@ export function JoTopicCard({
           <AppText variant="body" weight="semibold" numberOfLines={1}>
             {name}
           </AppText>
-          <AppText variant="caption" tone="secondary" numberOfLines={1}>
+          <AppText variant="footnote" tone="secondary" numberOfLines={1}>
             {subtitle ?? `${category} · ${followers}`}
           </AppText>
         </View>
@@ -123,7 +124,7 @@ export function JoTopicCard({
             {category}
           </AppText>
           {size === "M" ? (
-            <AppText variant="caption" tone="secondary" numberOfLines={1}>
+            <AppText variant="footnote" tone="secondary" numberOfLines={1}>
               {compactNumber(topic.followersCount)}
             </AppText>
           ) : null}
@@ -136,7 +137,6 @@ export function JoTopicCard({
 const styles = StyleSheet.create({
   card: { borderRadius: 12, overflow: "hidden" },
   cover: { alignItems: "center", justifyContent: "center", overflow: "hidden" },
-  emoji: { fontSize: 32, lineHeight: 40 },
   body: { paddingTop: 8, paddingHorizontal: 12, paddingBottom: 12, gap: 2 },
   meta: { flexDirection: "row", justifyContent: "space-between", gap: 8 },
   category: { flexShrink: 1 },

@@ -83,7 +83,7 @@ export function ReportPlayerSheet({
           multiline
           style={[styles.input, { color: colors.label, backgroundColor: colors.raised }]}
         />
-        <AppText variant="caption" tone="secondary" style={styles.note}>
+        <AppText variant="footnote" tone="secondary" style={styles.note}>
           {name} ne saura pas que c'est toi.
         </AppText>
         <AppButton

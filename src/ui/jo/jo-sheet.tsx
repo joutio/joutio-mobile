@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   Modal,
   Pressable,
@@ -11,19 +11,25 @@ import Animated, {
   Easing,
   useAnimatedStyle,
   useSharedValue,
+  withSpring,
   withTiming,
 } from "react-native-reanimated";
-import { X } from "phosphor-react-native";
+import { scheduleOnRN } from "react-native-worklets";
+import { CaretLeft, X } from "@/ui/phosphor";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AppText } from "@/ui/text";
+import { motion } from "@/ui/tokens";
 import { useNativeTheme } from "@/ui/theme";
 import { JoIconButton } from "./jo-icon-button";
 
-const OPEN_MS = 320;
-const CLOSE_MS = 220;
+const OPEN_SPRING = {
+  stiffness: motion.sheet.stiffness,
+  damping: motion.sheet.damping,
+};
+const CLOSE_MS = motion.exit.duration;
 const DISMISS_DISTANCE = 120;
 const DISMISS_VELOCITY = 800;
-const EASING = Easing.bezier(0.22, 1, 0.36, 1);
+const EASING = Easing.bezier(...motion.exit.easing);
 
 interface JoSheetProps {
   visible: boolean;
@@ -32,6 +38,8 @@ interface JoSheetProps {
   subtitle?: string;
   action?: string;
   onAction?: () => void;
+  /** Étape précédente d'une feuille à plusieurs étapes. */
+  onBack?: () => void;
   children: ReactNode;
 }
 
@@ -46,6 +54,7 @@ export function JoSheet({
   subtitle,
   action,
   onAction,
+  onBack,
   children,
 }: JoSheetProps) {
   const { colors } = useNativeTheme();
@@ -55,14 +64,17 @@ export function JoSheet({
   const offset = useSharedValue(height);
   const veil = useSharedValue(0);
 
+  const open = () => {
+    offset.value = withSpring(0, OPEN_SPRING);
+    veil.value = withTiming(1, { duration: motion.micro.duration });
+  };
+
   useEffect(() => {
     if (visible) {
       setMounted(true);
-      offset.value = withTiming(0, { duration: OPEN_MS, easing: EASING });
-      veil.value = withTiming(1, { duration: OPEN_MS });
       return;
     }
-    offset.value = withTiming(height, { duration: CLOSE_MS });
+    offset.value = withTiming(height, { duration: CLOSE_MS, easing: EASING });
     veil.value = withTiming(0, { duration: CLOSE_MS });
     const timer = setTimeout(() => setMounted(false), CLOSE_MS);
     return () => clearTimeout(timer);
@@ -73,26 +85,30 @@ export function JoSheet({
   }));
   const veilStyle = useAnimatedStyle(() => ({ opacity: veil.value }));
 
-  const drag = Gesture.Pan()
-    .runOnJS(true)
-    .onUpdate((event) => {
-      offset.value = Math.max(0, event.translationY);
-    })
-    .onEnd((event) => {
-      if (
-        event.translationY > DISMISS_DISTANCE ||
-        event.velocityY > DISMISS_VELOCITY
-      ) {
-        onClose();
-      } else {
-        offset.value = withTiming(0, { duration: CLOSE_MS, easing: EASING });
-      }
-    });
+  const drag = useMemo(
+    () =>
+      Gesture.Pan()
+        .onUpdate((event) => {
+          offset.value = Math.max(0, event.translationY);
+        })
+        .onEnd((event) => {
+          if (
+            event.translationY > DISMISS_DISTANCE ||
+            event.velocityY > DISMISS_VELOCITY
+          ) {
+            scheduleOnRN(onClose);
+          } else {
+            offset.value = withSpring(0, OPEN_SPRING);
+          }
+        }),
+    [offset, onClose],
+  );
 
   return (
     <Modal
       visible={mounted}
       onRequestClose={onClose}
+      onShow={open}
       animationType="none"
       transparent
       statusBarTranslucent
@@ -115,7 +131,11 @@ export function JoSheet({
         <Animated.View
           style={[
             styles.sheet,
-            { backgroundColor: colors.surface, paddingBottom: bottom + 16 },
+            {
+              backgroundColor: colors.surface,
+              paddingBottom: bottom + 16,
+              boxShadow: colors.shadow,
+            },
             sheetStyle,
           ]}
         >
@@ -123,37 +143,57 @@ export function JoSheet({
             <View>
               <View style={[styles.handle, { backgroundColor: colors.border }]} />
               <View style={styles.header}>
+                <View style={styles.side}>
+                  {onBack ? (
+                    <JoIconButton
+                      label="Retour"
+                      variant="filled"
+                      icon={<CaretLeft size={20} color={colors.label} />}
+                      onPress={onBack}
+                    />
+                  ) : null}
+                </View>
                 <View style={styles.copy}>
-                  <AppText variant="title2" weight="semibold" numberOfLines={1}>
+                  <AppText variant="headline" numberOfLines={1} style={styles.title}>
                     {title}
                   </AppText>
                   {subtitle ? (
-                    <AppText variant="caption" tone="secondary" numberOfLines={1}>
+                    <AppText
+                      variant="footnote"
+                      tone="secondary"
+                      numberOfLines={1}
+                      style={styles.title}
+                    >
                       {subtitle}
                     </AppText>
                   ) : null}
                 </View>
-                {action ? (
-                  <Pressable
-                    accessibilityRole="button"
-                    onPress={onAction}
-                    hitSlop={12}
-                  >
-                    <AppText
-                      variant="callout"
-                      weight="semibold"
-                      style={{ color: colors.accentInk }}
+                <View style={[styles.side, styles.sideEnd]}>
+                  {action ? (
+                    <Pressable
+                      accessibilityRole="button"
+                      onPress={onAction}
+                      hitSlop={12}
+                      style={styles.action}
                     >
-                      {action}
-                    </AppText>
-                  </Pressable>
-                ) : (
-                  <JoIconButton
-                    label="Fermer"
-                    icon={<X size={20} color={colors.label} />}
-                    onPress={onClose}
-                  />
-                )}
+                      <AppText
+                        variant="body"
+                        weight="semibold"
+                        numberOfLines={1}
+                        style={{ color: colors.accentInk }}
+                      >
+                        {action}
+                      </AppText>
+                    </Pressable>
+                  ) : (
+                    <JoIconButton
+                      label="Fermer"
+                      variant="filled"
+                      icon={<X size={20} color={colors.label} />}
+                      onPress={onClose}
+                    />
+                  )}
+                </View>
               </View>
             </View>
           </GestureDetector>
@@ -174,18 +214,21 @@ const styles = StyleSheet.create({
   handle: {
     alignSelf: "center",
     width: 36,
-    height: 4,
+    height: 5,
     marginTop: 8,
-    borderRadius: 2,
+    borderRadius: 3,
   },
   header: {
-    minHeight: 60,
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
-    paddingVertical: 8,
-    paddingLeft: 16,
-    paddingRight: 8,
+    gap: 8,
+    paddingTop: 4,
+    paddingBottom: 4,
+    paddingHorizontal: 8,
   },
-  copy: { flex: 1, minWidth: 0 },
+  side: { flex: 1, flexDirection: "row", minWidth: 44 },
+  sideEnd: { justifyContent: "flex-end" },
+  copy: { flexShrink: 1, minWidth: 0 },
+  title: { textAlign: "center" },
+  action: { height: 44, justifyContent: "center", paddingHorizontal: 8 },
 });

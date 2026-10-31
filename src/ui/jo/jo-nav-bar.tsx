@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
-import { CaretLeft } from "phosphor-react-native";
+import { CaretLeft } from "@/ui/phosphor";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { OfflineBanner } from "@/shared/components/offline-banner";
 import { AppText } from "@/ui/text";

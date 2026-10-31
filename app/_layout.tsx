@@ -23,6 +23,7 @@ import {
   GeistMono_700Bold,
 } from "@expo-google-fonts/geist-mono";
 import { SessionRuntime } from "@/features/auth/components/session-runtime";
+import { JoDialogHost } from "@/ui/jo/jo-dialog-host";
 import { ToastHost } from "@/shared/components/toast-host";
 import { createQueryClient } from "@/lib/query-client";
 import { useNativeTheme } from "@/ui/theme";
@@ -99,6 +100,7 @@ export default function RootLayout() {
                 }}
               />
               <ToastHost />
+              <JoDialogHost />
               <StatusBar style={dark ? "light" : "dark"} />
             </QueryClientProvider>
         </ThemeProvider>

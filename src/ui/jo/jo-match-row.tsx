@@ -1,8 +1,9 @@
 import { Pressable, StyleSheet, View } from "react-native";
 import { Image } from "expo-image";
-import { Robot } from "phosphor-react-native";
+import { Robot } from "@/ui/phosphor";
 import { categoryColor } from "@/shared/utils/categories";
 import type { GameHistoryOutcome, TopicRefView } from "@/shared/types/bff";
+import { JoCategoryIcon } from "@/ui/jo/jo-category-icon";
 import { AppText } from "@/ui/text";
 import { useNativeTheme } from "@/ui/theme";
 
@@ -75,7 +76,7 @@ export function JoMatchRow({
               contentFit="cover"
             />
           ) : (
-            <AppText style={styles.emoji}>{topic.emoji?.trim() || "?"}</AppText>
+            <JoCategoryIcon category={topic.category} size={22} />
           )}
         </View>
         {bot ? (
@@ -93,7 +94,7 @@ export function JoMatchRow({
         <AppText variant="body" weight="semibold" numberOfLines={1}>
           {title}
         </AppText>
-        <AppText variant="caption" tone="secondary" numberOfLines={1}>
+        <AppText variant="footnote" tone="secondary" numberOfLines={1}>
           {subtitle}
         </AppText>
       </View>
@@ -126,7 +127,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  emoji: { fontSize: 22, lineHeight: 28 },
   bot: {
     position: "absolute",
     right: -4,

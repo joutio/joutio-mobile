@@ -1,20 +1,22 @@
 import type { ReactNode } from "react";
-import { Pressable, StyleSheet, Switch, View } from "react-native";
-import { CaretRight, CheckCircle } from "phosphor-react-native";
+import { Pressable, StyleSheet, View } from "react-native";
+import { CaretRight, CheckCircle, Circle, RadioButton } from "@/ui/phosphor";
 import { haptic } from "@/lib/haptics";
 import { AppText } from "@/ui/text";
 import { useNativeTheme } from "@/ui/theme";
+import { JoSwitch } from "./jo-switch";
 
 interface JoListRowProps {
   label: string;
   sub?: string;
   icon?: ReactNode;
   value?: string | number;
-  control?: "chevron" | "radio" | "toggle" | "none";
+  control?: "chevron" | "radio" | "check" | "toggle" | "none";
   on?: boolean;
   strong?: boolean;
   destructive?: boolean;
   last?: boolean;
+  disabled?: boolean;
   onPress?: () => void;
 }
 
@@ -29,20 +31,22 @@ export function JoListRow({
   strong = false,
   destructive = false,
   last = false,
+  disabled = false,
   onPress,
 }: JoListRowProps) {
   const { colors } = useNativeTheme();
+  const selectable =
+    control === "radio" || control === "check" || control === "toggle";
+  const SelectedIcon = control === "radio" ? RadioButton : CheckCircle;
   return (
     <Pressable
       accessibilityRole={
         control === "radio" ? "radio" : control === "toggle" ? "switch" : "button"
       }
-      accessibilityState={
-        control === "radio" || control === "toggle" ? { checked: on } : undefined
-      }
-      disabled={!onPress}
+      accessibilityState={selectable ? { checked: on, disabled } : { disabled }}
+      disabled={disabled || !onPress}
       onPress={() => {
-        if (control === "radio" || control === "toggle") haptic("selection");
+        if (selectable) haptic("selection");
         onPress?.();
       }}
       style={({ pressed }) => [
@@ -52,10 +56,11 @@ export function JoListRow({
           backgroundColor: pressed ? colors.hover : "transparent",
           borderBottomWidth: last ? 0 : 1,
           borderBottomColor: colors.border,
+          opacity: disabled ? 0.4 : 1,
         },
       ]}
     >
-      {icon}
+      {icon ? <View style={styles.icon}>{icon}</View> : null}
       <View style={styles.copy}>
         <AppText
           variant="body"
@@ -65,37 +70,31 @@ export function JoListRow({
           {label}
         </AppText>
         {sub ? (
-          <AppText variant="caption" tone="secondary">
+          <AppText variant="footnote" tone="secondary">
             {sub}
           </AppText>
         ) : null}
       </View>
-      {value !== undefined ? (
-        <AppText variant="body" tone="secondary">
-          {value}
-        </AppText>
+      {value !== undefined || (control === "chevron" && onPress) ? (
+        <View style={styles.trailing}>
+          {value !== undefined ? (
+            <AppText variant="body" tone="secondary">
+              {value}
+            </AppText>
+          ) : null}
+          {control === "chevron" && onPress ? (
+            <CaretRight size={14} color={colors.secondaryLabel} />
+          ) : null}
+        </View>
       ) : null}
-      {control === "chevron" && onPress ? (
-        <CaretRight size={14} color={colors.secondaryLabel} />
-      ) : null}
-      {control === "radio" ? (
+      {control === "radio" || control === "check" ? (
         on ? (
-          <CheckCircle size={24} color={colors.accent} weight="fill" />
+          <SelectedIcon size={24} color={colors.accent} weight="fill" />
         ) : (
-          <View style={[styles.radio, { borderColor: colors.secondaryLabel }]} />
+          <Circle size={24} color={colors.secondaryLabel} />
         )
       ) : null}
-      {control === "toggle" ? (
-        <Switch
-          value={on}
-          onValueChange={() => {
-            haptic("selection");
-            onPress?.();
-          }}
-          trackColor={{ true: colors.accent, false: colors.hover }}
-          ios_backgroundColor={colors.hover}
-        />
-      ) : null}
+      {control === "toggle" ? <JoSwitch on={on} /> : null}
     </Pressable>
   );
 }
@@ -109,5 +108,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   copy: { flex: 1, minWidth: 0 },
-  radio: { width: 20, height: 20, margin: 2, borderRadius: 10, borderWidth: 2 },
+  icon: { width: 24, alignItems: "center" },
+  trailing: { flexDirection: "row", alignItems: "center", gap: 4 },
 });

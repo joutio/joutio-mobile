@@ -1,6 +1,6 @@
+import { showDialog } from "@/lib/dialog";
 import { useEffect, useRef, useState, type ComponentRef } from "react";
 import {
-  Alert,
   Linking,
   Platform,
   Pressable,
@@ -14,7 +14,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { CaretLeft, FacebookLogo, GoogleLogo, Prohibit } from "phosphor-react-native";
+import { CaretLeft, FacebookLogo, GoogleLogo, Prohibit } from "@/ui/phosphor";
 import type { SessionEndReason } from "@/shared/types/session";
 import { isFacebookSignInAvailable } from "@/features/auth/lib/facebook";
 import { isGoogleSignInAvailable } from "@/features/auth/lib/google";
@@ -157,10 +157,11 @@ export default function LoginScreen() {
 
   const onGoogle = () => {
     if (!googleAvailable) {
-      Alert.alert(
-        "Disponible dans l'application native",
-        "La connexion Google nécessite un build natif (pas Expo Go). Utilise le code par e-mail.",
-      );
+      showDialog({
+        title: "Disponible dans l'application native",
+        message: "La connexion Google nécessite un build natif (pas Expo Go). Utilise le code par e-mail.",
+        actions: [{ label: "Compris", variant: "primary" }],
+      });
       return;
     }
     loginWithGoogle.mutate();
@@ -168,10 +169,11 @@ export default function LoginScreen() {
 
   const onFacebook = () => {
     if (!facebookAvailable) {
-      Alert.alert(
-        "Disponible dans l'application native",
-        "La connexion Facebook nécessite un build natif (pas Expo Go). Utilise le code par e-mail.",
-      );
+      showDialog({
+        title: "Disponible dans l'application native",
+        message: "La connexion Facebook nécessite un build natif (pas Expo Go). Utilise le code par e-mail.",
+        actions: [{ label: "Compris", variant: "primary" }],
+      });
       return;
     }
     loginWithFacebook.mutate();

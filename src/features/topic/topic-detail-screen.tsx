@@ -8,7 +8,7 @@ import {
 } from "react-native";
 import { Image } from "expo-image";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { CaretLeft, Check, Lightning } from "phosphor-react-native";
+import { CaretLeft, Check, Lightning } from "@/ui/phosphor";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useMe } from "@/features/auth/hooks/useMe";
 import { NativePlayModeModal } from "@/features/duel/components/native-play-mode-modal";
@@ -37,6 +37,7 @@ import { JoProgressBar } from "@/ui/jo/jo-progress-bar";
 import { JoSectionHeader } from "@/ui/jo/jo-section-header";
 import { JoSegmented } from "@/ui/jo/jo-segmented";
 import { JoStat } from "@/ui/jo/jo-stat";
+import { JoCategoryIcon } from "@/ui/jo/jo-category-icon";
 import { AppText } from "@/ui/text";
 import { tierHex } from "@/ui/tokens";
 import { useNativeTheme } from "@/ui/theme";
@@ -186,7 +187,7 @@ export function TopicDetailScreen() {
               transition={150}
             />
           ) : (
-            <AppText style={styles.emoji}>{topic.emoji?.trim() || "?"}</AppText>
+            <JoCategoryIcon category={topic.category} size={64} />
           )}
           {back}
         </View>
@@ -362,7 +363,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     overflow: "hidden",
   },
-  emoji: { fontSize: 64, lineHeight: 76 },
   back: {
     position: "absolute",
     left: 8,

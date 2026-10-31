@@ -6,7 +6,7 @@ import {
   View,
   type TextInputProps,
 } from "react-native";
-import { WarningCircle, XCircle } from "phosphor-react-native";
+import { WarningCircle, XCircle } from "@/ui/phosphor";
 import { haptic } from "@/lib/haptics";
 import { AppText } from "../text";
 import { useNativeTheme } from "../theme";

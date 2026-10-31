@@ -1,12 +1,21 @@
 import { useEffect, useRef } from "react";
 import {
   Animated,
+  Pressable,
   StyleSheet,
   View,
 } from "react-native";
-import { CheckCircle, Info, WarningCircle } from "phosphor-react-native";
+import {
+  Bell,
+  CaretRight,
+  CheckCircle,
+  Info,
+  Warning,
+  XCircle,
+} from "@/ui/phosphor";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useToastStore } from "@/lib/toast";
+import { JoEloAvatar } from "@/ui/jo/jo-elo-avatar";
 import { AppText } from "@/ui/text";
 import { useNativeTheme } from "@/ui/theme";
 
@@ -50,18 +59,26 @@ export function ToastHost() {
 
   if (!current) return null;
 
-  const color =
-    current.tone === "danger"
-      ? theme.colors.danger
-      : current.tone === "success"
-        ? theme.colors.success
-        : theme.colors.accent;
-  const ToneIcon =
-    current.tone === "danger"
-      ? WarningCircle
-      : current.tone === "success"
-        ? CheckCircle
-        : Info;
+  const tone = current.tone ?? "default";
+  const color = {
+    default: theme.colors.secondaryLabel,
+    success: theme.colors.success,
+    danger: theme.colors.danger,
+    warning: theme.colors.accent,
+    info: theme.colors.accentInk,
+  }[tone];
+  const neutral = tone === "default";
+  const ToneIcon = {
+    default: Bell,
+    success: CheckCircle,
+    danger: XCircle,
+    warning: Warning,
+    info: Info,
+  }[tone];
+  const press = () => {
+    current.onPress?.();
+    dismiss();
+  };
 
   return (
     <View
@@ -72,24 +89,69 @@ export function ToastHost() {
         style={[
           styles.toast,
           {
+            alignItems: current.description ? "flex-start" : "center",
             backgroundColor: theme.colors.raised,
             borderColor: theme.colors.border,
+            boxShadow: theme.colors.shadow,
             opacity,
             transform: [{ translateY }],
           },
         ]}
       >
-        <ToneIcon size={24} color={color} weight="fill" />
-        <View style={styles.copy}>
-          <AppText variant="body" weight="semibold">
+        {current.actorName ? (
+          <JoEloAvatar
+            name={current.actorName}
+            avatarOptions={current.actorAvatar}
+            tier={current.actorTier}
+            size={32}
+          />
+        ) : (
+          <View
+            style={[
+              styles.tint,
+              { backgroundColor: neutral ? theme.colors.hover : `${color}29` },
+            ]}
+          >
+            <ToneIcon size={20} color={color} weight={neutral ? "regular" : "fill"} />
+          </View>
+        )}
+        <Pressable
+          accessibilityRole={current.onPress ? "button" : undefined}
+          disabled={!current.onPress || !!current.action}
+          onPress={press}
+          style={styles.copy}
+        >
+          <AppText
+            variant="body"
+            weight="semibold"
+            style={neutral ? undefined : { color }}
+          >
             {current.title}
           </AppText>
           {current.description ? (
-            <AppText variant="callout" tone="secondary">
+            <AppText variant="callout" weight="regular" tone="secondary">
               {current.description}
             </AppText>
           ) : null}
-        </View>
+        </Pressable>
+        {current.action ? (
+          <Pressable
+            accessibilityRole="button"
+            onPress={press}
+            hitSlop={8}
+            style={styles.action}
+          >
+            <AppText
+              variant="callout"
+              weight="semibold"
+              style={{ color: theme.colors.accentInk }}
+            >
+              {current.action}
+            </AppText>
+          </Pressable>
+        ) : current.onPress ? (
+          <CaretRight size={16} color={theme.colors.secondaryLabel} />
+        ) : null}
       </Animated.View>
     </View>
   );
@@ -107,13 +169,24 @@ const styles = StyleSheet.create({
     width: "100%",
     maxWidth: 358,
     flexDirection: "row",
-    alignItems: "center",
     gap: 12,
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 16,
     borderWidth: 1,
-    elevation: 6,
+  },
+  tint: {
+    width: 32,
+    height: 32,
+    borderRadius: 9999,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  action: {
+    height: 36,
+    justifyContent: "center",
+    paddingLeft: 8,
+    paddingRight: 4,
   },
   copy: { flex: 1, minWidth: 0, gap: 2 },
 });

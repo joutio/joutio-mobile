@@ -11,6 +11,7 @@ interface JoIconButtonProps {
   dot?: boolean;
   /** Compteur ambre, prioritaire sur `dot`. */
   count?: number;
+  variant?: "plain" | "filled" | "media" | "accent";
 }
 
 /** Bouton icône 44 px, variante `plain` du design system. */
@@ -20,14 +21,30 @@ export function JoIconButton({
   onPress,
   dot = false,
   count = 0,
+  variant = "plain",
 }: JoIconButtonProps) {
   const { colors } = useNativeTheme();
+  const plain = variant === "plain";
+  const fill = {
+    plain: "transparent",
+    filled: colors.raised,
+    media: "rgba(0,0,0,0.55)",
+    accent: colors.accent,
+  };
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
       onPress={onPress}
-      style={({ pressed }) => [styles.button, { opacity: pressed ? 0.5 : 1 }]}
+      style={({ pressed }) => [
+        styles.button,
+        {
+          backgroundColor:
+            pressed && variant === "filled" ? colors.hover : fill[variant],
+          opacity: pressed && plain ? 0.5 : 1,
+          transform: [{ scale: pressed && !plain ? 0.94 : 1 }],
+        },
+      ]}
     >
       {icon}
       {count > 0 ? (

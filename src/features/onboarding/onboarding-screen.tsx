@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import { useRouter } from "expo-router";
-import { Lightning, Robot, Timer } from "phosphor-react-native";
+import { Lightning, Robot, Timer } from "@/ui/phosphor";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMe } from "@/features/auth/hooks/useMe";

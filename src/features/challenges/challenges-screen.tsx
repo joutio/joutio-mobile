@@ -6,7 +6,7 @@ import {
   View,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { Lightning, X } from "phosphor-react-native";
+import { Lightning, X } from "@/ui/phosphor";
 import { useMe } from "@/features/auth/hooks/useMe";
 import { showToast } from "@/lib/toast";
 import { topicName } from "@/shared/utils/topic-name";

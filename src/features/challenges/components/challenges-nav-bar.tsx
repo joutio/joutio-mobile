@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import { Plus } from "phosphor-react-native";
+import { Plus } from "@/ui/phosphor";
 import { NotificationBell } from "@/features/notifications/components/notification-bell";
 import { JoIconButton } from "@/ui/jo/jo-icon-button";
 import { JoNavBar } from "@/ui/jo/jo-nav-bar";

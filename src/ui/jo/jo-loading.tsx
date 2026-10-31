@@ -1,24 +1,29 @@
-import { ActivityIndicator, StyleSheet } from "react-native";
+import { StyleSheet } from "react-native";
 import Animated from "react-native-reanimated";
-import { useNativeTheme } from "@/ui/theme";
-import { riseIn } from "@/ui/motion";
+import { cubicBezier } from "react-native-reanimated";
+import { JoutioMark } from "@/ui/logo";
+import { breathe } from "@/ui/motion";
 
-/** Chargement retardé : rien ne clignote quand les données arrivent vite. */
+const BREATHE_EASE = cubicBezier(0.4, 0, 0.6, 1);
+
+/** Logo respirant de la maquette, retardé pour ne pas clignoter quand les données arrivent vite. */
 export function JoLoading() {
-  const { colors } = useNativeTheme();
   return (
     <Animated.View
+      accessibilityLabel="Chargement"
       style={[
         styles.root,
         {
-          animationName: riseIn,
-          animationDuration: 200,
-          animationDelay: 300,
-          animationFillMode: "both",
+          animationName: breathe,
+          animationDuration: 1600,
+          animationDelay: 400,
+          animationIterationCount: "infinite",
+          animationTimingFunction: BREATHE_EASE,
+          animationFillMode: "backwards",
         },
       ]}
     >
-      <ActivityIndicator color={colors.accent} />
+      <JoutioMark size={64} />
     </Animated.View>
   );
 }

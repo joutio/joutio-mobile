@@ -1,5 +1,5 @@
 import { StyleSheet, View } from "react-native";
-import { Check, Lock } from "phosphor-react-native";
+import { Check, Lock } from "@/ui/phosphor";
 import {
   MASTERY_TIERS,
   masteryTierIndex,

@@ -61,7 +61,8 @@
     "typecheck": "tsc --noEmit",
     "doctor": "npx expo-doctor",
     "render:medals": "node scripts/render-medals.mjs",
-    "generate:centroids": "node scripts/generate-country-centroids.mjs"
+    "generate:centroids": "node scripts/generate-country-centroids.mjs",
+    "render:frames": "node scripts/render-rank-frames.mjs"
   },
   "private": true
 }

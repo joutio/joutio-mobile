@@ -1,5 +1,5 @@
 import { ScrollView, StyleSheet, View } from "react-native";
-import { Crown } from "phosphor-react-native";
+import { Crown } from "@/ui/phosphor";
 import { useMe } from "@/features/auth/hooks/useMe";
 import { topicName } from "@/shared/utils/topic-name";
 import { masteryTierLabel } from "@/shared/utils/mastery";
@@ -87,7 +87,7 @@ export function TitlesScreen() {
                   width={132}
                 />
                 <AppText
-                  variant="caption"
+                  variant="footnote"
                   tone="secondary"
                   numberOfLines={2}
                   style={styles.topic}

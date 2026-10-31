@@ -1,11 +1,22 @@
 import { create } from "zustand";
 
-export type ToastTone = "default" | "success" | "danger";
+export type ToastTone =
+  | "default"
+  | "success"
+  | "danger"
+  | "warning"
+  | "info";
 
 export interface ToastInput {
   title: string;
   description?: string;
   tone?: ToastTone;
+  action?: string;
+  /** Toast cliquable, ou action si `action` est défini. */
+  onPress?: () => void;
+  actorName?: string;
+  actorAvatar?: string | null;
+  actorTier?: string;
 }
 
 interface ToastState {

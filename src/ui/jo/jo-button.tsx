@@ -26,6 +26,10 @@ interface JoButtonProps {
   variant?: JoButtonVariant;
   size?: JoButtonSize;
   icon?: ReactNode;
+  /** Valeur en Geist Mono après le libellé. */
+  meta?: string;
+  /** Posé sur une surface déjà `raised` : un cran au-dessus. */
+  surface?: "default" | "raised";
   loading?: boolean;
   disabled?: boolean;
   fullWidth?: boolean;
@@ -46,6 +50,8 @@ export function JoButton({
   variant = "primary",
   size = "L",
   icon,
+  meta,
+  surface = "default",
   loading = false,
   disabled = false,
   fullWidth = true,
@@ -56,12 +62,15 @@ export function JoButton({
   const { colors } = theme;
   const dims = SIZE[size];
   const isText = variant === "tertiary" || variant === "plain";
+  const onRaised = surface === "raised";
 
   const background =
     variant === "primary"
       ? colors.accent
       : variant === "secondary" || variant === "destructiveSoft"
-        ? colors.raised
+        ? onRaised
+          ? colors.hover
+          : colors.raised
         : variant === "destructive"
           ? colors.danger
           : "transparent";
@@ -81,7 +90,9 @@ export function JoButton({
     variant === "primary"
       ? colors.accentPress
       : variant === "secondary" || variant === "destructiveSoft"
-        ? colors.hover
+        ? onRaised
+          ? colors.border
+          : colors.hover
         : background;
 
   return (
@@ -126,6 +137,11 @@ export function JoButton({
       >
         {label}
       </AppText>
+      {meta ? (
+        <AppText variant="numeric" style={[styles.meta, { color: foreground }]}>
+          {meta}
+        </AppText>
+      ) : null}
     </Pressable>
   );
 }
@@ -139,4 +155,5 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   icon: { alignItems: "center", justifyContent: "center" },
+  meta: { fontSize: 14, lineHeight: 20, fontWeight: "400", opacity: 0.65 },
 });

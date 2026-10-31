@@ -1,4 +1,4 @@
-import { Checks } from "phosphor-react-native";
+import { Checks } from "@/ui/phosphor";
 import { JoIconButton } from "@/ui/jo/jo-icon-button";
 import { useNativeTheme } from "@/ui/theme";
 import { useMarkAllNotificationsRead } from "../hooks/useNotifications";

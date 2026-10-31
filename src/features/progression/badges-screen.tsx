@@ -78,7 +78,7 @@ export function BadgesScreen() {
                 <AppText variant="body" weight="semibold">
                   {FAMILY_LABEL[family.family] ?? family.family}
                 </AppText>
-                <AppText variant="caption" tone="secondary">
+                <AppText variant="footnote" tone="secondary">
                   {next
                     ? `${last ? tierLabel(last.tier) : "Départ"} · ${next.progress} / ${next.target}`
                     : "Complète"}

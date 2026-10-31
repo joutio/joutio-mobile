@@ -10,7 +10,7 @@ import {
   UserCircle,
   UserPlus,
   Vibrate,
-} from "phosphor-react-native";
+} from "@/ui/phosphor";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLogout } from "@/features/auth/hooks/useLogout";
 import { useMe } from "@/features/auth/hooks/useMe";
@@ -86,7 +86,7 @@ export function SettingsScreen() {
           <AppText variant="body" weight="semibold" numberOfLines={1}>
             {name}
           </AppText>
-          <AppText variant="caption" tone="secondary" numberOfLines={1}>
+          <AppText variant="footnote" tone="secondary" numberOfLines={1}>
             {me.data?.email}
           </AppText>
         </View>

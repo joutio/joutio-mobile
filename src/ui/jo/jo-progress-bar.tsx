@@ -1,4 +1,7 @@
 import { StyleSheet, View } from "react-native";
+import Animated from "react-native-reanimated";
+import { EASE } from "@/ui/motion";
+import { motion } from "@/ui/tokens";
 import { AppText } from "@/ui/text";
 import { useNativeTheme } from "@/ui/theme";
 
@@ -24,18 +27,26 @@ export function JoProgressBar({ value, label, meta, color }: JoProgressBarProps)
           <AppText variant="caption" weight="semibold" numberOfLines={1}>
             {label}
           </AppText>
-          <AppText variant="caption" tone="secondary" numberOfLines={1}>
+          <AppText
+            variant="numeric"
+            tone="secondary"
+            numberOfLines={1}
+            style={styles.meta}
+          >
             {meta}
           </AppText>
         </View>
       ) : null}
       <View style={[styles.track, { backgroundColor: colors.hover }]}>
-        <View
+        <Animated.View
           style={[
             styles.fill,
             {
               width: `${percent}%`,
               backgroundColor: color ?? colors.accent,
+              transitionProperty: "width",
+              transitionDuration: motion.base.duration,
+              transitionTimingFunction: EASE,
             },
           ]}
         />
@@ -47,6 +58,7 @@ export function JoProgressBar({ value, label, meta, color }: JoProgressBarProps)
 const styles = StyleSheet.create({
   root: { gap: 8 },
   head: { flexDirection: "row", justifyContent: "space-between", gap: 8 },
+  meta: { fontSize: 12, lineHeight: 16, fontWeight: "400" },
   track: { height: 6 },
   fill: { height: "100%" },
 });

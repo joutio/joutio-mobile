@@ -4,16 +4,14 @@ import {
   FlatList,
   ScrollView,
   StyleSheet,
-  TextInput,
   useWindowDimensions,
   View,
 } from "react-native";
 import { useRouter } from "expo-router";
 import {
   ArrowsDownUp,
-  MagnifyingGlass,
   SlidersHorizontal,
-} from "phosphor-react-native";
+} from "@/ui/phosphor";
 import { useMe } from "@/features/auth/hooks/useMe";
 import { TopicFiltersSheet } from "@/features/topics/components/topic-filters-sheet";
 import { useTopicFacets, useTopicsList } from "@/features/topics/hooks/useTopics";
@@ -24,6 +22,7 @@ import {
 import { useDebounce } from "@/shared/hooks/useDebounce";
 import { AppButton } from "@/ui/button";
 import { JoChip } from "@/ui/jo/jo-chip";
+import { JoSearchField } from "@/ui/jo/jo-search-field";
 import { JoIconButton } from "@/ui/jo/jo-icon-button";
 import { JoLoading } from "@/ui/jo/jo-loading";
 import { JoTopicCard } from "@/ui/jo/jo-topic-card";
@@ -69,27 +68,20 @@ export function TopicsScreen() {
   const header = (
     <View style={styles.header}>
       <View style={styles.searchRow}>
-        <View style={[styles.search, { backgroundColor: colors.raised }]}>
-          <MagnifyingGlass size={20} color={colors.secondaryLabel} />
-          <TextInput
+        <View style={styles.search}>
+          <JoSearchField
             value={store.q}
             onChangeText={store.setQuery}
             placeholder="Chercher un sujet"
-            placeholderTextColor={colors.secondaryLabel}
-            selectionColor={colors.accent}
-            autoCapitalize="none"
-            returnKeyType="search"
-            style={[styles.searchInput, { color: colors.label }]}
           />
         </View>
-        <View style={[styles.filters, { backgroundColor: colors.raised }]}>
-          <JoIconButton
-            label="Filtres"
-            icon={<SlidersHorizontal size={20} color={colors.label} />}
-            count={activeFilters}
-            onPress={() => setFiltersOpen(true)}
-          />
-        </View>
+        <JoIconButton
+          label="Filtres"
+          variant="filled"
+          icon={<SlidersHorizontal size={20} color={colors.label} />}
+          count={activeFilters}
+          onPress={() => setFiltersOpen(true)}
+        />
       </View>
 
       <ScrollView
@@ -197,17 +189,7 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: GUTTER, paddingTop: 4, paddingBottom: 32, gap: GAP },
   header: { gap: 12 },
   searchRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  search: {
-    flex: 1,
-    height: 44,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-  },
-  searchInput: { flex: 1, fontFamily: "Geist_400Regular", fontSize: 16 },
-  filters: { borderRadius: 9999 },
+  search: { flex: 1, minWidth: 0 },
   chips: { marginHorizontal: -GUTTER },
   chipsContent: { gap: 8, paddingHorizontal: GUTTER },
   summary: {

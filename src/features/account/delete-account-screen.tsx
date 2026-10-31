@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ComponentRef } from "react";
 import { ScrollView, StyleSheet, TextInput, View } from "react-native";
 import { useRouter } from "expo-router";
-import { Warning } from "phosphor-react-native";
+import { Warning } from "@/ui/phosphor";
 import { useMutation } from "@tanstack/react-query";
 import { useLogout } from "@/features/auth/hooks/useLogout";
 import { useMe } from "@/features/auth/hooks/useMe";

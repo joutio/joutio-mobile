@@ -1,5 +1,5 @@
 import { Stack, useRouter } from "expo-router";
-import { GearSix, MagnifyingGlass } from "phosphor-react-native";
+import { GearSix, MagnifyingGlass } from "@/ui/phosphor";
 import { ChallengesNavBar } from "@/features/challenges/components/challenges-nav-bar";
 import { MarkAllReadButton } from "@/features/notifications/components/mark-all-read-button";
 import { NotificationBell } from "@/features/notifications/components/notification-bell";
