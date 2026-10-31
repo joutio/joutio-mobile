@@ -1,3 +1,9 @@
+## [1.1.2](https://github.com/joutio/joutio-mobile/compare/v1.1.1...v1.1.2) (2026-10-31)
+
+### Bug Fixes
+
+* **auth:** détecter Expo Go avec executionEnvironment ([1682b46](https://github.com/joutio/joutio-mobile/commit/1682b46553c2085b24fb777ffbda9f35f2603e85))
+
 ## [1.1.1](https://github.com/joutio/joutio-mobile/compare/v1.1.0...v1.1.1) (2026-10-31)
 
 ### Bug Fixes
