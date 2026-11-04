@@ -1,3 +1,9 @@
+## [1.2.1](https://github.com/joutio/joutio-mobile-expo/compare/v1.2.0...v1.2.1) (2026-11-04)
+
+### Bug Fixes
+
+* visible refresh indicator and steady title on parallax screens ([2f04663](https://github.com/joutio/joutio-mobile-expo/commit/2f04663a6ff7dc99886c99d34e041b05ae1c6516))
+
 ## [1.2.0](https://github.com/joutio/joutio-mobile-expo/compare/v1.1.0...v1.2.0) (2026-11-04)
 
 ### Features
