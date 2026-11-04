@@ -1,7 +1,8 @@
-import { useState, type ReactNode } from 'react'
+import { useState, type ReactNode, type Ref } from 'react'
 import { Platform, Pressable, type PressableProps, type StyleProp, type ViewStyle } from 'react-native'
 import Animated, { Easing, ReduceMotion, useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated'
 import { haptic as playHaptic, type HapticName } from '../haptics'
+import type { ViewRef } from '../a11y'
 import { useReducedMotion } from '../motion'
 import { alpha } from '../theme/color'
 import { useTheme } from '../theme/theme-provider'
@@ -26,6 +27,8 @@ export interface PressableScaleProps extends Omit<PressableProps, 'style' | 'chi
   forcePressed?: boolean
   /** Ligne de liste : ripple Material sur Android, à la place du fond pressé. */
   ripple?: boolean
+  /** Cible du focus du lecteur d'écran (menu, feuille). */
+  ref?: Ref<ViewRef>
   style?: StyleProp<ViewStyle> | ((state: { pressed: boolean }) => StyleProp<ViewStyle>)
   children?: ReactNode | ((state: { pressed: boolean }) => ReactNode)
 }
@@ -36,6 +39,7 @@ export function PressableScale({
   haptic,
   forcePressed = false,
   ripple = false,
+  ref,
   style,
   children,
   onPressIn,
@@ -56,6 +60,7 @@ export function PressableScale({
   const resolvedStyle = typeof style === 'function' ? style({ pressed }) : style
   return (
     <AnimatedPressable
+      ref={ref}
       {...props}
       disabled={disabled}
       android_ripple={nativeRipple ? { color: alpha(colors.text, 0.12) } : props.android_ripple}

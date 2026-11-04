@@ -11,6 +11,8 @@ import {
   MobileSheet,
   SheetHeader,
   Toast,
+  TrashIcon,
+  WarningIcon,
   toast,
   tokens,
   useTheme,
@@ -144,19 +146,21 @@ export function MenuDemo() {
     <>
       <Specimen label="Menu de tri (choix coché)" row>
         <Menu title="Trier par" items={SORTS.map((label) => ({ label, checked: label === sort, onPress: () => setSort(label) }))}>
-          <Button variant="gray" tone="neutral" size="M">
-            {`Trier : ${sort}`}
-          </Button>
+          {(open) => (
+            <Button variant="gray" tone="neutral" size="M" onPress={open}>
+              {`Trier : ${sort}`}
+            </Button>
+          )}
         </Menu>
       </Specimen>
       <Specimen label="Menu d'actions, groupe destructif" row>
         <Menu
           items={[
-            { label: 'Signaler', systemImage: { ios: 'exclamationmark.bubble' } },
-            { label: 'Supprimer', systemImage: { ios: 'trash' }, destructive: true, separated: true },
+            { label: 'Signaler', icon: WarningIcon },
+            { label: 'Supprimer', icon: TrashIcon, destructive: true, separated: true },
           ]}
         >
-          <IconButton icon={DotsThreeIcon} label="Plus d'actions" variant="gray" />
+          {(open) => <IconButton icon={DotsThreeIcon} label="Plus d'actions" variant="gray" onPress={open} />}
         </Menu>
       </Specimen>
     </>

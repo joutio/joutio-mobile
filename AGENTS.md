@@ -34,7 +34,8 @@ Décisions :
   - En-têtes : `native-stack` via `nativeHeaderOptions(theme)` (+ `largeTitleOptions` sur une racine) ; `Screen`
     en mode `nativeHeader`. `MobileTopBar` ne sert plus qu'aux cas sans en-tête natif.
   - `Switch` système ; `Segmented` natif (SwiftUI / Material 3) sauf `scrollable` (barre d'onglets maison, à
-    indicateur glissant) ; `Menu` sur `@expo/ui` (SwiftUI `Menu`, Compose `DropdownMenu`) ; `Dialog` = alerte
+    indicateur glissant) ; `Menu` Joutio identique sur iOS et Android (le `DropdownMenu` Compose de `@expo/ui` ne
+    s'ouvrait pas sur Android), ancré, en ressort, placé dessus ou dessous ; `Dialog` = alerte
     système (`showDialog`) ; poignée native des feuilles.
   - Précision : filets `HAIRLINE`, `inputStyle` (pas d'interlignage sur un `TextInput`), Dynamic Type plafonné à
     ×1,6, ressort au relâchement, ripple Android sur les lignes.

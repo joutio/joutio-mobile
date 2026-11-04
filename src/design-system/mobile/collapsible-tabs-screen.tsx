@@ -9,7 +9,7 @@ import {
   type TabBarRenderProps,
   type TabChangeEvent,
 } from 'react-native-collapsible-tab'
-import Animated, { useAnimatedStyle, useDerivedValue } from 'react-native-reanimated'
+import Animated, { useAnimatedStyle, useDerivedValue, useSharedValue } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useReducedMotion } from '../motion'
 import { Segmented } from '../primitives/segmented'
@@ -71,9 +71,12 @@ function Header({ image, title, eyebrow, centered, back = true, onBack, right, i
 
   const barHeight = insets.top + TOP_BAR_HEIGHT
   // Courbes partagées avec ParallaxScreen (Parallax Header de Reacticx).
-  const progress = useDerivedValue(() => compactBarProgress(scroll.value, barHeight))
+  // Position du titre dans l'image, mesurée : la barre prend le relais au moment exact où il passe dessous.
+  const titleStart = useSharedValue(HERO_HEIGHT - barHeight)
+  const titleLength = useSharedValue(56)
+  const progress = useDerivedValue(() => compactBarProgress(scroll.value, titleStart.value, titleLength.value))
   const imageStyle = useAnimatedStyle(() => ({ transform: heroImageTransform(scroll.value, reduced) }))
-  const titleStyle = useAnimatedStyle(() => ({ opacity: heroTitleOpacity(scroll.value) }))
+  const titleStyle = useAnimatedStyle(() => ({ opacity: heroTitleOpacity(scroll.value, titleStart.value, titleLength.value) }))
   // La barre compense la translation de l'en-tête : elle reste en haut de l'écran.
   const pinned = useAnimatedStyle(() => ({ transform: [{ translateY: -top.value }] }))
   const opaque = useAnimatedStyle(() => ({ opacity: progress.value }))
@@ -106,6 +109,11 @@ function Header({ image, title, eyebrow, centered, back = true, onBack, right, i
           }}
         />
         <Animated.View
+          onLayout={(event) => {
+            const { y, height } = event.nativeEvent.layout
+            titleStart.value = y - barHeight
+            titleLength.value = height
+          }}
           style={[
             {
               position: 'absolute',

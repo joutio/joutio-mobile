@@ -22,8 +22,8 @@ import { tokens } from '../tokens.generated'
 import { TOP_BAR_HEIGHT } from './mobile-top-bar'
 import { HAIRLINE } from '../theme/hairline'
 
-/** Hauteur de la zone image, safe area comprise (400 pt, décision du 2026-11-04 : effet du Parallax Header Reacticx). */
-export const HERO_HEIGHT = 400
+/** Hauteur de la zone image, safe area comprise (`fiche-sujet.md` § 1). */
+export const HERO_HEIGHT = 320
 
 /*
  * Courbes du Parallax Header de Reacticx (rit3zh/glow-ui, MIT), reprises en Reanimated. `y` est le défilement :
@@ -41,18 +41,26 @@ export function heroImageTransform(y: number, reduced: boolean) {
   return [{ translateY: down + up }, { scale }]
 }
 
-/** Titre sur l'image : s'efface dès qu'on tire ou qu'on défile d'un tiers de l'image. */
-export function heroTitleOpacity(y: number) {
-  'worklet'
-  const h = HERO_HEIGHT
-  return interpolate(y, [-h * 0.3, 0, h * 0.3], [0, 1, 0], 'clamp')
+/**
+ * Passage du titre sous la barre compacte : il commence quand le haut du titre atteint le bas de la barre
+ * (`start` = haut du titre − hauteur de la barre) et dure la hauteur du titre (`length`). Mesuré, jamais supposé.
+ */
+export interface TitleHandoff {
+  start: number
+  length: number
 }
 
-/** Barre compacte : invisible jusqu'aux trois quarts du repli, opaque au repli complet. */
-export function compactBarProgress(y: number, barHeight: number) {
+/** Titre sur l'image : s'efface en passant sous la barre (et dès qu'on tire vers le bas). */
+export function heroTitleOpacity(y: number, start: number, length: number) {
   'worklet'
-  const range = HERO_HEIGHT - barHeight
-  return interpolate(y, [0, range * 0.75, range], [0, 0, 1], 'clamp')
+  if (y < 0) return interpolate(y, [-HERO_HEIGHT * 0.3, 0], [0, 1], 'clamp')
+  return interpolate(y, [start, start + length * 0.6], [1, 0], 'clamp')
+}
+
+/** Barre compacte (fond, titre, boutons) : apparaît pendant ce même passage, en fondu enchaîné avec le titre. */
+export function compactBarProgress(y: number, start: number, length: number) {
+  'worklet'
+  return interpolate(y, [start + length * 0.2, start + length], [0, 1], 'clamp')
 }
 
 interface ParallaxContextValue {
@@ -231,14 +239,17 @@ export function ParallaxScreen({
   const [viewport, setViewport] = useState(0)
 
   const barHeight = insets.top + TOP_BAR_HEIGHT
+  // Position du titre dans l'image, mesurée : la barre prend le relais au moment exact où il passe dessous.
+  const titleStart = useSharedValue(HERO_HEIGHT - barHeight)
+  const titleLength = useSharedValue(56)
 
   const onScroll = useAnimatedScrollHandler((event) => {
     scroll.value = event.contentOffset.y
-    progress.value = compactBarProgress(event.contentOffset.y, barHeight)
+    progress.value = compactBarProgress(event.contentOffset.y, titleStart.value, titleLength.value)
   })
 
   const imageStyle = useAnimatedStyle(() => ({ transform: heroImageTransform(scroll.value, reduced) }))
-  const titleStyle = useAnimatedStyle(() => ({ opacity: heroTitleOpacity(scroll.value) }))
+  const titleStyle = useAnimatedStyle(() => ({ opacity: heroTitleOpacity(scroll.value, titleStart.value, titleLength.value) }))
   const barStyle = useAnimatedStyle(() => ({ opacity: progress.value }))
   const statusScrim = useAnimatedStyle(() => ({ opacity: 1 - progress.value }))
 
@@ -269,6 +280,11 @@ export function ParallaxScreen({
                 ]}
               />
               <Animated.View
+                onLayout={(event) => {
+                  const { y, height } = event.nativeEvent.layout
+                  titleStart.value = y - barHeight
+                  titleLength.value = height
+                }}
                 style={[
                   {
                     position: 'absolute',

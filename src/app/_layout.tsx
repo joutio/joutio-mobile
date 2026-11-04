@@ -13,6 +13,7 @@ import { LaunchScreen, SessionRuntime, useLogout, useSessionStore } from '@/feat
 import { useMe } from '@/features/me'
 import { registerDevMenu } from '@/dev/dev-menu'
 import { config } from '@/lib/config'
+import { useEntryStore } from '@/shared/stores/entry-store'
 import { createQueryClient } from '@/lib/query-client'
 
 SplashScreen.preventAutoHideAsync().catch(() => undefined)
@@ -40,9 +41,12 @@ function Navigation() {
   const ready = useSessionStore((state) => state.ready)
   const authenticated = useSessionStore((state) => state.authenticated)
   const me = useMe(ready && authenticated)
+  // Catalogue en première page : il s'ouvre sans attendre `me` (une session cassée ne le bloque pas).
+  const entered = useEntryStore((state) => state.entered)
+  const catalogFirst = config.catalogEnabled && !entered
 
-  if (!ready || (authenticated && me.isPending)) return <LaunchScreen />
-  if (authenticated && me.isError && !me.data) return <BootError onRetry={() => void me.refetch()} />
+  if (!ready || (authenticated && me.isPending && !catalogFirst)) return <LaunchScreen />
+  if (authenticated && me.isError && !me.data && !catalogFirst) return <BootError onRetry={() => void me.refetch()} />
 
   const onboarded = me.data?.onboardingCompleted ?? false
   return (
