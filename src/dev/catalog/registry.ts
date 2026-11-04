@@ -1,0 +1,66 @@
+import type { ComponentType } from 'react'
+import { AvatarDemo, BadgeDemo, ButtonDemo, IconButtonDemo, PillDemo, SkeletonDemo } from './row1'
+import { BottomNavDemo, MobileTopBarDemo, StickyScreenDemo } from './row2'
+import { ChipDemo, FieldDemo, ListRowDemo, RadioGroupDemo, SearchFieldDemo, SegmentedDemo, SwitchDemo } from './row3'
+import { BannerDemo, DialogDemo, MenuDemo, MobileSheetDemo, SheetHeaderDemo, ToastDemo } from './row4'
+import { CategoryTileDemo, CodeInputDemo, LogoDemo, PageDotsDemo, SocialButtonDemo, SplashLogoDemo, TopicCardDemo, TopicRowDemo } from './onboarding'
+import { CollapsibleTabsScreenDemo, EmptyStateDemo, FeedFooterDemo, ParallaxScreenDemo, SectionHeaderDemo } from './row5'
+
+export interface CatalogEntry {
+  id: string
+  title: string
+  /** Rangée du socle (kit mobile § 3). */
+  row: 1 | 2 | 3 | 4 | 5 | 6
+  /** Spec de référence dans `design/specs/`. */
+  spec: string
+  Demo: ComponentType
+  /** La démo fournit son propre écran (Screen, ParallaxScreen). */
+  fullscreen?: boolean
+}
+
+export const CATALOG: CatalogEntry[] = [
+  { id: 'button', title: 'Button', row: 1, spec: 'components/button.md', Demo: ButtonDemo },
+  { id: 'icon-button', title: 'IconButton', row: 1, spec: 'components/button.md', Demo: IconButtonDemo },
+  { id: 'pill', title: 'Pill', row: 1, spec: 'components/primitives.md', Demo: PillDemo },
+  { id: 'badge', title: 'Badge', row: 1, spec: 'components/primitives.md', Demo: BadgeDemo },
+  { id: 'avatar', title: 'Avatar et RankFrame', row: 1, spec: 'components/primitives.md, marque.md', Demo: AvatarDemo },
+  { id: 'skeleton', title: 'Skeleton', row: 1, spec: 'components/primitives.md', Demo: SkeletonDemo },
+  { id: 'mobile-top-bar', title: 'MobileTopBar', row: 2, spec: 'components/navigation.md', Demo: MobileTopBarDemo },
+  { id: 'bottom-nav', title: 'BottomNav', row: 2, spec: 'components/navigation.md', Demo: BottomNavDemo },
+  { id: 'sticky-bar', title: 'Screen et StickyBar', row: 2, spec: 'foundations.md § 10', Demo: StickyScreenDemo, fullscreen: true },
+  { id: 'list-row', title: 'ListRow', row: 3, spec: 'components/formulaires.md', Demo: ListRowDemo },
+  { id: 'radio-group', title: 'RadioGroup', row: 3, spec: 'components/formulaires.md', Demo: RadioGroupDemo },
+  { id: 'switch', title: 'Switch', row: 3, spec: 'components/formulaires.md', Demo: SwitchDemo },
+  { id: 'segmented', title: 'Segmented', row: 3, spec: 'components/formulaires.md', Demo: SegmentedDemo },
+  { id: 'field', title: 'Field', row: 3, spec: 'components/formulaires.md', Demo: FieldDemo },
+  { id: 'search-field', title: 'SearchField', row: 3, spec: 'components/formulaires.md', Demo: SearchFieldDemo },
+  { id: 'chip', title: 'Chip', row: 3, spec: 'components/primitives.md', Demo: ChipDemo },
+  { id: 'mobile-sheet', title: 'MobileSheet', row: 4, spec: 'components/navigation.md', Demo: MobileSheetDemo },
+  { id: 'sheet-header', title: 'SheetHeader', row: 4, spec: 'components/navigation.md', Demo: SheetHeaderDemo },
+  { id: 'dialog', title: 'Dialog', row: 4, spec: 'components/feedback.md', Demo: DialogDemo },
+  { id: 'menu', title: 'Menu', row: 4, spec: 'components/feedback.md', Demo: MenuDemo },
+  { id: 'toast', title: 'Toast', row: 4, spec: 'components/toast.md', Demo: ToastDemo },
+  { id: 'banner', title: 'Banner', row: 4, spec: 'components/feedback.md', Demo: BannerDemo },
+  { id: 'section-header', title: 'SectionHeader', row: 5, spec: 'components/primitives.md', Demo: SectionHeaderDemo },
+  { id: 'empty-state', title: 'EmptyState', row: 5, spec: 'components/primitives.md', Demo: EmptyStateDemo },
+  { id: 'feed-footer', title: 'FeedFooter', row: 5, spec: 'components/contenu.md', Demo: FeedFooterDemo },
+  { id: 'parallax-screen', title: 'ParallaxScreen', row: 5, spec: 'screens/fiche-sujet.md', Demo: ParallaxScreenDemo, fullscreen: true },
+  { id: 'collapsible-tabs-screen', title: 'CollapsibleTabsScreen', row: 5, spec: 'screens/fiche-sujet.md', Demo: CollapsibleTabsScreenDemo, fullscreen: true },
+  { id: 'logo', title: 'Logo', row: 6, spec: 'components/marque.md', Demo: LogoDemo },
+  { id: 'splash-logo', title: 'SplashLogo', row: 6, spec: 'components/marque.md', Demo: SplashLogoDemo },
+  { id: 'social-button', title: 'SocialButton', row: 6, spec: 'components/formulaires.md', Demo: SocialButtonDemo },
+  { id: 'code-input', title: 'CodeInput', row: 6, spec: 'components/formulaires.md', Demo: CodeInputDemo },
+  { id: 'category-tile', title: 'CategoryTile', row: 6, spec: 'screens/onboarding.md', Demo: CategoryTileDemo },
+  { id: 'page-dots', title: 'PageDots', row: 6, spec: 'components/feedback.md', Demo: PageDotsDemo },
+  { id: 'topic-row', title: 'TopicRow', row: 6, spec: 'components/contenu.md', Demo: TopicRowDemo },
+  { id: 'topic-card', title: 'TopicCard', row: 6, spec: 'components/contenu.md', Demo: TopicCardDemo },
+]
+
+export const ROW_TITLES: Record<CatalogEntry['row'], string> = {
+  1: 'Primitives',
+  2: 'Structure',
+  3: 'Saisie et listes',
+  4: 'Feuilles et retours',
+  5: 'Contenu',
+  6: 'Métier : onboarding',
+}
