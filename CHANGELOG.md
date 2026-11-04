@@ -1,3 +1,9 @@
+## [1.3.0](https://github.com/joutio/joutio-mobile-expo/compare/v1.2.1...v1.3.0) (2026-11-04)
+
+### Features
+
+* stacked toasts, social sign-in and pull to refresh ([02ebe1e](https://github.com/joutio/joutio-mobile-expo/commit/02ebe1e2dea45799e41533b33f0578646d66e76a))
+
 ## [1.2.1](https://github.com/joutio/joutio-mobile-expo/compare/v1.2.0...v1.2.1) (2026-11-04)
 
 ### Bug Fixes
