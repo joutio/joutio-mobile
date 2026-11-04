@@ -1,7 +1,8 @@
 name: Android APK
 
 # APK release signée (clé joutio-preview, comme joutio-mobile) : elle s'installe par-dessus l'ancienne app.
-# Publiée en pré-release `apk-<run>` pour un test direct sur appareil. Pas encore de semantic-release.
+# Publiée dans la release `v<version du package.json>` (mise à jour à chaque build de la même version).
+# Pas encore de semantic-release : la version se change à la main dans package.json.
 on:
   push:
     branches: [main]
@@ -79,18 +80,20 @@ jobs:
         id: apk
         run: |
           VERSION=$(node -p "require('./package.json').version")
-          FILE="joutio-${VERSION}-${{ github.run_number }}.apk"
+          FILE="joutio-${VERSION}.apk"
           cp android/app/build/outputs/apk/release/app-release.apk "$FILE"
           echo "file=$FILE" >> "$GITHUB_OUTPUT"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
-      - name: Publish pre-release
+      - name: Publish release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: apk-${{ github.run_number }}
-          name: APK ${{ github.run_number }} — v${{ steps.apk.outputs.version }}
-          prerelease: true
+          tag_name: v${{ steps.apk.outputs.version }}
+          target_commitish: ${{ github.sha }}
+          name: Joutio ${{ steps.apk.outputs.version }}
+          make_latest: true
           files: ${{ steps.apk.outputs.file }}
           body: |
             APK release signée (arm64), API de production. Catalogue des composants en première page.
-            Commit : ${{ github.sha }}
+            S'installe par-dessus l'ancienne app (même clé, versionCode supérieur).
+            Build ${{ github.run_number }}, commit ${{ github.sha }}.

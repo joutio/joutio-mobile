@@ -5,12 +5,12 @@ import tokens from './src/design-system/tokens.generated.json'
 /** Identifiant définitif côté stores (joutio-mobile est archivé). */
 const APP_ID = 'com.joutio.app'
 
-const [major = 2, minor = 0, patch = 0] = packageJson.version.split('.').map((part) => Number.parseInt(part, 10) || 0)
+const [major = 1, minor = 0, patch = 0] = packageJson.version.split('.').map((part) => Number.parseInt(part, 10) || 0)
 /**
- * `versionCode` Android dérivé de la version (`major * 1e6 + minor * 1e3 + patch`) : strictement croissant, et
- * supérieur à celui de joutio-mobile (1.x), pour s'installer par-dessus l'ancienne app.
+ * `versionCode` Android : 10 000 000 + `major * 1e6 + minor * 1e3 + patch`, strictement croissant. Le décalage le
+ * place au-dessus de joutio-mobile (1.1.2 = 1 001 002) : la nouvelle app s'installe par-dessus l'ancienne.
  */
-const VERSION_CODE = Number(process.env.ANDROID_VERSION_CODE ?? major * 1_000_000 + minor * 1_000 + patch)
+const VERSION_CODE = Number(process.env.ANDROID_VERSION_CODE ?? 10_000_000 + major * 1_000_000 + minor * 1_000 + patch)
 
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
