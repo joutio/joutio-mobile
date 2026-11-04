@@ -255,7 +255,6 @@ export function HomeScreen() {
   useScrollToTop(tabsRef)
 
   const [tab, setTab] = useState<Tab>('for-you')
-  const [stuck, setStuck] = useState(false)
 
   const pseudonym = me.data?.pseudonym ?? ''
   const rating = me.data?.progression?.rating
@@ -265,21 +264,8 @@ export function HomeScreen() {
 
   const header = (
     <View style={{ minHeight: 52, flexDirection: 'row', alignItems: 'center', paddingLeft: GUTTER, paddingRight: tokens.space[3], gap: tokens.space[3] }}>
-      {/* À gauche : le logo, puis le bonjour à sa place une fois les onglets collés. */}
-      <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
-        <View style={{ opacity: stuck ? 0 : 1 }} accessibilityElementsHidden={stuck} importantForAccessibility={stuck ? 'no-hide-descendants' : 'auto'}>
-          <Logo variant="lockup" size={28} />
-        </View>
-        <View
-          accessibilityElementsHidden={!stuck}
-          importantForAccessibility={stuck ? 'auto' : 'no-hide-descendants'}
-          style={{ position: 'absolute', left: 0, right: 0, flexDirection: 'row', alignItems: 'center', gap: tokens.space[2], opacity: stuck ? 1 : 0 }}
-        >
-          <Text variant="headline" numberOfLines={1} style={{ flexShrink: 1 }}>
-            {greeting}
-          </Text>
-          {premium && <PremiumBadge size={18} />}
-        </View>
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <Logo variant="lockup" size={28} />
       </View>
       <View style={{ flexDirection: 'row', gap: tokens.space[3] }}>
         <IconButton icon={MagnifyingGlassIcon} label="Rechercher" variant="plain" tone="neutral" />
@@ -295,7 +281,8 @@ export function HomeScreen() {
         label="Contenu de l'accueil"
         value={tab}
         onChange={setTab}
-        onStuckChange={setStuck}
+        // Rien ne se colle sur l'Accueil : les onglets défilent avec le bonjour.
+        pinned={false}
         // Tiré vers le bas : tout l'Accueil se recharge (rails, profil, cloche).
         onRefresh={() => Promise.all([home.refetch(), me.refetch(), unread.refetch()])}
         header={

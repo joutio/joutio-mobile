@@ -12,6 +12,35 @@ const [major = 1, minor = 0, patch = 0] = packageJson.version.split('.').map((pa
  */
 const VERSION_CODE = Number(process.env.ANDROID_VERSION_CODE ?? 10_000_000 + major * 1_000_000 + minor * 1_000 + patch)
 
+/**
+ * Connexions sociales natives (identifiants publics, mêmes valeurs par défaut que `src/lib/config.ts`). Chaque plugin
+ * n'est ajouté que si sa connexion est active et configurée ; sinon le bouton est masqué et le natif absent.
+ */
+const GOOGLE_IOS_URL_SCHEME = process.env.EXPO_PUBLIC_GOOGLE_IOS_URL_SCHEME ?? 'com.googleusercontent.apps.13717769562-pi67m17nqa3bv9p3h01kk43d5h27i5j5'
+const FACEBOOK_APP_ID = process.env.EXPO_PUBLIC_FACEBOOK_APP_ID ?? '2122240041993058'
+const FACEBOOK_CLIENT_TOKEN = process.env.EXPO_PUBLIC_FACEBOOK_CLIENT_TOKEN ?? 'f738cf848ac1e463102db9d39f455872'
+const socialPlugins: NonNullable<ExpoConfig['plugins']> = [
+  ...(process.env.EXPO_PUBLIC_GOOGLE_SIGN_IN_ENABLED !== 'false' && GOOGLE_IOS_URL_SCHEME
+    ? [['@react-native-google-signin/google-signin', { iosUrlScheme: GOOGLE_IOS_URL_SCHEME }] as [string, object]]
+    : []),
+  ...(process.env.EXPO_PUBLIC_FACEBOOK_SIGN_IN_ENABLED !== 'false' && FACEBOOK_APP_ID && FACEBOOK_CLIENT_TOKEN
+    ? [
+        [
+          'react-native-fbsdk-next',
+          {
+            appID: FACEBOOK_APP_ID,
+            clientToken: FACEBOOK_CLIENT_TOKEN,
+            displayName: 'Joutio',
+            scheme: `fb${FACEBOOK_APP_ID}`,
+            advertiserIDCollectionEnabled: false,
+            autoLogAppEventsEnabled: false,
+            isAutoInitEnabled: true,
+          },
+        ] as [string, object],
+      ]
+    : []),
+]
+
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: 'Joutio',
@@ -55,6 +84,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     'expo-notifications',
     'expo-dev-client',
     './plugins/withAndroidReleaseSigning',
+    ...socialPlugins,
   ],
   experiments: {
     typedRoutes: true,

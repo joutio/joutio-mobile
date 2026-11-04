@@ -6,9 +6,10 @@ import { KeyboardAwareScrollView } from 'react-native-keyboard-controller'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { z } from 'zod'
 import { Button, Field, HAIRLINE, Logo, SocialButton, Text, tokens, useTheme } from '@/design-system'
-import { config } from '@/lib/config'
 import { useOnboardingStore } from '@/features/onboarding/onboarding-store'
-import { useRequestLoginCode } from '../hooks/use-login'
+import { useLoginWithFacebook, useLoginWithGoogle, useRequestLoginCode } from '../hooks/use-login'
+import { isFacebookSignInAvailable } from '../lib/facebook'
+import { isGoogleSignInAvailable } from '../lib/google'
 import { LegalNotice } from './legal-notice'
 
 const schema = z.object({ email: z.string().trim().pipe(z.email('Adresse e-mail invalide.')) })
@@ -21,7 +22,13 @@ export function LoginScreen() {
   const email = useOnboardingStore((state) => state.email)
   const setEmail = useOnboardingStore((state) => state.setEmail)
   const requestCode = useRequestLoginCode()
-  const social = config.googleSignInEnabled || config.facebookSignInEnabled
+  const google = useLoginWithGoogle()
+  const facebook = useLoginWithFacebook()
+  const googleAvailable = isGoogleSignInAvailable()
+  const facebookAvailable = isFacebookSignInAvailable()
+  const social = googleAvailable || facebookAvailable
+  const busy = google.isPending || facebook.isPending
+  const socialError = google.error?.message ?? facebook.error?.message
 
   const { control, handleSubmit, formState } = useForm<LoginForm>({ resolver: zodResolver(schema), mode: 'onChange', defaultValues: { email } })
 
@@ -53,8 +60,33 @@ export function LoginScreen() {
         <Text color="muted">Défie le monde et grimpe au classement.</Text>
       </View>
       <View style={{ gap: tokens.space[3] }}>
-        {config.googleSignInEnabled && <SocialButton provider="google" />}
-        {config.facebookSignInEnabled && <SocialButton provider="facebook" />}
+        {googleAvailable && (
+          <SocialButton
+            provider="google"
+            loading={google.isPending}
+            disabled={busy && !google.isPending}
+            onPress={() => {
+              facebook.reset()
+              google.mutate()
+            }}
+          />
+        )}
+        {facebookAvailable && (
+          <SocialButton
+            provider="facebook"
+            loading={facebook.isPending}
+            disabled={busy && !facebook.isPending}
+            onPress={() => {
+              google.reset()
+              facebook.mutate()
+            }}
+          />
+        )}
+        {socialError && (
+          <Text variant="caption" color="wrong" accessibilityLiveRegion="polite">
+            {socialError}
+          </Text>
+        )}
         {social && (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: tokens.space[4], paddingVertical: tokens.space[3] }}>
             <View style={{ flex: 1, height: HAIRLINE, backgroundColor: colors.border }} />

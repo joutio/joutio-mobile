@@ -1,4 +1,5 @@
 import { ENDPOINTS } from '@/lib/endpoints'
+import type { FacebookCredential } from './facebook'
 
 /** Session mobile retournée par identity (mêmes JWT que le flux OIDC web). */
 export interface MobileLoginResponse {
@@ -58,4 +59,25 @@ export async function loginWithCode(email: string, code: string): Promise<Mobile
   const session = (await response.json()) as MobileLoginResponse
   if (!session.accessToken || !session.refreshToken) throw new IdentityAuthError("Réponse d'authentification incomplète. Réessaie.", response.status)
   return session
+}
+
+async function readSession(response: Response): Promise<MobileLoginResponse> {
+  const session = (await response.json()) as MobileLoginResponse
+  if (!session.accessToken || !session.refreshToken) throw new IdentityAuthError("Réponse d'authentification incomplète. Réessaie.", response.status)
+  return session
+}
+
+/** Échange un ID token Google natif contre une session mobile. */
+export async function loginWithGoogle(idToken: string): Promise<MobileLoginResponse> {
+  const response = await postJson(ENDPOINTS.auth.loginWithGoogle, { idToken })
+  if (!response.ok) throw await readError(response, 'Connexion Google impossible. Réessaie.')
+  return readSession(response)
+}
+
+/** Échange une identité Facebook native contre une session mobile (iOS : ID token + nonce ; Android : access token). */
+export async function loginWithFacebook(credential: FacebookCredential): Promise<MobileLoginResponse> {
+  const body = 'idToken' in credential ? { idToken: credential.idToken, nonce: credential.nonce } : { accessToken: credential.accessToken }
+  const response = await postJson(ENDPOINTS.auth.loginWithFacebook, body)
+  if (!response.ok) throw await readError(response, 'Connexion Facebook impossible. Réessaie ou utilise le code par e-mail.')
+  return readSession(response)
 }

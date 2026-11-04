@@ -197,8 +197,34 @@ export function ToastDemo() {
         <Toast tone="info" title="Nouvelle saison" action={{ label: 'Voir' }} />
         <Toast title="Marc D. te suit" actor={{ name: 'Marc Dubois', tier: 'OR' }} onPress={() => undefined} />
       </Specimen>
-      <Button full onPress={() => toast.show({ tone: 'success', title: 'Défi envoyé à Sofia R.', description: 'Tu seras prévenu de sa réponse.' })}>
-        Afficher un toast (4 s, balayer vers le haut)
+      <Button full onPress={() => toast.success('Défi envoyé à Sofia R.', { description: 'Tu seras prévenu de sa réponse.' })}>
+        Un toast (4 s, balayer vers le haut)
+      </Button>
+      <Button
+        full
+        variant="tinted"
+        onPress={() => {
+          toast.info('Nouvelle saison', { description: 'Saison 3 : nouveaux titres à gagner.' })
+          setTimeout(() => toast.warning('Connexion instable'), 220)
+          setTimeout(() => toast.success('Marc D. te suit', { description: 'Touche la pile pour la déplier.' }), 440)
+        }}
+      >
+        Pile de trois (toucher pour déplier)
+      </Button>
+      <Button
+        full
+        variant="gray"
+        tone="neutral"
+        onPress={() =>
+          void toast.promise(new Promise((resolve) => setTimeout(resolve, 2200)), {
+            loading: 'Synchronisation…',
+            success: 'Synchronisé',
+            error: 'Échec de la synchronisation',
+            description: 'Récupération de tes derniers scores.',
+          })
+        }
+      >
+        Chargement puis succès (toast.promise)
       </Button>
     </>
   )

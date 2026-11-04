@@ -21,8 +21,13 @@ Le **catalogue** (`/catalog`, `joutio://catalog`) est réservé au dev (`__DEV__
 
 Onboarding, écarts assumés :
 
-- Google et Facebook : boutons masqués (`EXPO_PUBLIC_*_SIGN_IN_ENABLED`) tant que la configuration native n'est pas
-  reprise de `joutio-mobile` (son `AGENTS.md` § 4).
+- **Google et Facebook** (2026-11-04) : SDK natifs `@react-native-google-signin/google-signin` et
+  `react-native-fbsdk-next`, portés de `joutio-mobile` (son `AGENTS.md` § 4 : clients Google Cloud, App Meta,
+  SHA-1 et key hash de la clé `joutio-preview`). Identifiants **publics** par défaut dans `src/lib/config.ts` et
+  `app.config.ts` (plugins ajoutés seulement si la connexion est active) ; `EXPO_PUBLIC_*_SIGN_IN_ENABLED=false` les
+  masque. Google → `login-with-google` (ID token, audience = client Web) ; Facebook → `login-with-facebook` (iOS :
+  Limited Login, ID token + nonce ; Android : access token). Les secrets restent côté identity. Modules natifs : un
+  nouveau dev build est nécessaire.
 - « Découvrir le duel » termine l'onboarding comme « Explorer l'accueil » : le duel contre un bot arrive avec
   l'écran Duel.
 - `GET /api/me/onboarding/recommendations` renvoie 3 sujets au plus (le lab en attend 3 par univers) : correction BFF
@@ -167,7 +172,8 @@ sans ligne de co-auteur.
 - **Écrans toujours sombres** (duel, intros, déblocages, reconnexion) : `ForceDark`. Toasts suspendus avec
   `useToastSuppression()`.
 - **Feuilles** : `MobileSheet` (TrueSheet), ajustée au contenu jusqu'à 80 % ou `tall` à 92 %. Les actions
-  (`footer`) sont **collées en bas** (`footerOptions.position: 'absolute'`), le contenu défile dessous. Une étape
+  (`footer`) sont **collées en bas** dans leur propre zone (pied `relative`), comme l'en-tête : le contenu défile entre les deux,
+  jamais sous le bouton. Android : `dismissThreshold="short"`. Une étape
   suivante s'empile dans une nouvelle feuille.
 - **Défilement collé** : `StickyBar` + `stickyHeaderIndices` et `useStickyBar()` ; sous une barre compacte
   (`ParallaxScreen`), collage par Reanimated.

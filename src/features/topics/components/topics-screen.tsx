@@ -1,6 +1,6 @@
 import { useScrollToTop } from 'expo-router'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { FlatList, ScrollView, useWindowDimensions, View } from 'react-native'
+import { FlatList, RefreshControl, ScrollView, useWindowDimensions, View } from 'react-native'
 import {
   ArrowsDownUpIcon,
   BellIcon,
@@ -119,6 +119,13 @@ export function TopicsScreen() {
     setSort(DEFAULT_SORT)
     setHideFollowed(false)
   }
+  // Tiré vers le bas en haut de la grille : catalogue, univers et cloche se rechargent.
+  const [refreshing, setRefreshing] = useState(false)
+  const refresh = () => {
+    setRefreshing(true)
+    void Promise.all([topics.refetch(), facets.refetch(), unread.refetch()]).finally(() => setRefreshing(false))
+  }
+
   // Suite : pull-to-refresh inversé en bas de la grille.
   const pullUp = usePullToLoadMore({
     enabled: Boolean(topics.hasNextPage) && !topics.isFetchingNextPage && !topics.isFetchNextPageError,
@@ -256,6 +263,15 @@ export function TopicsScreen() {
       </StickyBar>
       <FlatList
         ref={list}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={refresh}
+            tintColor={colors.muted}
+            colors={[colors.accent]}
+            progressBackgroundColor={colors.surface}
+          />
+        }
         {...pullUp.scrollProps}
         style={{ flex: 1, backgroundColor: colors.bg }}
         data={items}

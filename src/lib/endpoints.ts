@@ -8,6 +8,8 @@ export const ENDPOINTS = {
   auth: {
     requestLoginCode: `${config.identityUrl}/api/auth/mobile/request-login-code`,
     loginWithCode: `${config.identityUrl}/api/auth/mobile/login-with-code`,
+    loginWithGoogle: `${config.identityUrl}/api/auth/mobile/login-with-google`,
+    loginWithFacebook: `${config.identityUrl}/api/auth/mobile/login-with-facebook`,
     logout: `${config.identityUrl}/api/auth/mobile/logout`,
     token: `${config.identityUrl}/oauth2/token`,
   },

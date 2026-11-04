@@ -24,6 +24,8 @@ export interface TabsScrollViewProps<T extends string> {
   onChange: (value: T) => void
   /** Vrai une fois l'en-tête replié et les onglets collés (titre compact dans la barre de l'écran). */
   onStuckChange?: (stuck: boolean) => void
+  /** `false` : la barre d'onglets défile avec l'en-tête au lieu de se coller en haut. */
+  pinned?: boolean
   tabsRef?: Ref<CollapsibleTabsRef>
   /** Tiré vers le bas en haut de page : recharge toute la page. Le spinner reste jusqu'à la fin de la promesse. */
   onRefresh?: () => Promise<unknown> | void
@@ -33,7 +35,17 @@ export interface TabsScrollViewProps<T extends string> {
  * onglet à l'autre, chaque page avec son propre défilement. Repli de l'en-tête natif (même moteur que
  * `CollapsibleTabsScreen`) ; l'indicateur suit le doigt.
  */
-export function TabsScrollView<T extends string>({ header, pages, label, value, onChange, onStuckChange, tabsRef, onRefresh }: TabsScrollViewProps<T>) {
+export function TabsScrollView<T extends string>({
+  header,
+  pages,
+  label,
+  value,
+  onChange,
+  onStuckChange,
+  pinned = true,
+  tabsRef,
+  onRefresh,
+}: TabsScrollViewProps<T>) {
   const { colors } = useTheme()
   const refresh = usePageRefresh(onRefresh)
   const index = Math.max(
@@ -74,6 +86,7 @@ export function TabsScrollView<T extends string>({ header, pages, label, value, 
         // Collés dès que l'en-tête est entièrement replié.
         collapseThreshold={Math.max(1, headerHeight - 1)}
         onCollapsedChange={onStuckChange}
+        pinTabBar={pinned}
         onPageScroll={onPageScroll}
         {...refresh.tabProps}
         lazy

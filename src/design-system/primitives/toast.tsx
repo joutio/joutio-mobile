@@ -6,6 +6,7 @@ import { tokens } from '../tokens.generated'
 import { Avatar, type AvatarProps } from './avatar'
 import { Button } from './button'
 import { PressableScale } from './pressable-scale'
+import { Spinner } from './spinner'
 import { Text } from './text'
 
 export type ToastTone = 'success' | 'danger' | 'warning' | 'info' | 'neutral'
@@ -18,13 +19,15 @@ export interface ToastProps {
   /** Joueur à l'origine du message : remplace l'icône. */
   actor?: Pick<AvatarProps, 'name' | 'src' | 'tier'>
   action?: { label: string; onPress?: () => void }
+  /** Opération en cours (`toast.loading`, `toast.promise`) : un spinner remplace l'icône. */
+  loading?: boolean
   /** Rend tout le toast touchable. Exclut `action`. */
   onPress?: () => void
   style?: StyleProp<ViewStyle>
 }
 
 /** Contenu d'un toast. Le comportement (file, minuterie, balayage) est dans `ToastHost`. */
-export function Toast({ tone = 'neutral', title, description, icon, actor, action, onPress, style }: ToastProps) {
+export function Toast({ tone = 'neutral', title, description, icon, actor, loading = false, action, onPress, style }: ToastProps) {
   const { colors, radius } = useTheme()
   const tones: Record<ToastTone, { icon: Icon; color: string; regular?: boolean }> = {
     success: { icon: CheckCircleIcon, color: colors.correct },
@@ -41,7 +44,13 @@ export function Toast({ tone = 'neutral', title, description, icon, actor, actio
 
   const content = (
     <>
-      {actor ? <Avatar {...actor} size="sm" decorative /> : <IconComponent size={tall ? 32 : 20} weight={regular ? 'regular' : 'fill'} color={color} />}
+      {loading ? (
+        <Spinner size={tall ? 32 : 20} color={colors.muted} />
+      ) : actor ? (
+        <Avatar {...actor} size="sm" decorative />
+      ) : (
+        <IconComponent size={tall ? 32 : 20} weight={regular ? 'regular' : 'fill'} color={color} />
+      )}
       <View style={{ flex: 1, minWidth: 0, gap: tokens.space[1] }}>
         <Text variant="callout" weight="600" onTextLayout={(event) => setWrapped(event.nativeEvent.lines.length > 1)}>
           {title}

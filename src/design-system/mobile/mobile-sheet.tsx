@@ -77,9 +77,10 @@ export function MobileSheet({ open, onClose, title, subtitle, onBack, action, ta
       accessibilityOptions={{ paneTitle: title }}
       scrollableRef={scroller}
       header={<SheetHeader title={title} subtitle={subtitle} onBack={onBack} action={action} onClose={onClose} titleRef={titleRef} handle={false} />}
-      // Actions collées au bas de la feuille, par-dessus le contenu qui défile ; TrueSheet décale la fin du contenu
-      // de la hauteur du pied (`scrollableOptions.insetAdjustment` automatique).
-      footerOptions={{ position: 'absolute' }}
+      // Actions dans leur propre zone, collée au bas de la feuille, comme l'en-tête en haut : le contenu défile
+      // **entre** les deux et ne passe jamais sous le bouton (pied `relative`, le défaut de TrueSheet).
+      // Android : fermeture au balayage court, comme la feuille Material 3 (sur iOS, le geste reste celui du système).
+      dismissThreshold="short"
       // iOS 26 : la feuille flotte au-dessus du bas de l'écran (coins arrondis, marges), la zone de l'indicateur
       // d'accueil n'est pas sous elle. Android : la feuille touche le bord, sa safe area reste sous le contenu.
       insetAdjustment={FLOATING ? 'never' : 'automatic'}

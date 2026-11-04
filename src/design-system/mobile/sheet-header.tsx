@@ -73,7 +73,13 @@ export function SheetHeader({ title, subtitle, onBack, action, onClose, titleRef
           )}
         </View>
         <View style={{ flex: 1, minWidth: 44, alignItems: 'flex-end' }}>
-          {action ?? (onClose && <SheetButton icon={XIcon} label="Fermer" onPress={onClose} />)}
+          {action ? (
+            // Le `Button` impose son propre `alignSelf` : son conteneur le cale à droite, et la marge négative aligne le
+            // texte sur le bord du contenu de la feuille (16 pt), malgré le rembourrage du bouton.
+            <View style={{ alignSelf: 'flex-end', marginRight: -tokens.space[2] }}>{action}</View>
+          ) : (
+            onClose && <SheetButton icon={XIcon} label="Fermer" onPress={onClose} />
+          )}
         </View>
       </View>
     </View>
