@@ -1,0 +1,25 @@
+diff --git a/node_modules/@react-native-masked-view/masked-view/types/index.d.ts b/node_modules/@react-native-masked-view/masked-view/types/index.d.ts
+index 6a66a1e..10c1e81 100644
+--- a/node_modules/@react-native-masked-view/masked-view/types/index.d.ts
++++ b/node_modules/@react-native-masked-view/masked-view/types/index.d.ts
+@@ -3,8 +3,6 @@
+ import * as React from 'react';
+ import * as ReactNative from 'react-native';
+ 
+-type Constructor<T> = new (...args: any[]) => T;
+-
+ interface MaskedViewProps extends ReactNative.ViewProps {
+   maskElement: React.ReactElement;
+   androidRenderingMode?: 'software' | 'hardware';
+@@ -12,9 +10,5 @@ interface MaskedViewProps extends ReactNative.ViewProps {
+ /**
+  * @see https://github.com/react-native-masked-view/masked-view
+  */
+-declare class MaskedViewComponent extends React.Component<MaskedViewProps> {}
+-declare const MaskedViewBase: Constructor<
+-  ReactNative.NativeMethods
+-> &
+-  typeof MaskedViewComponent;
+-export default class MaskedView extends MaskedViewBase {}
++// RN 0.88 / React 19.3 : le mélange `Constructor<NativeMethods> & typeof Component` n'est plus un composant JSX valide.
++export default class MaskedView extends React.Component<MaskedViewProps> {}

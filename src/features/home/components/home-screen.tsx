@@ -13,6 +13,7 @@ import {
   Logo,
   MagnifyingGlassIcon,
   Pill,
+  PremiumBadge,
   Rail,
   Badge,
   Screen,
@@ -260,6 +261,7 @@ export function HomeScreen() {
   const rating = me.data?.progression?.rating
   const tier = rating !== undefined ? tierOf(rating) : undefined
   const greeting = pseudonym ? `Bonjour ${pseudonym}` : 'Bonjour'
+  const premium = me.data?.premium ?? false
 
   const header = (
     <View style={{ minHeight: 52, flexDirection: 'row', alignItems: 'center', paddingLeft: GUTTER, paddingRight: tokens.space[3], gap: tokens.space[3] }}>
@@ -268,15 +270,16 @@ export function HomeScreen() {
         <View style={{ opacity: stuck ? 0 : 1 }} accessibilityElementsHidden={stuck} importantForAccessibility={stuck ? 'no-hide-descendants' : 'auto'}>
           <Logo variant="lockup" size={28} />
         </View>
-        <Text
-          variant="headline"
-          numberOfLines={1}
+        <View
           accessibilityElementsHidden={!stuck}
           importantForAccessibility={stuck ? 'auto' : 'no-hide-descendants'}
-          style={{ position: 'absolute', left: 0, right: 0, opacity: stuck ? 1 : 0 }}
+          style={{ position: 'absolute', left: 0, right: 0, flexDirection: 'row', alignItems: 'center', gap: tokens.space[2], opacity: stuck ? 1 : 0 }}
         >
-          {greeting}
-        </Text>
+          <Text variant="headline" numberOfLines={1} style={{ flexShrink: 1 }}>
+            {greeting}
+          </Text>
+          {premium && <PremiumBadge size={18} />}
+        </View>
       </View>
       <View style={{ flexDirection: 'row', gap: tokens.space[3] }}>
         <IconButton icon={MagnifyingGlassIcon} label="Rechercher" variant="plain" tone="neutral" />
@@ -293,9 +296,16 @@ export function HomeScreen() {
         value={tab}
         onChange={setTab}
         onStuckChange={setStuck}
+        // Tiré vers le bas : tout l'Accueil se recharge (rails, profil, cloche).
+        onRefresh={() => Promise.all([home.refetch(), me.refetch(), unread.refetch()])}
         header={
           <View style={{ gap: tokens.space[3], paddingHorizontal: GUTTER, paddingTop: tokens.space[4], paddingBottom: tokens.space[3] }}>
-            <Text variant="title2">{greeting}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: tokens.space[2] }}>
+              <Text variant="title2" style={{ flexShrink: 1 }}>
+                {greeting}
+              </Text>
+              {premium && <PremiumBadge size={22} />}
+            </View>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: tokens.space[3] }}>
               {tier && rating !== undefined && (
                 <Badge variant="tier" tier={tier}>

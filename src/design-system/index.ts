@@ -12,6 +12,7 @@ export * from './tokens.generated'
 
 export * from './brand/category-icon'
 export * from './brand/logo'
+export * from './brand/premium-badge'
 export * from './brand/rank-frame'
 export * from './brand/splash-logo'
 

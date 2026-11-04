@@ -19,6 +19,7 @@ import { HAIRLINE } from '../theme/hairline'
 import { useTheme } from '../theme/theme-provider'
 import { tokens } from '../tokens.generated'
 import { TOP_BAR_HEIGHT } from './mobile-top-bar'
+import { usePageRefresh } from './tabs-scroll-view'
 import { CompactBarRow, compactBarProgress, HERO_HEIGHT, heroImageTransform, heroTitleOpacity, ParallaxProgressProvider } from './parallax-screen'
 
 export type { CollapsibleTabsRef }
@@ -61,6 +62,8 @@ export interface CollapsibleTabsScreenProps<T extends string> {
   /** Bouton flottant, en bas à droite. */
   floating?: ReactNode
   tabsRef?: Ref<CollapsibleTabsRef>
+  /** Tiré vers le bas : recharge toute la page (en-tête et onglets). Le spinner reste jusqu'à la fin de la promesse. */
+  onRefresh?: () => Promise<unknown> | void
 }
 
 interface HeroProps {
@@ -144,6 +147,7 @@ export function CollapsibleTabsScreen<T extends string>({
   onTabChange,
   floating,
   tabsRef,
+  onRefresh,
   title,
   back = true,
   onBack,
@@ -153,6 +157,7 @@ export function CollapsibleTabsScreen<T extends string>({
   const { colors } = useTheme()
   const insets = useSafeAreaInsets()
   const barHeight = insets.top + TOP_BAR_HEIGHT
+  const refresh = usePageRefresh(onRefresh)
 
   const [index, setIndex] = useState(() =>
     Math.max(
@@ -232,6 +237,11 @@ export function CollapsibleTabsScreen<T extends string>({
         headerMinHeight={barHeight}
         onScrollOffsetChange={onScrollOffsetChange}
         onPageScroll={onPageScroll}
+        {...refresh}
+        refreshTintColor={colors.text}
+        refreshBackgroundColor={colors.surface}
+        // Sous la barre compacte, au-dessus de l'image qui zoome.
+        refreshIndicatorOffset={barHeight + tokens.space[5]}
         lazy
       />
 

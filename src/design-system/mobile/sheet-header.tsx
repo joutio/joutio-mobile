@@ -1,8 +1,8 @@
 import type { ReactNode, Ref } from 'react'
 import { View } from 'react-native'
 import type { ViewRef } from '../a11y'
-import { CaretLeftIcon, XIcon } from '../icons'
-import { IconButton } from '../primitives/icon-button'
+import { CaretLeftIcon, XIcon, type Icon } from '../icons'
+import { PressableScale, slopFor } from '../primitives/pressable-scale'
 import { Text } from '../primitives/text'
 import { useTheme } from '../theme/theme-provider'
 import { tokens } from '../tokens.generated'
@@ -20,7 +20,33 @@ export interface SheetHeaderProps {
   handle?: boolean
 }
 
-/** Poignée 36 × 5, puis trois colonnes : retour, titre, action ou Fermer. */
+/** Bouton rond d'une feuille, au standard iOS : 30 pt, fond gris, glyphe 15 pt en gras ; cible portée à 44 pt. */
+const SHEET_BUTTON = 30
+
+function SheetButton({ icon: IconComponent, label, onPress }: { icon: Icon; label: string; onPress: () => void }) {
+  const { colors, radius } = useTheme()
+  return (
+    <PressableScale
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      hitSlop={slopFor(SHEET_BUTTON, SHEET_BUTTON)}
+      pressedScale={0.94}
+      onPress={onPress}
+      style={{
+        width: SHEET_BUTTON,
+        height: SHEET_BUTTON,
+        borderRadius: radius.full,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: colors.raised,
+      }}
+    >
+      <IconComponent size={15} weight="bold" color={colors.muted} />
+    </PressableScale>
+  )
+}
+
+/** Poignée 36 × 5, puis trois colonnes : retour, titre, action ou Fermer (boutons ronds de 30 pt, standard iOS). */
 export function SheetHeader({ title, subtitle, onBack, action, onClose, titleRef, handle = true }: SheetHeaderProps) {
   const { colors, radius } = useTheme()
   return (
@@ -34,7 +60,7 @@ export function SheetHeader({ title, subtitle, onBack, action, onClose, titleRef
       )}
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: tokens.space[3] }}>
         <View style={{ flex: 1, minWidth: 44, alignItems: 'flex-start' }}>
-          {onBack && <IconButton icon={CaretLeftIcon} label="Retour" variant="gray" onPress={onBack} />}
+          {onBack && <SheetButton icon={CaretLeftIcon} label="Retour" onPress={onBack} />}
         </View>
         <View ref={titleRef} accessible accessibilityRole="header" style={{ minWidth: 0, flexShrink: 1, alignItems: 'center' }}>
           <Text variant="headline" numberOfLines={1}>
@@ -47,7 +73,7 @@ export function SheetHeader({ title, subtitle, onBack, action, onClose, titleRef
           )}
         </View>
         <View style={{ flex: 1, minWidth: 44, alignItems: 'flex-end' }}>
-          {action ?? (onClose && <IconButton icon={XIcon} label="Fermer" variant="gray" onPress={onClose} />)}
+          {action ?? (onClose && <SheetButton icon={XIcon} label="Fermer" onPress={onClose} />)}
         </View>
       </View>
     </View>

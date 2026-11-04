@@ -118,6 +118,8 @@ export function CollapsibleTabsScreenDemo() {
   return (
     <CollapsibleTabsScreen
       tabsRef={tabsRef}
+      // Démo : recharge simulée d'1,5 s.
+      onRefresh={() => new Promise((resolve) => setTimeout(resolve, 1500))}
       image={SAMPLE_BANNER}
       title="Égypte antique"
       eyebrow={

@@ -11,9 +11,11 @@ import {
   CheckCircleIcon,
   IconButton,
   Pill,
+  PremiumBadge,
   RankFrame,
   Skeleton,
   SwordIcon,
+  Text,
   tokens,
   type TierCode,
 } from '@/design-system'
@@ -181,6 +183,26 @@ export function SkeletonDemo() {
       </Specimen>
       <Specimen label="Hors connexion : fixe">
         <Skeleton shape="row" animated={false} />
+      </Specimen>
+    </>
+  )
+}
+
+/** Marque Premium à droite du pseudonyme, aux tailles des lignes de titre. */
+export function PremiumBadgeDemo() {
+  return (
+    <>
+      <Specimen label="title2 (bonjour de l'Accueil)">
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: tokens.space[2] }}>
+          <Text variant="title2">Bonjour Nadjim</Text>
+          <PremiumBadge size={22} />
+        </View>
+      </Specimen>
+      <Specimen label="headline (barre, lignes joueur)">
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: tokens.space[2] }}>
+          <Text variant="headline">Nadjim</Text>
+          <PremiumBadge size={18} />
+        </View>
       </Specimen>
     </>
   )

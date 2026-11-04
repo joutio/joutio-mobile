@@ -1,3 +1,4 @@
 # Copies du lab : jamais reformatées (npm run tokens:check).
 src/design-system/tokens.generated.ts
 src/design-system/tokens.generated.json
+src/design-system/vendor/

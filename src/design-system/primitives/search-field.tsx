@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { TextInput, View, type TextInputInstance, type StyleProp, type ViewStyle } from 'react-native'
+import Animated, { Easing, FadeInRight, FadeOutRight, LinearTransition } from 'react-native-reanimated'
 import { MagnifyingGlassIcon, XCircleIcon } from '../icons'
 import { useTheme } from '../theme/theme-provider'
 import { tokens } from '../tokens.generated'
@@ -22,7 +23,17 @@ export interface SearchFieldProps {
   style?: StyleProp<ViewStyle>
 }
 
-/** Recherche en pilule, 44 pt. Dans un écran, collée sous la barre de titre (`StickyBar`). */
+/** Comme la barre de recherche iOS : le champ se rétracte pendant qu'« Annuler » glisse depuis la droite. */
+const DURATION = 250
+const EASING = Easing.bezier(0.32, 0.72, 0, 1)
+const RESIZE = LinearTransition.duration(DURATION).easing(EASING)
+const CANCEL_IN = FadeInRight.duration(DURATION).easing(EASING)
+const CANCEL_OUT = FadeOutRight.duration(200).easing(EASING)
+
+/**
+ * Recherche en pilule, 44 pt. Dans un écran, collée sous la barre de titre (`StickyBar`). « Annuler » apparaît et
+ * disparaît en glissant, le champ suit en douceur ; rien ne bouge sous mouvement réduit (réglage système).
+ */
 export function SearchField({
   value,
   onChange,
@@ -41,7 +52,8 @@ export function SearchField({
 
   return (
     <View style={[{ alignSelf: 'stretch', flexDirection: 'row', alignItems: 'center', gap: tokens.space[3] }, style]}>
-      <View
+      <Animated.View
+        layout={RESIZE}
         style={{
           flex: 1,
           minWidth: 0,
@@ -89,19 +101,20 @@ export function SearchField({
             <XCircleIcon size={18} weight="fill" color={colors.muted} />
           </PressableScale>
         )}
-      </View>
+      </Animated.View>
       {onCancel && engaged && (
-        <Button
-          variant="plain"
-          size="S"
-          style={{ alignSelf: 'center' }}
-          onPress={() => {
-            input.current?.blur()
-            onCancel()
-          }}
-        >
-          Annuler
-        </Button>
+        <Animated.View entering={CANCEL_IN} exiting={CANCEL_OUT} style={{ alignSelf: 'center' }}>
+          <Button
+            variant="plain"
+            size="S"
+            onPress={() => {
+              input.current?.blur()
+              onCancel()
+            }}
+          >
+            Annuler
+          </Button>
+        </Animated.View>
       )}
     </View>
   )

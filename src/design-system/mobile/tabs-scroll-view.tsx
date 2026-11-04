@@ -24,6 +24,25 @@ export interface TabsScrollViewProps<T extends string> {
   /** Vrai une fois l'en-tête replié et les onglets collés (titre compact dans la barre de l'écran). */
   onStuckChange?: (stuck: boolean) => void
   tabsRef?: Ref<CollapsibleTabsRef>
+  /** Tiré vers le bas en haut de page : recharge toute la page. Le spinner reste jusqu'à la fin de la promesse. */
+  onRefresh?: () => Promise<unknown> | void
+}
+/**
+ * Refresh de **toute la page** (pull-to-refresh du conteneur natif) : l'en-tête descend avec le tiré, le spinner
+ * natif reste affiché jusqu'à la fin de `onRefresh`.
+ */
+export function usePageRefresh(onRefresh?: () => Promise<unknown> | void) {
+  const [refreshing, setRefreshing] = useState(false)
+  if (!onRefresh) return {}
+  return {
+    refreshing,
+    onRefresh: () => {
+      setRefreshing(true)
+      Promise.resolve(onRefresh())
+        .catch(() => undefined)
+        .finally(() => setRefreshing(false))
+    },
+  }
 }
 
 /**
@@ -31,8 +50,9 @@ export interface TabsScrollViewProps<T extends string> {
  * onglet à l'autre, chaque page avec son propre défilement. Repli de l'en-tête natif (même moteur que
  * `CollapsibleTabsScreen`) ; l'indicateur suit le doigt.
  */
-export function TabsScrollView<T extends string>({ header, pages, label, value, onChange, onStuckChange, tabsRef }: TabsScrollViewProps<T>) {
+export function TabsScrollView<T extends string>({ header, pages, label, value, onChange, onStuckChange, tabsRef, onRefresh }: TabsScrollViewProps<T>) {
   const { colors } = useTheme()
+  const refresh = usePageRefresh(onRefresh)
   const index = Math.max(
     0,
     pages.findIndex((page) => page.value === value),
@@ -71,6 +91,9 @@ export function TabsScrollView<T extends string>({ header, pages, label, value, 
       collapseThreshold={Math.max(1, headerHeight - 1)}
       onCollapsedChange={onStuckChange}
       onPageScroll={onPageScroll}
+      {...refresh}
+      refreshTintColor={colors.muted}
+      refreshBackgroundColor={colors.surface}
       lazy
     />
   )

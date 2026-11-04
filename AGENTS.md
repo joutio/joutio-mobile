@@ -62,6 +62,10 @@ Décisions :
   (`package.json` → `reanimated.staticFeatureFlags`, effet au rebuild natif) ; animer `transform`/`opacity`, jamais
   `width`/`height` à chaque frame (l'indicateur de `Segmented` étire son centre en `scaleX`).
 - `@react-native-menu/menu` est incompatible avec RN 0.88 (`RCTBridge.h`) : ne pas y revenir.
+- **Reacticx** (`npx reacticx add <nom> -d src/design-system/vendor/reacticx`) : composants copiés tels quels dans
+  `src/design-system/vendor/` (hors Prettier, pour `reacticx diff`), enveloppés par un composant du design system
+  aux tokens. `PremiumBadge` (`verified-shine`) à droite du pseudonyme des joueurs Premium ; typage de
+  `@react-native-masked-view/masked-view` corrigé dans `patches/`.
 - Identifiant **`com.joutio.app`** (iOS et Android), celui des stores.
 - Feuilles : **TrueSheet** (`@lodev09/react-native-true-sheet`), natives sur les deux OS.
 - **Dev build** (`expo-dev-client`) dès le départ, pas d'Expo Go.

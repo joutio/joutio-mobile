@@ -208,7 +208,8 @@ async function performRefresh(): Promise<void> {
 
   await persistSession({
     accessToken: tokens.access_token,
-    refreshToken: tokens.refresh_token,
+    // Sans rotation, le serveur peut ne pas renvoyer de refresh token : on garde celui qui vient de servir.
+    refreshToken: tokens.refresh_token ?? startedWith,
     expiresIn: tokens.expires_in,
     issuedAt: Math.floor(Date.now() / 1000),
   })

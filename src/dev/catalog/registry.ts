@@ -1,5 +1,5 @@
 import type { ComponentType } from 'react'
-import { AvatarDemo, BadgeDemo, ButtonDemo, IconButtonDemo, PillDemo, SkeletonDemo } from './row1'
+import { AvatarDemo, BadgeDemo, ButtonDemo, IconButtonDemo, PillDemo, PremiumBadgeDemo, SkeletonDemo } from './row1'
 import { BottomNavDemo, MobileTopBarDemo, StickyScreenDemo } from './row2'
 import { ChipDemo, FieldDemo, ListRowDemo, RadioGroupDemo, SearchFieldDemo, SegmentedDemo, SwitchDemo } from './row3'
 import { BannerDemo, DialogDemo, MenuDemo, MobileSheetDemo, SheetHeaderDemo, ToastDemo } from './row4'
@@ -24,6 +24,7 @@ export const CATALOG: CatalogEntry[] = [
   { id: 'pill', title: 'Pill', row: 1, spec: 'components/primitives.md', Demo: PillDemo },
   { id: 'badge', title: 'Badge', row: 1, spec: 'components/primitives.md', Demo: BadgeDemo },
   { id: 'avatar', title: 'Avatar et RankFrame', row: 1, spec: 'components/primitives.md, marque.md', Demo: AvatarDemo },
+  { id: 'premium-badge', title: 'PremiumBadge', row: 1, spec: 'components/marque.md', Demo: PremiumBadgeDemo },
   { id: 'skeleton', title: 'Skeleton', row: 1, spec: 'components/primitives.md', Demo: SkeletonDemo },
   { id: 'mobile-top-bar', title: 'MobileTopBar', row: 2, spec: 'components/navigation.md', Demo: MobileTopBarDemo },
   { id: 'bottom-nav', title: 'BottomNav', row: 2, spec: 'components/navigation.md', Demo: BottomNavDemo },

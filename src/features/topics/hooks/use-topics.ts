@@ -9,6 +9,8 @@ export function useTopics(filters: TopicFilters) {
     queryFn: ({ pageParam }) => topicsService.page(filters, pageParam),
     initialPageParam: 0,
     getNextPageParam: (last, pages) => (last.last ? undefined : pages.length),
+    // Changer de filtre garde la grille affichée jusqu'à l'arrivée des nouveaux résultats : pas de flash de squelettes.
+    placeholderData: keepPreviousData,
     staleTime: 60_000,
   })
 }
