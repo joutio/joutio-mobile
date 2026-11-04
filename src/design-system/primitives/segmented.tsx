@@ -1,12 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
 import { Platform, ScrollView, View, type ScrollViewInstance, type StyleProp, type ViewStyle } from 'react-native'
-import Animated, { ReduceMotion, useAnimatedStyle, useSharedValue, withSpring, type SharedValue } from 'react-native-reanimated'
+import Animated, { ReduceMotion, useAnimatedStyle, useDerivedValue, useSharedValue, withSpring, type SharedValue } from 'react-native-reanimated'
 import { useReducedMotion } from '../motion'
 import { useTheme } from '../theme/theme-provider'
 import { tokens } from '../tokens.generated'
 import { NativeSegmented } from './native-segmented'
 import { PressableScale } from './pressable-scale'
 import { Text } from './text'
+
+/** Largeur de référence du centre de la pastille, étiré ensuite par `scaleX`. */
+const PILL_BASE_WIDTH = 100
 
 export interface SegmentedOption<T extends string> {
   value: T
@@ -65,14 +68,27 @@ function ScrollableSegmented<T extends string>({ options, value, onChange, label
     scroller.current?.scrollTo({ x: Math.max(0, frame.x - (width - frame.width) / 2), animated: !reduced })
   }, [scrollable, selectedIndex, width, reduced])
 
-  const indicator = useAnimatedStyle(() => {
+  // Indicateur courant (position et largeur), interpolé entre deux options pendant le balayage.
+  const current = useDerivedValue(() => {
     const list = frames.value
     const p = Math.min(Math.max(position ? position.value : spring.value, 0), Math.max(list.length - 1, 0))
     const from = list[Math.floor(p)]
     const to = list[Math.ceil(p)] ?? from
-    if (!from || !to) return { opacity: 0 }
+    if (!from || !to) return null
     const t = p - Math.floor(p)
-    return { opacity: ready.value, transform: [{ translateX: from.x + (to.x - from.x) * t }], width: from.width + (to.width - from.width) * t }
+    return { x: from.x + (to.x - from.x) * t, width: from.width + (to.width - from.width) * t }
+  })
+  // Uniquement `transform` et `opacity` : animer `width` relancerait la mise en page à chaque frame du balayage.
+  // La pastille est faite de deux bouts arrondis fixes et d'un centre étiré (`scaleX`), sans déformer les coins.
+  const r = radius.sm
+  const visible = useAnimatedStyle(() => ({ opacity: current.value ? ready.value : 0 }))
+  const leftCap = useAnimatedStyle(() => ({ transform: [{ translateX: current.value?.x ?? 0 }] }))
+  const rightCap = useAnimatedStyle(() => ({ transform: [{ translateX: current.value ? current.value.x + current.value.width - r : 0 }] }))
+  const middle = useAnimatedStyle(() => {
+    const frame = current.value
+    if (!frame) return { transform: [{ translateX: 0 }, { scaleX: 0 }] }
+    // Recouvre les bouts d'un demi-point pour éviter une couture visible.
+    return { transform: [{ translateX: frame.x + r - 0.5 }, { scaleX: Math.max(frame.width - 2 * r + 1, 0) / PILL_BASE_WIDTH }] }
   })
 
   const items = options.map((option, index) => {
@@ -113,11 +129,13 @@ function ScrollableSegmented<T extends string>({ options, value, onChange, label
 
   // L'indicateur est dans le même repère que les options (padding du rail compris).
   const rail: ViewStyle = { flexDirection: 'row', gap: 2, padding: tokens.space[2] }
+  const piece: ViewStyle = { position: 'absolute', left: 0, top: 0, height: 36, backgroundColor: colors.surface }
   const pill = (
-    <Animated.View
-      pointerEvents="none"
-      style={[{ position: 'absolute', left: 0, top: tokens.space[2], height: 36, borderRadius: radius.sm, backgroundColor: colors.surface }, indicator]}
-    />
+    <Animated.View pointerEvents="none" style={[{ position: 'absolute', left: 0, right: 0, top: tokens.space[2], height: 36 }, visible]}>
+      <Animated.View style={[piece, { width: PILL_BASE_WIDTH, transformOrigin: 'left' }, middle]} />
+      <Animated.View style={[piece, { width: r, borderTopLeftRadius: r, borderBottomLeftRadius: r }, leftCap]} />
+      <Animated.View style={[piece, { width: r, borderTopRightRadius: r, borderBottomRightRadius: r }, rightCap]} />
+    </Animated.View>
   )
   return (
     <View

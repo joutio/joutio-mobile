@@ -41,11 +41,19 @@ Décisions :
     ×1,6, ressort au relâchement, ripple Android sur les lignes.
   - Un `Button` non `full` dans une rangée prend `style={{ alignSelf: 'center' }}`.
 - **Écrans à onglets** (Fiche sujet, Profil, Fiche joueur) : `CollapsibleTabsScreen`, sur
-  `react-native-collapsible-tab` (une liste virtualisée par onglet : `TabList`, `TabSectionList`,
-  `TabScrollView`). En-tête image de 400 pt, mouvement repris du Parallax Header de Reacticx (zoom ×2,5 au tiré,
-  parallaxe à mi-vitesse, barre compacte entre 75 et 100 % du repli) : fonctions `heroImageTransform`,
-  `heroTitleOpacity`, `compactBarProgress` (`parallax-screen.tsx`), spec `fiche-sujet.md` § 1. Les avertissements Reanimated « Dependencies should only be used on the web » viennent de la
-  bibliothèque (PR #17 en attente). `ParallaxScreen` reste pour les écrans à image sans onglets.
+  `react-native-collapsible-tabs-native` (2026-11-04, remplace `react-native-collapsible-tab` qui saccadait sur
+  Android en release) : le repli est **natif** (UIKit / ViewPager2), en-tête et liste bougent dans la même frame.
+  Une liste virtualisée par onglet : `TabList`, `TabSectionList`, `TabScrollView` (obligatoires : elles décalent le
+  contenu sous l'en-tête). Reanimated ne lit que les événements natifs (`onScrollOffsetChange`, `onPageScroll`, via
+  `useEvent`) pour la parallaxe, le fondu du titre et l'indicateur ; la barre compacte est posée **par-dessus** le
+  conteneur (`headerMinHeight` = sa hauteur) et ne fait que s'opacifier — ne jamais lui faire compenser une
+  translation. Mouvement repris du Parallax Header de Reacticx (zoom ×2,5 au tiré, parallaxe à mi-vitesse) :
+  `heroImageTransform`, `heroTitleOpacity`, `compactBarProgress` (`parallax-screen.tsx`), spec `fiche-sujet.md`
+  § 1. Le correctif de typage RN 0.88 de la lib vit dans `patches/` (`patch-package`, en `postinstall`).
+  `ParallaxScreen` reste pour les écrans à image sans onglets.
+- **Reanimated** : `ANDROID_SYNCHRONOUSLY_UPDATE_UI_PROPS` et `IOS_SYNCHRONOUSLY_UPDATE_UI_PROPS` activés
+  (`package.json` → `reanimated.staticFeatureFlags`, effet au rebuild natif) ; animer `transform`/`opacity`, jamais
+  `width`/`height` à chaque frame (l'indicateur de `Segmented` étire son centre en `scaleX`).
 - `@react-native-menu/menu` est incompatible avec RN 0.88 (`RCTBridge.h`) : ne pas y revenir.
 - Identifiant **`com.joutio.app`** (iOS et Android), celui des stores.
 - Feuilles : **TrueSheet** (`@lodev09/react-native-true-sheet`), natives sur les deux OS.

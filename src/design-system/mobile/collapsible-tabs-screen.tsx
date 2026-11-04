@@ -1,15 +1,15 @@
 import { Image } from 'expo-image'
-import type { ReactNode, Ref } from 'react'
-import { StyleSheet, View } from 'react-native'
+import { useImperativeHandle, useRef, useState, type ReactNode, type Ref } from 'react'
+import { SectionList, StyleSheet, View } from 'react-native'
 import {
-  Tabs,
-  useHeaderMeasurements,
-  useHeaderScrollY,
-  type CollapsingTabsRef,
-  type TabBarRenderProps,
-  type TabChangeEvent,
-} from 'react-native-collapsible-tab'
-import Animated, { useAnimatedStyle, useDerivedValue, useSharedValue } from 'react-native-reanimated'
+  CollapsibleTabView,
+  createTabList,
+  TabFlatList,
+  TabScrollView as NativeTabScrollView,
+  type CollapsibleTabsRef,
+  type Route,
+} from 'react-native-collapsible-tabs-native'
+import Animated, { useAnimatedStyle, useDerivedValue, useEvent, useSharedValue, type SharedValue } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useReducedMotion } from '../motion'
 import { Segmented } from '../primitives/segmented'
@@ -21,13 +21,15 @@ import { tokens } from '../tokens.generated'
 import { TOP_BAR_HEIGHT } from './mobile-top-bar'
 import { CompactBarRow, compactBarProgress, HERO_HEIGHT, heroImageTransform, heroTitleOpacity, ParallaxProgressProvider } from './parallax-screen'
 
+export type { CollapsibleTabsRef }
+
 /**
  * Listes d'un onglet : à utiliser **directement** comme contenu de `tabs[].content`. Chacune est virtualisée et
- * synchronisée avec l'en-tête (`react-native-collapsible-tab`).
+ * décalée sous l'en-tête (`react-native-collapsible-tabs-native`, qui replie l'en-tête en natif).
  */
-export const TabList = Tabs.FlatList
-export const TabSectionList = Tabs.SectionList
-export const TabScrollView = Tabs.ScrollView
+export const TabList = TabFlatList
+export const TabSectionList = createTabList(SectionList) as typeof SectionList
+export const TabScrollView = NativeTabScrollView
 
 export interface CollapsibleTab<T extends string> {
   value: T
@@ -58,31 +60,32 @@ export interface CollapsibleTabsScreenProps<T extends string> {
   onTabChange?: (value: T) => void
   /** Bouton flottant, en bas à droite. */
   floating?: ReactNode
-  tabsRef?: Ref<CollapsingTabsRef>
+  tabsRef?: Ref<CollapsibleTabsRef>
 }
 
-/** Image en parallaxe, titre qui s'efface, barre compacte épinglée. Rendu dans l'en-tête repliable. */
-function Header({ image, title, eyebrow, centered, back = true, onBack, right, intro }: Omit<CollapsibleTabsScreenProps<string>, 'tabs' | 'tabsLabel'>) {
-  const { colors } = useTheme()
-  const insets = useSafeAreaInsets()
-  const reduced = useReducedMotion()
-  const scroll = useHeaderScrollY()
-  const { top } = useHeaderMeasurements()
+interface HeroProps {
+  image?: string | number
+  title: string
+  eyebrow?: ReactNode
+  centered?: boolean
+  intro?: ReactNode
+  /** Défilement de la liste active (négatif au tiré), lu sur le thread UI. */
+  scroll: SharedValue<number>
+  /** Début et durée du passage du titre sous la barre compacte, mesurés. */
+  titleStart: SharedValue<number>
+  titleLength: SharedValue<number>
+  barHeight: number
+}
 
-  const barHeight = insets.top + TOP_BAR_HEIGHT
-  // Courbes partagées avec ParallaxScreen (Parallax Header de Reacticx).
-  // Position du titre dans l'image, mesurée : la barre prend le relais au moment exact où il passe dessous.
-  const titleStart = useSharedValue(HERO_HEIGHT - barHeight)
-  const titleLength = useSharedValue(56)
-  const progress = useDerivedValue(() => compactBarProgress(scroll.value, titleStart.value, titleLength.value))
+/** Image en parallaxe et titre qui s'efface : l'en-tête que le natif replie. */
+function Hero({ image, title, eyebrow, centered, intro, scroll, titleStart, titleLength, barHeight }: HeroProps) {
+  const { colors } = useTheme()
+  const reduced = useReducedMotion()
   const imageStyle = useAnimatedStyle(() => ({ transform: heroImageTransform(scroll.value, reduced) }))
   const titleStyle = useAnimatedStyle(() => ({ opacity: heroTitleOpacity(scroll.value, titleStart.value, titleLength.value) }))
-  // La barre compense la translation de l'en-tête : elle reste en haut de l'écran.
-  const pinned = useAnimatedStyle(() => ({ transform: [{ translateY: -top.value }] }))
-  const opaque = useAnimatedStyle(() => ({ opacity: progress.value }))
 
   return (
-    <View>
+    <View style={{ backgroundColor: colors.bg }}>
       <View
         style={{ height: HERO_HEIGHT, overflow: 'hidden', backgroundColor: colors.surface }}
         accessible
@@ -133,27 +136,18 @@ function Header({ image, title, eyebrow, centered, back = true, onBack, right, i
         </Animated.View>
       </View>
       {intro && <View style={{ paddingHorizontal: tokens.space[5], paddingTop: tokens.space[2], paddingBottom: tokens.space[3] }}>{intro}</View>}
-
-      <ParallaxProgressProvider progress={progress}>
-        <Animated.View
-          pointerEvents="box-none"
-          style={[{ position: 'absolute', left: 0, right: 0, top: 0, height: insets.top + TOP_BAR_HEIGHT, zIndex: 10 }, pinned]}
-        >
-          <Animated.View
-            pointerEvents="none"
-            style={[StyleSheet.absoluteFill, { backgroundColor: colors.bg, borderBottomWidth: HAIRLINE, borderBottomColor: colors.border }, opaque]}
-          />
-          <CompactBarRow title={title} back={back} onBack={onBack} right={right} titleStyle={opaque} />
-        </Animated.View>
-      </ParallaxProgressProvider>
     </View>
   )
 }
 
 /**
- * Écran à en-tête image **avec onglets** (Fiche sujet, Profil, Fiche joueur) : l'en-tête se replie en barre compacte,
- * les onglets restent collés dessous, chaque onglet a sa propre liste virtualisée et garde sa position.
- * Onglets montés à la demande ; balayage entre onglets ; l'indicateur suit le doigt.
+ * Écran à en-tête image **avec onglets** (Fiche sujet, Profil, Fiche joueur) : l'en-tête se replie en barre
+ * compacte, les onglets restent collés dessous, chaque onglet a sa propre liste virtualisée et garde sa position.
+ *
+ * Le repli est **natif** (UIKit / ViewPager2) : l'en-tête et la liste bougent dans la même frame. Reanimated ne
+ * pilote que ce qui vit dans l'en-tête (parallaxe, fondu du titre) et la barre compacte, posée par-dessus : elle ne
+ * fait que s'opacifier, sans jamais compenser une translation. Onglets montés à la demande ; balayage entre onglets ;
+ * l'indicateur suit le doigt ; toucher l'onglet actif remonte sa liste en haut.
  */
 export function CollapsibleTabsScreen<T extends string>({
   tabs,
@@ -162,42 +156,107 @@ export function CollapsibleTabsScreen<T extends string>({
   onTabChange,
   floating,
   tabsRef,
-  ...header
+  title,
+  back = true,
+  onBack,
+  right,
+  ...hero
 }: CollapsibleTabsScreenProps<T>) {
   const { colors } = useTheme()
   const insets = useSafeAreaInsets()
+  const barHeight = insets.top + TOP_BAR_HEIGHT
 
-  const renderTabBar = ({ tabNames, activeIndex, indexDecimal, onTabPress }: TabBarRenderProps) => (
+  const [index, setIndex] = useState(() =>
+    Math.max(
+      0,
+      tabs.findIndex((tab) => tab.value === initialTab),
+    ),
+  )
+  const routes: Route[] = tabs.map((tab) => ({ key: tab.value, title: tab.label }))
+  const inner = useRef<CollapsibleTabsRef>(null)
+  useImperativeHandle(tabsRef, () => ({
+    scrollToTop: (options) => inner.current?.scrollToTop(options),
+    setIndex: (value, options) => inner.current?.setIndex(value, options),
+    collapse: (options) => inner.current?.collapse(options),
+    expand: (options) => inner.current?.expand(options),
+  }))
+
+  // Défilement de la liste active et position du pager, lus depuis le callback natif, sur le thread UI.
+  const scroll = useSharedValue(0)
+  const position = useSharedValue(index)
+  const onScrollOffsetChange = useEvent<{ offset: number }>(
+    (event) => {
+      'worklet'
+      scroll.value = event.offset
+    },
+    ['topScrollOffsetChange', 'onScrollOffsetChange'],
+  )
+  const onPageScroll = useEvent<{ position: number; offset: number }>(
+    (event) => {
+      'worklet'
+      position.value = event.position + event.offset
+    },
+    ['topPageScroll', 'onPageScroll'],
+  )
+
+  // Courbes partagées avec ParallaxScreen (Parallax Header de Reacticx). Position du titre dans l'image, mesurée :
+  // la barre prend le relais au moment exact où il passe dessous.
+  const titleStart = useSharedValue(HERO_HEIGHT - barHeight)
+  const titleLength = useSharedValue(56)
+  const progress = useDerivedValue(() => compactBarProgress(scroll.value, titleStart.value, titleLength.value))
+  const opaque = useAnimatedStyle(() => ({ opacity: progress.value }))
+
+  const changeIndex = (next: number) => {
+    setIndex(next)
+    const tab = tabs[next]
+    if (tab) onTabChange?.(tab.value)
+  }
+
+  const renderTabBar = () => (
     <View style={{ backgroundColor: colors.bg, paddingHorizontal: tokens.space[5], paddingTop: tokens.space[3], paddingBottom: tokens.space[4] }}>
       <Segmented
         scrollable
         label={tabsLabel}
         options={tabs}
-        value={(tabNames[activeIndex] ?? tabs[0]?.value ?? '') as T}
-        position={indexDecimal}
-        onChange={onTabPress}
+        value={(tabs[index]?.value ?? tabs[0]?.value ?? '') as T}
+        position={position}
+        onChange={(value) => {
+          const next = tabs.findIndex((tab) => tab.value === value)
+          if (next < 0) return
+          if (next === index) inner.current?.scrollToTop()
+          else changeIndex(next)
+        }}
       />
     </View>
   )
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
-      <Tabs.Container
-        ref={tabsRef}
-        renderHeader={() => <Header {...header} />}
+      <CollapsibleTabView
+        ref={inner}
+        navigationState={{ index, routes }}
+        onIndexChange={changeIndex}
+        renderScene={({ route }) => tabs.find((tab) => tab.value === route.key)?.content ?? null}
+        renderHeader={() => <Hero {...hero} title={title} scroll={scroll} titleStart={titleStart} titleLength={titleLength} barHeight={barHeight} />}
         renderTabBar={renderTabBar}
-        minHeaderHeight={insets.top + TOP_BAR_HEIGHT}
-        headerBackgroundColor={colors.bg}
-        initialTabName={initialTab}
-        onTabChange={(event: TabChangeEvent) => onTabChange?.(event.tabName as T)}
+        // Le bas de l'en-tête reste sous la barre compacte, qui le recouvre : les onglets se collent sous elle.
+        headerMinHeight={barHeight}
+        onScrollOffsetChange={onScrollOffsetChange}
+        onPageScroll={onPageScroll}
         lazy
-      >
-        {tabs.map((tab) => (
-          <Tabs.Tab key={tab.value} name={tab.value} label={tab.label}>
-            {tab.content}
-          </Tabs.Tab>
-        ))}
-      </Tabs.Container>
+      />
+
+      {/* Barre compacte, hors de l'en-tête : fixe en haut de l'écran, elle s'opacifie quand le titre passe dessous. */}
+      <ParallaxProgressProvider progress={progress}>
+        <View pointerEvents="box-none" style={{ position: 'absolute', left: 0, right: 0, top: 0, height: barHeight }}>
+          <Animated.View
+            pointerEvents="none"
+            style={[StyleSheet.absoluteFill, { backgroundColor: colors.bg, borderBottomWidth: HAIRLINE, borderBottomColor: colors.border }, opaque]}
+          />
+          <CompactBarRow title={title} back={back} onBack={onBack} right={right} titleStyle={opaque} />
+        </View>
+      </ParallaxProgressProvider>
+
       {floating && <View style={{ position: 'absolute', right: tokens.space[5], bottom: tokens.space[5] + insets.bottom }}>{floating}</View>}
     </View>
   )

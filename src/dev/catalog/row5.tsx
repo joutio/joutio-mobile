@@ -1,7 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router'
 import { useEffect, useRef } from 'react'
 import { type FlatList } from 'react-native'
-import type { CollapsingTabsRef } from 'react-native-collapsible-tab'
 import Animated, { useAnimatedRef } from 'react-native-reanimated'
 import {
   Button,
@@ -20,6 +19,7 @@ import {
   Text,
   tokens,
   TrophyIcon,
+  type CollapsibleTabsRef,
   type FeedFooterState,
 } from '@/design-system'
 import { SAMPLE_BANNER, Specimen } from './kit'
@@ -99,10 +99,20 @@ function RowsTab({ label, scrollTo }: { label: string; scrollTo?: number }) {
 /** Plein écran : fiche sujet avec onglets (`?tab=games&scroll=900` en dev). */
 export function CollapsibleTabsScreenDemo() {
   const params = useLocalSearchParams<{ tab?: string; scroll?: string }>()
-  const tabsRef = useRef<CollapsingTabsRef>(null)
+  const tabsRef = useRef<CollapsibleTabsRef>(null)
   useEffect(() => {
     if (!params.tab) return
-    const timer = setTimeout(() => tabsRef.current?.jumpToTab(params.tab ?? 'wall', false), 1200)
+    const timer = setTimeout(
+      () =>
+        tabsRef.current?.setIndex(
+          Math.max(
+            0,
+            TOPIC_TABS.findIndex((tab) => tab.value === params.tab),
+          ),
+          { animated: false },
+        ),
+      1200,
+    )
     return () => clearTimeout(timer)
   }, [params.tab])
   return (

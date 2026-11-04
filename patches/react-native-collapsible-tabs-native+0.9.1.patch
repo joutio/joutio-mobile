@@ -1,0 +1,13 @@
+diff --git a/node_modules/react-native-collapsible-tabs-native/src/TabBar.tsx b/node_modules/react-native-collapsible-tabs-native/src/TabBar.tsx
+index a6a300e..4921804 100644
+--- a/node_modules/react-native-collapsible-tabs-native/src/TabBar.tsx
++++ b/node_modules/react-native-collapsible-tabs-native/src/TabBar.tsx
+@@ -58,7 +58,7 @@ export function TabBar<T extends Route = Route>({
+   scrollEnabled = true,
+   position,
+ }: TabBarProps<T>) {
+-  const scrollRef = useRef<ScrollView>(null);
++  const scrollRef = useRef<React.ComponentRef<typeof ScrollView>>(null);
+   const itemX = useRef<number[]>([]);
+ 
+   // One continuous value drives every tab: the pager's live position when the
