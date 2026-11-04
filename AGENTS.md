@@ -114,6 +114,15 @@ Sans `.env.local`, l'app cible la **production** (`api.joutio.com`, `identity.jo
 
 `ios/` et `android/` sont générés (CNG) et ignorés par git : configurer dans `app.config.ts` et les plugins.
 
+**APK (GitHub Actions)** : dépôt public `joutio/joutio-mobile-expo`, workflow `.github/workflows/android-apk.yml`
+(push sur `main` hors `*.md`, ou lancement manuel). Il construit une APK release arm64 sur l'API de production,
+signée avec la clé `joutio-preview` (secrets `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`,
+`ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`, plugin `plugins/withAndroidReleaseSigning.js`), et la publie dans la
+release `v<version>` (`joutio-<version>.apk`). La version se change à la main dans `package.json` ; le
+`versionCode` vaut 10 000 000 + `major * 1e6 + minor * 1e3 + patch`, au-dessus de joutio-mobile (1.1.2) : l'APK
+s'installe par-dessus l'ancienne app. Le catalogue est la première page tant que `EXPO_PUBLIC_CATALOG` n'est pas
+`false`. Commits sans ligne de co-auteur.
+
 ---
 
 ## 4. Règles
