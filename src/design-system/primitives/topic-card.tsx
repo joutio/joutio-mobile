@@ -14,18 +14,20 @@ export interface TopicCardProps {
   /** URL ou actif local. Absente : fond de l'univers et son icône. */
   image?: string | number
   onPress?: () => void
+  /** Nom accessible, par défaut « titre, univers » (le Top 10 y ajoute le rang). */
+  accessibilityLabel?: string
   style?: StyleProp<ViewStyle>
 }
 
 /** Carte de sujet : visuel (16:9 en paysage, 3:4 en portrait), univers et nom. */
-export function TopicCard({ title, category, orientation = 'landscape', image, onPress, style }: TopicCardProps) {
+export function TopicCard({ title, category, orientation = 'landscape', image, onPress, accessibilityLabel, style }: TopicCardProps) {
   const { colors, radius } = useTheme()
   const portrait = orientation === 'portrait'
   const color = tokens.category[category].color
   return (
     <PressableScale
       accessibilityRole={onPress ? 'button' : undefined}
-      accessibilityLabel={`${title}, ${tokens.category[category].label}`}
+      accessibilityLabel={accessibilityLabel ?? `${title}, ${tokens.category[category].label}`}
       disabled={!onPress}
       pressedScale={0.99}
       onPress={onPress}

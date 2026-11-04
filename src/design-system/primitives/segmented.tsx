@@ -1,6 +1,16 @@
 import { useEffect, useRef, useState } from 'react'
-import { Platform, ScrollView, View, type ScrollViewInstance, type StyleProp, type ViewStyle } from 'react-native'
-import Animated, { ReduceMotion, useAnimatedStyle, useDerivedValue, useSharedValue, withSpring, type SharedValue } from 'react-native-reanimated'
+import { Platform, View, type StyleProp, type ViewStyle } from 'react-native'
+import Animated, {
+  ReduceMotion,
+  scrollTo,
+  useAnimatedReaction,
+  useAnimatedRef,
+  useAnimatedStyle,
+  useDerivedValue,
+  useSharedValue,
+  withSpring,
+  type SharedValue,
+} from 'react-native-reanimated'
 import { useReducedMotion } from '../motion'
 import { useTheme } from '../theme/theme-provider'
 import { tokens } from '../tokens.generated'
@@ -32,19 +42,22 @@ export interface SegmentedProps<T extends string> {
 }
 
 /**
- * Choix exclusif entre quelques options. Natif sur iOS et Android (`NativeSegmented`) ; `scrollable` (longue
- * liste d'onglets) reste une barre faite main : aucun contrôle système ne défile.
+ * Choix exclusif entre quelques options. Natif sur iOS et Android (`NativeSegmented`) ; barre faite main quand elle
+ * défile (`scrollable`, longue liste d'onglets) ou qu'elle **suit un pager** (`position`) : aucun contrôle système ne
+ * défile ni ne suit le doigt.
  */
 export function Segmented<T extends string>(props: SegmentedProps<T>) {
-  if (!props.scrollable && Platform.OS !== 'web') return <NativeSegmented {...props} />
+  if (!props.scrollable && !props.position && Platform.OS !== 'web') return <NativeSegmented {...props} />
   return <ScrollableSegmented {...props} />
 }
 
 function ScrollableSegmented<T extends string>({ options, value, onChange, label, scrollable = false, position, style }: SegmentedProps<T>) {
   const { colors, radius } = useTheme()
   const reduced = useReducedMotion()
-  const scroller = useRef<ScrollViewInstance>(null)
+  const scroller = useAnimatedRef<Animated.ScrollView>()
   const [width, setWidth] = useState(0)
+  const viewport = useSharedValue(0)
+  const content = useSharedValue(0)
   const selectedIndex = Math.max(
     0,
     options.findIndex((option) => option.value === value),
@@ -61,12 +74,12 @@ function ScrollableSegmented<T extends string>({ options, value, onChange, label
     spring.value = reduced ? selectedIndex : withSpring(selectedIndex, { mass: 1, stiffness: 420, damping: 34, reduceMotion: ReduceMotion.Never })
   }, [selectedIndex, reduced, spring])
 
-  // Garde l'option active centrée, sans animation en mouvement réduit.
+  // Sans pager : garde l'option active centrée une fois choisie, sans animation en mouvement réduit.
   useEffect(() => {
     const frame = measured.current[selectedIndex]
-    if (!scrollable || !frame || width === 0) return
+    if (!scrollable || position || !frame || width === 0) return
     scroller.current?.scrollTo({ x: Math.max(0, frame.x - (width - frame.width) / 2), animated: !reduced })
-  }, [scrollable, selectedIndex, width, reduced])
+  }, [scrollable, position, selectedIndex, width, reduced, scroller])
 
   // Indicateur courant (position et largeur), interpolé entre deux options pendant le balayage.
   const current = useDerivedValue(() => {
@@ -78,6 +91,14 @@ function ScrollableSegmented<T extends string>({ options, value, onChange, label
     const t = p - Math.floor(p)
     return { x: from.x + (to.x - from.x) * t, width: from.width + (to.width - from.width) * t }
   })
+
+  // Avec un pager, la barre défile **avec le doigt** pour garder l'indicateur centré, et s'aimante avec lui.
+  useAnimatedReaction(
+    () => (scrollable && position && current.value && viewport.value > 0 ? current.value.x - (viewport.value - current.value.width) / 2 : null),
+    (x) => {
+      if (x !== null) scrollTo(scroller, Math.min(Math.max(0, x), Math.max(0, content.value - viewport.value)), 0, false)
+    },
+  )
   // Uniquement `transform` et `opacity` : animer `width` relancerait la mise en page à chaque frame du balayage.
   // La pastille est faite de deux bouts arrondis fixes et d'un centre étiré (`scaleX`), sans déformer les coins.
   const r = radius.sm
@@ -141,14 +162,23 @@ function ScrollableSegmented<T extends string>({ options, value, onChange, label
     <View
       accessibilityRole="radiogroup"
       accessibilityLabel={label}
-      onLayout={(event) => setWidth(event.nativeEvent.layout.width)}
+      onLayout={(event) => {
+        setWidth(event.nativeEvent.layout.width)
+        viewport.value = event.nativeEvent.layout.width
+      }}
       style={[{ alignSelf: 'stretch', borderRadius: radius.md, backgroundColor: colors.raised, overflow: 'hidden' }, style]}
     >
       {scrollable ? (
-        <ScrollView ref={scroller} horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={rail}>
+        <Animated.ScrollView
+          ref={scroller}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={rail}
+          onContentSizeChange={(contentWidth) => (content.value = contentWidth)}
+        >
           {pill}
           {items}
-        </ScrollView>
+        </Animated.ScrollView>
       ) : (
         <View style={rail}>
           {pill}

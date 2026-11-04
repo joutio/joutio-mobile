@@ -14,7 +14,8 @@
 | 0. Fondations : tokens, thème, polices, icônes, actifs, mouvement réduit | fait |
 | 1. Socle de composants (rangées 1 à 5) | fait, à valider sur appareil |
 | 2.1 Onboarding : lancement, connexion OTP, code, univers, notifications, premier thème, session coupée | fait |
-| 2.2 Accueil | à faire (`(app)/index.tsx` est provisoire) |
+| 2.2 Accueil | fait, à valider sur appareil : shell à 5 onglets (`(app)/(tabs)`, `JoTabBar`), `Rail`, `TopTen`, données `/api/home` ; série et badge Défis **mockés** (`features/home/lib/home-mocks.ts`, manques BFF dans `accueil.md` § 10) ; Social, Défis et Profil provisoires |
+| 2.3 Sujets | fait, à valider sur appareil : recherche, Filtres (feuille), puces, tri, grille 2 colonnes paginée sur `/api/topics` ; multi-univers et « Masquer les sujets suivis » **simulés** (`features/topics/lib/topics-service.ts`, manques BFF dans `sujets.md` § 5) |
 
 Le **catalogue** (`/catalog`, `joutio://catalog`) est réservé au dev (`__DEV__`) et absent des builds de release.
 
@@ -33,10 +34,15 @@ Décisions :
   tokens ; composants de marque faits main d'après le lab.
   - En-têtes : `native-stack` via `nativeHeaderOptions(theme)` (+ `largeTitleOptions` sur une racine) ; `Screen`
     en mode `nativeHeader`. `MobileTopBar` ne sert plus qu'aux cas sans en-tête natif.
-  - `Switch` système ; `Segmented` natif (SwiftUI / Material 3) sauf `scrollable` (barre d'onglets maison, à
+  - `Switch` système ; `Segmented` natif (SwiftUI / Material 3) sauf `scrollable` ou lié à un pager (`position` :
+    l'indicateur suit le doigt, la barre défile avec et s'aimante) — barre d'onglets maison, à
     indicateur glissant) ; `Menu` Joutio identique sur iOS et Android (le `DropdownMenu` Compose de `@expo/ui` ne
-    s'ouvrait pas sur Android), ancré, en ressort, placé dessus ou dessous ; `Dialog` = alerte
-    système (`showDialog`) ; poignée native des feuilles.
+    s'ouvrait pas sur Android), ancré, en ressort, placé dessus ou dessous ; `Dialog` **Joutio**
+    (2026-11-04, remplace l'alerte système) : centré ou en feuille, tuile d'icône, `showDialog()` rendu par
+    `DialogHost` (layout racine) ou `<Dialog open>` ; **même mouvement que `Menu`** (ressort 520/34, opacité ×1,6,
+    échelle 0,86 → 1 depuis le centre ou le bord bas ; fermeture 140 ms) — les cascades de contenu et le flou ont été
+    refusés le 2026-11-04 ;
+    poignée native des feuilles.
   - Précision : filets `HAIRLINE`, `inputStyle` (pas d'interlignage sur un `TextInput`), Dynamic Type plafonné à
     ×1,6, ressort au relâchement, ripple Android sur les lignes.
   - Un `Button` non `full` dans une rangée prend `style={{ alignSelf: 'center' }}`.
@@ -50,7 +56,8 @@ Décisions :
   translation. Mouvement repris du Parallax Header de Reacticx (zoom ×2,5 au tiré, parallaxe à mi-vitesse) :
   `heroImageTransform`, `heroTitleOpacity`, `compactBarProgress` (`parallax-screen.tsx`), spec `fiche-sujet.md`
   § 1. Le correctif de typage RN 0.88 de la lib vit dans `patches/` (`patch-package`, en `postinstall`).
-  `ParallaxScreen` reste pour les écrans à image sans onglets.
+  `ParallaxScreen` reste pour les écrans à image sans onglets. **`TabsScrollView`** : même moteur sans image (Accueil :
+  en-tête qui se replie, `Segmented` collé, pages balayables en `TabScrollView`/`TabList`).
 - **Reanimated** : `ANDROID_SYNCHRONOUSLY_UPDATE_UI_PROPS` et `IOS_SYNCHRONOUSLY_UPDATE_UI_PROPS` activés
   (`package.json` → `reanimated.staticFeatureFlags`, effet au rebuild natif) ; animer `transform`/`opacity`, jamais
   `width`/`height` à chaque frame (l'indicateur de `Segmented` étire son centre en `scaleX`).
@@ -151,11 +158,13 @@ s'installe par-dessus l'ancienne app. Le catalogue est la première page tant qu
   couleur (Avatar annonce rang, présence, verrouillage).
 - **Écrans toujours sombres** (duel, intros, déblocages, reconnexion) : `ForceDark`. Toasts suspendus avec
   `useToastSuppression()`.
-- **Feuilles** : `MobileSheet` (TrueSheet), ajustée au contenu jusqu'à 80 % ou `tall` à 92 %. Une étape
+- **Feuilles** : `MobileSheet` (TrueSheet), ajustée au contenu jusqu'à 80 % ou `tall` à 92 %. Les actions
+  (`footer`) sont **collées en bas** (`footerOptions.position: 'absolute'`), le contenu défile dessous. Une étape
   suivante s'empile dans une nouvelle feuille.
 - **Défilement collé** : `StickyBar` + `stickyHeaderIndices` et `useStickyBar()` ; sous une barre compacte
   (`ParallaxScreen`), collage par Reanimated.
-- **Listes** : toute liste non bornée finit par `FeedFooter` ; toucher l'onglet actif remonte en haut
+- **Listes** : toute liste non bornée finit par `FeedFooter`, la suite se charge par `usePullToLoadMore`
+  (pull-to-refresh inversé ; sur Android, en attendant le geste, au relâcher en bas de liste) ; toucher l'onglet actif remonte en haut
   (`useScrollToTop`, émis par `JoTabBar`).
 - **Glass** : flou natif sur iOS ; teinte seule sur Android (le flou y exige `BlurTargetView`).
 - 1 composant = 1 fichier, export nommé, props en `interface`, jamais `any`. Jamais « Toi » comme nom de joueur.

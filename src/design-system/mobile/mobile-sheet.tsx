@@ -1,6 +1,6 @@
 import { TrueSheet } from '@lodev09/react-native-true-sheet'
 import { useEffect, useRef, type ReactNode, type RefObject } from 'react'
-import { ScrollView, useWindowDimensions, View, type ScrollViewInstance } from 'react-native'
+import { Platform, ScrollView, useWindowDimensions, View, type ScrollViewInstance } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useModalFocus, type ViewRef } from '../a11y'
 import { useTheme } from '../theme/theme-provider'
@@ -27,6 +27,9 @@ export interface MobileSheetProps {
   returnFocusTo?: RefObject<ViewRef | null>
   children: ReactNode
 }
+
+/** Feuille flottante (iOS 26) : détachée du bas de l'écran, sans safe area basse à réserver. */
+const FLOATING = Platform.OS === 'ios'
 
 /** `rgba(r,g,b,a)` → couleur opaque et opacité, pour le voile natif. */
 const splitScrim = (scrim: string) => {
@@ -74,13 +77,20 @@ export function MobileSheet({ open, onClose, title, subtitle, onBack, action, ta
       accessibilityOptions={{ paneTitle: title }}
       scrollableRef={scroller}
       header={<SheetHeader title={title} subtitle={subtitle} onBack={onBack} action={action} onClose={onClose} titleRef={titleRef} handle={false} />}
+      // Actions collées au bas de la feuille, par-dessus le contenu qui défile ; TrueSheet décale la fin du contenu
+      // de la hauteur du pied (`scrollableOptions.insetAdjustment` automatique).
+      footerOptions={{ position: 'absolute' }}
+      // iOS 26 : la feuille flotte au-dessus du bas de l'écran (coins arrondis, marges), la zone de l'indicateur
+      // d'accueil n'est pas sous elle. Android : la feuille touche le bord, sa safe area reste sous le contenu.
+      insetAdjustment={FLOATING ? 'never' : 'automatic'}
       footer={
         footer ? (
           <View
             style={{
               paddingHorizontal: tokens.space[5],
               paddingTop: tokens.space[3],
-              paddingBottom: tokens.space[5] + insets.bottom,
+              // Même marge que sur les côtés ; sur Android, TrueSheet ajoute la safe area basse en dessous.
+              paddingBottom: tokens.space[5],
               backgroundColor: colors.surface,
             }}
           >
@@ -100,7 +110,10 @@ export function MobileSheet({ open, onClose, title, subtitle, onBack, action, ta
         ref={scroller}
         nestedScrollEnabled
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: tokens.space[5], paddingBottom: footer ? tokens.space[3] : tokens.space[5] + insets.bottom }}
+        contentContainerStyle={{
+          paddingHorizontal: tokens.space[5],
+          paddingBottom: footer ? tokens.space[3] : tokens.space[5] + (FLOATING ? 0 : insets.bottom),
+        }}
       >
         {children}
       </ScrollView>

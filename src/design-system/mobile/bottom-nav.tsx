@@ -1,5 +1,5 @@
 import type { BottomTabBarProps } from 'expo-router/js-tabs'
-import { View, type StyleProp, type ViewStyle } from 'react-native'
+import { Platform, View, type StyleProp, type ViewStyle } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import type { Icon } from '../icons'
 import { CountBadge } from '../primitives/icon-button'
@@ -10,7 +10,11 @@ import { tokens } from '../tokens.generated'
 import { GlassBackground } from './glass'
 import { HAIRLINE } from '../theme/hairline'
 
-export const BOTTOM_NAV_HEIGHT = 64
+/** Hauteur au standard de la plateforme (`navigation.md` § BottomNav) : UITabBar 49 pt, Material 3 80 dp. */
+export const BOTTOM_NAV_HEIGHT = Platform.OS === 'ios' ? 49 : 80
+/** Écart icône-libellé et position du badge, selon la même règle. */
+const LABEL_GAP = Platform.OS === 'ios' ? tokens.space[1] : tokens.space[2]
+const BADGE_TOP = Platform.OS === 'ios' ? 2 : 14
 
 export interface BottomNavItem<K extends string> {
   key: K
@@ -53,13 +57,13 @@ export function BottomNav<K extends string>({ items, active, onChange, style }: 
             pressedScale={0.94}
             haptic="selection"
             onPress={() => onChange?.(key)}
-            style={{ flex: 1, height: BOTTOM_NAV_HEIGHT, alignItems: 'center', justifyContent: 'center', gap: tokens.space[1] }}
+            style={{ flex: 1, height: BOTTOM_NAV_HEIGHT, alignItems: 'center', justifyContent: 'center', gap: LABEL_GAP }}
           >
             <IconComponent size={24} weight={isActive ? 'fill' : 'regular'} color={color} />
             <Text variant="caption" weight={isActive ? '600' : undefined} color={color} numberOfLines={1}>
               {label}
             </Text>
-            {count && <CountBadge count={count} style={{ position: 'absolute', top: 6, left: '50%', marginLeft: 2 }} />}
+            {count && <CountBadge count={count} style={{ position: 'absolute', top: BADGE_TOP, left: '50%', marginLeft: 2 }} />}
           </PressableScale>
         )
       })}

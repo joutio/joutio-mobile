@@ -8,7 +8,7 @@ import { View } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { KeyboardProvider } from 'react-native-keyboard-controller'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
-import { Banner, Button, ThemeProvider, ToastHost, tokens, useJoutioFonts, useTheme } from '@/design-system'
+import { Banner, Button, DialogHost, ThemeProvider, ToastHost, tokens, useJoutioFonts, useTheme } from '@/design-system'
 import { LaunchScreen, SessionRuntime, useLogout, useSessionStore } from '@/features/auth'
 import { useMe } from '@/features/me'
 import { registerDevMenu } from '@/dev/dev-menu'
@@ -82,6 +82,7 @@ function Root() {
       <SessionRuntime />
       <Navigation />
       <ToastHost />
+      <DialogHost />
     </>
   )
 }

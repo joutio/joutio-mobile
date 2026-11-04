@@ -86,54 +86,42 @@ function Hero({ image, title, eyebrow, centered, intro, scroll, titleStart, titl
 
   return (
     <View style={{ backgroundColor: colors.bg }}>
-      <View
-        style={{ height: HERO_HEIGHT, overflow: 'hidden', backgroundColor: colors.surface }}
-        accessible
-        accessibilityRole="header"
-        accessibilityLabel={title}
-      >
-        {image !== undefined && (
-          <Animated.View style={[StyleSheet.absoluteFill, imageStyle]}>
-            <Image source={image} contentFit="cover" style={StyleSheet.absoluteFill} />
+      {/* Découpe qui déborde vers le haut (comme ParallaxScreen) : au tiré, le natif descend l'en-tête et l'image
+          zoomée couvre l'espace libéré au-dessus, au lieu d'être coupée au bord de la bannière. */}
+      <View style={{ marginTop: -HERO_HEIGHT * 4, paddingTop: HERO_HEIGHT * 4, overflow: 'hidden' }}>
+        <View style={{ height: HERO_HEIGHT, backgroundColor: colors.surface }} accessible accessibilityRole="header" accessibilityLabel={title}>
+          {image !== undefined && (
+            <Animated.View style={[StyleSheet.absoluteFill, imageStyle]}>
+              <Image source={image} contentFit="cover" style={StyleSheet.absoluteFill} />
+            </Animated.View>
+          )}
+          <View
+            style={[StyleSheet.absoluteFill, { experimental_backgroundImage: `linear-gradient(to top, ${colors.bg}, ${alpha(colors.bg, 0.4)}, transparent)` }]}
+          />
+          <Animated.View
+            onLayout={(event) => {
+              const { y, height } = event.nativeEvent.layout
+              titleStart.value = y - barHeight
+              titleLength.value = height
+            }}
+            style={[
+              {
+                position: 'absolute',
+                left: tokens.space[5],
+                right: tokens.space[5],
+                bottom: tokens.space[4],
+                gap: tokens.space[2],
+                alignItems: centered ? 'center' : 'flex-start',
+              },
+              titleStyle,
+            ]}
+          >
+            {eyebrow}
+            <Text variant="title1" align={centered ? 'center' : 'left'}>
+              {title}
+            </Text>
           </Animated.View>
-        )}
-        <View
-          style={[StyleSheet.absoluteFill, { experimental_backgroundImage: `linear-gradient(to top, ${colors.bg}, ${alpha(colors.bg, 0.4)}, transparent)` }]}
-        />
-        {/* La barre d'état reste lisible sur n'importe quelle image. */}
-        <View
-          style={{
-            position: 'absolute',
-            left: 0,
-            right: 0,
-            top: 0,
-            height: 112,
-            experimental_backgroundImage: `linear-gradient(to bottom, ${alpha(colors.bg, 0.8)}, transparent)`,
-          }}
-        />
-        <Animated.View
-          onLayout={(event) => {
-            const { y, height } = event.nativeEvent.layout
-            titleStart.value = y - barHeight
-            titleLength.value = height
-          }}
-          style={[
-            {
-              position: 'absolute',
-              left: tokens.space[5],
-              right: tokens.space[5],
-              bottom: tokens.space[4],
-              gap: tokens.space[2],
-              alignItems: centered ? 'center' : 'flex-start',
-            },
-            titleStyle,
-          ]}
-        >
-          {eyebrow}
-          <Text variant="title1" align={centered ? 'center' : 'left'}>
-            {title}
-          </Text>
-        </Animated.View>
+        </View>
       </View>
       {intro && <View style={{ paddingHorizontal: tokens.space[5], paddingTop: tokens.space[2], paddingBottom: tokens.space[3] }}>{intro}</View>}
     </View>
@@ -205,6 +193,7 @@ export function CollapsibleTabsScreen<T extends string>({
   const titleLength = useSharedValue(56)
   const progress = useDerivedValue(() => compactBarProgress(scroll.value, titleStart.value, titleLength.value))
   const opaque = useAnimatedStyle(() => ({ opacity: progress.value }))
+  const statusScrim = useAnimatedStyle(() => ({ opacity: 1 - progress.value }))
 
   const changeIndex = (next: number) => {
     setIndex(next)
@@ -244,6 +233,23 @@ export function CollapsibleTabsScreen<T extends string>({
         onScrollOffsetChange={onScrollOffsetChange}
         onPageScroll={onPageScroll}
         lazy
+      />
+
+      {/* Lisibilité de la barre d'état : épinglé à l'écran (pas dans l'en-tête), il reste en place au tiré et s'efface
+          quand la barre compacte devient opaque. */}
+      <Animated.View
+        pointerEvents="none"
+        style={[
+          {
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            top: 0,
+            height: 112,
+            experimental_backgroundImage: `linear-gradient(to bottom, ${alpha(colors.bg, 0.8)}, transparent)`,
+          },
+          statusScrim,
+        ]}
       />
 
       {/* Barre compacte, hors de l'en-tête : fixe en haut de l'écran, elle s'opacifie quand le titre passe dessous. */}

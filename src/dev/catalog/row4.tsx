@@ -1,13 +1,18 @@
-import { useRef, useState } from 'react'
+import { useLocalSearchParams } from 'expo-router'
+import { useEffect, useRef, useState } from 'react'
 import { View } from 'react-native'
 import {
   Banner,
   Button,
   DotsThreeIcon,
+  FlagIcon,
+  LightningIcon,
+  SignOutIcon,
   IconButton,
   ListRow,
   Menu,
   showDialog,
+  type DialogOptions,
   MobileSheet,
   SheetHeader,
   Toast,
@@ -97,42 +102,57 @@ export function SheetHeaderDemo() {
   )
 }
 
+const DIALOGS = {
+  danger: {
+    icon: FlagIcon,
+    tone: 'danger',
+    title: 'Abandonner le duel ?',
+    message: 'La partie compte comme une défaite.',
+    actions: [
+      { label: 'Abandonner', variant: 'filled', tone: 'destructive' },
+      { label: 'Continuer', variant: 'plain' },
+    ],
+  },
+  accent: {
+    icon: LightningIcon,
+    tone: 'accent',
+    title: 'Quitter le salon ?',
+    message: 'Ton adversaire sera prévenu et le salon fermé.',
+    actions: [
+      { label: 'Quitter', variant: 'filled' },
+      { label: 'Rester', variant: 'plain' },
+    ],
+  },
+  sheet: {
+    sheet: true,
+    icon: SignOutIcon,
+    title: 'Se déconnecter ?',
+    message: 'Tu pourras te reconnecter avec ton e-mail.',
+    actions: [
+      { label: 'Se déconnecter', variant: 'filled', tone: 'destructive' },
+      { label: 'Annuler', variant: 'plain' },
+    ],
+  },
+} satisfies Record<string, DialogOptions>
+
+/** `?open=danger|accent|sheet` (dev) ouvre un dialog après le montage, pour le vérifier sans toucher l'écran. */
 export function DialogDemo() {
+  const { open } = useLocalSearchParams<{ open?: keyof typeof DIALOGS }>()
+  useEffect(() => {
+    if (!open || !(open in DIALOGS)) return
+    const timer = setTimeout(() => showDialog(DIALOGS[open]), 800)
+    return () => clearTimeout(timer)
+  }, [open])
   return (
     <>
-      <Button
-        full
-        variant="tinted"
-        tone="destructive"
-        onPress={() =>
-          showDialog({
-            title: 'Abandonner le duel ?',
-            message: 'La partie compte comme une défaite.',
-            actions: [
-              { label: 'Abandonner', variant: 'filled', tone: 'destructive' },
-              { label: 'Continuer', variant: 'plain' },
-            ],
-          })
-        }
-      >
-        Abandonner le duel (alerte)
+      <Button full variant="tinted" tone="destructive" onPress={() => showDialog(DIALOGS.danger)}>
+        Abandonner le duel (danger)
       </Button>
-      <Button
-        full
-        variant="gray"
-        tone="neutral"
-        onPress={() =>
-          showDialog({
-            sheet: true,
-            title: 'Se déconnecter ?',
-            actions: [
-              { label: 'Se déconnecter', variant: 'filled', tone: 'destructive' },
-              { label: 'Annuler', variant: 'plain' },
-            ],
-          })
-        }
-      >
-        Se déconnecter (feuille d'actions)
+      <Button full variant="tinted" onPress={() => showDialog(DIALOGS.accent)}>
+        Quitter le salon (accent)
+      </Button>
+      <Button full variant="gray" tone="neutral" onPress={() => showDialog(DIALOGS.sheet)}>
+        Se déconnecter (feuille)
       </Button>
     </>
   )

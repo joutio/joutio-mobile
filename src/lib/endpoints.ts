@@ -12,6 +12,14 @@ export const ENDPOINTS = {
     token: `${config.identityUrl}/oauth2/token`,
   },
   me: '/api/me',
+  home: '/api/home',
+  topics: {
+    list: '/api/topics',
+    facets: '/api/topics/facets',
+  },
+  notifications: {
+    unreadCount: '/api/notifications/unread-count',
+  },
   onboarding: {
     interests: '/api/me/interests',
     recommendations: '/api/me/onboarding/recommendations',
