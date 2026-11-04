@@ -19,7 +19,7 @@ import { HAIRLINE } from '../theme/hairline'
 import { useTheme } from '../theme/theme-provider'
 import { tokens } from '../tokens.generated'
 import { TOP_BAR_HEIGHT } from './mobile-top-bar'
-import { usePageRefresh } from './tabs-scroll-view'
+import { usePageRefresh } from './page-refresh'
 import { CompactBarRow, compactBarProgress, HERO_HEIGHT, heroImageTransform, heroTitleOpacity, ParallaxProgressProvider } from './parallax-screen'
 
 export type { CollapsibleTabsRef }
@@ -237,13 +237,13 @@ export function CollapsibleTabsScreen<T extends string>({
         headerMinHeight={barHeight}
         onScrollOffsetChange={onScrollOffsetChange}
         onPageScroll={onPageScroll}
-        {...refresh}
-        refreshTintColor={colors.text}
-        refreshBackgroundColor={colors.surface}
+        {...refresh.tabProps}
         // Sous la barre compacte, au-dessus de l'image qui zoome.
         refreshIndicatorOffset={barHeight + tokens.space[5]}
         lazy
       />
+
+      {refresh.indicator(barHeight + tokens.space[4])}
 
       {/* Lisibilité de la barre d'état : épinglé à l'écran (pas dans l'en-tête), il reste en place au tiré et s'efface
           quand la barre compacte devient opaque. */}

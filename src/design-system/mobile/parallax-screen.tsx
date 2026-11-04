@@ -50,10 +50,9 @@ export interface TitleHandoff {
   length: number
 }
 
-/** Titre sur l'image : s'efface en passant sous la barre (et dès qu'on tire vers le bas). */
+/** Titre sur l'image : s'efface **uniquement** en passant sous la barre ; il reste visible au tiré et au rechargement. */
 export function heroTitleOpacity(y: number, start: number, length: number) {
   'worklet'
-  if (y < 0) return interpolate(y, [-HERO_HEIGHT * 0.3, 0], [0, 1], 'clamp')
   return interpolate(y, [start, start + length * 0.6], [1, 0], 'clamp')
 }
 
