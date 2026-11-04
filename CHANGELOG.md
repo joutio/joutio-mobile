@@ -1,3 +1,9 @@
+## [1.2.0](https://github.com/joutio/joutio-mobile-expo/compare/v1.1.0...v1.2.0) (2026-11-04)
+
+### Features
+
+* premium badge, global page refresh and smoother controls ([19004af](https://github.com/joutio/joutio-mobile-expo/commit/19004af7a1db669b4368774b0083389e2b026180))
+
 ## [1.1.0](https://github.com/joutio/joutio-mobile-expo/compare/v1.0.1...v1.1.0) (2026-11-04)
 
 ### Features
