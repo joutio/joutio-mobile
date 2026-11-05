@@ -1,3 +1,9 @@
+## [1.11.1](https://github.com/joutio/joutio-mobile-expo/compare/v1.11.0...v1.11.1) (2026-11-05)
+
+### Bug Fixes
+
+* **social:** center empty-state actions ([9b598bf](https://github.com/joutio/joutio-mobile-expo/commit/9b598bf8d3aeaef3e0d0e20cd6c24727916ec67e))
+
 ## [1.11.0](https://github.com/joutio/joutio-mobile-expo/compare/v1.10.2...v1.11.0) (2026-11-05)
 
 ### Features
