@@ -1,3 +1,9 @@
+## [1.4.0](https://github.com/joutio/joutio-mobile-expo/compare/v1.3.0...v1.4.0) (2026-11-05)
+
+### Features
+
+* sticky home tabs, drag to load more and scroll to top ([c0b37b6](https://github.com/joutio/joutio-mobile-expo/commit/c0b37b619a46a4f5ae9adc796abcf54df4e907f7))
+
 ## [1.3.0](https://github.com/joutio/joutio-mobile-expo/compare/v1.2.1...v1.3.0) (2026-11-04)
 
 ### Features
