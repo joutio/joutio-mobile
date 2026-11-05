@@ -193,6 +193,54 @@ export interface IdResponse {
 
 export type PresenceStatus = 'ONLINE' | 'OFFLINE'
 
+export type PeopleSort = 'PRESENCE' | 'RECENT' | 'ELO' | 'ALPHA'
+
+export interface PresenceView {
+  userId: string
+  status: PresenceStatus
+  lastSeenAt: string | null
+}
+
+/** `GET /api/profiles/{id}` : fiche joueur complète (profil public + progression + stats). */
+export interface PlayerProfileView {
+  userId: string
+  pseudonym: string
+  bio: string | null
+  country: string | null
+  avatarOptions: string | null
+  bannerUrl: string | null
+  /** Clé du titre porté (`topicId:TIER`), null si aucun. */
+  equippedTitle: string | null
+  isMe: boolean
+  following: boolean
+  presence: PresenceView | null
+  progression: ProgressionView | null
+  stats: DuelStatsView | null
+  followersCount: number
+  followingCount: number
+  suspended: boolean
+  bot: boolean
+}
+
+/** `GET /api/profiles/{id}/topics` : sujet joué par un joueur. */
+export interface TopicStatView {
+  topicId: string
+  names: TopicNames
+  emoji: string | null
+  color: string | null
+  imageUrl: string | null
+  games: number
+  xp: number
+}
+
+/** `GET /api/profiles/{id}/head-to-head?against=` : bilan des duels communs. */
+export interface HeadToHeadView {
+  played: number
+  wins: number
+  losses: number
+  draws: number
+}
+
 /** `GET /api/profiles/{id}/following|followers` : carte joueur. */
 export interface PlayerCardView {
   userId: string

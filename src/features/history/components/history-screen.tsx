@@ -105,8 +105,8 @@ export function HistoryScreen() {
     })
 
   const empty = !list.isPending && games.length === 0
-  // Repli sur le sujet de la première partie : un deep link ou un retour restauré peut perdre les paramètres d'en-tête.
-  const subtitle = params.topicName ?? games[0]?.topic.names.fr ?? params.opponentName
+  // Fiche joueur : le sous-titre est l'adversaire ; sinon on retombe sur le sujet de la première partie (deep link restauré).
+  const subtitle = params.opponentId ? params.opponentName : (params.topicName ?? games[0]?.topic.names.fr)
   const backLabel = params.backLabel ?? (params.opponentId ? 'Joueur' : 'Sujet')
 
   return (

@@ -1,7 +1,7 @@
 import { api } from '@/lib/api'
 import { ENDPOINTS } from '@/lib/endpoints'
 import type { EventEnvelopeResponse } from '@/lib/realtime/notification-stream'
-import type { IdResponse, PageResponse, PlayerCardView } from '@/shared/types/bff'
+import type { IdResponse, PageResponse, PeopleSort, PlayerCardView } from '@/shared/types/bff'
 import type { BotDifficulty } from '@/features/duel/domain/game-dto'
 import type { MatchmakingTicket } from '../domain/matchmaking'
 import type { MatchmakingNotification } from '../domain/matchmaking-notification'
@@ -31,9 +31,9 @@ export const playService = {
   /** Défi nominatif : crée une salle réservée à l'invité, qui l'accepte depuis ses Défis. */
   challenge: (topicId: string, opponentId: string) => api.post<IdResponse>(ENDPOINTS.challenges.create, { topicId, opponentId }),
 
-  contacts: (userId: string, direction: 'following' | 'followers', query: string, page: number) =>
+  contacts: (userId: string, direction: 'following' | 'followers', query: string, sort: PeopleSort, page: number) =>
     api.get<PageResponse<PlayerCardView>>(ENDPOINTS.profiles[direction](userId), {
-      params: { q: query || undefined, page, size: CONTACTS_PAGE_SIZE },
+      params: { q: query || undefined, sort, page, size: CONTACTS_PAGE_SIZE },
     }),
 
   setAutoTrain: (userId: string, enabled: boolean) => api.put<void>(ENDPOINTS.profiles.autoTrain(userId), { enabled }),

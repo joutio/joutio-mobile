@@ -53,6 +53,7 @@ export { SignOutIcon } from 'phosphor-react-native/src/icons/SignOut'
 export { TrashIcon } from 'phosphor-react-native/src/icons/Trash'
 
 export { HeartIcon } from 'phosphor-react-native/src/icons/Heart'
+export { MapPinIcon } from 'phosphor-react-native/src/icons/MapPin'
 export { ShareNetworkIcon } from 'phosphor-react-native/src/icons/ShareNetwork'
 export { GoogleLogoIcon } from 'phosphor-react-native/src/icons/GoogleLogo'
 export { FacebookLogoIcon } from 'phosphor-react-native/src/icons/FacebookLogo'

@@ -8,7 +8,7 @@ import { ENDPOINTS } from '@/lib/endpoints'
 import { queryKeys } from '@/lib/query-keys'
 import { useNotificationStream } from '@/lib/realtime/use-notification-stream'
 import { getItem, setItem } from '@/lib/storage'
-import type { MeView } from '@/shared/types/bff'
+import type { MeView, PeopleSort } from '@/shared/types/bff'
 import type { BotDifficulty } from '@/features/duel/domain/game-dto'
 import { applyMatchmakingNotification, emptyMatchmaking, type Matchmaking } from '../domain/matchmaking'
 import type { MatchmakingNotification } from '../domain/matchmaking-notification'
@@ -112,12 +112,12 @@ export function useChallengePlayer() {
 
 /* ───────────────────────── Contacts (Défier un joueur) ───────────────────────── */
 
-export function useContacts(direction: 'following' | 'followers', query: string, enabled: boolean) {
+export function useContacts(direction: 'following' | 'followers', query: string, enabled: boolean, sort: PeopleSort = 'RECENT') {
   const me = useMe(true)
   const userId = me.data?.userId ?? ''
   return useInfiniteQuery({
-    queryKey: ['contacts', userId, direction, query],
-    queryFn: ({ pageParam }) => playService.contacts(userId, direction, query, pageParam),
+    queryKey: ['contacts', userId, direction, query, sort],
+    queryFn: ({ pageParam }) => playService.contacts(userId, direction, query, sort, pageParam),
     initialPageParam: 0,
     getNextPageParam: (last) => (last.last ? undefined : last.page + 1),
     enabled: enabled && Boolean(userId),
