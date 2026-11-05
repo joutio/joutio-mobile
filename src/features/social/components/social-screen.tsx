@@ -20,7 +20,7 @@ import {
   TabLoadMoreScrollView,
   TabsScrollView,
   tokens,
-  UsersIcon,
+  UsersThreeIcon,
   WarningCircleIcon,
 } from '@/design-system'
 import { useMe } from '@/features/me'
@@ -30,15 +30,13 @@ import { formatNumber } from '@/features/topic/lib/format'
 import type { PeopleSort, PlayerCardView } from '@/shared/types/bff'
 import { tierOf } from '@/shared/utils/tier'
 import { useMyProfile } from '../hooks/use-social'
+import { presenceOf, presenceSub } from '../lib/presence'
 import { ChallengePlayerSheet } from './challenge-player-sheet'
 import { SocialSortSheet } from './social-sort-sheet'
 
 const GUTTER = tokens.space[5]
 
 type Direction = 'following' | 'followers'
-
-const presenceOf = (player: PlayerCardView) => (player.presence?.status === 'ONLINE' ? 'online' : 'offline')
-const presenceSub = (player: PlayerCardView) => (player.presence?.status === 'ONLINE' ? 'En ligne' : 'Hors ligne')
 
 /** Ligne de contact : la ligne ouvre la fiche, l'épée ouvre le choix du sujet. */
 function PeopleList({
@@ -70,11 +68,11 @@ function PeopleList({
       loading={list.isFetchingNextPage}
       onLoadMore={() => void list.fetchNextPage()}
     >
-      <TabLoadMoreScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingTop: tokens.space[3], paddingBottom: tokens.space[7] }}>
+      <TabLoadMoreScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingTop: tokens.space[2], paddingBottom: tokens.space[7] }}>
         {list.isPending ? (
-          <View style={{ gap: tokens.space[2], paddingHorizontal: GUTTER }}>
+          <View accessibilityLabel="Chargement" style={{ gap: tokens.space[3], paddingHorizontal: GUTTER }}>
             {Array.from({ length: 6 }, (_, index) => (
-              <Skeleton key={index} shape="row" />
+              <Skeleton key={index} shape="row" style={{ height: 64 }} />
             ))}
           </View>
         ) : list.isError ? (
@@ -92,17 +90,14 @@ function PeopleList({
           </View>
         ) : players.length === 0 ? (
           <View style={{ paddingHorizontal: GUTTER }}>
+            {/* Recherche sans résultat : pas d'action (lab). Liste vide : « Inviter un ami » en action principale. */}
             <EmptyState
-              icon={query ? MagnifyingGlassIcon : UsersIcon}
+              icon={query ? MagnifyingGlassIcon : UsersThreeIcon}
               title={emptyTitle}
               description={emptyDescription}
               action={
-                query ? (
-                  <Button full variant="gray" tone="neutral" onPress={() => onInvite()}>
-                    Inviter un ami
-                  </Button>
-                ) : (
-                  <Button full variant="tinted" tone="accent" icon={UsersIcon} onPress={onInvite}>
+                query ? undefined : (
+                  <Button full onPress={onInvite}>
                     Inviter un ami
                   </Button>
                 )
@@ -111,14 +106,14 @@ function PeopleList({
           </View>
         ) : (
           <View style={{ paddingHorizontal: GUTTER }}>
-            <ListGroup>
+            <ListGroup surface="surface">
               {players.map((player, index) => (
                 <PlayerRow
                   key={player.userId}
                   name={player.pseudonym}
                   tier={player.provisional ? undefined : tierOf(player.rating)}
-                  presence={presenceOf(player)}
-                  sub={presenceSub(player)}
+                  presence={presenceOf(player.presence)}
+                  sub={presenceSub(player.presence)}
                   last={index === players.length - 1}
                   ctaIcon={{ icon: SwordIcon, label: 'Défier', onPress: () => onChallenge(player) }}
                   onPress={() => onOpen(player)}
@@ -126,7 +121,7 @@ function PeopleList({
               ))}
             </ListGroup>
             <FeedFooter
-              style={{ paddingTop: tokens.space[3] }}
+              style={{ paddingTop: tokens.space[5] }}
               state={list.isFetchNextPageError ? 'error' : list.isFetchingNextPage ? 'loading' : list.hasNextPage ? 'more' : 'end'}
               onLoadMore={() => void list.fetchNextPage()}
               onRetry={() => void list.fetchNextPage()}
@@ -174,7 +169,17 @@ export function SocialScreen() {
             title="Social"
             right={<IconButton icon={BellIcon} label="Notifications" variant="plain" tone="neutral" badge={unread.data?.count ? 'dot' : undefined} />}
           />
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: tokens.space[2], paddingHorizontal: GUTTER, paddingBottom: tokens.space[3] }}>
+          {/* Lab : `pt-1`, puis `gap-3` jusqu'au `Segmented` (qui porte déjà 9 pt au-dessus de lui). */}
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: tokens.space[3],
+              paddingHorizontal: GUTTER,
+              paddingTop: tokens.space[2],
+              paddingBottom: tokens.space[4] - (tokens.space[3] + 1),
+            }}
+          >
             <View style={{ flex: 1 }}>
               <SearchField value={query} onChange={setQuery} placeholder="Chercher un joueur" label="Chercher un joueur" />
             </View>

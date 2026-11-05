@@ -37,6 +37,7 @@ export { TelevisionSimpleIcon } from 'phosphor-react-native/src/icons/Television
 export { TrophyIcon } from 'phosphor-react-native/src/icons/Trophy'
 export { UserIcon } from 'phosphor-react-native/src/icons/User'
 export { UsersIcon } from 'phosphor-react-native/src/icons/Users'
+export { UsersThreeIcon } from 'phosphor-react-native/src/icons/UsersThree'
 export { VolleyballIcon } from 'phosphor-react-native/src/icons/Volleyball'
 export { WarningIcon } from 'phosphor-react-native/src/icons/Warning'
 export { WarningCircleIcon } from 'phosphor-react-native/src/icons/WarningCircle'

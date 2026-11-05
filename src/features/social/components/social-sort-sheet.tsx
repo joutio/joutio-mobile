@@ -1,11 +1,12 @@
 import { ListGroup, ListRow, MobileSheet, RadioGroup } from '@/design-system'
 import type { PeopleSort } from '@/shared/types/bff'
 
-const OPTIONS: { value: PeopleSort; label: string; sub: string }[] = [
-  { value: 'PRESENCE', label: 'Présence', sub: 'En ligne d’abord' },
-  { value: 'RECENT', label: 'Récents', sub: 'Derniers contacts' },
-  { value: 'ELO', label: 'Elo', sub: 'Du mieux classé au moins bien classé' },
-  { value: 'ALPHA', label: 'Alphabétique', sub: 'De A à Z' },
+/** Libellés seuls, comme le lab (`SOCIAL_SORTS`). */
+const OPTIONS: { value: PeopleSort; label: string }[] = [
+  { value: 'PRESENCE', label: 'Présence' },
+  { value: 'RECENT', label: 'Récents' },
+  { value: 'ELO', label: 'Elo' },
+  { value: 'ALPHA', label: 'Alphabétique' },
 ]
 
 /** Feuille « Trier par » de l'annuaire Social (`social.md` § 2). */
@@ -28,7 +29,6 @@ export function SocialSortSheet({
             <ListRow
               key={option.value}
               label={option.label}
-              sub={option.sub}
               control="radio"
               on={value === option.value}
               last={index === OPTIONS.length - 1}
