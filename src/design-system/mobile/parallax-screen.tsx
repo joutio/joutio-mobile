@@ -12,6 +12,7 @@ import Animated, {
   type SharedValue,
 } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { scheduleOnRN } from 'react-native-worklets'
 import { CaretLeftIcon, type Icon } from '../icons'
 import { useReducedMotion } from '../motion'
 import { PressableScale } from '../primitives/pressable-scale'
@@ -83,13 +84,14 @@ export interface ParallaxIconButtonProps {
   onPress?: () => void
   /** Icône pleine, état actif (sujet suivi). Annoncé comme bouton bascule. */
   filled?: boolean
+  disabled?: boolean
 }
 
 /**
  * Bouton de `ParallaxScreen` : pastille sombre et icône blanche sur l'image, sans pastille et à la couleur du
  * thème sur la barre. À utiliser dans `right`.
  */
-export function ParallaxIconButton({ icon: IconComponent, label, onPress, filled }: ParallaxIconButtonProps) {
+export function ParallaxIconButton({ icon: IconComponent, label, onPress, filled, disabled }: ParallaxIconButtonProps) {
   const { colors, radius } = useTheme()
   const progress = useContext(ParallaxContext)?.progress
   // Calculées hors du worklet : `alpha` est une fonction JS.
@@ -106,11 +108,14 @@ export function ParallaxIconButton({ icon: IconComponent, label, onPress, filled
     <PressableScale
       accessibilityRole="button"
       accessibilityLabel={label}
-      accessibilityState={filled === undefined ? undefined : { selected: filled }}
+      accessibilityState={{ selected: filled, disabled }}
+      disabled={disabled}
       pressedScale={0.94}
       onPress={onPress}
     >
-      <Animated.View style={[{ width: 44, height: 44, borderRadius: radius.full, alignItems: 'center', justifyContent: 'center' }, background]}>
+      <Animated.View
+        style={[{ width: 44, height: 44, borderRadius: radius.full, alignItems: 'center', justifyContent: 'center', opacity: disabled ? 0.45 : 1 }, background]}
+      >
         <Animated.View style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center' }, onImage]}>
           <IconComponent size={22} weight={filled ? 'fill' : 'regular'} color={tokens.color.dark.text} />
         </Animated.View>
@@ -203,8 +208,13 @@ export interface ParallaxScreenProps {
   /** `false` sur un onglet, qui n'a pas d'écran précédent. */
   back?: boolean
   onBack?: () => void
-  /** Actions de droite (`ParallaxIconButton`), visibles sur l'image comme sur la barre. */
-  right?: ReactNode
+  /**
+   * Actions de droite (`ParallaxIconButton`), visibles sur l'image comme sur la barre. Une fonction reçoit `docked`
+   * (vrai quand le bloc d'actions de l'intro est passé sous la barre compacte), comme `CollapsibleTabsScreen`.
+   */
+  right?: ReactNode | ((docked: boolean) => ReactNode)
+  /** Position de défilement où `right(docked)` passe à vrai ; par défaut, la fin de l'image. */
+  dockAt?: number
   /** Sous l'image : défile avec elle. */
   intro?: ReactNode
   /** Bouton flottant, posé en bas à droite du contenu. */
@@ -232,6 +242,7 @@ export function ParallaxScreen({
   back = true,
   onBack,
   right,
+  dockAt,
   intro,
   floating,
   bottomBar,
@@ -247,6 +258,7 @@ export function ParallaxScreen({
   const reduced = useReducedMotion()
   const scroll = useSharedValue(0)
   const progress = useSharedValue(0)
+  const [docked, setDocked] = useState(false)
   const [viewport, setViewport] = useState(0)
 
   const barHeight = insets.top + TOP_BAR_HEIGHT
@@ -257,7 +269,9 @@ export function ParallaxScreen({
   const onScroll = useAnimatedScrollHandler((event) => {
     scroll.value = event.contentOffset.y
     progress.value = compactBarProgress(event.contentOffset.y, titleStart.value, titleLength.value)
+    scheduleOnRN(setDocked, event.contentOffset.y > (dockAt ?? HERO_HEIGHT - barHeight))
   })
+  const rightContent = typeof right === 'function' ? right(docked) : right
 
   const imageStyle = useAnimatedStyle(() => ({ transform: heroImageTransform(scroll.value, reduced) }))
   const titleStyle = useAnimatedStyle(() => ({ opacity: heroTitleOpacity(scroll.value, titleStart.value, titleLength.value) }))
@@ -354,7 +368,7 @@ export function ParallaxScreen({
             pointerEvents="none"
             style={[StyleSheet.absoluteFill, { backgroundColor: colors.bg, borderBottomWidth: HAIRLINE, borderBottomColor: colors.border }, barStyle]}
           />
-          <CompactBarRow title={title} back={back} onBack={onBack} right={right} titleStart={barTitleStart} titleStyle={barStyle} />
+          <CompactBarRow title={title} back={back} onBack={onBack} right={rightContent} titleStart={barTitleStart} titleStyle={barStyle} />
         </View>
 
         {bottomBar && (

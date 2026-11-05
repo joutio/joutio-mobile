@@ -7,8 +7,8 @@ import type { HomeView, TitlesView, TopicCardView, TopicOverviewView } from '@/s
 import { topicService, type RankingFilters } from '../lib/topic-service'
 
 /** En-tête, statistiques et progression du sujet. */
-export function useTopicOverview(topicId: string) {
-  return useQuery({ queryKey: queryKeys.topic.overview(topicId), queryFn: () => topicService.overview(topicId), staleTime: 30_000 })
+export function useTopicOverview(topicId: string, enabled = Boolean(topicId)) {
+  return useQuery({ queryKey: queryKeys.topic.overview(topicId), queryFn: () => topicService.overview(topicId), enabled, staleTime: 30_000 })
 }
 
 /** Top 10 du mois et ma ligne. */

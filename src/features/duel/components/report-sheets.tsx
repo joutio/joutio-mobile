@@ -74,7 +74,8 @@ export function ReportPlayerSheet({
   onClose: () => void
   userId: string
   name: string
-  gameId: string
+  /** Duel de contexte, absent depuis une fiche joueur. */
+  gameId?: string
   subtitle?: string
 }) {
   const [reasons, setReasons] = useState<UserReportReason[]>([])
@@ -86,7 +87,12 @@ export function ReportPlayerSheet({
     setSent(false)
   })
   const report = useMutation({
-    mutationFn: () => api.post<unknown>(ENDPOINTS.reports.player(userId), { reasons, comment: comment.trim() || undefined, gameId }),
+    mutationFn: () =>
+      api.post<unknown>(ENDPOINTS.reports.player(userId), {
+        reasons,
+        comment: comment.trim() || undefined,
+        gameId: gameId || undefined,
+      }),
     onSuccess: () => setSent(true),
     onError: () => toast.error("Le signalement n'a pas pu être envoyé", { description: 'Vérifie ta connexion, puis réessaie.' }),
   })

@@ -19,7 +19,6 @@ import {
   SwordIcon,
   TabLoadMoreScrollView,
   TabsScrollView,
-  Text,
   tokens,
   UsersIcon,
   WarningCircleIcon,
@@ -58,12 +57,12 @@ function PeopleList({
   onInvite: () => void
 }) {
   const players = list.data?.pages.flatMap((page) => page.content) ?? []
-  const emptyTitle = query ? 'Aucun joueur trouvé' : direction === 'following' ? 'Tu ne suis encore personne' : 'Personne ne te suit encore'
+  const emptyTitle = query ? 'Aucun joueur trouvé' : direction === 'following' ? "Tu ne suis personne pour l'instant" : "Tu n'as pas encore d'abonné"
   const emptyDescription = query
     ? 'Vérifie le pseudonyme ou essaie un autre mot.'
     : direction === 'following'
-      ? 'Ouvre la fiche d’un joueur pour le suivre.'
-      : 'Partage ton profil pour commencer à recevoir des abonnés.'
+      ? 'Suis les joueurs croisés en duel pour les défier en un geste et voir leurs résultats.'
+      : 'Invite un ami ou joue des duels pour te faire connaître.'
 
   return (
     <DragToLoadMore
@@ -99,11 +98,11 @@ function PeopleList({
               description={emptyDescription}
               action={
                 query ? (
-                  <Button variant="gray" tone="neutral" style={{ alignSelf: 'center' }} onPress={() => onInvite()}>
+                  <Button full variant="gray" tone="neutral" onPress={() => onInvite()}>
                     Inviter un ami
                   </Button>
                 ) : (
-                  <Button variant="tinted" tone="accent" icon={UsersIcon} style={{ alignSelf: 'center' }} onPress={onInvite}>
+                  <Button full variant="tinted" tone="accent" icon={UsersIcon} onPress={onInvite}>
                     Inviter un ami
                   </Button>
                 )
@@ -112,9 +111,6 @@ function PeopleList({
           </View>
         ) : (
           <View style={{ paddingHorizontal: GUTTER }}>
-            <Text variant="caption" weight="600" color="muted" style={{ paddingBottom: tokens.space[2] }}>
-              {`${formatNumber(players.length)} ${players.length > 1 ? 'joueurs' : 'joueur'}`}
-            </Text>
             <ListGroup>
               {players.map((player, index) => (
                 <PlayerRow
@@ -123,7 +119,6 @@ function PeopleList({
                   tier={player.provisional ? undefined : tierOf(player.rating)}
                   presence={presenceOf(player)}
                   sub={presenceSub(player)}
-                  dimOffline
                   last={index === players.length - 1}
                   ctaIcon={{ icon: SwordIcon, label: 'Défier', onPress: () => onChallenge(player) }}
                   onPress={() => onOpen(player)}
@@ -135,7 +130,7 @@ function PeopleList({
               state={list.isFetchNextPageError ? 'error' : list.isFetchingNextPage ? 'loading' : list.hasNextPage ? 'more' : 'end'}
               onLoadMore={() => void list.fetchNextPage()}
               onRetry={() => void list.fetchNextPage()}
-              endLabel={`Tu as vu ${direction === 'following' ? 'tous tes abonnements' : 'tous tes abonnés'}`}
+              endLabel="Tu as vu tous les joueurs"
             />
           </View>
         )}

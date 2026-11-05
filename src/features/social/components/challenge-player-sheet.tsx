@@ -12,7 +12,7 @@ import { usePlayerTopics } from '../hooks/use-social'
  * `GET /api/profiles/{id}/topics` ; la recherche et l'affichage par 20 se font côté client, la liste étant déjà
  * bornée par le profil.
  */
-export function ChallengePlayerSheet({ player, onClose }: { player: PlayerCardView | null; onClose: () => void }) {
+export function ChallengePlayerSheet({ player, onClose, onSent }: { player: PlayerCardView | null; onClose: () => void; onSent?: () => void }) {
   const topics = usePlayerTopics(player?.userId ?? '', Boolean(player))
   const challenge = useChallengePlayer()
   const [query, setQuery] = useState('')
@@ -32,7 +32,15 @@ export function ChallengePlayerSheet({ player, onClose }: { player: PlayerCardVi
 
   const pick = (topicId: string, name: string) => {
     if (!player) return
-    challenge.mutate({ topic: { topicId, name }, opponent: { userId: player.userId, pseudonym: player.pseudonym } }, { onSuccess: onClose })
+    challenge.mutate(
+      { topic: { topicId, name }, opponent: { userId: player.userId, pseudonym: player.pseudonym } },
+      {
+        onSuccess: () => {
+          onSent?.()
+          onClose()
+        },
+      },
+    )
   }
 
   return (

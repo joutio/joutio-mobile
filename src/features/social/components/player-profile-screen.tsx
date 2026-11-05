@@ -1,146 +1,133 @@
 import { router, useLocalSearchParams } from 'expo-router'
 import { useState } from 'react'
 import { View } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import {
   Avatar,
-  Banner,
+  Badge,
   Button,
+  CheckIcon,
+  DotsThreeIcon,
   EmptyState,
+  FlagIcon,
+  HERO_HEIGHT,
   HeartIcon,
+  LightningIcon,
   ListGroup,
   MapPinIcon,
   MatchRow,
-  MobileTopBar,
+  Menu,
+  OutcomeBar,
   ParallaxIconButton,
   ParallaxScreen,
   Pill,
-  Screen,
   SectionHeader,
   Skeleton,
-  SplashLogo,
   Stat,
   SwordIcon,
   Text,
   TitleRibbon,
-  TrophyIcon,
   toCategoryCode,
+  TOP_BAR_HEIGHT,
   tokens,
   useTheme,
   WarningCircleIcon,
   type MatchOutcome,
 } from '@/design-system'
-import { useMe } from '@/features/me'
+import { ReportPlayerSheet } from '@/features/duel/components/report-sheets'
 import { useHistoryGames } from '@/features/history/hooks/use-history'
+import { useMe } from '@/features/me'
+import { useTopicOverview } from '@/features/topic/hooks/use-topic'
 import { dayLabel, formatNumber, tierLabel } from '@/features/topic/lib/format'
-import type { GameOutcome, HeadToHeadView, PlayerCardView } from '@/shared/types/bff'
+import type { GameOutcome, PlayerCardView, PlayerProfileView } from '@/shared/types/bff'
 import { countryLabel } from '@/shared/utils/country'
 import { tierOf } from '@/shared/utils/tier'
 import { topicName } from '@/shared/utils/topic-name'
 import type { TierCode } from '@/design-system'
-import { useFollowPlayer, useHeadToHead, usePlayerProfile, usePlayerTopics } from '../hooks/use-social'
+import { useFollowPlayer, useHeadToHead, usePlayerProfile } from '../hooks/use-social'
 import { ChallengePlayerSheet } from './challenge-player-sheet'
 
+const GUTTER = tokens.space[5]
 const OUTCOMES: Partial<Record<GameOutcome, MatchOutcome>> = { WIN: 'win', LOSS: 'loss', DRAW: 'draw' }
+const outcomeOf = (outcome: GameOutcome) => OUTCOMES[outcome]
 
-const outcomeOf = (outcome: GameOutcome): MatchOutcome | undefined => OUTCOMES[outcome]
-
-/** Bilan des duels communs : barre + trois chiffres, toujours sous les libellés. */
-function HeadToHeadBar({ wins, draws, losses }: HeadToHeadView) {
-  const { colors, radius } = useTheme()
-  const total = wins + draws + losses
-  if (total === 0) return null
-  return (
-    <View style={{ height: 8, flexDirection: 'row', gap: 2, overflow: 'hidden', borderRadius: radius.xs, backgroundColor: colors.raised }}>
-      {wins > 0 && <View style={{ flex: wins, backgroundColor: colors.correct }} />}
-      {draws > 0 && <View style={{ flex: draws, backgroundColor: colors.accent }} />}
-      {losses > 0 && <View style={{ flex: losses, backgroundColor: colors.wrong }} />}
-    </View>
-  )
+/** Dernière présence en clair, comme le « vu il y a … » du lab. */
+function seenLabel(presence: PlayerProfileView['presence']): string {
+  if (!presence) return 'Hors ligne'
+  if (presence.status === 'ONLINE') return 'En ligne'
+  if (!presence.lastSeenAt) return 'Hors ligne'
+  const minutes = Math.max(1, Math.round((Date.now() - Date.parse(presence.lastSeenAt)) / 60_000))
+  if (minutes < 60) return `Vu il y a ${minutes} min`
+  const hours = Math.round(minutes / 60)
+  return hours < 24 ? `Vu il y a ${hours} h` : `Vu ${dayLabel(new Date(presence.lastSeenAt)).toLowerCase()}`
 }
 
 function Loading() {
   return (
-    <Screen scroll={false} header={<MobileTopBar variant="inline" title="Joueur" back="Social" onBack={() => router.back()} />}>
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-        <SplashLogo variant="loading" />
-      </View>
-    </Screen>
+    <View style={{ gap: tokens.space[4], paddingHorizontal: GUTTER, paddingTop: tokens.space[2] }}>
+      <Skeleton shape="row" />
+      <Skeleton shape="card" style={{ height: 120 }} />
+    </View>
   )
 }
 
 /**
- * Fiche joueur minimale (`fiche-joueur.md`) : identité, rang, présence, suivi, défi et dernières parties.
- * Les actions de la barre compacte reprennent Défier et Suivre, comme sur la Fiche sujet.
+ * Fiche joueur (`fiche-joueur.md`) : bannière, avatar, titre porté, rang/Elo, pays et présence ; Défier/Suivre ;
+ * bilan et dernières parties. Les actions de la barre compacte prennent le relais une fois l'intro repliée, comme
+ * dans le lab.
  */
 export function PlayerProfileScreen() {
   const params = useLocalSearchParams<{ id: string }>()
   const id = params.id ?? ''
   const me = useMe(true)
+  const insets = useSafeAreaInsets()
+  const { colors, radius } = useTheme()
   const profile = usePlayerProfile(id)
   const follow = useFollowPlayer(id)
   const head = useHeadToHead(id)
+  const [challenged, setChallenged] = useState(false)
   const [challengeOpen, setChallengeOpen] = useState(false)
-  const games = useHistoryGames(id, { opponentId: me.data?.userId ?? '', outcome: 'ALL', sort: 'RECENT' }, Boolean(id && me.data?.userId))
-  // Le titre porté n'a que topicId:TIER : le nom du sujet vient des sujets joués.
+  const [reportOpen, setReportOpen] = useState(false)
+  const [actionsY, setActionsY] = useState(0)
   const data = profile.data
+  const games = useHistoryGames(id, { opponentId: me.data?.userId ?? '', outcome: 'ALL', sort: 'RECENT' }, Boolean(id && me.data?.userId))
+
+  // Le titre porté n'a que topicId:TIER : le nom du titre vient du sujet, comme dans le lab.
   const equipped = data?.equippedTitle?.split(':')
   const titleTopicId = equipped?.[0]
   const titleTier = equipped?.[1] as TierCode | undefined
-  const topics = usePlayerTopics(id, Boolean(titleTopicId))
-  const titleTopic = topics.data?.find((topic) => topic.topicId === titleTopicId)
+  const titleOverview = useTopicOverview(titleTopicId ?? '', Boolean(titleTopicId))
+  const titleText = titleTier ? (titleOverview.data?.titles?.fr?.[titleTier] ?? titleOverview.data?.topic.names?.fr ?? '') : ''
 
-  if (profile.isPending) return <Loading />
-  if (profile.isError || !data) {
-    return (
-      <Screen scroll={false} header={<MobileTopBar variant="inline" title="Joueur" back="Social" onBack={() => router.back()} />}>
-        <View style={{ flex: 1, padding: tokens.space[5], justifyContent: 'center' }}>
-          <EmptyState
-            icon={WarningCircleIcon}
-            title="Impossible de charger ce joueur"
-            description="Vérifie ta connexion, puis réessaie."
-            action={
-              <View style={{ gap: tokens.space[3], alignSelf: 'stretch' }}>
-                <Button style={{ alignSelf: 'center' }} loading={profile.isRefetching} onPress={() => void profile.refetch()}>
-                  Réessayer
-                </Button>
-                <Button variant="plain" tone="neutral" style={{ alignSelf: 'center' }} onPress={() => router.back()}>
-                  Retour
-                </Button>
-              </View>
-            }
-          />
-        </View>
-      </Screen>
-    )
-  }
-
-  const rating = data.progression?.rating
-  const provisional = data.progression?.provisional ?? true
+  const rating = data?.progression?.rating
+  const provisional = data?.progression?.provisional ?? true
   const tier = rating != null && !provisional ? tierOf(rating) : undefined
-  const stats = data.stats
+  const canAct = Boolean(data && !data.isMe && !data.suspended)
   const latest =
     games.data?.pages
       .flatMap((page) => page.content)
       .filter((game) => outcomeOf(game.outcome))
       .slice(0, 10) ?? []
-  const challengePlayer: PlayerCardView = {
-    userId: data.userId,
-    pseudonym: data.pseudonym,
-    avatarOptions: data.avatarOptions,
-    rating: rating ?? 0,
-    provisional,
-    following: data.following,
-    presence: data.presence,
-    suspended: data.suspended,
-  }
-  const toggleFollow = () => follow.mutate(!data.following)
+  const stats = data?.stats
+  const challengePlayer: PlayerCardView | null = data
+    ? {
+        userId: data.userId,
+        pseudonym: data.pseudonym,
+        avatarOptions: data.avatarOptions,
+        rating: rating ?? 0,
+        provisional,
+        following: data.following,
+        presence: data.presence,
+        suspended: data.suspended,
+      }
+    : null
   const openHistory = () =>
     router.push({
       pathname: '/social/history',
       params: {
-        userId: data.userId,
+        userId: data?.userId ?? '',
         opponentId: me.data?.userId ?? '',
-        opponentName: data.pseudonym,
+        opponentName: data?.pseudonym ?? '',
         backLabel: 'Joueur',
       },
     })
@@ -158,134 +145,172 @@ export function PlayerProfileScreen() {
     })
   }
 
+  const seen = data ? seenLabel(data.presence) : ''
+
   return (
     <>
       <ParallaxScreen
-        image={data.bannerUrl ?? undefined}
-        title={data.pseudonym}
-        eyebrow={<Avatar name={data.pseudonym} tier={tier} size="xl" />}
+        image={data?.bannerUrl ?? undefined}
+        title={data?.pseudonym ?? 'Joueur'}
+        eyebrow={data ? <Avatar name={data.pseudonym} tier={tier} size="xl" /> : undefined}
         centered
+        barTitleStart
         onBack={() => router.back()}
-        right={
-          data.isMe || data.suspended ? undefined : (
+        dockAt={HERO_HEIGHT + actionsY - (insets.top + TOP_BAR_HEIGHT)}
+        right={(docked) =>
+          data && !data.isMe ? (
             <>
-              <ParallaxIconButton icon={HeartIcon} label={data.following ? 'Ne plus suivre' : 'Suivre'} filled={data.following} onPress={toggleFollow} />
-              <ParallaxIconButton icon={SwordIcon} label="Défier" onPress={() => setChallengeOpen(true)} />
+              {canAct && docked && (
+                <>
+                  <ParallaxIconButton
+                    icon={challenged ? CheckIcon : LightningIcon}
+                    label={challenged ? 'Défi envoyé' : 'Défier'}
+                    disabled={challenged}
+                    onPress={() => setChallengeOpen(true)}
+                  />
+                  <ParallaxIconButton
+                    icon={HeartIcon}
+                    label={data.following ? 'Ne plus suivre' : 'Suivre'}
+                    filled={data.following}
+                    onPress={() => follow.mutate(!data.following)}
+                  />
+                </>
+              )}
+              <Menu items={[{ label: 'Signaler', icon: FlagIcon, onPress: () => setReportOpen(true) }]}>
+                {(open) => <ParallaxIconButton icon={DotsThreeIcon} label="Plus d'actions" onPress={open} />}
+              </Menu>
             </>
-          )
+          ) : undefined
         }
         intro={
-          <View style={{ gap: tokens.space[4] }}>
-            {titleTopic && titleTier && <TitleRibbon tier={titleTier} text={topicName(titleTopic.names)} width={200} style={{ alignSelf: 'center' }} />}
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: tokens.space[2] }}>
-              {tier ? <Pill tone="pending" icon={TrophyIcon}>{`${tierLabel(tier)} · ${formatNumber(rating ?? 0)}`}</Pill> : <Pill>Non classé</Pill>}
-              {data.country && <Pill icon={MapPinIcon}>{countryLabel(data.country)}</Pill>}
-              {data.suspended ? (
-                <Pill tone="suspended">Compte suspendu</Pill>
-              ) : data.presence?.status === 'ONLINE' ? (
-                <Pill tone="online">En ligne</Pill>
-              ) : (
-                <Pill>Hors ligne</Pill>
+          data ? (
+            <View style={{ gap: tokens.space[4] }}>
+              <View style={{ alignItems: 'center', gap: tokens.space[2] }}>
+                {titleText && titleTier && <TitleRibbon tier={titleTier} text={titleText} width={200} />}
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: tokens.space[2] }}>
+                  {tier ? <Badge variant="tier" tier={tier}>{`${tierLabel(tier)} · ${formatNumber(rating ?? 0)}`}</Badge> : <Pill>Non classé</Pill>}
+                  {data.country && <Pill icon={MapPinIcon}>{countryLabel(data.country)}</Pill>}
+                  {data.suspended && <Pill tone="suspended">Compte suspendu</Pill>}
+                </View>
+                {!data.suspended && (
+                  <Text variant="caption" color="muted">
+                    {seen}
+                  </Text>
+                )}
+              </View>
+              {canAct && (
+                <View onLayout={(event) => setActionsY(event.nativeEvent.layout.y)} style={{ flexDirection: 'row', gap: tokens.space[2] }}>
+                  <Button
+                    full
+                    style={{ flex: 1 }}
+                    icon={challenged ? CheckIcon : LightningIcon}
+                    variant={challenged ? 'gray' : 'filled'}
+                    tone={challenged ? 'neutral' : 'accent'}
+                    disabled={challenged}
+                    onPress={() => setChallengeOpen(true)}
+                  >
+                    {challenged ? 'Défi envoyé' : 'Défier'}
+                  </Button>
+                  <Button
+                    full
+                    style={{ flex: 1 }}
+                    icon={data.following ? CheckIcon : undefined}
+                    variant={data.following ? 'gray' : 'tinted'}
+                    tone={data.following ? 'neutral' : 'accent'}
+                    accessibilityState={{ selected: data.following }}
+                    loading={follow.isPending}
+                    onPress={() => follow.mutate(!data.following)}
+                  >
+                    {data.following ? 'Suivi' : 'Suivre'}
+                  </Button>
+                </View>
               )}
             </View>
-            {data.bio && (
-              <Text color="muted" align="center">
-                {data.bio}
-              </Text>
-            )}
-            <View style={{ flexDirection: 'row', gap: tokens.space[3] }}>
-              <Stat label="Parties" value={formatNumber(stats?.played ?? 0)} compact />
-              <Stat label="Abonnés" value={formatNumber(data.followersCount)} compact />
-              <Stat label="Abonnements" value={formatNumber(data.followingCount)} compact />
-            </View>
-            {data.suspended ? (
-              <Banner tone="info" title="Compte suspendu" message="Ce joueur ne peut plus être défié ni suivi." />
-            ) : data.isMe ? (
-              <Banner tone="info" title="C'est ton profil" message="Tu ne peux pas te défier toi-même." />
-            ) : (
-              <View style={{ flexDirection: 'row', gap: tokens.space[3] }}>
-                <Button full icon={SwordIcon} style={{ flex: 65 }} onPress={() => setChallengeOpen(true)}>
-                  Défier
-                </Button>
-                <Button
-                  full
-                  variant={data.following ? 'gray' : 'tinted'}
-                  tone={data.following ? 'neutral' : 'accent'}
-                  icon={data.following ? undefined : HeartIcon}
-                  accessibilityState={{ selected: data.following }}
-                  loading={follow.isPending}
-                  style={{ flex: 35 }}
-                  onPress={toggleFollow}
-                >
-                  {data.following ? 'Suivi' : 'Suivre'}
-                </Button>
-              </View>
-            )}
-          </View>
+          ) : undefined
         }
       >
-        <View style={{ gap: tokens.space[6], paddingHorizontal: tokens.space[5], paddingTop: tokens.space[2], paddingBottom: tokens.space[7] }}>
-          {!data.isMe && (
+        {profile.isPending ? (
+          <Loading />
+        ) : profile.isError || !data ? (
+          <View style={{ paddingHorizontal: GUTTER }}>
+            <EmptyState
+              icon={WarningCircleIcon}
+              title="Impossible de charger ce joueur"
+              description="Vérifie ta connexion, puis réessaie."
+              action={
+                <Button style={{ alignSelf: 'center' }} loading={profile.isRefetching} onPress={() => void profile.refetch()}>
+                  Réessayer
+                </Button>
+              }
+            />
+          </View>
+        ) : (
+          <View style={{ gap: tokens.space[6], paddingHorizontal: GUTTER, paddingTop: tokens.space[4], paddingBottom: tokens.space[8] }}>
             <View style={{ gap: tokens.space[3] }}>
               <SectionHeader title={`Ton bilan contre ${data.pseudonym}`} />
               {head.isPending ? (
                 <Skeleton shape="card" style={{ height: 120 }} />
               ) : head.data && head.data.played > 0 ? (
-                <View style={{ gap: tokens.space[3] }}>
-                  <HeadToHeadBar {...head.data} />
-                  <View style={{ flexDirection: 'row', gap: tokens.space[3] }}>
-                    <Stat label="Victoires" value={formatNumber(head.data.wins)} tone="up" compact />
-                    <Stat label={head.data.draws > 1 ? 'Nuls' : 'Nul'} value={formatNumber(head.data.draws)} compact />
-                    <Stat label="Défaites" value={formatNumber(head.data.losses)} tone="down" compact />
+                <>
+                  <View style={{ flexDirection: 'row', gap: tokens.space[2] }}>
+                    <Stat label="Victoires" value={String(head.data.wins)} tone="up" compact />
+                    <Stat label="Nul" value={String(head.data.draws)} compact />
+                    <Stat label="Défaites" value={String(head.data.losses)} tone="down" compact />
                   </View>
-                </View>
+                  <View style={{ backgroundColor: colors.surface, borderRadius: radius.lg, padding: tokens.space[4] }}>
+                    <OutcomeBar wins={head.data.wins} draws={head.data.draws} losses={head.data.losses} />
+                  </View>
+                </>
               ) : (
-                <EmptyState icon={SwordIcon} title="Jamais affronté" description="Vos duels communs apparaîtront ici." />
+                <EmptyState icon={SwordIcon} title="Aucun duel pour l'instant" description={`Défie ${data.pseudonym} pour ouvrir votre face-à-face.`} />
               )}
             </View>
-          )}
-          <View style={{ gap: tokens.space[3] }}>
-            <SectionHeader
-              title="Dernières parties"
-              action={
-                <Button variant="plain" tone="neutral" size="S" onPress={openHistory}>
-                  Tout voir
-                </Button>
-              }
-            />
-            {games.isPending ? (
-              <View style={{ gap: tokens.space[2] }}>
-                <Skeleton shape="row" />
-                <Skeleton shape="row" />
-                <Skeleton shape="row" />
-              </View>
-            ) : latest.length === 0 ? (
-              <EmptyState icon={SwordIcon} title="Aucune partie commune" description="Défie ce joueur pour lancer la première." />
-            ) : (
-              <ListGroup>
-                {latest.map((game, index) => {
-                  const outcome = outcomeOf(game.outcome)
-                  if (!outcome) return null
-                  return (
-                    <MatchRow
-                      key={game.gameId}
-                      topic={topicName(game.topic.names)}
-                      category={toCategoryCode(game.topic.category)}
-                      sub={dayLabel(new Date(game.playedAt))}
-                      outcome={outcome}
-                      score={`${game.myScore} · ${game.opponentScore}`}
-                      bot={game.opponentType === 'BOT'}
-                      last={index === latest.length - 1}
-                      onPress={() => openResult(game)}
-                    />
-                  )
-                })}
-              </ListGroup>
-            )}
+            <View style={{ gap: tokens.space[3] }}>
+              <SectionHeader
+                title="Dernières parties"
+                action={
+                  <Button variant="plain" tone="neutral" size="S" onPress={openHistory}>
+                    Tout voir
+                  </Button>
+                }
+              />
+              {games.isPending ? (
+                <View style={{ gap: tokens.space[2] }}>
+                  <Skeleton shape="row" />
+                  <Skeleton shape="row" />
+                  <Skeleton shape="row" />
+                </View>
+              ) : latest.length === 0 ? (
+                <EmptyState icon={SwordIcon} title="Aucune partie pour l'instant" description="Vos prochains duels apparaîtront ici." />
+              ) : (
+                <ListGroup>
+                  {latest.map((game, index) => {
+                    const outcome = outcomeOf(game.outcome)
+                    if (!outcome) return null
+                    return (
+                      <MatchRow
+                        key={game.gameId}
+                        topic={topicName(game.topic.names)}
+                        category={toCategoryCode(game.topic.category)}
+                        sub={dayLabel(new Date(game.playedAt))}
+                        outcome={outcome}
+                        score={`${game.myScore} · ${game.opponentScore}`}
+                        bot={game.opponentType === 'BOT'}
+                        last={index === latest.length - 1}
+                        onPress={() => openResult(game)}
+                      />
+                    )
+                  })}
+                </ListGroup>
+              )}
+            </View>
           </View>
-        </View>
+        )}
       </ParallaxScreen>
-      <ChallengePlayerSheet player={challengeOpen ? challengePlayer : null} onClose={() => setChallengeOpen(false)} />
+      <ChallengePlayerSheet player={challengeOpen ? challengePlayer : null} onClose={() => setChallengeOpen(false)} onSent={() => setChallenged(true)} />
+      {data && !data.isMe && (
+        <ReportPlayerSheet open={reportOpen} onClose={() => setReportOpen(false)} userId={data.userId} name={data.pseudonym} subtitle="Fiche joueur" />
+      )}
     </>
   )
 }
