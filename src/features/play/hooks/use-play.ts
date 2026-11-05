@@ -3,6 +3,7 @@ import { router } from 'expo-router'
 import { useEffect } from 'react'
 import { create } from 'zustand'
 import { toast } from '@/design-system'
+import { showQuotaDialog } from '@/features/challenges/lib/quota'
 import { useMe } from '@/features/me'
 import { ENDPOINTS } from '@/lib/endpoints'
 import { queryKeys } from '@/lib/query-keys'
@@ -93,20 +94,28 @@ export function useStartMatchmaking() {
 
 /** Salon privé à partager par lien. */
 export function useCreatePrivateRoom() {
+  const client = useQueryClient()
   return useMutation({
     mutationFn: (topic: PlayTopic) => playService.createRoom(topic.topicId),
-    onSuccess: ({ id }, topic) => router.push({ pathname: '/room/[roomId]', params: { roomId: id, ...topicParams(topic) } }),
-    onError: launchError("Le salon n'a pas pu être créé"),
+    onSuccess: ({ id }, topic) => {
+      void client.invalidateQueries({ queryKey: queryKeys.rooms() })
+      router.push({ pathname: '/room/[roomId]', params: { roomId: id, ...topicParams(topic) } })
+    },
+    onError: (error) => showQuotaDialog(error) || launchError("Le salon n'a pas pu être créé")(),
   })
 }
 
 /** Défi nominatif : envoyé, l'invité l'accepte depuis ses Défis. */
 export function useChallengePlayer() {
+  const client = useQueryClient()
   return useMutation({
     mutationFn: ({ topic, opponent }: { topic: PlayTopic; opponent: { userId: string; pseudonym: string } }) =>
       playService.challenge(topic.topicId, opponent.userId),
-    onSuccess: (_result, { topic, opponent }) => toast.success('Défi envoyé', { description: `${opponent.pseudonym} · ${topic.name}` }),
-    onError: launchError("Le défi n'a pas pu être envoyé"),
+    onSuccess: (_result, { topic, opponent }) => {
+      toast.success('Défi envoyé', { description: `${opponent.pseudonym} · ${topic.name}` })
+      void client.invalidateQueries({ queryKey: queryKeys.challenges() })
+    },
+    onError: (error) => showQuotaDialog(error) || launchError("Le défi n'a pas pu être envoyé")(),
   })
 }
 

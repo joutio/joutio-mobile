@@ -32,6 +32,7 @@ export const ENDPOINTS = {
   },
   rooms: {
     create: '/api/rooms',
+    mine: '/api/rooms/mine',
     bot: '/api/rooms/bot',
     get: (roomId: string) => `/api/rooms/${roomId}`,
     join: (roomId: string) => `/api/rooms/${roomId}/join`,
@@ -49,6 +50,7 @@ export const ENDPOINTS = {
   },
   challenges: {
     create: '/api/challenges',
+    mine: '/api/challenges/mine',
     get: (challengeId: string) => `/api/challenges/${challengeId}`,
     accept: (challengeId: string) => `/api/challenges/${challengeId}/accept`,
     decline: (challengeId: string) => `/api/challenges/${challengeId}/decline`,

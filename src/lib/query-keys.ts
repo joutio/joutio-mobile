@@ -23,6 +23,8 @@ export const queryKeys = {
     topics: (userId: string) => ['profiles', userId, 'topics'] as const,
   },
   rewards: () => ['me', 'rewards'] as const,
+  challenges: () => ['challenges', 'mine'] as const,
+  rooms: () => ['rooms', 'mine'] as const,
   notificationPreferences: () => ['notification-preferences'] as const,
   notifications: {
     unreadCount: () => ['notifications', 'unread-count'] as const,

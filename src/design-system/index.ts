@@ -69,6 +69,7 @@ export * from './primitives/reward-card'
 export * from './primitives/image-picker'
 export * from './primitives/option-tile'
 export * from './primitives/color-swatch'
+export * from './primitives/challenge-list-row'
 
 export * from './mobile/bottom-nav'
 export * from './mobile/collapsible-tabs-screen'
