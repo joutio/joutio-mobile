@@ -1,3 +1,10 @@
+## [1.4.2](https://github.com/joutio/joutio-mobile-expo/compare/v1.4.1...v1.4.2) (2026-11-05)
+
+### Bug Fixes
+
+* **app:** Joutio icon and splash instead of the Expo template images ([03f86cf](https://github.com/joutio/joutio-mobile-expo/commit/03f86cf4784e66d314c7c990dbedd71b1a75435f))
+* **toast:** swipe up to dismiss, one two-line height, no action button ([9b3b574](https://github.com/joutio/joutio-mobile-expo/commit/9b3b57484beb49dfdf7143de8443076d716fdf16))
+
 ## [1.4.1](https://github.com/joutio/joutio-mobile-expo/compare/v1.4.0...v1.4.1) (2026-11-05)
 
 ### Bug Fixes
