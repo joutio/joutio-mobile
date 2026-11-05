@@ -36,6 +36,8 @@ export interface TabsScrollViewProps<T extends string> {
   onRefresh?: () => Promise<unknown> | void
   /** Pastille « Haut de page » sous les onglets collés (`ScrollToTopPill`). Active par défaut. */
   scrollToTopPill?: boolean
+  /** Onglets trop nombreux pour la largeur : la barre défile et suit la page (éditeur d'avatar). */
+  scrollableTabs?: boolean
 }
 /**
  * Onglets à balayer (`TabsScrollView` du lab) : `Segmented` collé sous la barre de l'écran, contenu qu'on balaie d'un
@@ -54,6 +56,7 @@ export function TabsScrollView<T extends string>({
   scroll,
   onRefresh,
   scrollToTopPill = true,
+  scrollableTabs = false,
 }: TabsScrollViewProps<T>) {
   const { colors } = useTheme()
   const refresh = usePageRefresh(onRefresh)
@@ -132,7 +135,7 @@ export function TabsScrollView<T extends string>({
               }}
               onLayout={(event) => setTabBarHeight(event.nativeEvent.layout.height)}
             >
-              <Segmented label={label} options={pages} value={value} position={position} onChange={onChange} />
+              <Segmented label={label} options={pages} value={value} position={position} scrollable={scrollableTabs} onChange={onChange} />
             </View>
           )}
           // Collés dès que l'en-tête est entièrement replié.

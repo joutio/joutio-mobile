@@ -10,7 +10,7 @@ interface ThemeStore {
 }
 
 /** Le stockage peut être indisponible : le thème retombe alors sur le système, sans erreur. */
-const safeStorage: StateStorage = {
+export const safeStorage: StateStorage = {
   getItem: async (name) => {
     try {
       return await AsyncStorage.getItem(name)

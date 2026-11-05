@@ -1,3 +1,4 @@
+import { SvgXml } from 'react-native-svg'
 import { Image } from 'expo-image'
 import { View, type StyleProp, type ViewStyle } from 'react-native'
 import { RankFrame } from '../brand/rank-frame'
@@ -18,7 +19,7 @@ const PRESENCE_LABEL: Record<Presence, string> = { online: 'en ligne', ingame: '
 
 export interface AvatarProps {
   name: string
-  /** URL, ou actif local (`require`). */
+  /** URL, actif local (`require`) ou SVG en ligne (`<svg…`, avatar DiceBear). */
   src?: string | number
   size?: AvatarSize
   tier?: TierCode
@@ -55,7 +56,12 @@ export function Avatar({ name, src, size = 'md', tier, provisional = false, lock
     .filter(Boolean)
     .join(', ')
 
-  const image = src ? (
+  const svg = typeof src === 'string' && src.startsWith('<svg')
+  const image = svg ? (
+    <View style={{ flex: 1, overflow: 'hidden', borderRadius: radius.full, opacity: locked ? 0.55 : 1 }}>
+      <SvgXml xml={src} width="100%" height="100%" />
+    </View>
+  ) : src ? (
     <Image
       source={typeof src === 'number' ? src : { uri: src }}
       contentFit="cover"
