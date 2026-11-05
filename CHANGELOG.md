@@ -1,3 +1,9 @@
+## [1.11.0](https://github.com/joutio/joutio-mobile-expo/compare/v1.10.2...v1.11.0) (2026-11-05)
+
+### Features
+
+* **social:** add the contacts directory and player profile ([53f33cd](https://github.com/joutio/joutio-mobile-expo/commit/53f33cd90f56d0a9b4dd6506493724ea756287ac))
+
 ## [1.10.2](https://github.com/joutio/joutio-mobile-expo/compare/v1.10.1...v1.10.2) (2026-11-05)
 
 ### Bug Fixes
