@@ -2,6 +2,7 @@ import { Tabs } from 'expo-router/js-tabs'
 import { CompassIcon, HouseIcon, JoTabBar, SwordIcon, UserIcon, UsersIcon, type Icon } from '@/design-system'
 import { splitChallenges, useChallengesRealtime, useMyChallenges } from '@/features/challenges'
 import { useMe } from '@/features/me'
+import { useNotificationsRealtime } from '@/features/notifications'
 
 /** Navigation principale (`accueil.md` § 3) : 5 onglets, dans cet ordre. */
 const TABS: { name: string; title: string; icon: Icon }[] = [
@@ -19,6 +20,8 @@ export default function TabsLayout() {
   // Badge Défis : défis reçus en attente, tenus à jour par le flux personnel STOMP.
   const challenges = useMyChallenges(Boolean(userId))
   useChallengesRealtime()
+  // Cloche : boîte et compteur rafraîchis par le flux personnel.
+  useNotificationsRealtime()
   const received = splitChallenges(challenges.data, userId).received.length
   return (
     <Tabs tabBar={(props) => <JoTabBar {...props} icons={ICONS} />} screenOptions={{ headerShown: false }}>

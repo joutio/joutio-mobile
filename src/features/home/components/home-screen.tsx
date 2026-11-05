@@ -324,7 +324,14 @@ export function HomeScreen() {
       </View>
       <View style={{ flexDirection: 'row', gap: tokens.space[3] }}>
         <IconButton icon={MagnifyingGlassIcon} label="Rechercher" variant="plain" tone="neutral" />
-        <IconButton icon={BellIcon} label="Notifications" variant="plain" tone="neutral" badge={unread.data?.count || undefined} />
+        <IconButton
+          icon={BellIcon}
+          label="Notifications"
+          variant="plain"
+          tone="neutral"
+          badge={unread.data?.count || undefined}
+          onPress={() => router.push('/home/notifications')}
+        />
       </View>
     </View>
   )

@@ -168,7 +168,16 @@ export function SocialScreen() {
         <View>
           <MobileTopBar
             title="Social"
-            right={<IconButton icon={BellIcon} label="Notifications" variant="plain" tone="neutral" badge={unread.data?.count ? 'dot' : undefined} />}
+            right={
+              <IconButton
+                icon={BellIcon}
+                label="Notifications"
+                variant="plain"
+                tone="neutral"
+                badge={unread.data?.count ? 'dot' : undefined}
+                onPress={() => router.push('/home/notifications')}
+              />
+            }
           />
           {/* Lab : `pt-1`, puis `gap-3` jusqu'au `Segmented` (qui porte déjà 9 pt au-dessus de lui). */}
           <View

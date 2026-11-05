@@ -148,7 +148,16 @@ export function ChallengesScreen() {
       <MobileTopBar
         title="Défis"
         subtitle={subtitle}
-        right={<IconButton icon={BellIcon} label="Notifications" variant="plain" tone="neutral" badge={unread.data?.count ? 'dot' : undefined} />}
+        right={
+          <IconButton
+            icon={BellIcon}
+            label="Notifications"
+            variant="plain"
+            tone="neutral"
+            badge={unread.data?.count ? 'dot' : undefined}
+            onPress={() => router.push('/home/notifications')}
+          />
+        }
       />
       {!empty && !failed && (
         <ScrollView

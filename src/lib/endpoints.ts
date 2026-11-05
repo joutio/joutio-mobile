@@ -88,6 +88,10 @@ export const ENDPOINTS = {
     avatarOptions: (userId: string) => `/api/profiles/${userId}/avatar-options`,
   },
   notifications: {
+    list: '/api/notifications',
+    readAll: '/api/notifications/read-all',
+    read: (notificationId: string) => `/api/notifications/${notificationId}/read`,
+    remove: (notificationId: string) => `/api/notifications/${notificationId}`,
     unreadCount: '/api/notifications/unread-count',
   },
   onboarding: {

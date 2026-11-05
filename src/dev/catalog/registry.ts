@@ -5,6 +5,7 @@ import { ChipDemo, FieldDemo, ListRowDemo, MatchRowDemo, PlayerRowDemo, RadioGro
 import { BannerDemo, DialogDemo, MenuDemo, MobileSheetDemo, SheetHeaderDemo, ToastDemo } from './row4'
 import { CategoryTileDemo, CodeInputDemo, LogoDemo, PageDotsDemo, SocialButtonDemo, SplashLogoDemo, TopicCardDemo, TopicRowDemo } from './onboarding'
 import { BadgeFamilyRowDemo, RankLadderDemo, RewardCardDemo, StreakCalendarDemo, StreakDemo, TopicsDonutDemo } from './profile'
+import { ChallengeListRowDemo, NotificationRowDemo } from './inbox'
 import { UnlockSequenceDemo } from './result'
 import { CollapsibleTabsScreenDemo, EmptyStateDemo, FeedFooterDemo, ParallaxScreenDemo, SectionHeaderDemo } from './row5'
 
@@ -12,7 +13,7 @@ export interface CatalogEntry {
   id: string
   title: string
   /** Rangée du socle (kit mobile § 3). */
-  row: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8
+  row: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
   /** Spec de référence dans `design/specs/`. */
   spec: string
   Demo: ComponentType
@@ -66,6 +67,8 @@ export const CATALOG: CatalogEntry[] = [
   { id: 'badge-family-row', title: 'BadgeFamilyRow', row: 8, spec: 'screens/profil.md', Demo: BadgeFamilyRowDemo },
   { id: 'rank-ladder', title: 'RankLadder', row: 8, spec: 'screens/profil.md', Demo: RankLadderDemo },
   { id: 'reward-card', title: 'RewardCard', row: 8, spec: 'screens/profil.md', Demo: RewardCardDemo },
+  { id: 'challenge-list-row', title: 'ChallengeListRow', row: 9, spec: 'screens/defis.md', Demo: ChallengeListRowDemo },
+  { id: 'notification-row', title: 'NotificationRow', row: 9, spec: 'screens/notifications.md', Demo: NotificationRowDemo },
 ]
 
 export const ROW_TITLES: Record<CatalogEntry['row'], string> = {
@@ -77,4 +80,5 @@ export const ROW_TITLES: Record<CatalogEntry['row'], string> = {
   6: 'Métier : onboarding',
   7: 'Métier : résultat',
   8: 'Métier : profil',
+  9: 'Métier : défis et notifications',
 }

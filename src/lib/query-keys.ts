@@ -27,6 +27,8 @@ export const queryKeys = {
   rooms: () => ['rooms', 'mine'] as const,
   notificationPreferences: () => ['notification-preferences'] as const,
   notifications: {
+    all: () => ['notifications'] as const,
+    list: () => ['notifications', 'list'] as const,
     unreadCount: () => ['notifications', 'unread-count'] as const,
   },
   onboarding: {
