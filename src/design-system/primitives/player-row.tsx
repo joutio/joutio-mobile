@@ -1,4 +1,5 @@
-import { View, type StyleProp, type ViewStyle } from 'react-native'
+import { useState } from 'react'
+import { Platform, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native'
 import { CaretRightIcon, type Icon } from '../icons'
 import { mix } from '../theme/color'
 import { HAIRLINE } from '../theme/hairline'
@@ -57,16 +58,22 @@ export function PlayerRow({
 }: PlayerRowProps) {
   const { colors } = useTheme()
   const podium = rank === undefined ? undefined : PODIUM[rank]
+  // iOS : la ligne pressée s'estompe ; Android : ripple natif sur toute la ligne, sans estompage.
+  const [pressed, setPressed] = useState(false)
+  const dimmed = pressed && Platform.OS !== 'android'
   return (
     <View
       style={[
-        { flexDirection: 'row', alignItems: 'center', gap: tokens.space[3], paddingRight: cta || ctaIcon ? tokens.space[5] : 0 },
+        { minHeight: 64, justifyContent: 'center' },
         highlight && { backgroundColor: colors.warm },
         dimOffline && presence === 'offline' && { opacity: 0.5 },
         style,
       ]}
     >
-      {/* Les actions restent hors de la ligne pressable, pour ne pas imbriquer deux boutons. */}
+      {/*
+        La zone pressable couvre toute la ligne, sous le contenu : le ripple Android va d'un bord à l'autre. L'action
+        reste au-dessus et répond seule (pas de bouton imbriqué dans un bouton).
+      */}
       <PressableScale
         accessibilityRole={onPress ? 'button' : 'text'}
         accessibilityLabel={[rank !== undefined ? `${rank}e` : undefined, name, sub, trail].filter(Boolean).join(', ')}
@@ -74,61 +81,63 @@ export function PlayerRow({
         pressedScale={1}
         ripple
         onPress={onPress}
-        style={({ pressed }) => ({
-          flex: 1,
-          minWidth: 0,
-          minHeight: 64,
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: tokens.space[4],
-          paddingVertical: tokens.space[3],
-          paddingLeft: tokens.space[5],
-          paddingRight: cta || ctaIcon ? 0 : tokens.space[5],
-          opacity: pressed ? 0.6 : 1,
-        })}
+        onPressIn={() => setPressed(true)}
+        onPressOut={() => setPressed(false)}
+        style={StyleSheet.absoluteFill}
+      />
+      <View
+        pointerEvents="box-none"
+        style={{ flexDirection: 'row', alignItems: 'center', gap: tokens.space[3], paddingVertical: tokens.space[3], paddingHorizontal: tokens.space[5] }}
       >
-        {rank !== undefined && (
-          <Text
-            variant="headline"
-            mono
-            align="center"
-            color={podium ? mix(tokens.tier[podium].hex, colors.text, 0.5) : 'muted'}
-            style={{ width: 28 }}
-            maxFontSizeMultiplier={1.2}
-          >
-            {rank}
-          </Text>
-        )}
-        <Avatar name={name} src={src} tier={tier} presence={presence} size="list" decorative />
-        <View style={{ flex: 1, minWidth: 0 }}>
-          <Text variant="headline" numberOfLines={1}>
-            {name}
-          </Text>
-          {sub && (
-            <Text variant="caption" color="muted" numberOfLines={1}>
-              {sub}
+        <View
+          pointerEvents="none"
+          importantForAccessibility="no-hide-descendants"
+          accessibilityElementsHidden
+          style={{ flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: tokens.space[4], opacity: dimmed ? 0.6 : 1 }}
+        >
+          {rank !== undefined && (
+            <Text
+              variant="headline"
+              mono
+              align="center"
+              color={podium ? mix(tokens.tier[podium].hex, colors.text, 0.5) : 'muted'}
+              style={{ width: 28 }}
+              maxFontSizeMultiplier={1.2}
+            >
+              {rank}
             </Text>
           )}
+          <Avatar name={name} src={src} tier={tier} presence={presence} size="list" decorative />
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text variant="headline" numberOfLines={1}>
+              {name}
+            </Text>
+            {sub && (
+              <Text variant="caption" color="muted" numberOfLines={1}>
+                {sub}
+              </Text>
+            )}
+          </View>
+          {trail && (
+            <Text variant="callout" weight="600" mono>
+              {trail}
+            </Text>
+          )}
+          {chevron && <CaretRightIcon size={20} color={colors.muted} />}
         </View>
-        {trail && (
-          <Text variant="callout" weight="600" mono>
-            {trail}
-          </Text>
+        {cta && (
+          <Button
+            size="S"
+            variant={cta.variant ?? 'gray'}
+            tone={(cta.variant ?? 'gray') === 'filled' ? 'accent' : 'neutral'}
+            onPress={cta.onPress}
+            accessibilityLabel={withName(cta.label, name)}
+          >
+            {cta.label}
+          </Button>
         )}
-        {chevron && <CaretRightIcon size={20} color={colors.muted} />}
-      </PressableScale>
-      {cta && (
-        <Button
-          size="S"
-          variant={cta.variant ?? 'gray'}
-          tone={(cta.variant ?? 'gray') === 'filled' ? 'accent' : 'neutral'}
-          onPress={cta.onPress}
-          accessibilityLabel={withName(cta.label, name)}
-        >
-          {cta.label}
-        </Button>
-      )}
-      {ctaIcon && !cta && <IconButton icon={ctaIcon.icon} label={withName(ctaIcon.label, name)} variant="tinted" tone="accent" onPress={ctaIcon.onPress} />}
+        {ctaIcon && !cta && <IconButton icon={ctaIcon.icon} label={withName(ctaIcon.label, name)} variant="tinted" tone="accent" onPress={ctaIcon.onPress} />}
+      </View>
       {!last && <View pointerEvents="none" style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: HAIRLINE, backgroundColor: colors.border }} />}
     </View>
   )
