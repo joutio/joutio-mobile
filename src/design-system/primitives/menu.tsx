@@ -1,5 +1,5 @@
 import { useRef, useState, type ReactNode } from 'react'
-import { Modal, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native'
+import { Modal, Platform, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native'
 import Animated, { Easing, ReduceMotion, useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { scheduleOnRN } from 'react-native-worklets'
@@ -70,23 +70,33 @@ export function Menu({ items, title, width = 240, children }: MenuProps) {
     })
   }
 
+  // Action choisie, jouée une fois le `Modal` réellement retiré. Lancée pendant son fondu, une feuille (TrueSheet) ou
+  // un autre `Modal` se présentait depuis le contrôleur du menu, détruit l'instant d'après : plantage sur iOS.
+  const pending = useRef<(() => void) | undefined>(undefined)
+  const flush = () => {
+    const action = pending.current
+    pending.current = undefined
+    action?.()
+  }
+
   const unmount = () => {
     setFrame(null)
     setPlacement(null)
     focusAccessibility(anchor)
+    // iOS : `onDismiss` du `Modal` joue l'action. Android n'a pas cet événement : le retrait est synchrone.
+    if (Platform.OS !== 'ios') requestAnimationFrame(flush)
   }
 
   const close = (then?: () => void) => {
+    pending.current = then
     if (reduced) {
       progress.value = 0
       unmount()
-      then?.()
       return
     }
     progress.value = withTiming(0, { duration: 140, easing: Easing.in(Easing.quad), reduceMotion: ReduceMotion.Never }, (finished) => {
       if (finished) scheduleOnRN(unmount)
     })
-    then?.()
   }
 
   // Placement une fois la hauteur du menu connue : dessous si ça tient, sinon dessus ; aligné à droite si le bouton
@@ -114,7 +124,15 @@ export function Menu({ items, title, width = 240, children }: MenuProps) {
       <View ref={anchor} collapsable={false} style={{ alignSelf: 'flex-start' }}>
         {children(open)}
       </View>
-      <Modal visible={frame !== null} transparent animationType="none" statusBarTranslucent navigationBarTranslucent onRequestClose={() => close()}>
+      <Modal
+        visible={frame !== null}
+        transparent
+        animationType="none"
+        statusBarTranslucent
+        navigationBarTranslucent
+        onRequestClose={() => close()}
+        onDismiss={flush}
+      >
         <Pressable accessibilityLabel="Fermer le menu" accessibilityRole="button" onPress={() => close()} style={StyleSheet.absoluteFill} />
         <Animated.View
           accessibilityViewIsModal
