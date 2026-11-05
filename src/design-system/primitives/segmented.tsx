@@ -172,6 +172,8 @@ function ScrollableSegmented<T extends string>({ options, value, onChange, label
         <Animated.ScrollView
           ref={scroller}
           horizontal
+          // iOS : seul le défilement principal de l'écran répond au toucher de la barre d'état.
+          scrollsToTop={false}
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={rail}
           onContentSizeChange={(contentWidth) => (content.value = contentWidth)}

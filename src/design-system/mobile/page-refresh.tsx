@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Platform, View } from 'react-native'
 import Animated, { interpolate, useAnimatedStyle, useEvent, useSharedValue, type SharedValue } from 'react-native-reanimated'
+import { haptic } from '../haptics'
 import { CircleNotchIcon } from '../icons'
 import { Spinner } from '../primitives/spinner'
 import { useTheme } from '../theme/theme-provider'
@@ -42,6 +43,8 @@ export function usePageRefresh(onRefresh?: () => Promise<unknown> | void) {
     tabProps: {
       refreshing,
       onRefresh: () => {
+        // Le natif ne vibre pas (et Android ne remonte pas la traction) : le retour haptique marque le déclenchement.
+        haptic('light')
         setRefreshing(true)
         Promise.resolve(onRefresh())
           .catch(() => undefined)

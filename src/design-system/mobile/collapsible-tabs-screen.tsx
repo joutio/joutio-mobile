@@ -20,6 +20,7 @@ import { useTheme } from '../theme/theme-provider'
 import { tokens } from '../tokens.generated'
 import { TOP_BAR_HEIGHT } from './mobile-top-bar'
 import { usePageRefresh } from './page-refresh'
+import { TabPageActiveContext, withActivePageScrollsToTop } from './tab-page'
 import { CompactBarRow, compactBarProgress, HERO_HEIGHT, heroImageTransform, heroTitleOpacity, ParallaxProgressProvider } from './parallax-screen'
 
 export type { CollapsibleTabsRef }
@@ -28,9 +29,9 @@ export type { CollapsibleTabsRef }
  * Listes d'un onglet : à utiliser **directement** comme contenu de `tabs[].content`. Chacune est virtualisée et
  * décalée sous l'en-tête (`react-native-collapsible-tabs-native`, qui replie l'en-tête en natif).
  */
-export const TabList = TabFlatList
-export const TabSectionList = createTabList(SectionList) as typeof SectionList
-export const TabScrollView = NativeTabScrollView
+export const TabList = withActivePageScrollsToTop(TabFlatList) as typeof TabFlatList
+export const TabSectionList = withActivePageScrollsToTop(createTabList(SectionList)) as typeof SectionList
+export const TabScrollView = withActivePageScrollsToTop(NativeTabScrollView)
 
 export interface CollapsibleTab<T extends string> {
   value: T
@@ -230,7 +231,11 @@ export function CollapsibleTabsScreen<T extends string>({
         ref={inner}
         navigationState={{ index, routes }}
         onIndexChange={changeIndex}
-        renderScene={({ route }) => tabs.find((tab) => tab.value === route.key)?.content ?? null}
+        renderScene={({ route }) => (
+          <TabPageActiveContext.Provider value={route.key === routes[index]?.key}>
+            {tabs.find((tab) => tab.value === route.key)?.content ?? null}
+          </TabPageActiveContext.Provider>
+        )}
         renderHeader={() => <Hero {...hero} title={title} scroll={scroll} titleStart={titleStart} titleLength={titleLength} barHeight={barHeight} />}
         renderTabBar={renderTabBar}
         // Le bas de l'en-tête reste sous la barre compacte, qui le recouvre : les onglets se collent sous elle.

@@ -1,14 +1,14 @@
 import { View, type StyleProp, type ViewStyle } from 'react-native'
-import { ArrowClockwiseIcon, ArrowDownIcon, CheckCircleIcon, WarningCircleIcon } from '../icons'
-import { Button } from '../primitives/button'
 import Animated, { interpolate, useAnimatedStyle } from 'react-native-reanimated'
+import { ArrowClockwiseIcon, CaretUpIcon, CheckCircleIcon, WarningCircleIcon } from '../icons'
+import { Button } from '../primitives/button'
 import { PressableScale } from '../primitives/pressable-scale'
 import { Spinner } from '../primitives/spinner'
 import { Text } from '../primitives/text'
 import { useTheme } from '../theme/theme-provider'
 import { tokens } from '../tokens.generated'
 import { HAIRLINE } from '../theme/hairline'
-import { PULL_THRESHOLD, type PullState } from './pull-to-load-more'
+import { LOAD_MORE_THRESHOLD, useLoadMorePull } from './drag-to-load-more'
 
 export type FeedFooterState = 'more' | 'loading' | 'error' | 'end'
 
@@ -18,18 +18,19 @@ export interface FeedFooterProps {
   onRetry?: () => void
   /** Message de fin de liste. */
   endLabel?: string
-  /** Pull-to-refresh inversé (`usePullToLoadMore`) : « Charger la suite » suit la traction. */
-  pull?: PullState
+  /** État `more` : ce qui reste, si on le connaît (« 83 autres sujets »). */
+  remainingLabel?: string
   style?: StyleProp<ViewStyle>
 }
 
 /**
- * Pied d'une liste paginée (`ListFooterComponent`). La liste charge la suite **d'elle-même** en arrivant en bas
- * (`onEndReached`, ou un tiré vers le haut une fois en bas) : le pied montre alors un spinner, comme un
- * pull-to-refresh posé en bas. « Charger la suite » reste en repli. Les éléments déjà chargés restent visibles quand
- * la page suivante échoue.
+ * Pied d'une liste paginée (`ListFooterComponent`). La suite se charge en tirant la liste vers le haut une fois en bas
+ * (`DragToLoadMore`, dont le loader vit sous la liste) : en état `more`, le pied l'annonce (« Tire pour voir la
+ * suite », et ce qui reste) puis s'efface dès que la traction commence ; il reste un bouton « Charger la suite »
+ * pour le toucher et les lecteurs d'écran. Les éléments déjà chargés restent visibles quand la page suivante
+ * échoue.
  */
-export function FeedFooter({ state, onLoadMore, onRetry, endLabel = 'Tu as tout vu', pull, style }: FeedFooterProps) {
+export function FeedFooter({ state, onLoadMore, onRetry, endLabel = 'Tu as tout vu', remainingLabel, style }: FeedFooterProps) {
   const { colors, radius } = useTheme()
 
   if (state === 'loading') {
@@ -92,46 +93,40 @@ export function FeedFooter({ state, onLoadMore, onRetry, endLabel = 'Tu as tout 
     )
   }
 
-  if (pull) return <PullLoadMore pull={pull} onLoadMore={onLoadMore} style={style} />
-
-  return (
-    <View style={[{ alignItems: 'center' }, style]}>
-      <Button variant="plain" tone="neutral" icon={ArrowDownIcon} onPress={onLoadMore}>
-        Charger la suite
-      </Button>
-    </View>
-  )
+  return <PullHint onLoadMore={onLoadMore} remainingLabel={remainingLabel} style={style} />
 }
 
-/**
- * « Charger la suite » piloté par la traction : il monte avec le doigt (jusqu'à 16 pt), sa flèche pivote jusqu'à se
- * retourner au seuil, et le libellé devient « Relâche pour charger ». Reste un bouton au toucher.
- */
-function PullLoadMore({ pull, onLoadMore, style }: { pull: PullState; onLoadMore?: () => void; style?: StyleProp<ViewStyle> }) {
+/** Annonce de la suite : chevron, « Tire pour voir la suite » et ce qui reste ; s'efface sous la traction. */
+function PullHint({ onLoadMore, remainingLabel, style }: { onLoadMore?: () => void; remainingLabel?: string; style?: StyleProp<ViewStyle> }) {
   const { colors } = useTheme()
-  const { distance, armed } = pull
-  const lift = useAnimatedStyle(() => ({
-    transform: [{ translateY: -Math.min(16, distance.value * 0.22) }],
-  }))
-  const arrow = useAnimatedStyle(() => ({
-    transform: [{ rotate: `${interpolate(distance.value, [0, PULL_THRESHOLD], [0, 180], 'clamp')}deg` }],
-  }))
+  const pull = useLoadMorePull()
+  const fade = useAnimatedStyle(() => ({ opacity: pull ? interpolate(pull.value, [0, LOAD_MORE_THRESHOLD * 0.35], [1, 0], 'clamp') : 1 }))
   return (
-    <Animated.View style={[{ alignItems: 'center' }, lift, style]}>
+    <Animated.View style={[{ alignItems: 'center' }, fade, style]}>
       <PressableScale
         accessibilityRole="button"
-        accessibilityLabel="Charger la suite"
-        accessibilityHint="Ou tire la liste vers le haut puis relâche"
+        accessibilityLabel={remainingLabel ? `Charger la suite, ${remainingLabel}` : 'Charger la suite'}
+        accessibilityHint="Ou tire la liste vers le haut"
         pressedScale={0.98}
         onPress={onLoadMore}
-        style={{ minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: tokens.space[3], paddingHorizontal: tokens.space[5] }}
+        style={{
+          minHeight: 44,
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: tokens.space[1],
+          paddingVertical: tokens.space[3],
+          paddingHorizontal: tokens.space[5],
+        }}
       >
-        <Animated.View style={arrow}>
-          <ArrowDownIcon size={18} color={armed ? colors.accentInk : colors.text} />
-        </Animated.View>
-        <Text variant="callout" weight="600" color={armed ? 'accentInk' : 'text'}>
-          {armed ? 'Relâche pour charger' : 'Charger la suite'}
+        <CaretUpIcon size={16} color={colors.muted} />
+        <Text variant="callout" weight="600" color="muted">
+          Tire pour voir la suite
         </Text>
+        {remainingLabel && (
+          <Text variant="caption" color="muted">
+            {remainingLabel}
+          </Text>
+        )}
       </PressableScale>
     </Animated.View>
   )

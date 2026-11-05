@@ -200,9 +200,14 @@ sans ligne de co-auteur.
   suivante s'empile dans une nouvelle feuille.
 - **Défilement collé** : `StickyBar` + `stickyHeaderIndices` et `useStickyBar()` ; sous une barre compacte
   (`ParallaxScreen`), collage par Reanimated.
-- **Listes** : toute liste non bornée finit par `FeedFooter`, la suite se charge par `usePullToLoadMore`
-  (pull-to-refresh inversé ; sur Android, en attendant le geste, au relâcher en bas de liste) ; toucher l'onglet actif remonte en haut
-  (`useScrollToTop`, émis par `JoTabBar`).
+- **Listes** : toute liste non bornée finit par `FeedFooter` et se pose dans `DragToLoadMore` (traction en bas de
+  liste, ressort Reanimated + geste Gesture Handler, loader Lottie `assets/lottie/load-more.json` scrubbé puis en
+  boucle ; `contenu.md` § Listes paginées). Son défilement est `LoadMoreScrollView` (`renderScrollComponent` d'une
+  **FlashList**, préférée pour les longues listes) ou `TabLoadMoreScrollView` dans un écran à onglets ; un
+  `RefreshControl` s'importe alors de `react-native-gesture-handler`. Loader natif par OS (`LoadMoreIndicator`).
+  Revenir en haut : onglet actif (`useScrollToTop`, émis par `JoTabBar`), barre d'état iOS (`scrollsToTop={false}`
+  sur tout défilement horizontal ; pages cachées via `withActivePageScrollsToTop`) et `ScrollToTopPill` (intégrée à
+  `TabsScrollView`, posée à la main sur une liste longue).
 - **Glass** : flou natif sur iOS ; teinte seule sur Android (le flou y exige `BlurTargetView`).
 - 1 composant = 1 fichier, export nommé, props en `interface`, jamais `any`. Jamais « Toi » comme nom de joueur.
 

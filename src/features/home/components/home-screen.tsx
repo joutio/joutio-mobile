@@ -1,6 +1,7 @@
 import { router, useScrollToTop } from 'expo-router'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { ScrollView, View } from 'react-native'
+import Animated, { interpolate, useAnimatedStyle, useDerivedValue, useSharedValue } from 'react-native-reanimated'
 import {
   BellIcon,
   Button,
@@ -19,21 +20,22 @@ import {
   Screen,
   SectionHeader,
   Skeleton,
-  TabScrollView,
+  DragToLoadMore,
+  TabLoadMoreScrollView,
   TabsScrollView,
   Text,
   TopicCard,
   TopicRow,
   TopTen,
-  usePullToLoadMore,
   TOP_TEN_CARD_WIDTH,
   tokens,
   toCategoryCode,
   useTheme,
   WarningCircleIcon,
+  compactBarProgress,
+  useReducedMotion,
   type CategoryCode,
   type CollapsibleTabsRef,
-  type PullState,
 } from '@/design-system'
 import { useMe } from '@/features/me'
 import type { TopicCardView } from '@/shared/types/bff'
@@ -54,6 +56,7 @@ const TABS = [
 type Tab = (typeof TABS)[number]['value']
 
 const imageOf = (topic: TopicCardView) => topic.imageUrl ?? undefined
+const remainingFollowed = (count: number) => `${count} ${count > 1 ? 'autres sujets suivis' : 'autre sujet suivi'}`
 
 /** Rail de cartes paysage avec « Tout voir ». */
 function TopicRail({ title, topics, onSeeAll }: { title: string; topics: TopicCardView[]; onSeeAll: () => void }) {
@@ -99,19 +102,9 @@ function ForYou({ trending, fresh }: { trending: TopicCardView[]; fresh: TopicCa
 
 /**
  * Sujets suivis : puces d'univers à sélection multiple (« Tous » par défaut), 20 par page. `loadMore` change à chaque
- * pull-to-refresh inversé réussi en bas de l'onglet ; `onHasMore` dit s'il reste une page.
+ * traction réussie en bas de l'onglet (`DragToLoadMore`) ; `onHasMore` dit s'il reste une page.
  */
-function Followed({
-  topics,
-  loadMore,
-  onHasMore,
-  pull,
-}: {
-  topics: TopicCardView[]
-  loadMore: number
-  onHasMore: (hasMore: boolean) => void
-  pull: PullState
-}) {
+function Followed({ topics, loadMore, onHasMore }: { topics: TopicCardView[]; loadMore: number; onHasMore: (hasMore: boolean) => void }) {
   const { colors, radius } = useTheme()
   const [selected, setSelected] = useState<CategoryCode[]>([])
   const [pages, setPages] = useState(1)
@@ -136,7 +129,12 @@ function Followed({
 
   return (
     <View style={{ gap: tokens.space[4] }}>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: GUTTER, gap: tokens.space[3] }}>
+      <ScrollView
+        horizontal
+        scrollsToTop={false}
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ paddingHorizontal: GUTTER, gap: tokens.space[3] }}
+      >
         <Chip selected={selected.length === 0} onPress={() => select([])}>
           Tous
         </Chip>
@@ -162,7 +160,7 @@ function Followed({
         state={hasMore ? 'more' : 'end'}
         onLoadMore={() => setPages(pages + 1)}
         endLabel="Tu as vu tous tes sujets suivis"
-        pull={pull}
+        remainingLabel={hasMore ? remainingFollowed(filtered.length - visible.length) : undefined}
       />
     </View>
   )
@@ -194,15 +192,13 @@ function TabPage({ tab, home }: { tab: Tab; home: ReturnType<typeof useHome> }) 
   const followed = tab === 'followed'
   const data = home.data
   const empty = data && (followed ? data.followedTopics.length === 0 : data.trendingTopics.length === 0 && data.newTopics.length === 0)
-  // Suite des sujets suivis : pull-to-refresh inversé en bas de l'onglet.
+  // Suite des sujets suivis : traction en bas de l'onglet (pages locales, sans requête).
   const [loadMore, setLoadMore] = useState(0)
   const [hasMore, setHasMore] = useState(false)
-  const pullUp = usePullToLoadMore({ enabled: followed && hasMore, onLoadMore: () => setLoadMore((count) => count + 1) })
   return (
-    <View style={{ flex: 1 }}>
-      <TabScrollView
+    <DragToLoadMore enabled={followed && hasMore} onLoadMore={() => setLoadMore((count) => count + 1)}>
+      <TabLoadMoreScrollView
         showsVerticalScrollIndicator={false}
-        {...pullUp.scrollProps}
         contentContainerStyle={{ gap: tokens.space[7], paddingTop: tokens.space[5], paddingBottom: tokens.space[7] }}
       >
         {home.isPending && <Loading />}
@@ -233,19 +229,23 @@ function TabPage({ tab, home }: { tab: Tab; home: ReturnType<typeof useHome> }) 
         {data &&
           !empty &&
           (followed ? (
-            <Followed topics={data.followedTopics} loadMore={loadMore} onHasMore={setHasMore} pull={pullUp.pull} />
+            <Followed topics={data.followedTopics} loadMore={loadMore} onHasMore={setHasMore} />
           ) : (
             <ForYou trending={data.trendingTopics} fresh={data.newTopics} />
           ))}
-      </TabScrollView>
-    </View>
+      </TabLoadMoreScrollView>
+    </DragToLoadMore>
   )
 }
 
+/** Montée du logo et du bonjour dans la barre pendant le passage, en points. */
+const BAR_SHIFT = 10
+
 /**
  * Accueil (`design/specs/screens/accueil.md`) : barre fixe (logo, recherche, cloche), bonjour + rang + série qui se
- * replient, onglets « Pour toi » / « Suivis » collés dessous et balayables (`TabsScrollView`). Une fois collés, le
- * bonjour passe au centre de la barre. Toucher Accueil dans la bottom nav remonte en haut.
+ * replient, onglets « Pour toi » / « Suivis » collés dessous et balayables (`TabsScrollView`), comme un profil Twitter.
+ * Pendant que le grand bonjour passe sous la barre, le logo monte en s'effaçant et « Bonjour X » monte à sa place,
+ * au rythme du défilement (courbe `compactBarProgress`, mesurée). Toucher Accueil dans la bottom nav remonte en haut.
  */
 export function HomeScreen() {
   const me = useMe()
@@ -255,6 +255,22 @@ export function HomeScreen() {
   useScrollToTop(tabsRef)
 
   const [tab, setTab] = useState<Tab>('for-you')
+  const [stuck, setStuck] = useState(false)
+  const reduced = useReducedMotion()
+
+  // Passage du grand bonjour sous la barre : début = son haut dans l'en-tête, durée = sa hauteur. Mesurés.
+  const scroll = useSharedValue(0)
+  const titleStart = useSharedValue<number>(tokens.space[4])
+  const titleLength = useSharedValue(32)
+  const progress = useDerivedValue(() => compactBarProgress(scroll.value, titleStart.value, titleLength.value))
+  const logoStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(progress.value, [0, 0.6], [1, 0], 'clamp'),
+    transform: [{ translateY: reduced ? 0 : -BAR_SHIFT * progress.value }],
+  }))
+  const barGreetingStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(progress.value, [0.3, 1], [0, 1], 'clamp'),
+    transform: [{ translateY: reduced ? 0 : BAR_SHIFT * (1 - progress.value) }],
+  }))
 
   const pseudonym = me.data?.pseudonym ?? ''
   const rating = me.data?.progression?.rating
@@ -264,8 +280,20 @@ export function HomeScreen() {
 
   const header = (
     <View style={{ minHeight: 52, flexDirection: 'row', alignItems: 'center', paddingLeft: GUTTER, paddingRight: tokens.space[3], gap: tokens.space[3] }}>
-      <View style={{ flex: 1, minWidth: 0 }}>
-        <Logo variant="lockup" size={28} />
+      <View style={{ flex: 1, minWidth: 0, alignSelf: 'stretch', justifyContent: 'center', overflow: 'hidden' }}>
+        <Animated.View style={logoStyle} accessibilityElementsHidden={stuck} importantForAccessibility={stuck ? 'no-hide-descendants' : 'auto'}>
+          <Logo variant="lockup" size={28} />
+        </Animated.View>
+        <Animated.View
+          accessibilityElementsHidden={!stuck}
+          importantForAccessibility={stuck ? 'auto' : 'no-hide-descendants'}
+          style={[{ position: 'absolute', left: 0, right: 0, flexDirection: 'row', alignItems: 'center', gap: tokens.space[2] }, barGreetingStyle]}
+        >
+          <Text variant="headline" numberOfLines={1} style={{ flexShrink: 1 }}>
+            {greeting}
+          </Text>
+          {premium && <PremiumBadge size={18} />}
+        </Animated.View>
       </View>
       <View style={{ flexDirection: 'row', gap: tokens.space[3] }}>
         <IconButton icon={MagnifyingGlassIcon} label="Rechercher" variant="plain" tone="neutral" />
@@ -281,13 +309,19 @@ export function HomeScreen() {
         label="Contenu de l'accueil"
         value={tab}
         onChange={setTab}
-        // Rien ne se colle sur l'Accueil : les onglets défilent avec le bonjour.
-        pinned={false}
+        scroll={scroll}
+        onStuckChange={setStuck}
         // Tiré vers le bas : tout l'Accueil se recharge (rails, profil, cloche).
         onRefresh={() => Promise.all([home.refetch(), me.refetch(), unread.refetch()])}
         header={
           <View style={{ gap: tokens.space[3], paddingHorizontal: GUTTER, paddingTop: tokens.space[4], paddingBottom: tokens.space[3] }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: tokens.space[2] }}>
+            <View
+              style={{ flexDirection: 'row', alignItems: 'center', gap: tokens.space[2] }}
+              onLayout={(event) => {
+                titleStart.value = event.nativeEvent.layout.y
+                titleLength.value = event.nativeEvent.layout.height
+              }}
+            >
               <Text variant="title2" style={{ flexShrink: 1 }}>
                 {greeting}
               </Text>

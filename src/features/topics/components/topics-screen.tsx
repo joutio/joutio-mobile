@@ -1,20 +1,27 @@
 import { useScrollToTop } from 'expo-router'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { FlatList, RefreshControl, ScrollView, useWindowDimensions, View } from 'react-native'
+import { FlashList, type FlashListRef } from '@shopify/flash-list'
+import { ScrollView, useWindowDimensions, View } from 'react-native'
+import { RefreshControl } from 'react-native-gesture-handler'
+import { useSharedValue } from 'react-native-reanimated'
 import {
   ArrowsDownUpIcon,
   BellIcon,
   Button,
   Chip,
+  DragToLoadMore,
   EmptyState,
   EyeSlashIcon,
   FeedFooter,
+  haptic,
   IconButton,
   ListRow,
+  LoadMoreScrollView,
   MagnifyingGlassIcon,
   MobileSheet,
   MobileTopBar,
   RadioGroup,
+  ScrollToTopPill,
   Screen,
   SearchField,
   SectionHeader,
@@ -25,7 +32,6 @@ import {
   TopicCard,
   tokens,
   toCategoryCode,
-  usePullToLoadMore,
   useTheme,
   WarningCircleIcon,
   type CategoryCode,
@@ -81,7 +87,7 @@ export function TopicsScreen() {
   // Largeur fixe d'une colonne : une carte seule sur sa ligne ne s'étire pas sur toute la largeur.
   const cardWidth = (width - GUTTER * 2 - GAP) / 2
   const unread = useUnreadCount()
-  const list = useRef<FlatList<TopicCardView>>(null)
+  const list = useRef<FlashListRef<TopicCardView>>(null)
   useScrollToTop(list)
 
   const [query, setQuery] = useState('')
@@ -90,6 +96,7 @@ export function TopicsScreen() {
   const [hideFollowed, setHideFollowed] = useState(false)
   const [sheetOpen, setSheetOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
+  const offset = useSharedValue(0)
 
   const search = useDebounced(query.trim())
   const filters = useMemo(() => ({ query: search, categories, sort, hideFollowed }), [search, categories, sort, hideFollowed])
@@ -122,20 +129,25 @@ export function TopicsScreen() {
   // Tiré vers le bas en haut de la grille : catalogue, univers et cloche se rechargent.
   const [refreshing, setRefreshing] = useState(false)
   const refresh = () => {
+    // Android ne remonte pas la traction : le retour haptique marque le déclenchement.
+    haptic('light')
     setRefreshing(true)
     void Promise.all([topics.refetch(), facets.refetch(), unread.refetch()]).finally(() => setRefreshing(false))
   }
 
-  // Suite : pull-to-refresh inversé en bas de la grille.
-  const pullUp = usePullToLoadMore({
-    enabled: Boolean(topics.hasNextPage) && !topics.isFetchingNextPage && !topics.isFetchNextPageError,
-    onLoadMore: () => void topics.fetchNextPage(),
-  })
+  // Ce qui reste à charger : connu par les facettes, qui ignorent « Masquer les sujets suivis » (alors rien).
+  const remaining = facets.data && !hideFollowed ? count - items.length : 0
+  const remainingLabel = remaining > 0 ? `${remaining} ${remaining > 1 ? 'autres sujets' : 'autre sujet'}` : undefined
   const sortLabel = SORTS.find((option) => option.value === sort)?.label ?? ''
 
   const listHeader = (
     <View style={{ gap: tokens.space[3], paddingBottom: tokens.space[4] }}>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: GUTTER, gap: tokens.space[3] }}>
+      <ScrollView
+        horizontal
+        scrollsToTop={false}
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ paddingHorizontal: GUTTER, gap: tokens.space[3] }}
+      >
         <Chip selected={categories.length === 0} onPress={() => setCategories([])}>
           Tous
         </Chip>
@@ -261,50 +273,70 @@ export function TopicsScreen() {
           onPress={() => setSheetOpen(true)}
         />
       </StickyBar>
-      <FlatList
-        ref={list}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={refresh}
-            tintColor={colors.muted}
-            colors={[colors.accent]}
-            progressBackgroundColor={colors.surface}
+      <View style={{ flex: 1 }}>
+        {/* Suite : traction en bas de la grille (`DragToLoadMore`), loader sous la liste. */}
+        <DragToLoadMore
+          enabled={Boolean(topics.hasNextPage) && !topics.isFetchNextPageError}
+          loading={topics.isFetchingNextPage}
+          onLoadMore={() => void topics.fetchNextPage()}
+        >
+          <FlashList
+            ref={list}
+            renderScrollComponent={LoadMoreScrollView}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={refresh}
+                tintColor={colors.muted}
+                colors={[colors.accent]}
+                progressBackgroundColor={colors.surface}
+              />
+            }
+            style={{ flex: 1, backgroundColor: colors.bg }}
+            data={items}
+            keyExtractor={(topic) => topic.topicId}
+            numColumns={2}
+            contentContainerStyle={{ paddingTop: tokens.space[3], paddingBottom: tokens.space[7] }}
+            showsVerticalScrollIndicator={false}
+            keyboardDismissMode="on-drag"
+            onScroll={(event) => {
+              offset.value = event.nativeEvent.contentOffset.y
+              setScrolled(event.nativeEvent.contentOffset.y > 0)
+            }}
+            ListHeaderComponent={listHeader}
+            ListEmptyComponent={emptyState}
+            renderItem={({ item, index }) => {
+              // Deux colonnes : gouttière dehors, demi-écart dedans ; la carte garde sa largeur fixe.
+              const left = index % 2 === 0
+              return (
+                <View style={{ paddingLeft: left ? GUTTER : GAP / 2, paddingRight: left ? GAP / 2 : GUTTER, paddingBottom: GAP }}>
+                  <View style={{ width: cardWidth }}>
+                    <TopicCard
+                      title={topicName(item.names)}
+                      category={toCategoryCode(item.category)}
+                      image={item.imageUrl ?? undefined}
+                      orientation="portrait"
+                    />
+                  </View>
+                </View>
+              )
+            }}
+            ListFooterComponent={
+              items.length > 0 ? (
+                <FeedFooter
+                  style={{ marginHorizontal: GUTTER }}
+                  state={topics.isFetchNextPageError ? 'error' : topics.hasNextPage ? 'more' : 'end'}
+                  onLoadMore={() => void topics.fetchNextPage()}
+                  onRetry={() => void topics.fetchNextPage()}
+                  endLabel="Tu as vu tous les sujets"
+                  remainingLabel={remainingLabel}
+                />
+              ) : undefined
+            }
           />
-        }
-        {...pullUp.scrollProps}
-        style={{ flex: 1, backgroundColor: colors.bg }}
-        data={items}
-        keyExtractor={(topic) => topic.topicId}
-        numColumns={2}
-        columnWrapperStyle={{ gap: GAP, paddingHorizontal: GUTTER }}
-        contentContainerStyle={{ gap: GAP, paddingTop: tokens.space[3], paddingBottom: tokens.space[7], flexGrow: 1 }}
-        showsVerticalScrollIndicator={false}
-        keyboardDismissMode="on-drag"
-        onScroll={(event) => {
-          setScrolled(event.nativeEvent.contentOffset.y > 0)
-          pullUp.scrollProps.onScroll(event)
-        }}
-        ListHeaderComponent={listHeader}
-        ListEmptyComponent={emptyState}
-        renderItem={({ item }) => (
-          <View style={{ width: cardWidth }}>
-            <TopicCard title={topicName(item.names)} category={toCategoryCode(item.category)} image={item.imageUrl ?? undefined} orientation="portrait" />
-          </View>
-        )}
-        ListFooterComponent={
-          items.length > 0 ? (
-            <FeedFooter
-              style={{ marginHorizontal: GUTTER }}
-              state={topics.isFetchingNextPage ? 'loading' : topics.isFetchNextPageError ? 'error' : topics.hasNextPage ? 'more' : 'end'}
-              onLoadMore={() => void topics.fetchNextPage()}
-              onRetry={() => void topics.fetchNextPage()}
-              endLabel="Tu as vu tous les sujets"
-              pull={pullUp.pull}
-            />
-          ) : undefined
-        }
-      />
+        </DragToLoadMore>
+        <ScrollToTopPill scroll={offset} onPress={() => list.current?.scrollToOffset({ offset: 0, animated: true })} />
+      </View>
     </Screen>
   )
 }

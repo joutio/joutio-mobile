@@ -27,6 +27,8 @@ export function Rail({ itemWidth, label, style, children }: RailProps) {
   return (
     <ScrollView
       horizontal
+      // iOS : seul le défilement principal de l'écran répond au toucher de la barre d'état.
+      scrollsToTop={false}
       accessibilityLabel={label}
       accessibilityRole="list"
       showsHorizontalScrollIndicator={false}

@@ -1,11 +1,13 @@
-import { useState, type ReactNode, type Ref } from 'react'
+import { useImperativeHandle, useRef, useState, type ReactNode, type Ref } from 'react'
 import { View } from 'react-native'
 import { CollapsibleTabView, type CollapsibleTabsRef, type Route } from 'react-native-collapsible-tabs-native'
-import { useEvent, useSharedValue } from 'react-native-reanimated'
+import { useEvent, useSharedValue, type SharedValue } from 'react-native-reanimated'
 import { Segmented } from '../primitives/segmented'
 import { useTheme } from '../theme/theme-provider'
 import { tokens } from '../tokens.generated'
 import { usePageRefresh } from './page-refresh'
+import { ScrollToTopPill } from './scroll-to-top-pill'
+import { TabPageActiveContext } from './tab-page'
 
 export interface TabsScrollPage<T extends string> {
   value: T
@@ -27,8 +29,12 @@ export interface TabsScrollViewProps<T extends string> {
   /** `false` : la barre d'onglets défile avec l'en-tête au lieu de se coller en haut. */
   pinned?: boolean
   tabsRef?: Ref<CollapsibleTabsRef>
+  /** Reçoit le défilement de la page active (négatif au tiré), sur le thread UI : animations liées au repli. */
+  scroll?: SharedValue<number>
   /** Tiré vers le bas en haut de page : recharge toute la page. Le spinner reste jusqu'à la fin de la promesse. */
   onRefresh?: () => Promise<unknown> | void
+  /** Pastille « Haut de page » sous les onglets collés (`ScrollToTopPill`). Active par défaut. */
+  scrollToTopPill?: boolean
 }
 /**
  * Onglets à balayer (`TabsScrollView` du lab) : `Segmented` collé sous la barre de l'écran, contenu qu'on balaie d'un
@@ -44,7 +50,9 @@ export function TabsScrollView<T extends string>({
   onStuckChange,
   pinned = true,
   tabsRef,
+  scroll,
   onRefresh,
+  scrollToTopPill = true,
 }: TabsScrollViewProps<T>) {
   const { colors } = useTheme()
   const refresh = usePageRefresh(onRefresh)
@@ -54,6 +62,16 @@ export function TabsScrollView<T extends string>({
   )
   const routes: Route[] = pages.map((page) => ({ key: page.value, title: page.label }))
   const [headerHeight, setHeaderHeight] = useState(0)
+  const [tabBarHeight, setTabBarHeight] = useState(0)
+  const inner = useRef<CollapsibleTabsRef>(null)
+  useImperativeHandle(tabsRef, () => ({
+    scrollToTop: (options) => inner.current?.scrollToTop(options),
+    setIndex: (next, options) => inner.current?.setIndex(next, options),
+    collapse: (options) => inner.current?.collapse(options),
+    expand: (options) => inner.current?.expand(options),
+  }))
+  const ownScroll = useSharedValue(0)
+  const offset = scroll ?? ownScroll
   const position = useSharedValue(index)
   const onPageScroll = useEvent<{ position: number; offset: number }>(
     (event) => {
@@ -62,24 +80,38 @@ export function TabsScrollView<T extends string>({
     },
     ['topPageScroll', 'onPageScroll'],
   )
+  const onScrollOffsetChange = useEvent<{ offset: number }>(
+    (event) => {
+      'worklet'
+      offset.value = event.offset
+    },
+    ['topScrollOffsetChange', 'onScrollOffsetChange'],
+  )
 
   return (
     <View style={{ flex: 1 }}>
       <CollapsibleTabView
-        ref={tabsRef}
+        ref={inner}
         navigationState={{ index, routes }}
         onIndexChange={(next) => {
           const page = pages[next]
           if (page) onChange(page.value)
         }}
-        renderScene={({ route }) => pages.find((page) => page.value === route.key)?.content ?? null}
+        renderScene={({ route }) => (
+          <TabPageActiveContext.Provider value={route.key === value}>
+            {pages.find((page) => page.value === route.key)?.content ?? null}
+          </TabPageActiveContext.Provider>
+        )}
         renderHeader={() => (
           <View style={{ backgroundColor: colors.bg }} onLayout={(event) => setHeaderHeight(event.nativeEvent.layout.height)}>
             {header}
           </View>
         )}
         renderTabBar={() => (
-          <View style={{ backgroundColor: colors.bg, paddingHorizontal: tokens.space[5], paddingVertical: tokens.space[3] }}>
+          <View
+            style={{ backgroundColor: colors.bg, paddingHorizontal: tokens.space[5], paddingVertical: tokens.space[3] }}
+            onLayout={(event) => setTabBarHeight(event.nativeEvent.layout.height)}
+          >
             <Segmented label={label} options={pages} value={value} position={position} onChange={onChange} />
           </View>
         )}
@@ -88,10 +120,14 @@ export function TabsScrollView<T extends string>({
         onCollapsedChange={onStuckChange}
         pinTabBar={pinned}
         onPageScroll={onPageScroll}
+        onScrollOffsetChange={onScrollOffsetChange}
         {...refresh.tabProps}
         lazy
       />
       {refresh.indicator(tokens.space[4])}
+      {scrollToTopPill && pinned && (
+        <ScrollToTopPill scroll={offset} top={tabBarHeight + tokens.space[2]} onPress={() => inner.current?.scrollToTop({ animated: true })} />
+      )}
     </View>
   )
 }
