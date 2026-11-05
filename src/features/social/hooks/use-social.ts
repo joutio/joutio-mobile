@@ -40,16 +40,6 @@ export function useFollowPlayer(userId: string) {
   })
 }
 
-/** Sujets joués par un joueur, pour la feuille de défi. */
-export function usePlayerTopics(userId: string, enabled = true) {
-  return useQuery({
-    queryKey: ['profiles', userId, 'topics'],
-    queryFn: () => socialService.topics(userId),
-    enabled: enabled && Boolean(userId),
-    staleTime: 60_000,
-  })
-}
-
 /** Bilan des duels communs, du point de vue du joueur connecté (`against` = l'autre joueur). */
 export function useHeadToHead(against: string) {
   const me = useMe(true)

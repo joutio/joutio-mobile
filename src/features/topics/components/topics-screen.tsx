@@ -38,6 +38,8 @@ import {
 } from '@/design-system'
 import { useUnreadCount } from '@/features/home'
 import { openTopic } from '@/features/topic'
+import { DEFAULT_TOPIC_SORT } from '../lib/topics-service'
+import { useDebounced } from '@/shared/hooks/use-debounced'
 import type { TopicCardView, TopicSort } from '@/shared/types/bff'
 import { topicName } from '@/shared/utils/topic-name'
 import { useTopicFacets, useTopics } from '../hooks/use-topics'
@@ -50,21 +52,11 @@ const SORTS: { value: TopicSort; label: string }[] = [
   { value: 'MOST_PLAYED', label: 'Les plus joués' },
   { value: 'RECENT', label: 'Nouveautés' },
 ]
-const DEFAULT_SORT: TopicSort = 'POPULAR'
+const DEFAULT_SORT: TopicSort = DEFAULT_TOPIC_SORT
 
 const countLabel = (count: number) => `${count} ${count > 1 ? 'sujets' : 'sujet'}`
 const toggle = (list: readonly CategoryCode[], category: CategoryCode) =>
   list.includes(category) ? list.filter((item) => item !== category) : [...list, category]
-
-/** Saisie stabilisée : la recherche part 300 ms après la dernière frappe. */
-function useDebounced<T>(value: T, delay = 300) {
-  const [debounced, setDebounced] = useState(value)
-  useEffect(() => {
-    const timer = setTimeout(() => setDebounced(value), delay)
-    return () => clearTimeout(timer)
-  }, [value, delay])
-  return debounced
-}
 
 function Loading() {
   return (

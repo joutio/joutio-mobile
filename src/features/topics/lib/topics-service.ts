@@ -5,6 +5,9 @@ import type { PageResponse, TopicCardView, TopicFacetsView, TopicSort } from '@/
 
 export const PAGE_SIZE = 20
 
+/** Tri par défaut du catalogue (Sujets, feuille de défi). */
+export const DEFAULT_TOPIC_SORT: TopicSort = 'POPULAR'
+
 export interface TopicFilters {
   query: string
   /** Univers choisis ; vide = tous. */

@@ -25,6 +25,8 @@ export interface MobileSheetProps {
   tall?: boolean
   /** Actions, toujours visibles sous le contenu qui défile. */
   footer?: ReactNode
+  /** Zone collée en haut du contenu (recherche d'une liste) : `stickyHeaderIndices`, fond `surface`. */
+  stickyHeader?: ReactNode
   /** Rend le focus à l'élément qui a ouvert la feuille. */
   returnFocusTo?: RefObject<ViewRef | null>
   /** Feuille effectivement présentée : permet de monter son contenu lourd après l'ouverture native. */
@@ -45,7 +47,20 @@ const splitScrim = (scrim: string) => {
  * Feuille modale par le bas, native (TrueSheet). Ajustée au contenu jusqu'à 80 %, ou `tall` à 92 %.
  * Contenu démonté une fois fermée. Une étape suivante s'empile dans une nouvelle feuille (`foundations.md` § 11).
  */
-export function MobileSheet({ open, onClose, title, subtitle, onBack, action, tall = false, footer, returnFocusTo, onDidPresent, children }: MobileSheetProps) {
+export function MobileSheet({
+  open,
+  onClose,
+  title,
+  subtitle,
+  onBack,
+  action,
+  tall = false,
+  footer,
+  stickyHeader,
+  returnFocusTo,
+  onDidPresent,
+  children,
+}: MobileSheetProps) {
   const { colors, radius } = useTheme()
   const { height } = useWindowDimensions()
   const insets = useSafeAreaInsets()
@@ -126,11 +141,16 @@ export function MobileSheet({ open, onClose, title, subtitle, onBack, action, ta
         style={{ flexGrow: 0, flexShrink: 1 }}
         nestedScrollEnabled
         showsVerticalScrollIndicator={false}
+        stickyHeaderIndices={stickyHeader ? [0] : undefined}
         contentContainerStyle={{
           paddingHorizontal: tokens.space[5],
           paddingBottom: footer ? tokens.space[3] : tokens.space[5] + (FLOATING ? 0 : insets.bottom),
         }}
       >
+        {stickyHeader ? (
+          // `sticky top-0 bg-jo-surface pb-1` du lab ; l'espace sous la zone reprend le `gap-3` du contenu.
+          <View style={{ backgroundColor: colors.surface, paddingBottom: tokens.space[4] }}>{stickyHeader}</View>
+        ) : null}
         {children}
       </Animated.ScrollView>
       {/* Grande feuille = liste paginée (joueurs, commentaires) : « Haut de page » comme dans les écrans. */}
