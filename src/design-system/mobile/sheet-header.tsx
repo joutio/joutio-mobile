@@ -16,6 +16,8 @@ export interface SheetHeaderProps {
   onClose?: () => void
   /** Reçoit le focus du lecteur d'écran à l'ouverture. */
   titleRef?: Ref<ViewRef>
+  /** Limite de lignes du sous-titre : une feuille persistante garde ainsi une hauteur d'en-tête fixe. */
+  subtitleLines?: number
   /** Poignée dessinée. `false` dans une `MobileSheet` : la feuille native affiche la sienne. */
   handle?: boolean
 }
@@ -47,7 +49,7 @@ function SheetButton({ icon: IconComponent, label, onPress }: { icon: Icon; labe
 }
 
 /** Poignée 36 × 5, puis trois colonnes : retour, titre, action ou Fermer (boutons ronds de 30 pt, standard iOS). */
-export function SheetHeader({ title, subtitle, onBack, action, onClose, titleRef, handle = true }: SheetHeaderProps) {
+export function SheetHeader({ title, subtitle, subtitleLines, onBack, action, onClose, titleRef, handle = true }: SheetHeaderProps) {
   const { colors, radius } = useTheme()
   return (
     <View
@@ -67,7 +69,7 @@ export function SheetHeader({ title, subtitle, onBack, action, onClose, titleRef
             {title}
           </Text>
           {subtitle && (
-            <Text variant="caption" color="muted">
+            <Text variant="caption" color="muted" numberOfLines={subtitleLines}>
               {subtitle}
             </Text>
           )}

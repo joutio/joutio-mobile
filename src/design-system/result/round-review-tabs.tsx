@@ -48,11 +48,18 @@ export function RoundReviewTabs({ rounds, value, onChange, me, opponent, style }
               paddingVertical: tokens.space[3],
               paddingHorizontal: tokens.space[1],
               borderRadius: radius.md,
-              borderWidth: current ? 2 : 1,
+              // Filet constant : l'anneau de l'onglet courant se pose par-dessus, le contenu ne bouge pas.
+              borderWidth: 1,
               borderColor: current ? colors.accent : colors.border,
               backgroundColor: current ? colors.warm : 'transparent',
             }}
           >
+            {current && (
+              <View
+                pointerEvents="none"
+                style={{ position: 'absolute', top: -1, right: -1, bottom: -1, left: -1, borderRadius: radius.md, borderWidth: 2, borderColor: colors.accent }}
+              />
+            )}
             <Text variant="caption" weight="600" color="muted">
               Q{index + 1}
             </Text>
