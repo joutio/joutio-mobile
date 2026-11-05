@@ -7,6 +7,7 @@ import {
   Badge,
   Button,
   CheckIcon,
+  Dialog,
   DotsThreeIcon,
   EmptyState,
   FlagIcon,
@@ -21,12 +22,14 @@ import {
   ParallaxIconButton,
   ParallaxScreen,
   Pill,
+  ProhibitIcon,
   SectionHeader,
   Skeleton,
   Stat,
   SwordIcon,
   Text,
   TitleRibbon,
+  toast,
   toCategoryCode,
   TOP_BAR_HEIGHT,
   tokens,
@@ -39,32 +42,24 @@ import { useHistoryGames } from '@/features/history/hooks/use-history'
 import { useMe } from '@/features/me'
 import { useTopicOverview } from '@/features/topic/hooks/use-topic'
 import { dayLabel, formatNumber, tierLabel } from '@/features/topic/lib/format'
-import type { GameOutcome, PlayerCardView, PlayerProfileView } from '@/shared/types/bff'
+import type { GameOutcome, PlayerCardView } from '@/shared/types/bff'
 import { countryLabel } from '@/shared/utils/country'
 import { tierOf } from '@/shared/utils/tier'
 import { topicName } from '@/shared/utils/topic-name'
 import type { TierCode } from '@/design-system'
 import { useFollowPlayer, useHeadToHead, usePlayerProfile } from '../hooks/use-social'
+import { useBlockMocks, useIsBlocked } from '../lib/block-mocks'
+import { presenceLine } from '../lib/presence'
 import { ChallengePlayerSheet } from './challenge-player-sheet'
 
 const GUTTER = tokens.space[5]
 const OUTCOMES: Partial<Record<GameOutcome, MatchOutcome>> = { WIN: 'win', LOSS: 'loss', DRAW: 'draw' }
 const outcomeOf = (outcome: GameOutcome) => OUTCOMES[outcome]
 
-/** Dernière présence en clair, comme le « vu il y a … » du lab. */
-function seenLabel(presence: PlayerProfileView['presence']): string {
-  if (!presence) return 'Hors ligne'
-  if (presence.status === 'ONLINE') return 'En ligne'
-  if (!presence.lastSeenAt) return 'Hors ligne'
-  const minutes = Math.max(1, Math.round((Date.now() - Date.parse(presence.lastSeenAt)) / 60_000))
-  if (minutes < 60) return `Vu il y a ${minutes} min`
-  const hours = Math.round(minutes / 60)
-  return hours < 24 ? `Vu il y a ${hours} h` : `Vu ${dayLabel(new Date(presence.lastSeenAt)).toLowerCase()}`
-}
-
+/** Lab : fond uni (pas de bannière) et squelettes, `gap-6 pt-1`. */
 function Loading() {
   return (
-    <View style={{ gap: tokens.space[4], paddingHorizontal: GUTTER, paddingTop: tokens.space[2] }}>
+    <View accessibilityLabel="Chargement" style={{ gap: tokens.space[6], paddingHorizontal: GUTTER, paddingTop: tokens.space[2] }}>
       <Skeleton shape="row" />
       <Skeleton shape="card" style={{ height: 120 }} />
     </View>
@@ -88,6 +83,9 @@ export function PlayerProfileScreen() {
   const [challenged, setChallenged] = useState(false)
   const [challengeOpen, setChallengeOpen] = useState(false)
   const [reportOpen, setReportOpen] = useState(false)
+  const [blockOpen, setBlockOpen] = useState(false)
+  const blocked = useIsBlocked(id)
+  const setBlocked = useBlockMocks((state) => state.setBlocked)
   const [actionsY, setActionsY] = useState(0)
   const data = profile.data
   const games = useHistoryGames(id, { opponentId: me.data?.userId ?? '', outcome: 'ALL', sort: 'RECENT' }, Boolean(id && me.data?.userId))
@@ -102,7 +100,7 @@ export function PlayerProfileScreen() {
   const rating = data?.progression?.rating
   const provisional = data?.progression?.provisional ?? true
   const tier = rating != null && !provisional ? tierOf(rating) : undefined
-  const canAct = Boolean(data && !data.isMe && !data.suspended)
+  const canAct = Boolean(data && !data.isMe && !data.suspended && !blocked)
   const latest =
     games.data?.pages
       .flatMap((page) => page.content)
@@ -145,7 +143,21 @@ export function PlayerProfileScreen() {
     })
   }
 
-  const seen = data ? seenLabel(data.presence) : ''
+  const seen = data ? presenceLine(data.presence) : ''
+  const played = (head.data?.played ?? 0) > 0
+
+  // Mock (pas d'endpoint BFF) : le blocage retire aussi l'abonnement, qui, lui, est réel.
+  const block = () => {
+    if (!data) return
+    setBlocked(data.userId, true)
+    if (data.following) follow.mutate(false)
+    toast.success(`${data.pseudonym} est bloqué·e`)
+  }
+  const unblock = () => {
+    if (!data) return
+    setBlocked(data.userId, false)
+    toast.success(`${data.pseudonym} est débloqué·e`)
+  }
 
   return (
     <>
@@ -164,7 +176,7 @@ export function PlayerProfileScreen() {
                 <>
                   <ParallaxIconButton
                     icon={challenged ? CheckIcon : LightningIcon}
-                    label={challenged ? 'Défi envoyé' : 'Défier'}
+                    label={challenged ? 'Défi envoyé' : `Défier ${data.pseudonym}`}
                     disabled={challenged}
                     onPress={() => setChallengeOpen(true)}
                   />
@@ -176,7 +188,12 @@ export function PlayerProfileScreen() {
                   />
                 </>
               )}
-              <Menu items={[{ label: 'Signaler', icon: FlagIcon, onPress: () => setReportOpen(true) }]}>
+              <Menu
+                items={[
+                  { label: 'Signaler', icon: FlagIcon, onPress: () => setReportOpen(true) },
+                  ...(blocked ? [] : [{ label: 'Bloquer', icon: ProhibitIcon, destructive: true, onPress: () => setBlockOpen(true) }]),
+                ]}
+              >
                 {(open) => <ParallaxIconButton icon={DotsThreeIcon} label="Plus d'actions" onPress={open} />}
               </Menu>
             </>
@@ -191,13 +208,19 @@ export function PlayerProfileScreen() {
                   {tier ? <Badge variant="tier" tier={tier}>{`${tierLabel(tier)} · ${formatNumber(rating ?? 0)}`}</Badge> : <Pill>Non classé</Pill>}
                   {data.country && <Pill icon={MapPinIcon}>{countryLabel(data.country)}</Pill>}
                   {data.suspended && <Pill tone="suspended">Compte suspendu</Pill>}
+                  {blocked && <Pill tone="wrong">Bloqué</Pill>}
                 </View>
-                {!data.suspended && (
+                {!data.suspended && !blocked && (
                   <Text variant="caption" color="muted">
                     {seen}
                   </Text>
                 )}
               </View>
+              {blocked && !data.isMe && (
+                <Button full variant="gray" tone="neutral" onPress={unblock}>
+                  Débloquer
+                </Button>
+              )}
               {canAct && (
                 <View onLayout={(event) => setActionsY(event.nativeEvent.layout.y)} style={{ flexDirection: 'row', gap: tokens.space[2] }}>
                   <Button
@@ -265,51 +288,75 @@ export function PlayerProfileScreen() {
                 <EmptyState icon={SwordIcon} title="Aucun duel pour l'instant" description={`Défie ${data.pseudonym} pour ouvrir votre face-à-face.`} />
               )}
             </View>
-            <View style={{ gap: tokens.space[3] }}>
-              <SectionHeader
-                title="Dernières parties"
-                action={
-                  <Button variant="plain" tone="neutral" size="S" onPress={openHistory}>
-                    Tout voir
-                  </Button>
-                }
-              />
-              {games.isPending ? (
-                <View style={{ gap: tokens.space[2] }}>
-                  <Skeleton shape="row" />
-                  <Skeleton shape="row" />
-                  <Skeleton shape="row" />
-                </View>
-              ) : latest.length === 0 ? (
-                <EmptyState icon={SwordIcon} title="Aucune partie pour l'instant" description="Vos prochains duels apparaîtront ici." />
-              ) : (
-                <ListGroup>
-                  {latest.map((game, index) => {
-                    const outcome = outcomeOf(game.outcome)
-                    if (!outcome) return null
-                    return (
-                      <MatchRow
-                        key={game.gameId}
-                        topic={topicName(game.topic.names)}
-                        category={toCategoryCode(game.topic.category)}
-                        sub={dayLabel(new Date(game.playedAt))}
-                        outcome={outcome}
-                        score={`${game.myScore} · ${game.opponentScore}`}
-                        bot={game.opponentType === 'BOT'}
-                        last={index === latest.length - 1}
-                        onPress={() => openResult(game)}
-                      />
-                    )
-                  })}
-                </ListGroup>
-              )}
-            </View>
+            {(head.isPending || played) && (
+              <View style={{ gap: tokens.space[3] }}>
+                <SectionHeader
+                  title="Dernières parties"
+                  action={
+                    <Button variant="plain" size="S" onPress={openHistory}>
+                      Tout voir
+                    </Button>
+                  }
+                />
+                {games.isPending ? (
+                  <View style={{ gap: tokens.space[2] }}>
+                    <Skeleton shape="row" />
+                    <Skeleton shape="row" />
+                    <Skeleton shape="row" />
+                  </View>
+                ) : latest.length === 0 ? (
+                  <EmptyState icon={SwordIcon} title="Aucune partie pour l'instant" description="Vos prochains duels apparaîtront ici." />
+                ) : (
+                  <ListGroup surface="surface">
+                    {latest.map((game, index) => {
+                      const outcome = outcomeOf(game.outcome)
+                      if (!outcome) return null
+                      return (
+                        <MatchRow
+                          key={game.gameId}
+                          topic={topicName(game.topic.names)}
+                          category={toCategoryCode(game.topic.category)}
+                          sub={dayLabel(new Date(game.playedAt))}
+                          outcome={outcome}
+                          score={`${game.myScore} · ${game.opponentScore}`}
+                          bot={game.opponentType === 'BOT'}
+                          last={index === latest.length - 1}
+                          onPress={() => openResult(game)}
+                        />
+                      )
+                    })}
+                  </ListGroup>
+                )}
+              </View>
+            )}
           </View>
         )}
       </ParallaxScreen>
       <ChallengePlayerSheet player={challengeOpen ? challengePlayer : null} onClose={() => setChallengeOpen(false)} onSent={() => setChallenged(true)} />
       {data && !data.isMe && (
-        <ReportPlayerSheet open={reportOpen} onClose={() => setReportOpen(false)} userId={data.userId} name={data.pseudonym} subtitle="Fiche joueur" />
+        <ReportPlayerSheet
+          open={reportOpen}
+          onClose={() => setReportOpen(false)}
+          userId={data.userId}
+          name={data.pseudonym}
+          subtitle="Fiche joueur"
+          onBlock={blocked ? undefined : () => setBlockOpen(true)}
+        />
+      )}
+      {data && (
+        <Dialog
+          open={blockOpen}
+          onClose={() => setBlockOpen(false)}
+          sheet
+          tone="danger"
+          icon={ProhibitIcon}
+          title={`Bloquer ${data.pseudonym} ?`}
+          message="Vous ne pourrez plus vous défier, et ses messages n'arriveront plus."
+          actions={[
+            { label: 'Bloquer', variant: 'tinted', tone: 'destructive', onPress: block },
+            { label: 'Annuler', variant: 'plain', tone: 'neutral' },
+          ]}
+        />
       )}
     </>
   )

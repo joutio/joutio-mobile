@@ -60,7 +60,8 @@ function useReset(open: boolean, reset: () => void) {
 
 /**
  * Signaler un joueur depuis le résultat d'un duel (`POST /api/profiles/{id}/reports`, motifs `UserReportReason`, le duel
- * en contexte). Bloquer n'existe pas encore côté BFF (V1.1) : après l'envoi, seulement « Fermer ».
+ * en contexte). Bloquer n'existe pas encore côté BFF (V1.1) : depuis la fiche joueur, l'offre de blocage passe par le mock
+ * `features/social/lib/block-mocks.ts` ; ailleurs, seulement « Fermer ».
  */
 export function ReportPlayerSheet({
   open,
@@ -69,6 +70,7 @@ export function ReportPlayerSheet({
   name,
   gameId,
   subtitle,
+  onBlock,
 }: {
   open: boolean
   onClose: () => void
@@ -77,6 +79,8 @@ export function ReportPlayerSheet({
   /** Duel de contexte, absent depuis une fiche joueur. */
   gameId?: string
   subtitle?: string
+  /** Proposé après l'envoi (fiche joueur) : ferme la feuille puis ouvre la confirmation de blocage. */
+  onBlock?: () => void
 }) {
   const [reasons, setReasons] = useState<UserReportReason[]>([])
   const [comment, setComment] = useState('')
@@ -104,9 +108,28 @@ export function ReportPlayerSheet({
       subtitle={sent ? undefined : subtitle}
       footer={
         sent ? (
-          <Button full variant="gray" tone="neutral" onPress={onClose}>
-            Fermer
-          </Button>
+          onBlock ? (
+            <View style={{ gap: tokens.space[3] }}>
+              <Button
+                full
+                variant="tinted"
+                tone="destructive"
+                onPress={() => {
+                  onClose()
+                  onBlock()
+                }}
+              >
+                {`Bloquer ${name}`}
+              </Button>
+              <Button full variant="plain" tone="neutral" onPress={onClose}>
+                Fermer
+              </Button>
+            </View>
+          ) : (
+            <Button full variant="gray" tone="neutral" onPress={onClose}>
+              Fermer
+            </Button>
+          )
         ) : (
           <Button full disabled={reasons.length === 0} loading={report.isPending} onPress={() => report.mutate()}>
             Envoyer le signalement
@@ -116,7 +139,7 @@ export function ReportPlayerSheet({
     >
       {sent ? (
         <Text variant="callout" color="muted" align="center">
-          Merci. Notre équipe va l'examiner.
+          {onBlock ? "Merci. Notre équipe va l'examiner. Tu peux aussi bloquer ce joueur." : "Merci. Notre équipe va l'examiner."}
         </Text>
       ) : (
         <View style={{ gap: tokens.space[4] }}>
