@@ -1,6 +1,6 @@
 {
   "name": "joutio-mobile-expo",
-  "version": "1.8.0",
+  "version": "1.9.0",
   "main": "expo-router/entry",
   "dependencies": {
     "@expo-google-fonts/geist": "^0.4.2",

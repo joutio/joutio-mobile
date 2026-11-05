@@ -1,3 +1,9 @@
+## [1.9.0](https://github.com/joutio/joutio-mobile-expo/compare/v1.8.0...v1.9.0) (2026-11-05)
+
+### Features
+
+* **history,rankings:** full games and topic leaderboards ([6ca7341](https://github.com/joutio/joutio-mobile-expo/commit/6ca734170b0cb64d51287aadaeb2341e56f33334))
+
 ## [1.8.0](https://github.com/joutio/joutio-mobile-expo/compare/v1.7.0...v1.8.0) (2026-11-05)
 
 ### Features
