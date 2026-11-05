@@ -1,3 +1,9 @@
+## [1.7.0](https://github.com/joutio/joutio-mobile-expo/compare/v1.6.0...v1.7.0) (2026-11-05)
+
+### Features
+
+* result screen, unlocks, rematch and duel review (in progress) ([51ddf1d](https://github.com/joutio/joutio-mobile-expo/commit/51ddf1d708353ced1c3a8c621b90df71d5fc8252))
+
 ## [1.6.0](https://github.com/joutio/joutio-mobile-expo/compare/v1.5.0...v1.6.0) (2026-11-05)
 
 ### Features
