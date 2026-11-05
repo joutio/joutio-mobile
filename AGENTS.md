@@ -139,6 +139,29 @@ Sans `.env.local`, l'app cible la **production** (`api.joutio.com`, `identity.jo
 
 `ios/` et `android/` sont générés (CNG) et ignorés par git : configurer dans `app.config.ts` et les plugins.
 
+### Android en local (Linux)
+
+Pour itérer sans passer par l'APK de la CI : un dev build installé une fois, puis Metro en Fast Refresh.
+
+- **Prérequis** : SDK dans `~/Android/Sdk` (command-line tools, `platform-tools`, `emulator`, `platforms;android-37.0`,
+  `build-tools;37.0.0`, `ndk;27.1.12297006`, `cmake;3.22.1` — versions de
+  `node_modules/react-native/gradle/libs.versions.toml`), un **JDK complet** avec `javac` (17, 21 ou 25 — vérifié
+  avec le 25 ; un paquet `*-jre-headless` échoue sur les toolchains Gradle ; la CI prend Temurin 17). Dans le shell :
+  `ANDROID_HOME=$HOME/Android/Sdk`, `JAVA_HOME` sur ce JDK, `PATH` +=
+  `platform-tools`, `emulator`, `cmdline-tools/latest/bin` (le script les pose s'ils manquent).
+- **Émulateur** : AVD `joutio-pixel` (Pixel 8, `system-images;android-36;google_apis_playstore;x86_64` — Play
+  Services pour Google Sign-In, KVM) : `emulator -avd joutio-pixel`.
+- **Téléphone** : débogage USB activé ; règles udev via `sudo apt install android-sdk-platform-tools-common` (groupe
+  `plugdev`). En Wi-Fi : « Débogage sans fil » → `adb pair IP:PORT` puis `adb connect IP:PORT`. Metro passe par
+  `adb reverse` : aucune IP LAN à configurer.
+- **`npm run android:dev`** (`scripts/android-dev.sh`, arguments transmis à `expo run:android`, ex. `--device`) :
+  charge `~/Homeware/joutio-secrets/android-keystore.env` (surchargeable par `JOUTIO_ANDROID_KEYSTORE_ENV`) et signe
+  le build **debug** avec la clé **joutio-preview** (`plugins/withAndroidReleaseSigning.js`) : mêmes SHA-1 / key hash
+  que la release, donc Google et Facebook fonctionnent, et le dev build remplace l'APK de la CI sans désinstaller.
+  Sans le fichier, signature debug standard (OTP seulement). Un `android/` généré sans la clé est regénéré.
+- Ensuite `npm start` suffit tant qu'aucun module natif, plugin ou `app.config.ts` ne change ; sinon relancer
+  `npm run android:dev` (après `npx expo prebuild --platform android --clean` si un plugin a changé).
+
 **Release (GitHub Actions)** : dépôt public `joutio/joutio-mobile-expo`, workflow `.github/workflows/release.yml`,
 calqué sur les services : chaque push sur `main` (hors `*.md`) passe le typecheck puis **semantic-release**
 (action partagée `joutio-reusable-workflows/actions/semantic-release`, profil `npm`). Les **commits conventionnels**
