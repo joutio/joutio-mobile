@@ -1,6 +1,6 @@
 import { TrueSheet } from '@lodev09/react-native-true-sheet'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { BackHandler, View } from 'react-native'
+import { BackHandler, useWindowDimensions, View } from 'react-native'
 import { useTheme } from '../theme/theme-provider'
 import { SheetHeader } from './sheet-header'
 
@@ -27,9 +27,10 @@ const splitScrim = (scrim: string) => {
 /**
  * Feuille persistante d'un écran immersif, en `peek` puis agrandie à 92 %.
  *
- * <p>Pattern TrueSheet : `style={{ flex: 1 }}` fait remplir au contenu la hauteur visible de la feuille et le
- * `ScrollView` branché sur `scrollableRef` porte tout le contenu — y compris les dots et le signalement. Pas de
- * `footer` TrueSheet : rien ne « pop » à l'agrandissement, et le contenu défile sous son propre en-tête.</p>
+ * <p>Le contenu a une hauteur **fixe** (hauteur agrandie moins l'en-tête) : la feuille le découpe au lieu de le
+ * redimensionner pendant l'ouverture/fermeture. Le detent de peek est calculé sur la hauteur mesurée du header :
+ * au repos, seul l'en-tête est visible, et les onglets/dots/signalement restent dans le contenu — pas de footer
+ * TrueSheet, donc rien ne « pop » à l'agrandissement.</p>
  */
 export function PeekSheet({
   title,
@@ -40,12 +41,18 @@ export function PeekSheet({
   children,
 }: PeekSheetProps) {
   const { colors, radius } = useTheme()
+  const { height } = useWindowDimensions()
   const sheet = useRef<TrueSheet>(null)
   const [expanded, setExpanded] = useState(false)
+  // Estimation du header avant mesure : évite un peek trop haut au premier rendu.
+  const [headerHeight, setHeaderHeight] = useState(76)
   const scrim = splitScrim(colors.scrim)
   const mounted = useRef(true)
   const activeRef = useRef(active)
   activeRef.current = active
+
+  // Hauteur du contenu agrandi, figée : le contenu ne suit pas la hauteur courante du detent.
+  const contentHeight = Math.max(0, height * TALL - headerHeight)
 
   useEffect(() => {
     mounted.current = true
@@ -99,9 +106,13 @@ export function PeekSheet({
       grabber
       grabberOptions={{ color: colors.border }}
       accessibilityOptions={{ paneTitle: title }}
-      // Pattern documenté : le contenu remplit la hauteur visible à chaque detent.
-      style={{ flex: 1 }}
-      header={<SheetHeader title={title} subtitle={expanded ? subtitle : hint} handle={false} />}
+      // Contenu de hauteur fixe : pas de `flex: 1`, sinon il suivrait la hauteur du detent courant.
+      style={{ flexShrink: 1, minHeight: 0 }}
+      header={
+        <View onLayout={(event) => setHeaderHeight(event.nativeEvent.layout.height)}>
+          <SheetHeader title={title} subtitle={expanded ? subtitle : hint} handle={false} />
+        </View>
+      }
       onDetentChange={syncDetent}
       // `onDetentChange` ne suit pas toujours une présentation/fermeture : on recale l'état sur ces événements.
       onDidPresent={syncDetent}
@@ -112,11 +123,7 @@ export function PeekSheet({
         if (mounted.current && activeRef.current) sheet.current?.present(0).catch(() => undefined)
       }}
     >
-      {/*
-        Contenu monté dès le peek (images et pager prêts) : l'agrandissement n'attend aucun montage. La vue remplit
-        la hauteur visible ; les dots et le signalement vivent dans son contenu, pas dans un pied natif.
-      */}
-      <View style={{ flex: 1 }}>{children}</View>
+      <View style={{ height: contentHeight }}>{children}</View>
     </TrueSheet>
   )
 }

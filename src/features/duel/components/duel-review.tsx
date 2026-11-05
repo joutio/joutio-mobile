@@ -1,6 +1,7 @@
 import { Image } from 'expo-image'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { ScrollView, useWindowDimensions, View, type ScrollViewInstance } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import {
   AnswerTimingRow,
   Button,
@@ -99,6 +100,7 @@ export function DuelReview({
   active?: boolean
 }) {
   const { width, height } = useWindowDimensions()
+  const insets = useSafeAreaInsets()
   const rounds = useMemo(() => sortedRounds(game).filter((round) => round.phase === 'CLOSED'), [game])
   const images = useMemo(() => [...new Set(rounds.map((round) => round.imageUrl).filter((url): url is string => Boolean(url)))], [rounds])
   const opponent = game.player1Id === me ? game.player2Id : game.player1Id
@@ -140,7 +142,7 @@ export function DuelReview({
   return (
     <>
       <PeekSheet title="Détails du duel" subtitle={subtitle} active={active} onExpandedChange={setExpanded}>
-        <View style={{ flex: 1, gap: tokens.space[3], paddingBottom: tokens.space[5] }}>
+        <View style={{ flex: 1, gap: tokens.space[3], paddingBottom: insets.bottom + tokens.space[4] }}>
           <View style={{ paddingHorizontal: tokens.space[5] }}>
             <RoundReviewTabs
               me={myName}

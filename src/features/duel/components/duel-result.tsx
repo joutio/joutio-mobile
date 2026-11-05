@@ -338,7 +338,7 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
           </View>
         </ScrollView>
       </View>
-      {!cancelled && <DuelReview game={game} me={userId} myName={myName} opponentName={opponentName} canReport={!bot} active={focused} />}
+      {!cancelled && <DuelReview game={game} me={userId} myName={myName} opponentName={opponentName} canReport active={focused} />}
       {opponentId && (
         <ReportPlayerSheet
           open={reportOpen}
