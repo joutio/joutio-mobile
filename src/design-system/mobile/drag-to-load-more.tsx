@@ -11,7 +11,7 @@ import {
 } from 'react-native'
 import { createTabList } from 'react-native-collapsible-tabs-native'
 import { GestureDetector, GestureStateManager, usePanGesture, type PanGesture } from 'react-native-gesture-handler'
-import Animated, { interpolate, useAnimatedStyle, useSharedValue, withSpring, type SharedValue } from 'react-native-reanimated'
+import Animated, { interpolate, useAnimatedProps, useAnimatedStyle, useSharedValue, withSpring, type SharedValue } from 'react-native-reanimated'
 import { scheduleOnRN } from 'react-native-worklets'
 import { haptic } from '../haptics'
 import { useReducedMotion } from '../motion'
@@ -25,6 +25,11 @@ export const LOAD_MORE_THRESHOLD = 72
 const LOADER_HEIGHT = 72
 /** Une page servie en local s'affiche quand même le temps de voir l'indicateur tourner. */
 const MIN_LOADING_MS = 600
+/**
+ * iOS : le rebond natif est coupé un peu **avant** le bas (et seulement une fois le haut quitté, pour garder le
+ * pull-to-refresh) : coupé pile au bas, l'état arrivait après le geste et le ressort natif s'ajoutait au nôtre.
+ */
+const NEAR_END = 120
 /** Ressort du retour et de la fermeture : sans rebond visible, comme un pull-to-refresh. */
 const SPRING = { damping: 26, stiffness: 260, mass: 1 }
 
@@ -41,9 +46,14 @@ function rubberBand(distance: number, dimension: number) {
 interface LoadMoreContextValue {
   pan: PanGesture
   enabled: boolean
-  /** Défilement natif coupé pendant la traction : seul notre ressort bouge la liste. */
-  locked: boolean
-  atEnd: boolean
+  /**
+   * Défilement natif coupé pendant la traction : seul notre ressort bouge la liste. Valeur partagée, posée par le geste
+   * sur le thread UI : sur iOS, le pan d'`UIScrollView` continue en parallèle du nôtre tant que `scrollEnabled` n'est
+   * pas retombé — via React, il arrivait quelques frames trop tard.
+   */
+  locked: SharedValue<boolean>
+  /** iOS : rebond natif coupé (bas de liste ou presque). */
+  noBounce: boolean
   measure: (event: NativeScrollEvent) => void
   setViewport: (height: number) => void
   setContent: (height: number) => void
@@ -95,8 +105,8 @@ export function DragToLoadMore({ enabled, loading = false, onLoadMore, children 
     enabledValue.value = enabled
   }, [enabled, enabledValue])
 
-  const [locked, setLocked] = useState(false)
-  const [atEnd, setAtEnd] = useState(false)
+  const locked = useSharedValue(false)
+  const [noBounce, setNoBounce] = useState(false)
   const [busy, setBusy] = useState(false)
   const content = useRef(0)
   const viewportHeight = useRef(0)
@@ -104,9 +114,11 @@ export function DragToLoadMore({ enabled, loading = false, onLoadMore, children 
   const startedAt = useRef(0)
 
   const updateEnd = () => {
-    const end = offset.current + viewportHeight.current >= content.current - 2
+    const bottom = offset.current + viewportHeight.current
+    const end = bottom >= content.current - 2
     atEndValue.value = end
-    setAtEnd((current) => (current === end ? current : end))
+    const near = end || (offset.current > 0 && bottom >= content.current - NEAR_END)
+    setNoBounce((current) => (current === near ? current : near))
   }
 
   const start = () => {
@@ -157,6 +169,8 @@ export function DragToLoadMore({ enabled, loading = false, onLoadMore, children 
       if (phase.value === 0 && enabledValue.value && atEndValue.value && climbed.value > 4) {
         anchor.value = touch.absoluteY
         activated.value = true
+        // Avant l'activation : la liste native s'arrête dans la même frame que notre ressort démarre.
+        locked.value = true
         GestureStateManager.activate(event.handlerTag)
         return
       }
@@ -167,10 +181,7 @@ export function DragToLoadMore({ enabled, loading = false, onLoadMore, children 
       const over = anchor.value - event.absoluteY
       const next = over > 0 ? rubberBand(over, viewport.value) : 0
       pull.value = next
-      if (next > 0 && phase.value === 0) {
-        phase.value = 1
-        scheduleOnRN(setLocked, true)
-      }
+      if (next > 0 && phase.value === 0) phase.value = 1
       const nowArmed = next >= LOAD_MORE_THRESHOLD
       if (nowArmed !== armed.value) {
         armed.value = nowArmed
@@ -181,8 +192,8 @@ export function DragToLoadMore({ enabled, loading = false, onLoadMore, children 
       'worklet'
       anchor.value = Number.NaN
       activated.value = false
+      locked.value = false
       if (phase.value !== 1) return
-      scheduleOnRN(setLocked, false)
       armed.value = false
       if (pull.value >= LOAD_MORE_THRESHOLD && enabledValue.value) {
         phase.value = 2
@@ -223,7 +234,7 @@ export function DragToLoadMore({ enabled, loading = false, onLoadMore, children 
       pan,
       enabled,
       locked,
-      atEnd,
+      noBounce,
       pull,
       measure: (event) => {
         offset.current = event.contentOffset.y
@@ -242,7 +253,7 @@ export function DragToLoadMore({ enabled, loading = false, onLoadMore, children 
       },
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [pan, enabled, locked, atEnd],
+    [pan, enabled, locked, noBounce],
   )
 
   return (
@@ -275,15 +286,20 @@ type ScrollEvent = NativeSyntheticEvent<NativeScrollEvent>
  */
 export function LoadMoreScrollView({ onScroll, onLayout, onContentSizeChange, ref, ...props }: ScrollViewProps & { ref?: Ref<ScrollViewInstance | null> }) {
   const context = useContext(LoadMoreContext)
+  const fallback = useSharedValue(false)
+  const locked = context?.locked ?? fallback
+  const userScrollEnabled = props.scrollEnabled !== false
+  // Posé depuis le thread UI par le geste : la liste native se fige sans attendre un rendu React.
+  const animatedProps = useAnimatedProps(() => ({ scrollEnabled: userScrollEnabled && !locked.value }))
   if (!context) return <ScrollView ref={ref} onScroll={onScroll} onLayout={onLayout} onContentSizeChange={onContentSizeChange} {...props} />
-  const { enabled, locked, atEnd, measure, setViewport, setContent } = context
+  const { enabled, noBounce, measure, setViewport, setContent } = context
   return (
-    <ScrollView
+    <Animated.ScrollView
       scrollEventThrottle={16}
       {...props}
-      ref={ref}
-      scrollEnabled={!locked && props.scrollEnabled !== false}
-      bounces={Platform.OS === 'ios' && enabled && atEnd ? false : props.bounces}
+      ref={ref as Ref<Animated.ScrollView>}
+      animatedProps={animatedProps}
+      bounces={Platform.OS === 'ios' && enabled && noBounce ? false : props.bounces}
       alwaysBounceVertical={props.alwaysBounceVertical ?? true}
       overScrollMode={enabled ? 'never' : props.overScrollMode}
       onScroll={(event: ScrollEvent) => {
