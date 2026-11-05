@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { ScrollView, useWindowDimensions, View, type ScrollViewInstance } from 'react-native'
 import {
   AnswerTimingRow,
@@ -100,10 +100,17 @@ export function DuelReview({
   const { width, height } = useWindowDimensions()
   const rounds = sortedRounds(game).filter((round) => round.phase === 'CLOSED')
   const opponent = game.player1Id === me ? game.player2Id : game.player1Id
-  const [index, setIndex] = useState(Math.max(0, rounds.length - 1))
+  const [index, setIndex] = useState(0)
   const [reportOpen, setReportOpen] = useState(false)
   const [reported, setReported] = useState<readonly number[]>([])
   const pager = useRef<ScrollViewInstance>(null)
+  // La revue s'ouvre toujours sur la première question, même rouverte après une consultation.
+  useEffect(() => {
+    if (!open) return
+    setIndex(0)
+    const frame = requestAnimationFrame(() => pager.current?.scrollTo({ x: 0, animated: false }))
+    return () => cancelAnimationFrame(frame)
+  }, [open])
   // La feuille fait 92 % ; en-tête, onglets et pied pris, la question remplit le reste sans défilement vertical.
   const pageHeight = Math.max(360, height * 0.92 - 250)
   const go = (next: number) => {
