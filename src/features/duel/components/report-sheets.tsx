@@ -1,5 +1,5 @@
 import { useMutation } from '@tanstack/react-query'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { View } from 'react-native'
 import { Button, Field, ListGroup, ListRow, MobileSheet, Text, toast, tokens } from '@/design-system'
 import { api } from '@/lib/api'
@@ -83,6 +83,8 @@ export function ReportPlayerSheet({
   onBlock?: () => void
 }) {
   const [reasons, setReasons] = useState<UserReportReason[]>([])
+  // « Bloquer » : la confirmation (un `Modal`) s'ouvre une fois la feuille retirée, pas pendant sa fermeture.
+  const blockAfterClose = useRef(false)
   const [comment, setComment] = useState('')
   const [sent, setSent] = useState(false)
   useReset(open, () => {
@@ -104,6 +106,11 @@ export function ReportPlayerSheet({
     <MobileSheet
       open={open}
       onClose={onClose}
+      onDismissed={() => {
+        if (!blockAfterClose.current) return
+        blockAfterClose.current = false
+        onBlock?.()
+      }}
       title={sent ? 'Signalement envoyé' : `Signaler ${name}`}
       subtitle={sent ? undefined : subtitle}
       footer={
@@ -115,8 +122,8 @@ export function ReportPlayerSheet({
                 variant="tinted"
                 tone="destructive"
                 onPress={() => {
+                  blockAfterClose.current = true
                   onClose()
-                  onBlock()
                 }}
               >
                 {`Bloquer ${name}`}

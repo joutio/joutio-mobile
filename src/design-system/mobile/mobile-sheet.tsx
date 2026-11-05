@@ -31,6 +31,11 @@ export interface MobileSheetProps {
   returnFocusTo?: RefObject<ViewRef | null>
   /** Feuille effectivement présentée : permet de monter son contenu lourd après l'ouverture native. */
   onDidPresent?: () => void
+  /**
+   * Feuille entièrement retirée (toute fermeture) : y enchaîner un `Dialog` ou un `Menu` (des `Modal`), jamais pendant
+   * la fermeture — présentés depuis une feuille qui se retire, ils plantent sur iOS.
+   */
+  onDismissed?: () => void
   children: ReactNode
 }
 
@@ -59,6 +64,7 @@ export function MobileSheet({
   stickyHeader,
   returnFocusTo,
   onDidPresent,
+  onDismissed,
   children,
 }: MobileSheetProps) {
   const { colors, radius } = useTheme()
@@ -132,6 +138,7 @@ export function MobileSheet({
           presented.current = false
           onClose()
         }
+        onDismissed?.()
       }}
     >
       <Animated.ScrollView
