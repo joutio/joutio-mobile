@@ -1,3 +1,4 @@
+import { router } from 'expo-router'
 import { View } from 'react-native'
 import {
   Button,
@@ -16,6 +17,7 @@ import {
   type MatchOutcome,
 } from '@/design-system'
 import type { GameHistoryItemView, GameOutcome } from '@/shared/types/bff'
+import { topicName } from '@/shared/utils/topic-name'
 import { useTopicGames } from '../hooks/use-topic'
 import { dayLabel, formatNumber } from '../lib/format'
 
@@ -94,6 +96,17 @@ export function GamesTab({ topicId }: { topicId: string }) {
                   score={`${game.myScore} · ${game.opponentScore}`}
                   bot={game.opponentType === 'BOT'}
                   last={index === group.games.length - 1}
+                  onPress={() =>
+                    router.push({
+                      pathname: '/result/[gameId]',
+                      params: {
+                        gameId: game.gameId,
+                        topicName: topicName(game.topic.names),
+                        topicId: game.topic.topicId,
+                        category: game.topic.category ?? '',
+                      },
+                    })
+                  }
                 />
               ))}
             </ListGroup>

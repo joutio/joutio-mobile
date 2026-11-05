@@ -22,8 +22,11 @@ import {
   type MapPlayer,
 } from '@/design-system'
 import { PlayerPicker } from '@/features/topic/components/duel-sheet'
+import { formatNumber } from '@/features/topic/lib/format'
 import { readServerNow, useServerClock } from '@/lib/realtime/server-clock'
 import { useConnectionStore } from '@/lib/ws'
+import { countryLabel } from '@/shared/utils/country'
+import { tierOf } from '@/shared/utils/tier'
 import { useAutoTrain, useBotDifficulty, useTicket, type PlayTopic } from '../hooks/use-play'
 import { playService } from '../lib/play-service'
 
@@ -92,7 +95,18 @@ export function MatchmakingScreen() {
 
   const roomId = ticket.state?.roomId ?? null
   const room = useQuery({ queryKey: ['rooms', roomId], queryFn: () => playService.room(roomId ?? ''), enabled: Boolean(roomId) })
-  const opponent = room.data?.opponent
+  // La notification MATCHED porte déjà l'adversaire enrichi ; la salle reste le repli (ancien BFF, reprise REST).
+  const opponent = ticket.state?.opponent ?? room.data?.opponent
+  const opponentRating = opponent?.rating ?? null
+  const opponentTier = opponentRating !== null && opponent?.provisional !== true ? tierOf(opponentRating) : undefined
+  const opponentMeta = [
+    opponentTier ? tokens.tier[opponentTier].label : undefined,
+    opponentRating !== null ? formatNumber(opponentRating) : undefined,
+    opponent?.country ? countryLabel(opponent.country) : undefined,
+    'Le duel commence',
+  ]
+    .filter(Boolean)
+    .join(' · ')
 
   const mounted = useRef(true)
   useEffect(
@@ -226,8 +240,8 @@ export function MatchmakingScreen() {
               <Text variant="headline" numberOfLines={1}>
                 {opponent?.pseudonym ?? '…'}
               </Text>
-              <Text variant="caption" color="muted">
-                Le duel commence
+              <Text variant="caption" color="muted" numberOfLines={1}>
+                {opponentMeta}
               </Text>
             </View>
             <CheckCircleIcon size={30} weight="fill" color={colors.correct} />

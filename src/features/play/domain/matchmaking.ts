@@ -1,3 +1,4 @@
+import type { RoomOpponentView } from '@/shared/types/bff'
 import type { MatchmakingNotification } from './matchmaking-notification'
 
 /** Statut serveur d'un ticket (enum backend `MatchmakingStatus`, réduit au cycle de vie). */
@@ -32,6 +33,8 @@ export interface Matchmaking {
   roomId: string | null
   opponentId: string | null
   vsBot: boolean
+  /** Adversaire enrichi reçu avec `MATCHED` (la salle reste la source de repli). */
+  opponent: RoomOpponentView | null
   /** Fin de la fenêtre de recherche (10 s) — échéance serveur du compte à rebours. */
   deadlineAt: string | null
 }
@@ -44,6 +47,7 @@ export function emptyMatchmaking(ticketId: string): Matchmaking {
     roomId: null,
     opponentId: null,
     vsBot: false,
+    opponent: null,
     deadlineAt: null,
   }
 }
@@ -65,6 +69,7 @@ export function applyMatchmakingNotification(ticket: Matchmaking, notification: 
         roomId: notification.roomId,
         opponentId: notification.opponentId,
         vsBot: notification.vsBot,
+        opponent: notification.opponent ?? null,
       }
     case 'CANCELLED':
       return { ...ticket, status: 'CANCELLED' }

@@ -1,10 +1,11 @@
-import { useImperativeHandle, useRef, useState, type ReactNode, type Ref } from 'react'
+import { useCallback, useImperativeHandle, useMemo, useRef, useState, type ReactNode, type Ref } from 'react'
 import { View } from 'react-native'
 import { CollapsibleTabView, type CollapsibleTabsRef, type Route } from 'react-native-collapsible-tabs-native'
 import { useEvent, useSharedValue, type SharedValue } from 'react-native-reanimated'
 import { Segmented } from '../primitives/segmented'
 import { useTheme } from '../theme/theme-provider'
 import { tokens } from '../tokens.generated'
+import { HorizontalGestureContext } from './horizontal-gesture'
 import { usePageRefresh } from './page-refresh'
 import { ScrollToTopPill } from './scroll-to-top-pill'
 import { TabPageActiveContext } from './tab-page'
@@ -56,6 +57,16 @@ export function TabsScrollView<T extends string>({
 }: TabsScrollViewProps<T>) {
   const { colors } = useTheme()
   const refresh = usePageRefresh(onRefresh)
+  // Le pager est arbitré nativement par la lib (un rail enfant possède le geste horizontal, y compris incliné ou en
+  // bout de liste). Ce contexte ne sert qu'au `DragToLoadMore`, pour qu'il ne vole pas le geste du rail.
+  const owned = useSharedValue(false)
+  const claim = useCallback(() => {
+    owned.value = true
+  }, [owned])
+  const release = useCallback(() => {
+    owned.value = false
+  }, [owned])
+  const horizontalGesture = useMemo(() => ({ owned, claim, release }), [owned, claim, release])
   const index = Math.max(
     0,
     pages.findIndex((page) => page.value === value),
@@ -89,53 +100,55 @@ export function TabsScrollView<T extends string>({
   )
 
   return (
-    <View style={{ flex: 1 }}>
-      <CollapsibleTabView
-        ref={inner}
-        navigationState={{ index, routes }}
-        onIndexChange={(next) => {
-          const page = pages[next]
-          if (page) onChange(page.value)
-        }}
-        renderScene={({ route }) => (
-          <TabPageActiveContext.Provider value={route.key === value}>
-            {pages.find((page) => page.value === route.key)?.content ?? null}
-          </TabPageActiveContext.Provider>
+    <HorizontalGestureContext.Provider value={horizontalGesture}>
+      <View style={{ flex: 1 }}>
+        <CollapsibleTabView
+          ref={inner}
+          navigationState={{ index, routes }}
+          onIndexChange={(next) => {
+            const page = pages[next]
+            if (page) onChange(page.value)
+          }}
+          renderScene={({ route }) => (
+            <TabPageActiveContext.Provider value={route.key === value}>
+              {pages.find((page) => page.value === route.key)?.content ?? null}
+            </TabPageActiveContext.Provider>
+          )}
+          renderHeader={() => (
+            <View style={{ backgroundColor: colors.bg }} onLayout={(event) => setHeaderHeight(event.nativeEvent.layout.height)}>
+              {header}
+            </View>
+          )}
+          renderTabBar={() => (
+            <View
+              // Déborde d'1 pt sur l'en-tête (dessinée après lui) : la hauteur fractionnaire de l'en-tête laisse sinon une
+              // rangée de pixels transparente entre les deux, par où la page transparaît sous les onglets collés.
+              style={{
+                backgroundColor: colors.bg,
+                marginTop: -1,
+                paddingHorizontal: tokens.space[5],
+                paddingTop: tokens.space[3] + 1,
+                paddingBottom: tokens.space[3],
+              }}
+              onLayout={(event) => setTabBarHeight(event.nativeEvent.layout.height)}
+            >
+              <Segmented label={label} options={pages} value={value} position={position} onChange={onChange} />
+            </View>
+          )}
+          // Collés dès que l'en-tête est entièrement replié.
+          collapseThreshold={Math.max(1, headerHeight - 1)}
+          onCollapsedChange={onStuckChange}
+          pinTabBar={pinned}
+          onPageScroll={onPageScroll}
+          onScrollOffsetChange={onScrollOffsetChange}
+          {...refresh.tabProps}
+          lazy
+        />
+        {refresh.indicator(tokens.space[4])}
+        {scrollToTopPill && pinned && (
+          <ScrollToTopPill scroll={offset} top={tabBarHeight + tokens.space[2]} onPress={() => inner.current?.scrollToTop({ animated: true })} />
         )}
-        renderHeader={() => (
-          <View style={{ backgroundColor: colors.bg }} onLayout={(event) => setHeaderHeight(event.nativeEvent.layout.height)}>
-            {header}
-          </View>
-        )}
-        renderTabBar={() => (
-          <View
-            // Déborde d'1 pt sur l'en-tête (dessinée après lui) : la hauteur fractionnaire de l'en-tête laisse sinon une
-            // rangée de pixels transparente entre les deux, par où la page transparaît sous les onglets collés.
-            style={{
-              backgroundColor: colors.bg,
-              marginTop: -1,
-              paddingHorizontal: tokens.space[5],
-              paddingTop: tokens.space[3] + 1,
-              paddingBottom: tokens.space[3],
-            }}
-            onLayout={(event) => setTabBarHeight(event.nativeEvent.layout.height)}
-          >
-            <Segmented label={label} options={pages} value={value} position={position} onChange={onChange} />
-          </View>
-        )}
-        // Collés dès que l'en-tête est entièrement replié.
-        collapseThreshold={Math.max(1, headerHeight - 1)}
-        onCollapsedChange={onStuckChange}
-        pinTabBar={pinned}
-        onPageScroll={onPageScroll}
-        onScrollOffsetChange={onScrollOffsetChange}
-        {...refresh.tabProps}
-        lazy
-      />
-      {refresh.indicator(tokens.space[4])}
-      {scrollToTopPill && pinned && (
-        <ScrollToTopPill scroll={offset} top={tabBarHeight + tokens.space[2]} onPress={() => inner.current?.scrollToTop({ animated: true })} />
-      )}
-    </View>
+      </View>
+    </HorizontalGestureContext.Provider>
   )
 }

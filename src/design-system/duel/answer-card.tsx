@@ -30,6 +30,11 @@ export interface AnswerCardProps {
   gain?: number
   /** Icône de verdict et points à la révélation (réglage du joueur, désactivé par défaut). */
   details?: boolean
+  /**
+   * Couleur du fond derrière la carte, peinte dans les encoches (le `clip-path` du lab n'existe pas en natif).
+   * Défaut : fond de l'écran ; une feuille passe `colors.surface`.
+   */
+  notchColor?: string
   onPress?: () => void
   style?: StyleProp<ViewStyle>
 }
@@ -70,7 +75,16 @@ function Notches({ notch, color }: { notch: AnswerNotch; color: string }) {
 }
 
 /** Réponse d'une manche : touchable au repos, puis figée et colorée à la révélation. */
-export function AnswerCard({ label, state = 'rest', notch = state === 'pending' ? 'me' : 'none', gain, details = false, onPress, style }: AnswerCardProps) {
+export function AnswerCard({
+  label,
+  state = 'rest',
+  notch = state === 'pending' ? 'me' : 'none',
+  gain,
+  details = false,
+  notchColor,
+  onPress,
+  style,
+}: AnswerCardProps) {
   const { colors, radius } = useTheme()
   const revealed = state === 'correct' || state === 'wrong'
   const showDetails = details && revealed
@@ -134,7 +148,7 @@ export function AnswerCard({ label, state = 'rest', notch = state === 'pending' 
         {label}
       </Animated.Text>
       {showDetails && gain !== undefined && <GainTag points={gain} color={ink} />}
-      <Notches notch={notch} color={colors.bg} />
+      <Notches notch={notch} color={notchColor ?? colors.bg} />
     </PressableScale>
   )
 }

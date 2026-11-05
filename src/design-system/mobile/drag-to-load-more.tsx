@@ -15,6 +15,7 @@ import Animated, { interpolate, useAnimatedStyle, useSharedValue, withSpring, ty
 import { scheduleOnRN } from 'react-native-worklets'
 import { haptic } from '../haptics'
 import { useReducedMotion } from '../motion'
+import { useHorizontalGesture } from './horizontal-gesture'
 import { LoadMoreIndicator } from './load-more-indicator'
 import { withActivePageScrollsToTop } from './tab-page'
 
@@ -78,6 +79,8 @@ export interface DragToLoadMoreProps {
  */
 export function DragToLoadMore({ enabled, loading = false, onLoadMore, children }: DragToLoadMoreProps) {
   const reduced = useReducedMotion()
+  // Un rail horizontal (Top 10, puces…) possède le geste : le pan du pied de liste ne doit jamais l'intercepter.
+  const horizontalOwned = useHorizontalGesture()?.owned
 
   const pull = useSharedValue(0)
   const viewport = useSharedValue(600)
@@ -139,6 +142,10 @@ export function DragToLoadMore({ enabled, loading = false, onLoadMore, children 
       'worklet'
       const touch = event.allTouches[0]
       if (!touch || activated.value) return
+      if (horizontalOwned?.value) {
+        GestureStateManager.fail(event.handlerTag)
+        return
+      }
       const dy = touch.absoluteY - lastY.value
       lastY.value = touch.absoluteY
       if (dy < 0) climbed.value -= dy

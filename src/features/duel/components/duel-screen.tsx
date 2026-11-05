@@ -175,13 +175,17 @@ export function DuelScreen() {
   // manche suivante (`ROUND_STARTED`) arrive un peu après la fin de l'intro.
   const playing = scene.kind === 'question' || scene.kind === 'reveal' || scene.kind === 'roundIntro'
   const revealed = scene.kind === 'reveal'
+  // L'arène reste montée sous l'intro de manche ; l'apparition de l'énoncé et le dépliage des réponses attendent
+  // sa fin, sinon l'animation se joue derrière l'overlay et le joueur ne voit jamais le piano.
+  const introOpen = scene.kind === 'roundIntro' && introDone !== scene.round
+  const questionReady = !introOpen
   // Temps de lecture : les réponses sont là mais invisibles (place réservée, l'image ne bouge pas à leur arrivée).
   const reading = scene.kind === 'question' && scene.locked
   const answers: (AnswerCardProps & { key: string })[] = arena.answers.map(({ choice, label }) => {
     const mine = arena.yourPick === choice || arena.pendingChoice === choice
     const theirs = revealed && arena.theirPick === choice
     let state: AnswerCardProps['state'] = 'rest'
-    if (revealed) state = choice === arena.correctAnswer ? 'correct' : mine ? 'wrong' : 'unchosen'
+    if (revealed) state = choice === arena.correctAnswer ? 'correct' : mine || theirs ? 'wrong' : 'unchosen'
     else if (mine) state = 'pending'
     else if (!arena.isAnswerable) state = 'unchosen'
     const notch = mine && theirs ? 'both' : mine ? 'me' : theirs ? 'opp' : 'none'
@@ -235,12 +239,13 @@ export function DuelScreen() {
               />
               <View style={{ flex: 1, paddingHorizontal: tokens.space[5], paddingTop: tokens.space[3], paddingBottom: insets.bottom + tokens.space[5] }}>
                 <QuestionBlock
-                  key={`question-${arena.roundIndex}`}
+                  // Remonté à la fin de l'intro pour rejouer l'énoncé et les réponses à la première frame visible.
+                  key={`question-${arena.roundIndex}-${questionReady ? 'ready' : 'intro'}`}
                   text={arena.questionText}
                   meta={`${topic} · question ${roundNumber} sur ${ROUNDS}`}
                   image={arena.imageUrl ?? undefined}
                   answers={answers}
-                  answersShown={!reading}
+                  answersShown={!reading && questionReady}
                   animated={!arena.joinedLate}
                 />
               </View>

@@ -1,3 +1,5 @@
+import type { RoomOpponentView } from '@/shared/types/bff'
+
 /**
  * Contrat temps réel de l'**appariement public** (enveloppé par `EventEnvelopeResponse` en
  * REST d'historique comme en WebSocket) — miroir du `MatchmakingNotification` BFF.
@@ -20,6 +22,8 @@ export interface MatchmakingMatchedNotification {
   roomId: string
   opponentId: string | null
   vsBot: boolean
+  /** Adversaire enrichi pour la carte « Adversaire trouvé » (absent : repli sur `GET /api/rooms/{roomId}`). */
+  opponent: RoomOpponentView | null
 }
 
 export interface MatchmakingCancelledNotification {

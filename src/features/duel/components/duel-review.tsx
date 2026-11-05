@@ -13,6 +13,7 @@ import {
   QuestionBlock,
   RoundReviewTabs,
   tokens,
+  useTheme,
   type AnswerCardProps,
   type ReviewAnswer,
 } from '@/design-system'
@@ -43,6 +44,7 @@ function ReviewPage({
   width: number
   height: number
 }) {
+  const { colors } = useTheme()
   const { questionText, answers } = localizedQuestion(round, 'fr')
   const mine = round.playerAnswers[me]
   const theirs = opponent ? round.playerAnswers[opponent] : undefined
@@ -67,7 +69,7 @@ function ReviewPage({
         opponent={{ name: opponentName, seconds: theirs ? theirs.timeMs / 1000 : undefined, points: theirs?.points ?? 0 }}
       />
       <View style={{ flex: 1, minHeight: 0 }}>
-        <QuestionBlock text={questionText} image={round.imageUrl ?? undefined} fitImage layout="2x2" answers={cards} />
+        <QuestionBlock text={questionText} image={round.imageUrl ?? undefined} fitImage layout="2x2" answers={cards} notchColor={colors.surface} />
       </View>
     </View>
   )

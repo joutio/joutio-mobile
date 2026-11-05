@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { View, type StyleProp, type ViewStyle } from 'react-native'
 import Animated, { Easing, ReduceMotion, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
 import { alpha } from '../theme/color'
@@ -32,21 +32,30 @@ export function TimerBar({ seconds, total = 10, first, state = 'running', lowAt 
   const { colors } = useTheme()
   const fraction = state === 'expired' ? 0 : Math.max(0, Math.min(1, seconds / total))
   const width = useSharedValue(fraction)
+  const deadlineAt = deadline?.at
+  // `deadline.now` change à chaque rendu (tick de 100 ms) : une ref évite de relancer l'animation pour autant.
+  const now = useRef(deadline?.now)
+  now.current = deadline?.now
 
   useEffect(() => {
-    if (state === 'running' && deadline) {
-      const remaining = Math.max(0, deadline.at - deadline.now())
-      width.value = Math.max(0, Math.min(1, remaining / 1000 / total))
-      width.value = withTiming(0, { duration: remaining, easing: Easing.linear, reduceMotion: ReduceMotion.Never })
-    } else {
-      width.value = fraction
-    }
-  }, [state, deadline?.at, fraction, total, width, deadline])
+    if (state !== 'running' || deadlineAt == null) return
+    const remaining = Math.max(0, deadlineAt - (now.current?.() ?? Date.now()))
+    width.value = Math.max(0, Math.min(1, remaining / 1000 / total))
+    width.value = withTiming(0, { duration: remaining, easing: Easing.linear, reduceMotion: ReduceMotion.Never })
+  }, [state, deadlineAt, total, width])
+
+  useEffect(() => {
+    if (state === 'running' && deadlineAt != null) return
+    width.value = fraction
+  }, [fraction, state, deadlineAt, width])
 
   // `scaleX` plutôt que `width` : animé sur le thread UI sans relayout (AGENTS.md, Reanimated).
   const fill = useAnimatedStyle(() => ({ transform: [{ scaleX: width.value }] }))
   const urgent = isTimerUrgent(seconds, state, lowAt)
-  const firstWidth = first === undefined ? 0 : Math.max(0, (first / total) * 100 - fraction * 100)
+  // Part du premier répondant : grise de 0 à `first`, masquée par une couverture de couleur de fond qui suit le
+  // remplissage. Le gris n'apparaît donc qu'entre le bord courant et `first`, sans `left`/`width` recalculés en JS.
+  const firstFraction = first === undefined ? 0 : Math.max(0, Math.min(1, first / total))
+  const layer = { position: 'absolute' as const, top: 0, bottom: 0, left: 0, right: 0, transformOrigin: 'left' as const }
   return (
     <View
       accessible
@@ -55,17 +64,11 @@ export function TimerBar({ seconds, total = 10, first, state = 'running', lowAt 
       accessibilityValue={{ min: 0, max: total, now: Math.ceil(seconds) }}
       style={[{ height: 8, alignSelf: 'stretch', overflow: 'hidden' }, style]}
     >
-      {firstWidth > 0 && (
-        <View
-          style={{ position: 'absolute', top: 0, bottom: 0, left: `${fraction * 100}%`, width: `${firstWidth}%`, backgroundColor: alpha(colors.text, 0.45) }}
-        />
+      {firstFraction > 0 && (
+        <View style={{ position: 'absolute', top: 0, bottom: 0, left: 0, width: `${firstFraction * 100}%`, backgroundColor: alpha(colors.text, 0.45) }} />
       )}
-      <Animated.View
-        style={[
-          { position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, transformOrigin: 'left', backgroundColor: urgent ? colors.wrong : colors.text },
-          fill,
-        ]}
-      />
+      {firstFraction > 0 && <Animated.View style={[layer, { backgroundColor: colors.bg }, fill]} />}
+      <Animated.View style={[layer, { backgroundColor: urgent ? colors.wrong : colors.text }, fill]} />
     </View>
   )
 }

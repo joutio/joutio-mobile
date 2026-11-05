@@ -1,5 +1,5 @@
 import type { RoomNotification } from './room-notification'
-import type { TopicRefView as TopicRef, UserRefView as UserRef } from '@/shared/types/bff'
+import type { RoomOpponentView, TopicRefView as TopicRef } from '@/shared/types/bff'
 
 /**
  * Statut serveur d'une salle (enum backend `RoomStatus`) : cycle de vie + avancement de la
@@ -25,7 +25,7 @@ export interface RoomView {
   vsBot: boolean
   /** Vrai si le viewer est l'initiateur (seul habilité à annuler la salle). */
   canCancel: boolean
-  opponent: UserRef | null
+  opponent: RoomOpponentView | null
   initiatorPresent: boolean
   participantPresent: boolean
   gameId: string | null

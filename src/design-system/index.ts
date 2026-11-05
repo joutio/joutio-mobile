@@ -62,6 +62,7 @@ export * from './primitives/title-row'
 
 export * from './mobile/bottom-nav'
 export * from './mobile/collapsible-tabs-screen'
+export * from './mobile/horizontal-gesture'
 export * from './mobile/rail'
 export * from './mobile/top-ten'
 export * from './mobile/tabs-scroll-view'

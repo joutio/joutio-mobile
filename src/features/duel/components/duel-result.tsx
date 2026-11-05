@@ -95,12 +95,15 @@ export function DuelResult({
   topic,
   topicId,
   category,
+  celebrate = true,
 }: {
   gameId: string
   game: GameState
   topic: string
   topicId?: string
   category?: string
+  /** Faux pour une partie consultée depuis l'historique : les déblocages ont déjà été célébrés. */
+  celebrate?: boolean
 }) {
   const { colors } = useTheme()
   const insets = useSafeAreaInsets()
@@ -116,7 +119,7 @@ export function DuelResult({
   const matchmaking = useStartMatchmaking()
   const difficulty = useBotDifficulty((state) => state.difficulty)
   const [step, setStep] = useState(0)
-  const [sequenceDone, setSequenceDone] = useState(false)
+  const [sequenceDone, setSequenceDone] = useState(!celebrate)
   const [reviewOpen, setReviewOpen] = useState(false)
   const [reportOpen, setReportOpen] = useState(false)
   const [chatOpen, setChatOpen] = useState(false)
@@ -132,9 +135,19 @@ export function DuelResult({
   const resolvedTopicId = data?.topic.topicId ?? topicId ?? game.topicId ?? ''
   const playTopic = { topicId: resolvedTopicId, name: topic, category }
   const rematch = useSendRematch({ userId, opponentId, topic: playTopic, gameId })
-  const rating = data?.progression.rating ?? me.data?.progression?.rating ?? 0
-  const myTier = me.data?.progression && !me.data.progression.provisional ? tierOf(rating) : undefined
-  const unlocks = data && !sequenceDone ? unlocksOf(data) : []
+  // Elo à l'instant de la partie (snapshot du bilan) : une partie consultée plus tard ne doit pas afficher l'Elo
+  // courant du profil. Le repli sur `/api/me` ne sert qu'avant l'arrivée du bilan.
+  const gameProgression = data?.progression
+  const rating = gameProgression?.rating ?? me.data?.progression?.rating ?? 0
+  const myTier = gameProgression
+    ? gameProgression.provisional
+      ? undefined
+      : tierOf(gameProgression.rating)
+    : me.data?.progression && !me.data.progression.provisional
+      ? tierOf(me.data.progression.rating)
+      : undefined
+  const opponentTier = data && data.opponentRated && data.opponentRating != null ? tierOf(data.opponentRating) : undefined
+  const unlocks = celebrate && data && !sequenceDone ? unlocksOf(data) : []
 
   // ─── Séquence de déblocages ───
   const unlock = unlocks[step]
@@ -227,6 +240,7 @@ export function DuelResult({
             }}
             opponent={{
               name: opponentName,
+              tier: opponentTier,
               score: theirScore,
               streak: streakOf(game, opponentId),
               meta: bot ? (BOT_LEVEL[data?.botDifficulty ?? game.botDifficulty ?? ''] ?? 'Robot') : undefined,

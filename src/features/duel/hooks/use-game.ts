@@ -40,14 +40,32 @@ export function useServerNow(intervalMs = 100) {
 }
 
 /** Bilan autoritaire d'un duel terminé ; la récompense arrive après la projection (quelques secondes). */
-export function useGameResult(gameId: string, enabled: boolean) {
+export function useGameResult(gameId: string, enabled: boolean, waitForReward = true) {
   return useQuery({
     queryKey: ['games', gameId, 'result'],
     queryFn: () => gameService.result(gameId),
     enabled,
     retry: 3,
-    // La récompense est calculée après la fin : on relit tant qu'elle n'est pas là, puis plus jamais.
-    refetchInterval: (query) => (query.state.data && query.state.data.reward === null ? 1_500 : false),
+    // La récompense est calculée après la fin : on relit tant qu'elle n'est pas là, puis plus jamais. Une partie
+    // consultée depuis l'historique est immuable : inutile de sonder une récompense qui n'arrivera plus.
+    refetchInterval: (query) => (waitForReward && query.state.data && query.state.data.reward === null ? 1_500 : false),
+  })
+}
+
+/**
+ * Partie passée, repliée depuis l'historique REST des notifications (aucun STOMP) : la revue des manches,
+ * les séries et le bilan n'ont plus besoin du flux temps réel.
+ */
+export function useGameHistory(gameId: string) {
+  return useQuery({
+    queryKey: ['games', gameId, 'notifications'],
+    queryFn: () => gameService.notifications(gameId),
+    enabled: Boolean(gameId),
+    staleTime: Infinity,
+    select: (envelopes) =>
+      [...envelopes]
+        .sort((left, right) => left.sequenceNumber - right.sequenceNumber)
+        .reduce((state, envelope) => applyGameNotification(state, envelope.payload), emptyGame(gameId)),
   })
 }
 

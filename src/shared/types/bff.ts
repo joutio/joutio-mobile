@@ -153,6 +153,13 @@ export interface UserRefView {
   suspended: boolean
 }
 
+/** `RoomView.opponent` / notification `MATCHED` : adversaire enrichi par le BFF (Elo, pays). */
+export interface RoomOpponentView extends UserRefView {
+  rating: number | null
+  provisional: boolean | null
+  country: string | null
+}
+
 export type GameOutcome = 'WIN' | 'LOSS' | 'DRAW' | 'WAITING' | 'IN_PROGRESS' | 'CANCELLED'
 
 /** `GET /api/profiles/{id}/games` : historique des parties d'un joueur (filtrable par sujet). */

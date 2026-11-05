@@ -15,6 +15,8 @@ export default function AppLayout() {
         <Stack.Screen name="room/[roomId]" options={{ headerShown: false }} />
         <Stack.Screen name="matchmaking/[ticketId]" options={{ headerShown: false, animation: 'fade', gestureEnabled: false }} />
         <Stack.Screen name="duel/[gameId]" options={{ headerShown: false, animation: 'fade', gestureEnabled: false }} />
+        {/* Résultat d'une partie passée, ouvert depuis l'historique : le retour ramène à la liste. */}
+        <Stack.Screen name="result/[gameId]" options={{ headerShown: false, animation: 'fade' }} />
       </Stack>
       {/* Demandes de revanche reçues, au-dessus de tout écran (sauf pendant un duel). */}
       <RematchHost />

@@ -30,6 +30,7 @@ import {
   TOP_TEN_CARD_WIDTH,
   tokens,
   toCategoryCode,
+  useHorizontalGesture,
   useTheme,
   WarningCircleIcon,
   compactBarProgress,
@@ -121,6 +122,8 @@ const followedFilters = (categories: readonly CategoryCode[]): TopicFilters => (
  */
 function Followed({ list, selected, onSelect }: { list: ReturnType<typeof useTopics>; selected: CategoryCode[]; onSelect: (next: CategoryCode[]) => void }) {
   const { colors, radius } = useTheme()
+  // Les puces d'univers sont un rail horizontal : elles possèdent le geste comme le Top 10.
+  const gesture = useHorizontalGesture()
   const facets = useTopicFacets('', true)
   const universes = (facets.data?.categories ?? []).filter((facet) => facet.count > 0).map((facet) => toCategoryCode(facet.category))
   const topics = list.data?.pages.flatMap((page) => page.topics) ?? []
@@ -135,8 +138,15 @@ function Followed({ list, selected, onSelect }: { list: ReturnType<typeof useTop
     <View style={{ gap: tokens.space[4] }}>
       <ScrollView
         horizontal
+        nestedScrollEnabled
         scrollsToTop={false}
         showsHorizontalScrollIndicator={false}
+        onTouchStart={gesture?.claim}
+        onTouchEnd={gesture?.release}
+        onTouchCancel={gesture?.release}
+        onScrollBeginDrag={gesture?.claim}
+        onScrollEndDrag={gesture?.release}
+        onMomentumScrollEnd={gesture?.release}
         contentContainerStyle={{ paddingHorizontal: GUTTER, gap: tokens.space[3] }}
       >
         <Chip selected={selected.length === 0} onPress={() => onSelect([])}>

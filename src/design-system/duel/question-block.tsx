@@ -67,6 +67,8 @@ export interface QuestionBlockProps {
   /** `auto` : 2 × 2 avec une image ou quand la hauteur manque, liste sinon. */
   layout?: 'auto' | '2x2' | '4x1'
   details?: boolean
+  /** Couleur du fond derrière les cartes, peinte dans leurs encoches (défaut : fond de l'écran). */
+  notchColor?: string
   /** Joue l'apparition de l'énoncé et des réponses. */
   animated?: boolean
   style?: StyleProp<ViewStyle>
@@ -87,6 +89,7 @@ export function QuestionBlock({
   answersShown = true,
   layout = 'auto',
   details,
+  notchColor,
   animated = false,
   style,
 }: QuestionBlockProps) {
@@ -118,7 +121,7 @@ export function QuestionBlock({
 
   const card = ({ key, ...answer }: AnswerCardProps & { key: string }, index: number, inRow: boolean) => (
     <AnswerSlot key={key} index={index} shown={answersShown} play={play} flex={inRow}>
-      <AnswerCard details={details} {...answer} style={[{ minHeight: cardMin }, inRow && { flex: 1 }, answer.style]} />
+      <AnswerCard details={details} notchColor={notchColor} {...answer} style={[{ minHeight: cardMin }, inRow && { flex: 1 }, answer.style]} />
     </AnswerSlot>
   )
   const rows = grid && answers ? [answers.slice(0, 2), answers.slice(2)].filter((row) => row.length > 0) : []
