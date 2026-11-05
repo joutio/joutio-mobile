@@ -16,6 +16,11 @@ export interface MeView {
   premium: boolean
   progression: ProgressionView | null
   stats: DuelStatsView | null
+  /**
+   * Recherche expirée sans adversaire : entraînement automatique contre le bot. Absent tant que le BFF n'expose pas
+   * encore le champ : `true` par défaut.
+   */
+  autoTrainOnTimeout?: boolean
 }
 
 export interface ProgressionView {
@@ -168,4 +173,23 @@ export interface TitlesView {
   /** Clé du titre porté (`topicId:TIER`), null si aucun. */
   equippedKey: string | null
   titles: { key: string; topicId: string; tier: MasteryTier }[]
+}
+
+/** `{ id }` renvoyé par une création (`IdResponse` du SDK). */
+export interface IdResponse {
+  id: string
+}
+
+export type PresenceStatus = 'ONLINE' | 'OFFLINE'
+
+/** `GET /api/profiles/{id}/following|followers` : carte joueur. */
+export interface PlayerCardView {
+  userId: string
+  pseudonym: string
+  avatarOptions: string | null
+  rating: number
+  provisional: boolean
+  following: boolean
+  presence: { userId: string; status: PresenceStatus; lastSeenAt: string | null } | null
+  suspended: boolean
 }

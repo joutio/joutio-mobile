@@ -5,6 +5,7 @@ import { Share, View } from 'react-native'
 import {
   Button,
   CheckIcon,
+  showDialog,
   CollapsibleTabsScreen,
   EmptyState,
   HeartIcon,
@@ -16,6 +17,7 @@ import {
   Skeleton,
   Stat,
   TabScrollView,
+  useTransitionDone,
   Text,
   toCategoryCode,
   tokens,
@@ -82,7 +84,10 @@ export function TopicScreen() {
   const me = useMe(true)
   const pseudonym = me.data?.pseudonym ?? 'Moi'
   const overview = useTopicOverview(topicId)
-  const board = useTopicLeaderboard(topicId)
+  // L'écran s'ouvre tout de suite (titre et image viennent de la navigation) ; le contenu lourd attend la fin de la
+  // transition, des squelettes à sa place.
+  const ready = useTransitionDone()
+  const board = useTopicLeaderboard(topicId, ready)
   const follow = useFollowTopic(topicId)
   const wall = useWall(pseudonym)
 
@@ -103,7 +108,21 @@ export function TopicScreen() {
   const showMyRow = tab === 'board' && myEntry && myEntry.rank > BOARD_TOP
 
   const toggleFollow = () => {
-    if (topic) follow.mutate(!followed)
+    // Une requête en cours : on ignore les appuis répétés.
+    if (!topic || follow.isPending) return
+    if (!followed) return follow.mutate(true)
+    // Ne plus suivre se confirme : on évite les allers-retours en rafale (et les notifications d'abonnés qui vont avec).
+    showDialog({
+      title: `Ne plus suivre ${name} ?`,
+      message: 'Il disparaîtra de tes sujets suivis sur l’Accueil.',
+      icon: HeartIcon,
+      tone: 'danger',
+      sheet: true,
+      actions: [
+        { label: 'Ne plus suivre', tone: 'destructive', onPress: () => follow.mutate(false) },
+        { label: 'Annuler', variant: 'plain' },
+      ],
+    })
   }
   const share = () => void Share.share({ message: `${name} sur Joutio : viens me défier !` })
 
@@ -165,7 +184,8 @@ export function TopicScreen() {
               onLayout={(event) => setActionsHeight(event.nativeEvent.layout.y + event.nativeEvent.layout.height)}
               style={{ flexDirection: 'row', gap: tokens.space[3] }}
             >
-              <Button full icon={LightningIcon} style={{ flex: 1 }} onPress={() => setDuelOpen(true)}>
+              {/* 60 / 40 : le duel est l'action principale. */}
+              <Button full icon={LightningIcon} style={{ flex: 3 }} onPress={() => setDuelOpen(true)}>
                 Lancer un duel
               </Button>
               <Button
@@ -175,16 +195,17 @@ export function TopicScreen() {
                 tone={followed ? 'neutral' : 'accent'}
                 disabled={!topic}
                 accessibilityState={{ selected: followed }}
-                style={{ flex: 1 }}
+                loading={follow.isPending}
+                style={{ flex: 2 }}
                 onPress={toggleFollow}
               >
                 {followed ? 'Suivi' : 'Suivre'}
               </Button>
             </View>
             <View style={{ flexDirection: 'row', gap: tokens.space[3] }}>
-              {stats.map((stat) => (
-                <Stat key={stat.label} {...stat} compact />
-              ))}
+              {data
+                ? stats.map((stat) => <Stat key={stat.label} {...stat} compact />)
+                : stats.map((stat) => <Skeleton key={stat.label} shape="card" style={{ flex: 1, height: 76 }} />)}
             </View>
           </View>
         }
@@ -205,7 +226,7 @@ export function TopicScreen() {
         bottomBar={showMyRow ? <MyBoardRow entry={myEntry} /> : undefined}
         onRefresh={() => client.refetchQueries({ queryKey: queryKeys.topic.all(topicId) })}
       />
-      <DuelSheet open={duelOpen} onClose={() => setDuelOpen(false)} topic={name} />
+      <DuelSheet open={duelOpen} onClose={() => setDuelOpen(false)} topic={{ topicId, name, category }} />
       <PostSheet open={postOpen} onClose={() => setPostOpen(false)} topic={name} onPublish={wall.publish} />
       <CommentsSheet post={commented} me={pseudonym} onClose={() => setCommented(undefined)} />
     </>

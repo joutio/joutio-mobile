@@ -21,6 +21,8 @@ import { useTheme } from '../theme/theme-provider'
 import { tokens } from '../tokens.generated'
 import { TOP_BAR_HEIGHT } from './mobile-top-bar'
 import { HAIRLINE } from '../theme/hairline'
+import { Skeleton } from '../primitives/skeleton'
+import { useTransitionDone } from './use-transition-done'
 
 /** Hauteur de la zone image, safe area comprise (`fiche-sujet.md` § 1). */
 export const HERO_HEIGHT = 320
@@ -240,6 +242,8 @@ export function ParallaxScreen({
 }: ParallaxScreenProps) {
   const { colors } = useTheme()
   const insets = useSafeAreaInsets()
+  // Contenu après l'animation d'entrée : l'écran s'ouvre tout de suite, des squelettes à la place.
+  const ready = useTransitionDone()
   const reduced = useReducedMotion()
   const scroll = useSharedValue(0)
   const progress = useSharedValue(0)
@@ -313,7 +317,16 @@ export function ParallaxScreen({
           </View>
           {intro && <View style={{ paddingHorizontal: tokens.space[5], paddingTop: tokens.space[2], paddingBottom: tokens.space[3] }}>{intro}</View>}
           {/* Le contenu remplit au moins l'espace sous la barre compacte : assez pour replier, sans défilement à vide. */}
-          <View style={{ minHeight: Math.max(0, viewport - barHeight), paddingBottom: bottomBar || inTabs ? 0 : insets.bottom }}>{children}</View>
+          <View style={{ minHeight: Math.max(0, viewport - barHeight), paddingBottom: bottomBar || inTabs ? 0 : insets.bottom }}>
+            {ready ? (
+              children
+            ) : (
+              <View style={{ gap: tokens.space[4], paddingHorizontal: tokens.space[5], paddingTop: tokens.space[2] }}>
+                <Skeleton shape="row" />
+                <Skeleton shape="card" />
+              </View>
+            )}
+          </View>
         </Animated.ScrollView>
 
         {floating && <View style={{ position: 'absolute', right: tokens.space[5], bottom: tokens.space[5] }}>{floating}</View>}

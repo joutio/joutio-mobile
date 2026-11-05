@@ -63,6 +63,8 @@ function Navigation() {
       <Stack.Protected guard={!authenticated}>
         <Stack.Screen name="(auth)" />
       </Stack.Protected>
+      {/* Lien de salon partagé : ouvert avec ou sans session. */}
+      <Stack.Screen name="join/[roomId]" />
       <Stack.Protected guard={config.catalogEnabled}>
         <Stack.Screen name="(dev)" />
       </Stack.Protected>

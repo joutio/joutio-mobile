@@ -11,11 +11,13 @@ export interface TopicFilters {
   categories: readonly CategoryCode[]
   sort: TopicSort
   hideFollowed: boolean
+  /** Uniquement les sujets suivis (onglet Suivis de l'Accueil) : `GET /api/topics?followed=true`. */
+  followed?: boolean
 }
 
 const page = (filters: TopicFilters, category: CategoryCode | undefined, index: number) =>
   api.get<PageResponse<TopicCardView>>(ENDPOINTS.topics.list, {
-    params: { q: filters.query || undefined, category, sort: filters.sort, page: index, size: PAGE_SIZE },
+    params: { q: filters.query || undefined, category, followed: filters.followed || undefined, sort: filters.sort, page: index, size: PAGE_SIZE },
   })
 
 /** Ordre d'une page fusionnée quand le tri est connu côté client ; sinon on garde l'alternance du serveur. */
@@ -44,5 +46,6 @@ export const topicsService = {
     return { topics, last: pages.every((result) => result.last) }
   },
 
-  facets: (query: string): Promise<TopicFacetsView> => api.get<TopicFacetsView>(ENDPOINTS.topics.facets, { params: { q: query || undefined } }),
+  facets: (query: string, followed = false): Promise<TopicFacetsView> =>
+    api.get<TopicFacetsView>(ENDPOINTS.topics.facets, { params: { q: query || undefined, followed: followed || undefined } }),
 }

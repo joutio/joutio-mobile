@@ -17,6 +17,8 @@
 | 2.2 Accueil | fait, à valider sur appareil : shell à 5 onglets (`(app)/(tabs)`, `JoTabBar`), `Rail`, `TopTen`, données `/api/home` ; série et badge Défis **mockés** (`features/home/lib/home-mocks.ts`, manques BFF dans `accueil.md` § 10) ; Social, Défis et Profil provisoires |
 | 2.3 Sujets | fait, à valider sur appareil : recherche, Filtres (feuille), puces, tri, grille 2 colonnes paginée sur `/api/topics` ; multi-univers et « Masquer les sujets suivis » **simulés** (`features/topics/lib/topics-service.ts`, manques BFF dans `sujets.md` § 5) |
 | 2.4 Fiche sujet | fait, à valider sur appareil : `CollapsibleTabsScreen` (actions qui passent dans la barre, titre à gauche, ligne du joueur en barre fixe), poussée dans les piles Accueil et Sujets (`(tabs)/home/topic/[id]`, `(tabs)/topics/[id]`) ; overview, Top 10 du mois, mes 10 dernières parties et titres branchés sur le BFF ; **Mur mocké** (`features/topic/lib/wall-mocks.ts`) ; feuille de duel **sans action** (lot 5) ; avatars en initiales (DiceBear avec l'éditeur d'avatar) ; manques BFF dans `fiche-sujet.md` § 5 |
+| 2.5 Lancer une partie, Matchmaking | fait, à valider sur appareil : feuille des 4 modes (difficulté du robot mémorisée sur l'appareil, « Qui veux-tu défier ? » sur abonnements/abonnés), matchmaking plein écran (`MatchmakingMap`, décompte serveur, entraînement automatique selon `me.autoTrainOnTimeout`, préférence **profil**), salle (`(app)/room/[roomId]` : salon privé partageable avec lien et QR code, ou préparation bot/appariement/défi), « Rejoindre un salon » (`join/[roomId]`, repris après connexion) |
+| 2.6 Duel | fait, à valider sur appareil : arène (`(app)/duel/[gameId]`) pilotée par les instants serveur (`sceneAt`, domaine porté de `joutio-web`), face-à-face, intros de manche, réponses optimistes, abandon par le retour (`usePreventRemove`), reconnexion (`ReconnectCountdown`) ; fin de partie **provisoire** (`duel-result.tsx`) en attendant le Résultat (lot 7) |
 
 Le **catalogue** (`/catalog`, `joutio://catalog`) est réservé au dev (`__DEV__`) et absent des builds de release.
 
@@ -209,6 +211,22 @@ sans ligne de co-auteur.
   Revenir en haut : onglet actif (`useScrollToTop`, émis par `JoTabBar`), barre d'état iOS (`scrollsToTop={false}`
   sur tout défilement horizontal ; pages cachées via `withActivePageScrollsToTop`) et `ScrollToTopPill` (intégrée à
   `TabsScrollView`, posée à la main sur une liste longue).
+- **Temps réel** (2026-11-05) : une connexion STOMP unique (`lib/ws.ts`, heartbeat 10 s, jeton renouvelé avant
+  chaque `CONNECT`, fermée en arrière-plan). Chaque agrégat (salle, ticket, partie) est un `NotificationStream`
+  (`lib/realtime/`) : **historique REST à l'ouverture, puis uniquement STOMP** ; l'historique n'est rejoué qu'à la
+  reconnexion ou sur un trou de séquence, jamais en polling. Heartbeat manqué ou socket fermé →
+  `useConnectionStore().status === 'reconnecting'` → `ReconnectCountdown` plein écran, reprise seule. L'horloge serveur
+  (`useServerClock`) est mesurée à l'ouverture et au premier plan, puis ré-ancrée sur chaque trame. Seule exception :
+  la récompense d'une partie terminée (`GET /api/games/{id}/result`) est relue toutes les 1,5 s tant qu'elle est
+  absente (aucun canal STOMP ne la porte).
+- **Séquences d'animation** du lab (`@keyframes`) : `useTimeline` + `keyframe()` (`design-system/timeline.ts`), une
+  progression linéaire démarrable en plein milieu (`elapsedMs`, le serveur peut être en avance).
+- **Ouverture d'un écran** (2026-11-05) : un écran poussé s'ouvre **tout de suite**, sans jamais attendre une requête
+  ni conditionner la navigation à une réponse. Ce qui est connu passe par les paramètres de navigation (titre, image) ;
+  le contenu lourd attend la fin de l'animation d'entrée (`useTransitionDone`, déjà intégré à `CollapsibleTabsScreen`
+  et `ParallaxScreen`) ; les données arrivent dans la page, des squelettes à leur place. Une mutation met à jour le
+  cache sur place plutôt que d'invalider des listes entières (sinon le retour sur l'écran précédent attend un
+  rechargement).
 - **Glass** : flou natif sur iOS ; teinte seule sur Android (le flou y exige `BlurTargetView`).
 - 1 composant = 1 fichier, export nommé, props en `interface`, jamais `any`. Jamais « Toi » comme nom de joueur.
 

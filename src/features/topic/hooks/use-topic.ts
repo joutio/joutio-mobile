@@ -1,8 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient, type InfiniteData } from '@tanstack/react-query'
+import type { TopicPage } from '@/features/topics/lib/topics-service'
 import { toast } from '@/design-system'
 import { useMe } from '@/features/me'
 import { queryKeys } from '@/lib/query-keys'
-import type { TitlesView, TopicOverviewView } from '@/shared/types/bff'
+import type { HomeView, TitlesView, TopicCardView, TopicOverviewView } from '@/shared/types/bff'
 import { topicService } from '../lib/topic-service'
 
 /** En-tête, statistiques et progression du sujet. */
@@ -60,9 +61,27 @@ export function useFollowTopic(topicId: string) {
       if (context?.previous) client.setQueryData(key, context.previous)
       toast.error(follow ? "Le sujet n'a pas pu être suivi" : "Le sujet n'a pas pu être retiré", { description: 'Vérifie ta connexion, puis réessaie.' })
     },
-    onSettled: () => {
-      void client.invalidateQueries({ queryKey: queryKeys.home() })
-      void client.invalidateQueries({ queryKey: ['topics'] })
+    onSuccess: (_result, follow) => {
+      // Mise à jour sur place des listes déjà chargées (catalogue, rails de l'Accueil) : pas de rechargement complet,
+      // donc pas d'attente au retour sur Sujets. Seules les listes « suivis » et leurs compteurs sont relus.
+      const flip = (topic: TopicCardView) => (topic.topicId === topicId ? { ...topic, followed: follow } : topic)
+      client.setQueriesData<InfiniteData<TopicPage>>({ queryKey: ['topics', 'list'] }, (data) =>
+        data ? { ...data, pages: data.pages.map((page) => ({ ...page, topics: page.topics.map(flip) })) } : data,
+      )
+      client.setQueryData<HomeView>(queryKeys.home(), (data) =>
+        data
+          ? { ...data, trendingTopics: data.trendingTopics.map(flip), newTopics: data.newTopics.map(flip), recommendedTopics: data.recommendedTopics.map(flip) }
+          : data,
+      )
+      void client.invalidateQueries({
+        queryKey: ['topics', 'list'],
+        predicate: (query) => (query.queryKey[2] as { followed?: boolean } | undefined)?.followed === true,
+      })
+      void client.invalidateQueries({
+        queryKey: ['topics', 'facets'],
+        predicate: (query) => (query.queryKey[3] as { followed?: boolean } | undefined)?.followed === true,
+      })
+      void client.invalidateQueries({ queryKey: queryKeys.home(), refetchType: 'none' })
     },
   })
 }

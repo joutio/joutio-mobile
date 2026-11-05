@@ -22,6 +22,8 @@ import { useTheme } from '../theme/theme-provider'
 import { tokens } from '../tokens.generated'
 import { TOP_BAR_HEIGHT } from './mobile-top-bar'
 import { usePageRefresh } from './page-refresh'
+import { useTransitionDone } from './use-transition-done'
+import { Skeleton } from '../primitives/skeleton'
 import { TabPageActiveContext, withActivePageScrollsToTop } from './tab-page'
 import { CompactBarRow, compactBarProgress, HERO_HEIGHT, heroImageTransform, heroTitleOpacity, ParallaxProgressProvider } from './parallax-screen'
 
@@ -34,6 +36,17 @@ export type { CollapsibleTabsRef }
 export const TabList = withActivePageScrollsToTop(TabFlatList) as typeof TabFlatList
 export const TabSectionList = withActivePageScrollsToTop(createTabList(SectionList)) as typeof SectionList
 export const TabScrollView = withActivePageScrollsToTop(NativeTabScrollView)
+
+/** Page en attente (transition d'entrée) : squelettes génériques, décalés sous l'en-tête comme une vraie page. */
+export function TabSkeleton() {
+  return (
+    <TabScrollView scrollEnabled={false} contentContainerStyle={{ gap: tokens.space[4], paddingHorizontal: tokens.space[5], paddingTop: tokens.space[2] }}>
+      <Skeleton shape="row" />
+      <Skeleton shape="card" />
+      <Skeleton shape="card" />
+    </TabScrollView>
+  )
+}
 
 export interface CollapsibleTab<T extends string> {
   value: T
@@ -178,6 +191,8 @@ export function CollapsibleTabsScreen<T extends string>({
   const bottomInset = inTabs ? 0 : insets.bottom
   const barHeight = insets.top + TOP_BAR_HEIGHT
   const refresh = usePageRefresh(onRefresh)
+  // L'écran s'ouvre tout de suite : en-tête et onglets d'abord, contenu des pages après l'animation d'entrée.
+  const ready = useTransitionDone()
 
   const [index, setIndex] = useState(() =>
     Math.max(
@@ -240,7 +255,10 @@ export function CollapsibleTabsScreen<T extends string>({
   }
 
   const renderTabBar = () => (
-    <View style={{ backgroundColor: colors.bg, paddingHorizontal: tokens.space[5], paddingTop: tokens.space[3], paddingBottom: tokens.space[4] }}>
+    // Déborde d'1 pt sur l'en-tête : couvre la rangée de pixels qu'un en-tête de hauteur fractionnaire laisse transparente.
+    <View
+      style={{ backgroundColor: colors.bg, marginTop: -1, paddingHorizontal: tokens.space[5], paddingTop: tokens.space[3] + 1, paddingBottom: tokens.space[4] }}
+    >
       <Segmented
         scrollable
         label={tabsLabel}
@@ -265,7 +283,7 @@ export function CollapsibleTabsScreen<T extends string>({
         onIndexChange={changeIndex}
         renderScene={({ route }) => (
           <TabPageActiveContext.Provider value={route.key === routes[index]?.key}>
-            {tabs.find((tab) => tab.value === route.key)?.content ?? null}
+            {ready ? (tabs.find((tab) => tab.value === route.key)?.content ?? null) : <TabSkeleton />}
           </TabPageActiveContext.Provider>
         )}
         renderHeader={() => <Hero {...hero} title={title} scroll={scroll} titleStart={titleStart} titleLength={titleLength} barHeight={barHeight} />}

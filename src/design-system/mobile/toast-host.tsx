@@ -314,8 +314,12 @@ export function ToastHost() {
     <TrueSheetOverlay pointerEvents="box-none">
       {/* L'overlay rend ses enfants dans un conteneur natif à part, hors de la racine de l'app : sans racine propre, les
           gestes (balayage, toucher) n'y arrivent jamais. */}
-      <GestureHandlerRootView pointerEvents="box-none" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
-        <View pointerEvents="box-none" style={{ position: 'absolute', top, left: tokens.space[5], right: tokens.space[5], height: Math.max(stackHeight, 0) }}>
+      {/* Racine de gestes limitée à la pile : en plein écran, elle capterait tous les touchers de l'app tant qu'un
+          toast est affiché (une racine native ne respecte pas `box-none`). */}
+      <GestureHandlerRootView
+        style={{ position: 'absolute', top, left: tokens.space[5], right: tokens.space[5], height: Math.max(stackHeight, 0), overflow: 'visible' }}
+      >
+        <View pointerEvents="box-none" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, overflow: 'visible' }}>
           {toasts.map((entry) => {
             const place = layout.get(entry.id) ?? { y: 0, scale: 1, opacity: 0, index: VISIBLE }
             return (

@@ -1,6 +1,7 @@
 /** Clés de requête hiérarchiques (cache React Query). */
 export const queryKeys = {
   me: () => ['me'] as const,
+  serverTime: () => ['server-time'] as const,
   home: () => ['home'] as const,
   topics: {
     list: (filters: object) => ['topics', 'list', filters] as const,

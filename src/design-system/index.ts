@@ -78,3 +78,7 @@ export * from './mobile/screen'
 export * from './mobile/sheet-header'
 export * from './mobile/sticky-bar'
 export * from './mobile/toast-host'
+
+export * from './timeline'
+export * from './duel'
+export * from './mobile/use-transition-done'

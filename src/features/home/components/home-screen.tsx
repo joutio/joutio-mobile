@@ -42,11 +42,12 @@ import type { TopicCardView } from '@/shared/types/bff'
 import { tierOf } from '@/shared/utils/tier'
 import { topicName } from '@/shared/utils/topic-name'
 import { openTopic } from '@/features/topic'
+import { useTopicFacets, useTopics } from '@/features/topics/hooks/use-topics'
+import type { TopicFilters } from '@/features/topics/lib/topics-service'
 import { useHome, useUnreadCount } from '../hooks/use-home'
 import { HOME_MOCKS } from '../lib/home-mocks'
 
 const LANDSCAPE_WIDTH = 240
-const PAGE_SIZE = 20
 const GUTTER = tokens.space[5]
 
 const TABS = [
@@ -111,32 +112,24 @@ function ForYou({ trending, fresh }: { trending: TopicCardView[]; fresh: TopicCa
   )
 }
 
+/** Filtres de l'onglet Suivis : tous les sujets suivis, paginés côté serveur (`GET /api/topics?followed=true`). */
+const followedFilters = (categories: readonly CategoryCode[]): TopicFilters => ({ query: '', categories, sort: 'ALPHA', hideFollowed: false, followed: true })
+
 /**
- * Sujets suivis : puces d'univers à sélection multiple (« Tous » par défaut), 20 par page. `loadMore` change à chaque
- * traction réussie en bas de l'onglet (`DragToLoadMore`) ; `onHasMore` dit s'il reste une page.
+ * Sujets suivis : puces d'univers à sélection multiple (« Tous » par défaut), 20 par page **côté serveur** (l'Accueil
+ * n'en renvoie que 10). La page suivante arrive par traction en bas de l'onglet (`DragToLoadMore`) ou par le bouton.
  */
-function Followed({ topics, loadMore, onHasMore }: { topics: TopicCardView[]; loadMore: number; onHasMore: (hasMore: boolean) => void }) {
+function Followed({ list, selected, onSelect }: { list: ReturnType<typeof useTopics>; selected: CategoryCode[]; onSelect: (next: CategoryCode[]) => void }) {
   const { colors, radius } = useTheme()
-  const [selected, setSelected] = useState<CategoryCode[]>([])
-  const [pages, setPages] = useState(1)
-  const universes = useMemo(() => [...new Set(topics.map((topic) => toCategoryCode(topic.category)))], [topics])
-  const filtered = topics.filter((topic) => selected.length === 0 || selected.includes(toCategoryCode(topic.category)))
-  const visible = filtered.slice(0, pages * PAGE_SIZE)
-  const hasMore = visible.length < filtered.length
-
-  useEffect(() => {
-    if (loadMore > 0) setPages((current) => (current * PAGE_SIZE < filtered.length ? current + 1 : current))
-    // Seul le geste déclenche la page suivante.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loadMore])
-  useEffect(() => onHasMore(hasMore), [hasMore, onHasMore])
-
-  // Changer de puces remet la pagination à la première page.
-  const select = (next: CategoryCode[]) => {
-    setSelected(next)
-    setPages(1)
-  }
-  const toggle = (category: CategoryCode) => select(selected.includes(category) ? selected.filter((item) => item !== category) : [...selected, category])
+  const facets = useTopicFacets('', true)
+  const universes = (facets.data?.categories ?? []).filter((facet) => facet.count > 0).map((facet) => toCategoryCode(facet.category))
+  const topics = list.data?.pages.flatMap((page) => page.topics) ?? []
+  const total = facets.data
+    ? selected.length === 0
+      ? facets.data.total
+      : facets.data.categories.filter((facet) => selected.includes(toCategoryCode(facet.category))).reduce((sum, facet) => sum + facet.count, 0)
+    : undefined
+  const toggle = (category: CategoryCode) => onSelect(selected.includes(category) ? selected.filter((item) => item !== category) : [...selected, category])
 
   return (
     <View style={{ gap: tokens.space[4] }}>
@@ -146,7 +139,7 @@ function Followed({ topics, loadMore, onHasMore }: { topics: TopicCardView[]; lo
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={{ paddingHorizontal: GUTTER, gap: tokens.space[3] }}
       >
-        <Chip selected={selected.length === 0} onPress={() => select([])}>
+        <Chip selected={selected.length === 0} onPress={() => onSelect([])}>
           Tous
         </Chip>
         {universes.map((category) => (
@@ -155,25 +148,36 @@ function Followed({ topics, loadMore, onHasMore }: { topics: TopicCardView[]; lo
           </Chip>
         ))}
       </ScrollView>
-      <View style={{ marginHorizontal: GUTTER, overflow: 'hidden', borderRadius: radius.lg, backgroundColor: colors.surface }}>
-        {visible.map((topic, index) => (
-          <TopicRow
-            key={topic.topicId}
-            title={topicName(topic.names)}
-            category={toCategoryCode(topic.category)}
-            image={imageOf(topic)}
-            onPress={() => openTopic('home', topic)}
-            last={index === visible.length - 1}
-          />
-        ))}
-      </View>
-      <FeedFooter
-        style={{ marginHorizontal: GUTTER }}
-        state={hasMore ? 'more' : 'end'}
-        onLoadMore={() => setPages(pages + 1)}
-        endLabel="Tu as vu tous tes sujets suivis"
-        remainingLabel={hasMore ? remainingFollowed(filtered.length - visible.length) : undefined}
-      />
+      {list.isPending ? (
+        <View style={{ marginHorizontal: GUTTER, gap: tokens.space[3] }}>
+          <Skeleton shape="row" />
+          <Skeleton shape="row" />
+          <Skeleton shape="row" />
+        </View>
+      ) : (
+        <View style={{ marginHorizontal: GUTTER, overflow: 'hidden', borderRadius: radius.lg, backgroundColor: colors.surface }}>
+          {topics.map((topic, index) => (
+            <TopicRow
+              key={topic.topicId}
+              title={topicName(topic.names)}
+              category={toCategoryCode(topic.category)}
+              image={imageOf(topic)}
+              onPress={() => openTopic('home', topic)}
+              last={index === topics.length - 1}
+            />
+          ))}
+        </View>
+      )}
+      {!list.isPending && (
+        <FeedFooter
+          style={{ marginHorizontal: GUTTER }}
+          state={list.isFetchNextPageError ? 'error' : list.isFetchingNextPage ? 'loading' : list.hasNextPage ? 'more' : 'end'}
+          onLoadMore={() => void list.fetchNextPage()}
+          onRetry={() => void list.fetchNextPage()}
+          endLabel="Tu as vu tous tes sujets suivis"
+          remainingLabel={list.hasNextPage && total !== undefined ? remainingFollowed(Math.max(0, total - topics.length)) : undefined}
+        />
+      )}
     </View>
   )
 }
@@ -203,12 +207,15 @@ function Loading() {
 function TabPage({ tab, home }: { tab: Tab; home: ReturnType<typeof useHome> }) {
   const followed = tab === 'followed'
   const data = home.data
+  const [selected, setSelected] = useState<CategoryCode[]>([])
+  const list = useTopics(followedFilters(selected), followed)
   const empty = data && (followed ? data.followedTopics.length === 0 : data.trendingTopics.length === 0 && data.newTopics.length === 0)
-  // Suite des sujets suivis : traction en bas de l'onglet (pages locales, sans requête).
-  const [loadMore, setLoadMore] = useState(0)
-  const [hasMore, setHasMore] = useState(false)
   return (
-    <DragToLoadMore enabled={followed && hasMore} onLoadMore={() => setLoadMore((count) => count + 1)}>
+    <DragToLoadMore
+      enabled={followed && Boolean(list.hasNextPage) && !list.isFetchNextPageError}
+      loading={list.isFetchingNextPage}
+      onLoadMore={() => void list.fetchNextPage()}
+    >
       <TabLoadMoreScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ gap: tokens.space[7], paddingTop: tokens.space[5], paddingBottom: tokens.space[7] }}
@@ -240,11 +247,7 @@ function TabPage({ tab, home }: { tab: Tab; home: ReturnType<typeof useHome> }) 
         )}
         {data &&
           !empty &&
-          (followed ? (
-            <Followed topics={data.followedTopics} loadMore={loadMore} onHasMore={setHasMore} />
-          ) : (
-            <ForYou trending={data.trendingTopics} fresh={data.newTopics} />
-          ))}
+          (followed ? <Followed list={list} selected={selected} onSelect={setSelected} /> : <ForYou trending={data.trendingTopics} fresh={data.newTopics} />)}
       </TabLoadMoreScrollView>
     </DragToLoadMore>
   )

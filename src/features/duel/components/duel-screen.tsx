@@ -1,0 +1,293 @@
+import { router, useLocalSearchParams, usePreventRemove } from 'expo-router'
+import { useEffect, useRef, useState } from 'react'
+import { View } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import {
+  DuelHeader,
+  ForceDark,
+  haptic,
+  QuestionBlock,
+  ReconnectCountdown,
+  RoundIntro,
+  ScoreGauge,
+  showDialog,
+  SplashLogo,
+  TimerBar,
+  toCategoryCode,
+  tokens,
+  useTheme,
+  useToastSuppression,
+  VersusIntro,
+  WarningIcon,
+  type AnswerCardProps,
+  type RoundResult,
+} from '@/design-system'
+import { useMe } from '@/features/me'
+import { useServerClock } from '@/lib/realtime/server-clock'
+import { useConnectionStore } from '@/lib/ws'
+import { tierOf } from '@/shared/utils/tier'
+import { sortedRounds } from '../domain/arena-timeline'
+import {
+  isBonusRound,
+  MAX_SCORE,
+  RESULT_DELAY_MS,
+  TRANSITION_GRACE_MS,
+  ROUNDS,
+  VS_DURATION_MS,
+  SWOOSH_DURATION_MS,
+  ROUND_INTRO_MS,
+  LATE_JOIN_MS,
+} from '../domain/game-constants'
+import type { GameState } from '../domain/game'
+import { useDuelArena } from '../hooks/use-duel-arena'
+import { useGameStream, usePrefetchQuestionImages, useServerNow } from '../hooks/use-game'
+import { gameService } from '../lib/game-service'
+import { DuelResult } from './duel-result'
+
+export interface DuelRouteParams {
+  gameId: string
+  topicName?: string
+  category?: string
+  topicId?: string
+  [key: string]: string | undefined
+}
+
+/** Pastilles des manches, d'après les réponses du joueur. */
+function roundResults(game: GameState, userId: string, current: number): RoundResult[] {
+  const rounds = sortedRounds(game)
+  return Array.from({ length: ROUNDS }, (_, index) => {
+    const bonus = isBonusRound(index)
+    const round = rounds[index]
+    if (round?.phase === 'CLOSED') {
+      const correct = round.playerAnswers[userId]?.correct === true
+      return bonus ? (correct ? 'bonusCorrect' : 'bonusWrong') : correct ? 'correct' : 'wrong'
+    }
+    if (index === current) return bonus ? 'bonus' : 'current'
+    return bonus ? 'bonus' : 'upcoming'
+  })
+}
+
+/**
+ * Duel (`duel.md`) : toujours sombre, sans onglets ni toasts. Le fil est piloté par les seuls instants serveur
+ * (`sceneAt`) : face-à-face → manche → question → révélation → … → résultat. Le retour système ouvre l'abandon.
+ */
+export function DuelScreen() {
+  const params = useLocalSearchParams<DuelRouteParams>()
+  const gameId = params.gameId
+  useToastSuppression()
+  useServerClock()
+  const { colors } = useTheme()
+  const insets = useSafeAreaInsets()
+  const me = useMe(true)
+  const userId = me.data?.userId ?? ''
+  const stream = useGameStream(gameId)
+  const connection = useConnectionStore((state) => state.status)
+  const now = useServerNow()
+  const game = stream.state
+  usePrefetchQuestionImages(game?.questionImageUrls ?? [])
+  const arena = useDuelArena({
+    gameId,
+    game: game ?? ({ gameId, rounds: {} } as GameState),
+    now,
+    serverNow: () => now,
+    userId,
+    language: me.data?.language ?? 'fr',
+    refresh: () => stream.refresh(),
+  })
+  const scene = arena.scene
+  // Fin de partie : la scène décide (`sceneAt`). `GAME_ENDED` arrive avec la clôture de la dernière manche, dont la
+  // révélation reste affichée `RESULT_DELAY_MS` pour que le joueur voie son verdict ; abandon ou annulation : tout de suite.
+  const finished = scene.kind === 'result'
+
+  // Rattrapage : une transition serveur attendue tarde, ou l'écho de ma réponse : on rejoue l'historique.
+  const overdue = 'overdue' in scene && scene.overdue
+  useEffect(() => {
+    if (overdue || arena.pendingEchoOverdue) stream.refresh()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [overdue, arena.pendingEchoOverdue])
+
+  // Haptiques de la séquence (`specs/components/duel.md`).
+  const lastScene = useRef<string>('')
+  useEffect(() => {
+    const id = `${scene.kind}-${'round' in scene ? scene.round : ''}`
+    if (id === lastScene.current) return
+    lastScene.current = id
+    if (scene.kind === 'vs') haptic('medium')
+    if (scene.kind === 'swoosh') haptic('light')
+    if (scene.kind === 'roundIntro' && scene.bonus) haptic('heavy')
+    if (scene.kind === 'reveal') haptic(arena.yourPick && arena.yourPick === arena.correctAnswer ? 'success' : 'error')
+  }, [scene, arena.yourPick, arena.correctAnswer])
+
+  // Abandon : le retour système (et toute navigation arrière) ouvre la confirmation tant que la partie dure.
+  const [abandoned, setAbandoned] = useState(false)
+  const [introDone, setIntroDone] = useState<number | null>(null)
+  const askAbandon = () =>
+    showDialog({
+      title: 'Abandonner le duel ?',
+      message: 'La partie compte comme perdue et ton adversaire gagne.',
+      icon: WarningIcon,
+      tone: 'danger',
+      sheet: true,
+      actions: [
+        {
+          label: 'Abandonner',
+          tone: 'destructive',
+          onPress: () => {
+            gameService.abandon(gameId).catch(() => undefined)
+            setAbandoned(true)
+          },
+        },
+        { label: 'Continuer', variant: 'plain' },
+      ],
+    })
+  usePreventRemove(!finished && !abandoned, askAbandon)
+  useEffect(() => {
+    if (abandoned) router.back()
+  }, [abandoned])
+
+  const topic = params.topicName ?? 'Duel'
+  const category = toCategoryCode(params.category)
+  const isPlayer1 = game?.player1Id === userId
+  const myName = me.data?.pseudonym ?? 'Moi'
+  const opponentName = (isPlayer1 ? game?.player2Name : game?.player1Name) ?? (game?.player2Type === 'BOT' ? 'Robot' : 'Adversaire')
+  const myTier = me.data?.progression && !me.data.progression.provisional ? tierOf(me.data.progression.rating) : undefined
+
+  if (!game || !stream.status?.loaded) {
+    return (
+      <ForceDark>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bg }}>
+          <SplashLogo variant="loading" />
+        </View>
+      </ForceDark>
+    )
+  }
+
+  if (finished) return <DuelResult gameId={gameId} game={game} topic={topic} topicId={params.topicId} category={params.category} />
+
+  const reconnecting = connection === 'reconnecting'
+  const roundNumber = arena.roundIndex + 1
+  const results = roundResults(game, userId, arena.roundIndex)
+
+  const versus = scene.kind === 'vs' || scene.kind === 'swoosh'
+  const versusElapsed = scene.kind === 'vs' ? scene.elapsedMs : scene.kind === 'swoosh' ? VS_DURATION_MS + scene.elapsedMs : 0
+
+  // L'arène reste montée pendant les intros de manche : l'intro la recouvre puis se retire, sans écran vide si la
+  // manche suivante (`ROUND_STARTED`) arrive un peu après la fin de l'intro.
+  const playing = scene.kind === 'question' || scene.kind === 'reveal' || scene.kind === 'roundIntro'
+  const revealed = scene.kind === 'reveal'
+  // Temps de lecture : les réponses sont là mais invisibles (place réservée, l'image ne bouge pas à leur arrivée).
+  const reading = scene.kind === 'question' && scene.locked
+  const answers: (AnswerCardProps & { key: string })[] = arena.answers.map(({ choice, label }) => {
+    const mine = arena.yourPick === choice || arena.pendingChoice === choice
+    const theirs = revealed && arena.theirPick === choice
+    let state: AnswerCardProps['state'] = 'rest'
+    if (revealed) state = choice === arena.correctAnswer ? 'correct' : mine ? 'wrong' : 'unchosen'
+    else if (mine) state = 'pending'
+    else if (!arena.isAnswerable) state = 'unchosen'
+    const notch = mine && theirs ? 'both' : mine ? 'me' : theirs ? 'opp' : 'none'
+    return { key: choice, label, state, notch, onPress: () => arena.handleAnswer(choice) }
+  })
+
+  const seconds = Math.max(0, Math.ceil(arena.timeLeftDisplay))
+  // Les points d'une manche ne se montrent qu'à la révélation : le repli les ajoute dès la réponse (`PLAYER_ANSWERED`),
+  // on les retire tant que la question est ouverte (sinon la jauge monterait en jaune avant le verdict).
+  const hidden = scene.kind === 'question' && arena.gain ? arena.gain : { you: 0, them: 0 }
+  const myShown = arena.myScore - hidden.you
+  const theirShown = arena.theirScore - hidden.them
+  const timerState = revealed || (scene.kind === 'question' && scene.locked) ? 'frozen' : 'running'
+
+  return (
+    <ForceDark>
+      <View style={{ flex: 1, backgroundColor: colors.bg }}>
+        {playing && (
+          <View style={{ flex: 1, paddingTop: insets.top }}>
+            <TimerBar
+              seconds={arena.timeLeftDisplay}
+              state={timerState}
+              first={arena.firstAnswerPctValue === null ? undefined : (arena.firstAnswerPctValue / 100) * 10}
+              deadline={timerState === 'running' && arena.answerDeadlineAt ? { at: arena.answerDeadlineAt, now: () => now } : undefined}
+            />
+            <DuelHeader
+              me={{ name: myName, score: myShown, tier: myTier, scoreState: revealed ? (arena.gauge.you === 'idle' ? 'rest' : arena.gauge.you) : 'rest' }}
+              opponent={{
+                name: opponentName,
+                score: theirShown,
+                scoreState: revealed ? (arena.gauge.them === 'idle' ? 'rest' : arena.gauge.them) : 'rest',
+              }}
+              seconds={seconds}
+              timerState={timerState}
+            />
+            {/* Comme le lab : jauges posées sur les bords, bloc avec ses marges (16 côtés, 8 haut, zone sûre + 16 bas). */}
+            <View style={{ flex: 1, minHeight: 0 }}>
+              <ScoreGauge
+                style={{ position: 'absolute', top: 0, bottom: 0, left: 0 }}
+                value={myShown}
+                max={MAX_SCORE}
+                label={`Score de ${myName}`}
+                state={revealed && arena.gauge.you !== 'idle' ? arena.gauge.you : 'rest'}
+              />
+              <ScoreGauge
+                style={{ position: 'absolute', top: 0, bottom: 0, right: 0 }}
+                value={theirShown}
+                max={MAX_SCORE}
+                label={`Score de ${opponentName}`}
+                state={revealed && arena.gauge.them !== 'idle' ? arena.gauge.them : 'rest'}
+              />
+              <View style={{ flex: 1, paddingHorizontal: tokens.space[5], paddingTop: tokens.space[3], paddingBottom: insets.bottom + tokens.space[5] }}>
+                <QuestionBlock
+                  key={`question-${arena.roundIndex}`}
+                  text={arena.questionText}
+                  meta={`${topic} · question ${roundNumber} sur ${ROUNDS}`}
+                  image={arena.imageUrl ?? undefined}
+                  answers={answers}
+                  answersShown={!reading}
+                  animated={!arena.joinedLate}
+                />
+              </View>
+            </View>
+          </View>
+        )}
+        {scene.kind === 'roundIntro' && introDone !== scene.round && (
+          <RoundIntro
+            key={`intro-${scene.round}`}
+            round={scene.round + 1}
+            total={ROUNDS}
+            topic={topic}
+            category={category}
+            results={results}
+            bonus={scene.bonus}
+            animated
+            duration={ROUND_INTRO_MS}
+            elapsedMs={scene.elapsedMs > LATE_JOIN_MS ? scene.elapsedMs : 0}
+            onComplete={() => setIntroDone(scene.round)}
+          />
+        )}
+        {versus && (
+          <VersusIntro
+            key="versus"
+            me={{ name: myName, tier: myTier, detail: myTier ? `${tokens.tier[myTier].label} · ${me.data?.progression?.rating ?? ''}` : undefined }}
+            opponent={{ name: opponentName, detail: game.player2Type === 'BOT' ? 'Entraînement' : undefined }}
+            topic={topic}
+            category={category}
+            rounds={ROUNDS}
+            animated
+            duration={VS_DURATION_MS + SWOOSH_DURATION_MS}
+            elapsedMs={versusElapsed}
+          />
+        )}
+        {scene.kind === 'waiting' && (
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+            <SplashLogo variant="loading" />
+          </View>
+        )}
+        {reconnecting && (
+          <ReconnectCountdown
+            seconds={playing && !revealed ? seconds : undefined}
+            waiting={{ title: `${opponentName} t'attend`, message: `Manche ${roundNumber} sur ${ROUNDS}` }}
+            onLeave={askAbandon}
+          />
+        )}
+      </View>
+    </ForceDark>
+  )
+}

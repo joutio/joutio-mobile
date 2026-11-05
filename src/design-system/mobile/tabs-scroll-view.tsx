@@ -109,7 +109,15 @@ export function TabsScrollView<T extends string>({
         )}
         renderTabBar={() => (
           <View
-            style={{ backgroundColor: colors.bg, paddingHorizontal: tokens.space[5], paddingVertical: tokens.space[3] }}
+            // Déborde d'1 pt sur l'en-tête (dessinée après lui) : la hauteur fractionnaire de l'en-tête laisse sinon une
+            // rangée de pixels transparente entre les deux, par où la page transparaît sous les onglets collés.
+            style={{
+              backgroundColor: colors.bg,
+              marginTop: -1,
+              paddingHorizontal: tokens.space[5],
+              paddingTop: tokens.space[3] + 1,
+              paddingBottom: tokens.space[3],
+            }}
             onLayout={(event) => setTabBarHeight(event.nativeEvent.layout.height)}
           >
             <Segmented label={label} options={pages} value={value} position={position} onChange={onChange} />

@@ -105,6 +105,34 @@ export function decodeUserId(token: string): string | null {
   }
 }
 
+/** Échéance (epoch s) d'un JWT, d'après son claim `exp`. */
+function decodeExpiry(token: string): number | null {
+  try {
+    const payload = token.split('.')[1]
+    if (!payload) return null
+    const { exp } = JSON.parse(decodeBase64Url(payload)) as { exp?: number }
+    return typeof exp === 'number' ? exp : null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Renouvelle l'access token s'il expire dans moins de `marginSeconds` : à appeler avant d'ouvrir une connexion qui le
+ * présente une seule fois (STOMP `CONNECT`), contrairement à l'API REST qui se rattrape sur un `401`.
+ */
+export async function ensureFreshAccessToken(marginSeconds = 60): Promise<string | null> {
+  const expiry = accessToken ? decodeExpiry(accessToken) : null
+  if (accessToken && refreshToken && expiry !== null && expiry - Date.now() / 1000 < marginSeconds) {
+    try {
+      await refreshAccessToken()
+    } catch {
+      // Échec transitoire : on tente avec le jeton actuel ; une fin de session définitive est gérée par l'API.
+    }
+  }
+  return accessToken
+}
+
 export interface SessionTokens {
   accessToken: string
   refreshToken?: string | null

@@ -76,6 +76,9 @@ export function MobileSheet({ open, onClose, title, subtitle, onBack, action, ta
       grabberOptions={{ color: colors.border }}
       accessibilityOptions={{ paneTitle: title }}
       scrollableRef={scroller}
+      // Contenu plus haut que la feuille (grand texte, petit écran) : la vue de contenu et le défilement rétrécissent à
+      // la hauteur plafonnée, sinon ils gardent leur hauteur naturelle, ne défilent pas et poussent le pied hors écran.
+      style={{ flexShrink: 1, minHeight: 0 }}
       header={<SheetHeader title={title} subtitle={subtitle} onBack={onBack} action={action} onClose={onClose} titleRef={titleRef} handle={false} />}
       // Actions dans leur propre zone, collée au bas de la feuille, comme l'en-tête en haut : le contenu défile
       // **entre** les deux et ne passe jamais sous le bouton (pied `relative`, le défaut de TrueSheet).
@@ -109,6 +112,7 @@ export function MobileSheet({ open, onClose, title, subtitle, onBack, action, ta
     >
       <ScrollView
         ref={scroller}
+        style={{ flexGrow: 0, flexShrink: 1 }}
         nestedScrollEnabled
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
