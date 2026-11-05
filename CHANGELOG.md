@@ -1,3 +1,9 @@
+## [1.11.2](https://github.com/joutio/joutio-mobile-expo/compare/v1.11.1...v1.11.2) (2026-11-05)
+
+### Bug Fixes
+
+* **social:** align the player profile with the lab ([ed6016e](https://github.com/joutio/joutio-mobile-expo/commit/ed6016e2d0ba0e57d27fdb8c88a28fe183991e71))
+
 ## [1.11.1](https://github.com/joutio/joutio-mobile-expo/compare/v1.11.0...v1.11.1) (2026-11-05)
 
 ### Bug Fixes
