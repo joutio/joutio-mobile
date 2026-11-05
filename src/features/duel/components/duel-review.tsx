@@ -2,7 +2,6 @@ import PagerView, { type PagerViewRef } from '@expo/ui/community/pager-view'
 import { Image } from 'expo-image'
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { View } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import {
   AnswerTimingRow,
   Button,
@@ -12,10 +11,9 @@ import {
   FlagIcon,
   IconButton,
   PageDots,
-  PeekSheet,
-  PeekSheetPeek,
   QuestionBlock,
   RoundReviewTabs,
+  Text,
   tokens,
   useTheme,
   type AnswerCardProps,
@@ -27,6 +25,9 @@ import { localizedQuestion, type GameRoundState, type GameState } from '../domai
 import { ReportQuestionSheet } from './report-sheets'
 
 const GUTTER = tokens.space[5]
+
+/** Manches jouées à revoir : sans aucune, le résultat n'a pas de page « Détails du duel ». */
+export const reviewRoundsOf = (game: GameState): GameRoundState[] => sortedRounds(game).filter((round) => round.phase === 'CLOSED')
 
 const answerOf = (round: GameRoundState, playerId: string | null): ReviewAnswer => {
   const answer = playerId ? round.playerAnswers[playerId] : undefined
@@ -73,20 +74,20 @@ const ReviewPage = memo(function ReviewPage({ round, me, opponent, myName, oppon
         opponent={{ name: opponentName, seconds: theirs ? theirs.timeMs / 1000 : undefined, points: theirs?.points ?? 0 }}
       />
       <View style={{ flex: 1, minHeight: 0 }}>
-        <QuestionBlock text={questionText} image={round.imageUrl ?? undefined} fitImage layout="2x2" answers={cards} notchColor={colors.surface} />
+        <QuestionBlock text={questionText} image={round.imageUrl ?? undefined} fitImage layout="2x2" answers={cards} notchColor={colors.bg} />
       </View>
     </View>
   )
 })
 
 /**
- * « Détails du duel » (`resultat.md` § 6) : feuille persistante en `peek` (en-tête et onglets des manches), agrandie
- * au glissement. Temps de réponse, question rejouée avec ses réponses (mêmes ratios que le duel, image réduite à la
- * place disponible), page dots et flèches ; on balaie entre les questions (pager natif Expo UI). « Signaler la
- * question » empile sa feuille. Pseudonymes partout, jamais « toi ».
+ * « Détails du duel » (`resultat.md` § 6) : seconde page verticale du résultat, sous la barre fixe. Onglets des
+ * manches, temps de réponse, question rejouée avec ses réponses (mêmes ratios que le duel, image réduite à la place
+ * disponible), page dots et flèches ; on balaie entre les questions (pager natif Expo UI). « Signaler la question »
+ * ouvre sa feuille. Pseudonymes partout, jamais « toi ».
  *
- * <p>Fluidité : le contenu est monté et dimensionné dès le peek ; ni le geste de la feuille ni le changement de
- * question ne re-rendent les pages (mémoïsées) ni ne changent une hauteur.</p>
+ * <p>Le composant reste monté avec le résultat : la question consultée est conservée d'une page à l'autre, et les
+ * images sont préchargées dès l'ouverture du résultat.</p>
  */
 export function DuelReview({
   game,
@@ -94,28 +95,21 @@ export function DuelReview({
   myName,
   opponentName,
   canReport,
-  active = true,
 }: {
   game: GameState
   me: string
   myName: string
   opponentName: string
   canReport: boolean
-  /** Écran au premier plan : la feuille se retire quand le chat est poussé par-dessus. */
-  active?: boolean
 }) {
-  const insets = useSafeAreaInsets()
-  const rounds = useMemo(() => sortedRounds(game).filter((round) => round.phase === 'CLOSED'), [game])
+  const rounds = useMemo(() => reviewRoundsOf(game), [game])
   const images = useMemo(() => [...new Set(rounds.map((round) => round.imageUrl).filter((url): url is string => Boolean(url)))], [rounds])
   const opponent = game.player1Id === me ? game.player2Id : game.player1Id
-  const [expanded, setExpanded] = useState(false)
-  // La question consultée est conservée quand la feuille est repliée puis rouverte : le pager reste monté.
   const [index, setIndex] = useState(0)
   const [reportOpen, setReportOpen] = useState(false)
   const [reported, setReported] = useState<readonly number[]>([])
   const pager = useRef<PagerViewRef>(null)
 
-  // Les images sont préchargées dès le montage de la revue : l'agrandissement n'attend pas le réseau.
   useEffect(() => {
     if (images.length === 0) return
     void Promise.all(images.map((url) => Image.prefetch(url))).catch(() => undefined)
@@ -153,31 +147,31 @@ export function DuelReview({
 
   return (
     <>
-      <PeekSheet title="Détails du duel" active={active} onExpandedChange={setExpanded}>
-        <View style={{ flex: 1, paddingBottom: insets.bottom + tokens.space[4] }}>
-          {/* Visible au repos : le detent `peek` s'arrête sous les onglets. */}
-          <PeekSheetPeek style={{ paddingHorizontal: GUTTER, paddingBottom: tokens.space[4] }}>
-            <RoundReviewTabs me={myName} opponent={opponentName} value={index} onChange={go} rounds={tabs} />
-          </PeekSheetPeek>
-          <PagerView ref={pager} style={{ flex: 1 }} initialPage={0} onPageSelected={(event) => setIndex(event.nativeEvent.position)}>
-            {pages}
-          </PagerView>
-          <View style={{ gap: tokens.space[3], paddingHorizontal: GUTTER, paddingTop: tokens.space[4] }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-              <IconButton icon={CaretLeftIcon} label="Question précédente" variant="gray" disabled={index === 0} onPress={() => go(index - 1)} />
-              <PageDots count={count} index={index} />
-              <IconButton icon={CaretRightIcon} label="Question suivante" variant="gray" disabled={index >= count - 1} onPress={() => go(index + 1)} />
-            </View>
-            {canReport && (
-              <Button variant="plain" tone="neutral" size="M" full icon={done ? CheckIcon : FlagIcon} disabled={done} onPress={() => setReportOpen(true)}>
-                {done ? 'Question signalée' : 'Signaler la question'}
-              </Button>
-            )}
-          </View>
+      <View style={{ flex: 1, gap: tokens.space[4] }}>
+        <View style={{ gap: tokens.space[4], paddingHorizontal: GUTTER }}>
+          <Text variant="headline" accessibilityRole="header">
+            Détails du duel
+          </Text>
+          <RoundReviewTabs me={myName} opponent={opponentName} value={index} onChange={go} rounds={tabs} />
         </View>
-      </PeekSheet>
+        <PagerView ref={pager} style={{ flex: 1 }} initialPage={0} onPageSelected={(event) => setIndex(event.nativeEvent.position)}>
+          {pages}
+        </PagerView>
+        <View style={{ gap: tokens.space[3], paddingHorizontal: GUTTER }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <IconButton icon={CaretLeftIcon} label="Question précédente" variant="gray" disabled={index === 0} onPress={() => go(index - 1)} />
+            <PageDots count={count} index={index} />
+            <IconButton icon={CaretRightIcon} label="Question suivante" variant="gray" disabled={index >= count - 1} onPress={() => go(index + 1)} />
+          </View>
+          {canReport && (
+            <Button variant="plain" tone="neutral" size="M" full icon={done ? CheckIcon : FlagIcon} disabled={done} onPress={() => setReportOpen(true)}>
+              {done ? 'Question signalée' : 'Signaler la question'}
+            </Button>
+          )}
+        </View>
+      </View>
       <ReportQuestionSheet
-        open={expanded && reportOpen}
+        open={reportOpen}
         onClose={() => setReportOpen(false)}
         questionId={round?.questionId ?? null}
         gameId={game.gameId}

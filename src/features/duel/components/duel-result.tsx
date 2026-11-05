@@ -1,10 +1,11 @@
-import { router, useFocusEffect } from 'expo-router'
-import { useCallback, useState } from 'react'
-import { Share, ScrollView, View } from 'react-native'
+import { router } from 'expo-router'
+import { useMemo, useRef, useState } from 'react'
+import { Pressable, Share, ScrollView, View, type NativeScrollEvent, type NativeSyntheticEvent, type ScrollViewInstance } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import {
   Banner,
   Button,
+  CaretUpIcon,
   ChatCircleIcon,
   EloSummary,
   FlagIcon,
@@ -14,6 +15,7 @@ import {
   MasteryRing,
   RankPromotion,
   ResultHeader,
+  Text,
   TitleUnlock,
   tokens,
   UnlockSequence,
@@ -35,7 +37,7 @@ import { isBonusRound, ROUNDS } from '../domain/game-constants'
 import type { GameState } from '../domain/game'
 import type { GameResultView } from '../domain/game-dto'
 import { useGameResult } from '../hooks/use-game'
-import { DuelReview } from './duel-review'
+import { DuelReview, reviewRoundsOf } from './duel-review'
 import { ReportPlayerSheet } from './report-sheets'
 
 const ORDER = Object.keys(tokens.tier) as TierCode[]
@@ -126,14 +128,11 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
   const [step, setStep] = useState(0)
   const [sequenceDone, setSequenceDone] = useState(!celebrate)
   const [reportOpen, setReportOpen] = useState(false)
-  // Le chat poussé par-dessus retire la feuille de revue ; elle revient au retour sur le résultat.
-  const [focused, setFocused] = useState(true)
-  useFocusEffect(
-    useCallback(() => {
-      setFocused(true)
-      return () => setFocused(false)
-    }, []),
-  )
+  // Deux pages verticales fixes (résultat, Détails du duel), hauteur mesurée sous la barre.
+  const pagerRef = useRef<ScrollViewInstance>(null)
+  const [pageHeight, setPageHeight] = useState(0)
+  const [page, setPage] = useState(0)
+  const hasReview = useMemo(() => !cancelled && reviewRoundsOf(game).length > 0, [cancelled, game])
 
   const isPlayer1 = game.player1Id === userId
   const opponentId = data?.opponentId ?? (isPlayer1 ? game.player2Id : game.player1Id)
@@ -219,7 +218,7 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
 
   return (
     <>
-      <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top, paddingBottom: insets.bottom + tokens.space[3] }}>
+      <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top }}>
         <View style={{ height: 52, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: tokens.space[3] }}>
           <View style={{ flexDirection: 'row', gap: tokens.space[2] }}>
             {!bot && !cancelled && (
@@ -241,104 +240,150 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
           </View>
           <IconButton icon={XIcon} label="Quitter les résultats" onPress={() => router.back()} />
         </View>
-        <ScrollView
-          style={{ flex: 1 }}
-          contentContainerStyle={{
-            flexGrow: 1,
-            justifyContent: 'space-between',
-            gap: tokens.space[5],
-            paddingHorizontal: tokens.space[5],
-            // Réserve la hauteur du peek « Détails du duel » : les actions restent visibles au-dessus de la feuille.
-            paddingBottom: 96,
-          }}
-          showsVerticalScrollIndicator={false}
-          bounces={false}
-        >
-          <ResultHeader
-            outcome={cancelled ? 'draw' : outcome}
-            topic={topic}
-            me={{
-              name: myName,
-              tier: myTier,
-              score: myScore,
-              streak: streakOf(game, userId),
-              meta: bot ? `Elo ${formatNumber(rating)} · non classé` : undefined,
-            }}
-            opponent={{
-              name: opponentName,
-              tier: opponentTier,
-              score: theirScore,
-              streak: streakOf(game, opponentId),
-              meta: bot ? (BOT_LEVEL[data?.botDifficulty ?? game.botDifficulty ?? ''] ?? 'Robot') : undefined,
-            }}
-          />
-          {bot || cancelled ? (
-            <Banner
-              tone="training"
-              title={cancelled ? 'Partie annulée' : 'Entraînement'}
-              message={cancelled ? 'Aucun point compté pour cette partie.' : "Pas d'expérience : la progression vient des duels contre d'autres joueurs."}
-            />
-          ) : (
-            <>
-              <EloSummary elo={rating} delta={data?.rated ? (data.eloDelta ?? 0) : 0} next={nextElo} />
-              <MasteryRing
-                tier={mastery ? tierLabel(mastery.tier as TierCode) : '—'}
-                next={mastery?.nextTier ? tierLabel(mastery.nextTier as TierCode) : undefined}
-                gained={mastery?.xpGained ?? 0}
-                remaining={mastery?.tierRemainingXp ?? 0}
-                size={150}
-                state={pendingReward ? 'pending' : 'done'}
-              />
-            </>
-          )}
-          <View style={{ flexDirection: 'row', gap: tokens.space[3] }}>
-            <View style={{ flex: 1 }}>
-              {bot ? (
-                <Button
-                  full
-                  icon={LightningIcon}
-                  loading={training.isPending}
-                  onPress={() => {
-                    router.back()
-                    training.mutate({ topic: playTopic, difficulty })
-                  }}
-                >
-                  Rejouer
-                </Button>
-              ) : (
-                <Button
-                  full
-                  icon={LightningIcon}
-                  loading={rematch.state === 'pending' && rematch.seconds === 0}
-                  disabled={rematch.state !== 'idle' || !opponentId}
-                  onPress={() => void rematch.send()}
-                >
-                  {rematch.state === 'pending' && rematch.seconds > 0
-                    ? `En attente · ${rematch.seconds} s`
-                    : rematch.state === 'refused'
-                      ? 'Revanche refusée'
-                      : 'Revanche'}
-                </Button>
-              )}
-            </View>
-            <View style={{ flex: 1 }}>
-              <Button
-                full
-                variant="gray"
-                tone="neutral"
-                loading={matchmaking.isPending}
-                onPress={() => {
-                  router.back()
-                  matchmaking.mutate(playTopic)
-                }}
+        <View style={{ flex: 1 }} onLayout={(event) => setPageHeight(event.nativeEvent.layout.height)}>
+          {pageHeight > 0 && (
+            <ScrollView
+              ref={pagerRef}
+              style={{ flex: 1 }}
+              pagingEnabled
+              bounces={false}
+              nestedScrollEnabled
+              scrollEnabled={hasReview}
+              scrollsToTop={false}
+              showsVerticalScrollIndicator={false}
+              onMomentumScrollEnd={(event: NativeSyntheticEvent<NativeScrollEvent>) => setPage(Math.round(event.nativeEvent.contentOffset.y / pageHeight))}
+            >
+              {/* Page 1 : le résultat. */}
+              <View
+                style={{ height: pageHeight, paddingBottom: hasReview ? 0 : insets.bottom + tokens.space[3] }}
+                accessibilityElementsHidden={page !== 0}
+                importantForAccessibility={page !== 0 ? 'no-hide-descendants' : 'auto'}
               >
-                Nouvel adversaire
-              </Button>
-            </View>
-          </View>
-        </ScrollView>
+                <View style={{ flex: 1, justifyContent: 'space-between', gap: tokens.space[5], paddingHorizontal: tokens.space[5] }}>
+                  <ResultHeader
+                    outcome={cancelled ? 'draw' : outcome}
+                    topic={topic}
+                    me={{
+                      name: myName,
+                      tier: myTier,
+                      score: myScore,
+                      streak: streakOf(game, userId),
+                      meta: bot ? `Elo ${formatNumber(rating)} · non classé` : undefined,
+                    }}
+                    opponent={{
+                      name: opponentName,
+                      tier: opponentTier,
+                      score: theirScore,
+                      streak: streakOf(game, opponentId),
+                      meta: bot ? (BOT_LEVEL[data?.botDifficulty ?? game.botDifficulty ?? ''] ?? 'Robot') : undefined,
+                    }}
+                  />
+                  {bot || cancelled ? (
+                    <Banner
+                      tone="training"
+                      title={cancelled ? 'Partie annulée' : 'Entraînement'}
+                      message={
+                        cancelled ? 'Aucun point compté pour cette partie.' : "Pas d'expérience : la progression vient des duels contre d'autres joueurs."
+                      }
+                    />
+                  ) : (
+                    <>
+                      <EloSummary elo={rating} delta={data?.rated ? (data.eloDelta ?? 0) : 0} next={nextElo} />
+                      <MasteryRing
+                        tier={mastery ? tierLabel(mastery.tier as TierCode) : '—'}
+                        next={mastery?.nextTier ? tierLabel(mastery.nextTier as TierCode) : undefined}
+                        gained={mastery?.xpGained ?? 0}
+                        remaining={mastery?.tierRemainingXp ?? 0}
+                        size={150}
+                        state={pendingReward ? 'pending' : 'done'}
+                      />
+                    </>
+                  )}
+                  <View style={{ flexDirection: 'row', gap: tokens.space[3] }}>
+                    <View style={{ flex: 1 }}>
+                      {bot ? (
+                        <Button
+                          full
+                          icon={LightningIcon}
+                          loading={training.isPending}
+                          onPress={() => {
+                            router.back()
+                            training.mutate({ topic: playTopic, difficulty })
+                          }}
+                        >
+                          Rejouer
+                        </Button>
+                      ) : (
+                        <Button
+                          full
+                          icon={LightningIcon}
+                          loading={rematch.state === 'pending' && rematch.seconds === 0}
+                          disabled={rematch.state !== 'idle' || !opponentId}
+                          onPress={() => void rematch.send()}
+                        >
+                          {rematch.state === 'pending' && rematch.seconds > 0
+                            ? `En attente · ${rematch.seconds} s`
+                            : rematch.state === 'refused'
+                              ? 'Revanche refusée'
+                              : 'Revanche'}
+                        </Button>
+                      )}
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Button
+                        full
+                        variant="gray"
+                        tone="neutral"
+                        loading={matchmaking.isPending}
+                        onPress={() => {
+                          router.back()
+                          matchmaking.mutate(playTopic)
+                        }}
+                      >
+                        Nouvel adversaire
+                      </Button>
+                    </View>
+                  </View>
+                </View>
+                {hasReview && (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Revoir les questions du duel"
+                    accessibilityHint="Ouvre la page Détails du duel"
+                    onPress={() => {
+                      setPage(1)
+                      pagerRef.current?.scrollTo({ y: pageHeight, animated: true })
+                    }}
+                    style={{
+                      alignItems: 'center',
+                      gap: tokens.space[1],
+                      paddingTop: tokens.space[4],
+                      paddingBottom: insets.bottom + tokens.space[3],
+                      paddingHorizontal: tokens.space[5],
+                    }}
+                  >
+                    <CaretUpIcon size={20} color={colors.muted} />
+                    <Text variant="headline">Détails du duel</Text>
+                    <Text variant="caption" color="muted" numberOfLines={1}>
+                      Glisse vers le haut pour revoir les questions
+                    </Text>
+                  </Pressable>
+                )}
+              </View>
+              {/* Page 2 : Détails du duel. */}
+              {hasReview && (
+                <View
+                  style={{ height: pageHeight, paddingTop: tokens.space[2], paddingBottom: insets.bottom + tokens.space[3] }}
+                  accessibilityElementsHidden={page !== 1}
+                  importantForAccessibility={page !== 1 ? 'no-hide-descendants' : 'auto'}
+                >
+                  <DuelReview game={game} me={userId} myName={myName} opponentName={opponentName} canReport />
+                </View>
+              )}
+            </ScrollView>
+          )}
+        </View>
       </View>
-      {!cancelled && <DuelReview game={game} me={userId} myName={myName} opponentName={opponentName} canReport active={focused} />}
       {opponentId && (
         <ReportPlayerSheet
           open={reportOpen}
