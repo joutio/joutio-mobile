@@ -1,3 +1,9 @@
+## [1.10.1](https://github.com/joutio/joutio-mobile-expo/compare/v1.10.0...v1.10.1) (2026-11-05)
+
+### Bug Fixes
+
+* **result:** keep the review layout fixed while the sheet moves ([79e6009](https://github.com/joutio/joutio-mobile-expo/commit/79e60096c20b7f6f913e3f5641ceca1cefc71810))
+
 ## [1.10.0](https://github.com/joutio/joutio-mobile-expo/compare/v1.9.0...v1.10.0) (2026-11-05)
 
 ### Features
