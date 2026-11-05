@@ -1,3 +1,9 @@
+## [1.17.0](https://github.com/joutio/joutio-mobile-expo/compare/v1.16.0...v1.17.0) (2026-11-05)
+
+### Features
+
+* **notifications:** build the notifications inbox ([cf936e5](https://github.com/joutio/joutio-mobile-expo/commit/cf936e5a1f7eead7bd260639e22addb0d9e21859))
+
 ## [1.16.0](https://github.com/joutio/joutio-mobile-expo/compare/v1.15.0...v1.16.0) (2026-11-05)
 
 ### Features
