@@ -1,3 +1,14 @@
+## [1.8.0](https://github.com/joutio/joutio-mobile-expo/compare/v1.7.0...v1.8.0) (2026-11-05)
+
+### Features
+
+* **duel:** result history and lab-aligned duel feedback ([185c309](https://github.com/joutio/joutio-mobile-expo/commit/185c30909be95337bbd9a7b1a3a628d19dc10f7d))
+
+### Bug Fixes
+
+* **duel:** make the result page reveal the details ([8690530](https://github.com/joutio/joutio-mobile-expo/commit/8690530e6453c252e5ec53571772a99c11671762))
+* **duel:** open the duel review on the first question ([d5cfcd6](https://github.com/joutio/joutio-mobile-expo/commit/d5cfcd6bec2a1aec792ccaf518fd8721cb68ee55))
+
 ## [1.7.0](https://github.com/joutio/joutio-mobile-expo/compare/v1.6.0...v1.7.0) (2026-11-05)
 
 ### Features
