@@ -89,7 +89,7 @@ const ReviewPage = memo(function ReviewPage({ round, me, opponent, myName, oppon
  * <p>Le composant reste monté avec le résultat : la question consultée est conservée d'une page à l'autre, et les
  * images sont préchargées dès l'ouverture du résultat.</p>
  */
-export function DuelReview({
+export const DuelReview = memo(function DuelReview({
   game,
   me,
   myName,
@@ -181,4 +181,4 @@ export function DuelReview({
       />
     </>
   )
-}
+})

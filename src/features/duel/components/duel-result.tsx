@@ -242,7 +242,11 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
             <ScrollView
               ref={pagerRef}
               style={{ flex: 1 }}
-              pagingEnabled
+              // Aimanté sur les deux pages sans `pagingEnabled` (qui exige de passer la moitié de la page) : un petit
+              // lancer suffit, et un seul cran à la fois.
+              snapToOffsets={[0, pageHeight]}
+              decelerationRate="fast"
+              disableIntervalMomentum
               bounces={false}
               nestedScrollEnabled
               scrollEnabled={hasReview}
