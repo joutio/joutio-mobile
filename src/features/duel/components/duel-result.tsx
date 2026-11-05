@@ -1,18 +1,93 @@
 import { router } from 'expo-router'
-import { View } from 'react-native'
+import { useState } from 'react'
+import { Share, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { Banner, Button, ForceDark, RobotIcon, Skeleton, Stat, Text, tokens, useTheme } from '@/design-system'
+import {
+  Banner,
+  Button,
+  CaretUpIcon,
+  ChatCircleIcon,
+  EloSummary,
+  FlagIcon,
+  ForceDark,
+  IconButton,
+  LightningIcon,
+  MasteryRing,
+  RankPromotion,
+  ResultHeader,
+  TitleUnlock,
+  tokens,
+  UnlockSequence,
+  useTheme,
+  XIcon,
+  type MatchOutcome,
+  type RoundResult,
+  type TierCode,
+} from '@/design-system'
 import { useMe } from '@/features/me'
-import { useBotDifficulty, useStartTraining } from '@/features/play/hooks/use-play'
-import { resultOutcome, type GameState } from '../domain/game'
+import { useBotDifficulty, useStartMatchmaking, useStartTraining } from '@/features/play/hooks/use-play'
+import { useSendRematch } from '@/features/play/hooks/use-rematch'
+import { useMyTitles, useWearTitle } from '@/features/topic/hooks/use-topic'
+import { formatNumber, MASTERY_TIERS, MASTERY_XP, tierLabel } from '@/features/topic/lib/format'
+import type { MasteryTier } from '@/shared/types/bff'
+import { tierOf } from '@/shared/utils/tier'
+import { sortedRounds } from '../domain/arena-timeline'
+import { isBonusRound, ROUNDS } from '../domain/game-constants'
+import type { GameState } from '../domain/game'
+import type { GameResultView } from '../domain/game-dto'
 import { useGameResult } from '../hooks/use-game'
+import { DuelChat } from './duel-chat'
+import { DuelReview } from './duel-review'
+import { ReportPlayerSheet } from './report-sheets'
 
-const TITLES = { win: 'Victoire', loss: 'Défaite', draw: 'Égalité' } as const
-const signed = (value: number) => `${value >= 0 ? '+' : '−'}${Math.abs(value)}`
+const ORDER = Object.keys(tokens.tier) as TierCode[]
+const masteryOf = (xp: number): MasteryTier => MASTERY_TIERS.reduce<MasteryTier>((best, tier) => (xp >= MASTERY_XP[tier] ? tier : best), 'FER')
+
+type Unlock = { kind: 'rank'; from: TierCode; tier: TierCode } | { kind: 'title'; tier: MasteryTier }
 
 /**
- * Fin de duel **provisoire** (lot 6) : issue, scores, XP et Elo. L'écran Résultat complet (déblocages, maîtrise, revue
- * des manches) arrive au lot 7 (`resultat.md`).
+ * Déblocages de la partie, dans l'ordre de la spec (rang, puis titres) : déduits du bilan, faute d'événements
+ * rattachés à la partie. Rang : palier d'Elo avant / après. Titres : chaque palier de maîtrise franchi. Les badges
+ * attendent que le BFF les rattache à la partie (`resultat.md` § 8).
+ */
+function unlocksOf(result: GameResultView): Unlock[] {
+  if (result.botGame) return []
+  const unlocks: Unlock[] = []
+  const delta = result.eloDelta ?? 0
+  if (result.rated && delta > 0) {
+    const from = tierOf(result.progression.rating - delta)
+    const tier = tierOf(result.progression.rating)
+    if (from !== tier) unlocks.push({ kind: 'rank', from, tier })
+  }
+  const { xp, xpGained } = result.topicMastery
+  if (xpGained > 0) {
+    const before = xp - xpGained
+    const reachedBefore = before > 0 ? MASTERY_TIERS.indexOf(masteryOf(before)) : -1
+    const reachedNow = MASTERY_TIERS.indexOf(masteryOf(xp))
+    for (let index = reachedBefore + 1; index <= reachedNow; index += 1) {
+      const tier = MASTERY_TIERS[index]
+      if (tier) unlocks.push({ kind: 'title', tier })
+    }
+  }
+  return unlocks
+}
+
+function streakOf(game: GameState, playerId: string | null): RoundResult[] {
+  const rounds = sortedRounds(game)
+  return Array.from({ length: ROUNDS }, (_, index) => {
+    const bonus = isBonusRound(index)
+    const answer = playerId ? rounds[index]?.playerAnswers[playerId] : undefined
+    if (!rounds[index] || rounds[index]?.phase !== 'CLOSED') return 'unplayed'
+    const correct = answer?.correct === true
+    return bonus ? (correct ? 'bonusCorrect' : 'bonusWrong') : correct ? 'correct' : 'wrong'
+  })
+}
+
+const BOT_LEVEL: Record<string, string> = { EASY: 'Niveau facile', NORMAL: 'Niveau normal', HARD: 'Niveau difficile' }
+
+/**
+ * Résultat d'un duel (`resultat.md`) : la séquence de déblocages d'abord (rang, titres), puis le résultat classé
+ * (issue, Elo, maîtrise, revanche, nouvel adversaire, détails) ou d'entraînement. Toujours sombre.
  */
 export function DuelResult({
   gameId,
@@ -31,89 +106,216 @@ export function DuelResult({
   const insets = useSafeAreaInsets()
   const me = useMe(true)
   const userId = me.data?.userId ?? ''
+  const myName = me.data?.pseudonym ?? 'Moi'
   const cancelled = game.status === 'CANCELED'
   const result = useGameResult(gameId, !cancelled)
-  const training = useStartTraining()
-  const difficulty = useBotDifficulty((state) => state.difficulty)
   const data = result.data
-  const outcome = resultOutcome(data?.winnerId ?? game.winnerId, userId)
-  const forfeited = game.forfeiterId !== null
+  const titles = useMyTitles()
+  const wear = useWearTitle()
+  const training = useStartTraining()
+  const matchmaking = useStartMatchmaking()
+  const difficulty = useBotDifficulty((state) => state.difficulty)
+  const [step, setStep] = useState(0)
+  const [sequenceDone, setSequenceDone] = useState(false)
+  const [reviewOpen, setReviewOpen] = useState(false)
+  const [reportOpen, setReportOpen] = useState(false)
+  const [chatOpen, setChatOpen] = useState(false)
+
+  const isPlayer1 = game.player1Id === userId
+  const opponentId = data?.opponentId ?? (isPlayer1 ? game.player2Id : game.player1Id)
   const bot = data?.botGame ?? game.player2Type === 'BOT'
-  const myScore = data?.myScore ?? (game.player1Id === userId ? game.player1Score : game.player2Score)
-  const theirScore = data?.opponentScore ?? (game.player1Id === userId ? game.player2Score : game.player1Score)
+  const opponentName = data?.opponent?.pseudonym ?? (isPlayer1 ? game.player2Name : game.player1Name) ?? (bot ? 'Robot' : 'Adversaire')
+  const myScore = data?.myScore ?? (isPlayer1 ? game.player1Score : game.player2Score)
+  const theirScore = data?.opponentScore ?? (isPlayer1 ? game.player2Score : game.player1Score)
+  const winner = data?.winnerId ?? game.winnerId
+  const outcome: MatchOutcome = game.forfeiterId === userId ? 'forfeit' : winner === null ? 'draw' : winner === userId ? 'win' : 'loss'
+  const resolvedTopicId = data?.topic.topicId ?? topicId ?? game.topicId ?? ''
+  const playTopic = { topicId: resolvedTopicId, name: topic, category }
+  const rematch = useSendRematch({ userId, opponentId, topic: playTopic, gameId })
+  const rating = data?.progression.rating ?? me.data?.progression?.rating ?? 0
+  const myTier = me.data?.progression && !me.data.progression.provisional ? tierOf(rating) : undefined
+  const unlocks = data && !sequenceDone ? unlocksOf(data) : []
+
+  // ─── Séquence de déblocages ───
+  const unlock = unlocks[step]
+  if (unlock && data) {
+    const last = step === unlocks.length - 1
+    const next = () => (last ? setSequenceDone(true) : setStep(step + 1))
+    const share = () =>
+      void Share.share({
+        message: unlock.kind === 'rank' ? `Je viens de passer ${tierLabel(unlock.tier)} sur Joutio !` : `Nouveau titre sur Joutio : ${topic}`,
+      })
+    let content
+    if (unlock.kind === 'rank') {
+      const nextTier = ORDER[ORDER.indexOf(unlock.tier) + 1]
+      content = (
+        <RankPromotion
+          from={unlock.from}
+          tier={unlock.tier}
+          next={nextTier}
+          name={myName}
+          text="Ton cadre change sur ton profil et en duel."
+          nextRule={nextTier ? `à ${formatNumber(tokens.tier[nextTier].minElo)}.` : undefined}
+        />
+      )
+    } else {
+      const key = `${resolvedTopicId}:${unlock.tier}`
+      const nextTier = MASTERY_TIERS[MASTERY_TIERS.indexOf(unlock.tier) + 1]
+      const name = data.topic.titles?.fr?.[unlock.tier] ?? `${tierLabel(unlock.tier)} · ${topic}`
+      content = (
+        <TitleUnlock
+          tier={unlock.tier}
+          title={name}
+          topic={topic}
+          text="Porte-le : il s'affiche sous ton nom, sur ton profil et en duel."
+          next={nextTier}
+          nextRule={nextTier ? `à ${formatNumber(MASTERY_XP[nextTier])} XP.` : undefined}
+          worn={titles.data?.equippedKey === key}
+          wearing={wear.isPending && wear.variables === key}
+          onWear={() => wear.mutate(key)}
+        />
+      )
+    }
+    return (
+      <UnlockSequence step={step} steps={unlocks.length} last={last} onContinue={next} onSkip={() => setSequenceDone(true)} onShare={share}>
+        {content}
+      </UnlockSequence>
+    )
+  }
+
+  if (chatOpen) {
+    const label = { win: 'victoire', loss: 'défaite', draw: 'égalité', forfeit: 'abandon' }[outcome]
+    return (
+      <ForceDark>
+        <DuelChat opponentName={opponentName} recap={`${topic} · ${label} ${myScore} à ${theirScore}`} onBack={() => setChatOpen(false)} />
+      </ForceDark>
+    )
+  }
+
+  // ─── Résultat ───
+  const nextTier = myTier ? ORDER[ORDER.indexOf(myTier) + 1] : undefined
+  const nextElo = nextTier
+    ? `${tierLabel(nextTier)} à ${formatNumber(tokens.tier[nextTier].minElo)}${tokens.tier[nextTier].minElo > rating ? ` · encore ${formatNumber(tokens.tier[nextTier].minElo - rating)}` : ''}`
+    : undefined
+  const mastery = data?.topicMastery
+  const pendingReward = !data || data.reward === null
 
   return (
     <ForceDark>
-      <View
-        style={{
-          flex: 1,
-          gap: tokens.space[6],
-          paddingHorizontal: tokens.space[5],
-          paddingTop: insets.top + tokens.space[8],
-          paddingBottom: insets.bottom + tokens.space[5],
-          backgroundColor: colors.bg,
-        }}
-      >
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: tokens.space[4] }}>
-          <Text variant="caption" weight="600" color="muted">
-            {topic}
-          </Text>
-          <Text
-            variant="largeTitle"
-            color={cancelled ? 'text' : outcome === 'win' ? 'correct' : outcome === 'loss' ? 'wrong' : 'text'}
-            accessibilityRole="header"
-          >
-            {cancelled ? 'Partie annulée' : TITLES[outcome]}
-          </Text>
-          {!cancelled && (
-            <Text variant="numericLarge" accessibilityLabel={`${myScore} à ${theirScore}`}>
-              {myScore} · {theirScore}
-            </Text>
-          )}
-          {forfeited && !cancelled && (
-            <Text variant="callout" color="muted" align="center">
-              {game.forfeiterId === userId ? 'Tu as abandonné le duel.' : 'Ton adversaire a abandonné.'}
-            </Text>
-          )}
+      <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top, paddingBottom: insets.bottom + tokens.space[3] }}>
+        <View style={{ height: 52, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: tokens.space[3] }}>
+          <View style={{ flexDirection: 'row', gap: tokens.space[2] }}>
+            {!bot && !cancelled && (
+              <>
+                <IconButton icon={ChatCircleIcon} label={`Message à ${opponentName}`} badge="dot" onPress={() => setChatOpen(true)} />
+                {opponentId && !data?.opponentDeleted && <IconButton icon={FlagIcon} label={`Signaler ${opponentName}`} onPress={() => setReportOpen(true)} />}
+              </>
+            )}
+          </View>
+          <IconButton icon={XIcon} label="Quitter les résultats" onPress={() => router.back()} />
         </View>
-        {!cancelled &&
-          (bot ? (
-            <Banner tone="training" title="Entraînement" message="Partie sans XP ni Elo. Défie un joueur pour progresser." />
-          ) : !data ? (
-            <Skeleton shape="card" />
+        <View style={{ flex: 1, justifyContent: 'space-between', gap: tokens.space[5], paddingHorizontal: tokens.space[5], paddingBottom: tokens.space[3] }}>
+          <ResultHeader
+            outcome={cancelled ? 'draw' : outcome}
+            topic={topic}
+            me={{
+              name: myName,
+              tier: myTier,
+              score: myScore,
+              streak: streakOf(game, userId),
+              meta: bot ? `Elo ${formatNumber(rating)} · non classé` : undefined,
+            }}
+            opponent={{
+              name: opponentName,
+              score: theirScore,
+              streak: streakOf(game, opponentId),
+              meta: bot ? (BOT_LEVEL[data?.botDifficulty ?? game.botDifficulty ?? ''] ?? 'Robot') : undefined,
+            }}
+          />
+          {bot || cancelled ? (
+            <Banner
+              tone="training"
+              title={cancelled ? 'Partie annulée' : 'Entraînement'}
+              message={cancelled ? 'Aucun point compté pour cette partie.' : "Pas d'expérience : la progression vient des duels contre d'autres joueurs."}
+            />
           ) : (
-            <View style={{ flexDirection: 'row', gap: tokens.space[3] }}>
-              <Stat label="XP gagnée" value={data.reward ? `+${data.reward.xp + data.reward.victoryBonus}` : '…'} tone="accent" compact />
-              <Stat
-                label="Elo"
-                value={data.rated && data.eloDelta !== undefined ? signed(data.eloDelta) : '—'}
-                tone={(data.eloDelta ?? 0) >= 0 ? 'up' : 'down'}
-                compact
+            <>
+              <EloSummary elo={rating} delta={data?.rated ? (data.eloDelta ?? 0) : 0} next={nextElo} />
+              <MasteryRing
+                tier={mastery ? tierLabel(mastery.tier as TierCode) : '—'}
+                next={mastery?.nextTier ? tierLabel(mastery.nextTier as TierCode) : undefined}
+                gained={mastery?.xpGained ?? 0}
+                remaining={mastery?.tierRemainingXp ?? 0}
+                size={150}
+                state={pendingReward ? 'pending' : 'done'}
               />
-              <Stat label="Bonnes réponses" value={`${data.correctAnswers} / ${data.totalRounds}`} compact />
-            </View>
-          ))}
-        <View style={{ gap: tokens.space[3] }}>
-          {bot && topicId && (
-            <Button
-              full
-              size="L"
-              icon={RobotIcon}
-              loading={training.isPending}
-              onPress={() => {
-                // Remplace le duel terminé : le retour ramène toujours au sujet.
-                router.back()
-                training.mutate({ topic: { topicId, name: topic, category }, difficulty })
-              }}
-            >
-              Rejouer
-            </Button>
+            </>
           )}
-          <Button full size="L" variant={bot ? 'gray' : 'filled'} tone={bot ? 'neutral' : 'accent'} onPress={() => router.back()}>
-            Retour au sujet
-          </Button>
+          <View style={{ flexDirection: 'row', gap: tokens.space[3] }}>
+            <View style={{ flex: 1 }}>
+              {bot ? (
+                <Button
+                  full
+                  icon={LightningIcon}
+                  loading={training.isPending}
+                  onPress={() => {
+                    router.back()
+                    training.mutate({ topic: playTopic, difficulty })
+                  }}
+                >
+                  Rejouer
+                </Button>
+              ) : (
+                <Button
+                  full
+                  icon={LightningIcon}
+                  loading={rematch.state === 'pending' && rematch.seconds === 0}
+                  disabled={rematch.state !== 'idle' || !opponentId}
+                  onPress={() => void rematch.send()}
+                >
+                  {rematch.state === 'pending' && rematch.seconds > 0
+                    ? `En attente · ${rematch.seconds} s`
+                    : rematch.state === 'refused'
+                      ? 'Revanche refusée'
+                      : 'Revanche'}
+                </Button>
+              )}
+            </View>
+            <View style={{ flex: 1 }}>
+              <Button
+                full
+                variant="gray"
+                tone="neutral"
+                loading={matchmaking.isPending}
+                onPress={() => {
+                  router.back()
+                  matchmaking.mutate(playTopic)
+                }}
+              >
+                Nouvel adversaire
+              </Button>
+            </View>
+          </View>
         </View>
+        {!cancelled && (
+          <View style={{ alignItems: 'center' }}>
+            <Button variant="plain" tone="neutral" size="M" icon={CaretUpIcon} onPress={() => setReviewOpen(true)}>
+              Détails
+            </Button>
+          </View>
+        )}
       </View>
+      <DuelReview open={reviewOpen} onClose={() => setReviewOpen(false)} game={game} me={userId} myName={myName} opponentName={opponentName} canReport={!bot} />
+      {opponentId && (
+        <ReportPlayerSheet
+          open={reportOpen}
+          onClose={() => setReportOpen(false)}
+          userId={opponentId}
+          name={opponentName}
+          gameId={gameId}
+          subtitle={`Ce duel · ${topic}`}
+        />
+      )}
     </ForceDark>
   )
 }

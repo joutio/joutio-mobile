@@ -41,6 +41,14 @@ export const ENDPOINTS = {
   },
   challenges: {
     create: '/api/challenges',
+    get: (challengeId: string) => `/api/challenges/${challengeId}`,
+    accept: (challengeId: string) => `/api/challenges/${challengeId}/accept`,
+    decline: (challengeId: string) => `/api/challenges/${challengeId}/decline`,
+    cancel: (challengeId: string) => `/api/challenges/${challengeId}/cancel`,
+  },
+  reports: {
+    player: (userId: string) => `/api/profiles/${userId}/reports`,
+    question: (questionId: string) => `/api/questions/${questionId}/reports`,
   },
   games: {
     answer: (gameId: string) => `/api/games/${gameId}/answer`,

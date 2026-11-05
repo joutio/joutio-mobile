@@ -23,6 +23,7 @@ import { tokens } from '../tokens.generated'
 import { TOP_BAR_HEIGHT } from './mobile-top-bar'
 import { usePageRefresh } from './page-refresh'
 import { useTransitionDone } from './use-transition-done'
+import { ScrollToTopPill } from './scroll-to-top-pill'
 import { Skeleton } from '../primitives/skeleton'
 import { TabPageActiveContext, withActivePageScrollsToTop } from './tab-page'
 import { CompactBarRow, compactBarProgress, HERO_HEIGHT, heroImageTransform, heroTitleOpacity, ParallaxProgressProvider } from './parallax-screen'
@@ -193,6 +194,7 @@ export function CollapsibleTabsScreen<T extends string>({
   const refresh = usePageRefresh(onRefresh)
   // L'écran s'ouvre tout de suite : en-tête et onglets d'abord, contenu des pages après l'animation d'entrée.
   const ready = useTransitionDone()
+  const [tabBarHeight, setTabBarHeight] = useState(0)
 
   const [index, setIndex] = useState(() =>
     Math.max(
@@ -257,6 +259,7 @@ export function CollapsibleTabsScreen<T extends string>({
   const renderTabBar = () => (
     // Déborde d'1 pt sur l'en-tête : couvre la rangée de pixels qu'un en-tête de hauteur fractionnaire laisse transparente.
     <View
+      onLayout={(event) => setTabBarHeight(event.nativeEvent.layout.height)}
       style={{ backgroundColor: colors.bg, marginTop: -1, paddingHorizontal: tokens.space[5], paddingTop: tokens.space[3] + 1, paddingBottom: tokens.space[4] }}
     >
       <Segmented
@@ -299,6 +302,9 @@ export function CollapsibleTabsScreen<T extends string>({
       />
 
       {refresh.indicator(barHeight + tokens.space[4])}
+
+      {/* « Haut de page » sous les onglets collés, comme sur l'Accueil : toute page longue (Mur, Parties…) en profite. */}
+      <ScrollToTopPill scroll={scroll} top={barHeight + tabBarHeight + tokens.space[2]} onPress={() => inner.current?.scrollToTop({ animated: true })} />
 
       {/* Lisibilité de la barre d'état : épinglé à l'écran (pas dans l'en-tête), il reste en place au tiré et s'efface
           quand la barre compacte devient opaque. */}

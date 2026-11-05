@@ -142,6 +142,8 @@ export interface TopicRefView {
   names: TopicNames
   category: string | null
   imageUrl: string | null
+  /** Titres thématiques par langue puis palier (`{ fr: { OR: "Connétable" } }`) ; absent : repli « palier · sujet ». */
+  titles?: Record<string, Record<string, string>> | null
 }
 
 export interface UserRefView {
@@ -193,3 +195,22 @@ export interface PlayerCardView {
   presence: { userId: string; status: PresenceStatus; lastSeenAt: string | null } | null
   suspended: boolean
 }
+
+export type ChallengeStatus = 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'CANCELLED' | 'EXPIRED'
+
+/** `GET /api/challenges/{id}` : défi nominatif (revanche quand `gameId` est présent). */
+export interface ChallengeView {
+  challengeId: string
+  topic: TopicRefView
+  challenger: UserRefView
+  opponent: UserRefView
+  status: ChallengeStatus
+  /** Salle créée à l'acceptation. */
+  roomId: string | null
+  gameId: string | null
+  createdAt: string
+  expiresAt: string
+}
+
+export type UserReportReason = 'HARASSMENT' | 'HATE_SPEECH' | 'INAPPROPRIATE_CONTENT' | 'CHEATING' | 'SPAM' | 'OTHER'
+export type QuestionReportReason = 'QUESTION' | 'IMAGE' | 'ANSWERS'

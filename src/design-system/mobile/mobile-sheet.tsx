@@ -1,10 +1,12 @@
 import { TrueSheet } from '@lodev09/react-native-true-sheet'
 import { useEffect, useRef, type ReactNode, type RefObject } from 'react'
-import { Platform, ScrollView, useWindowDimensions, View, type ScrollViewInstance } from 'react-native'
+import { Platform, useWindowDimensions, View, type ScrollViewInstance } from 'react-native'
+import Animated, { useAnimatedScrollHandler, useSharedValue } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useModalFocus, type ViewRef } from '../a11y'
 import { useTheme } from '../theme/theme-provider'
 import { tokens } from '../tokens.generated'
+import { ScrollToTopPill } from './scroll-to-top-pill'
 import { SheetHeader } from './sheet-header'
 
 /** Hauteur maximale d'une feuille ajustée à son contenu, et hauteur fixe d'une grande feuille. */
@@ -47,6 +49,10 @@ export function MobileSheet({ open, onClose, title, subtitle, onBack, action, ta
   const insets = useSafeAreaInsets()
   const sheet = useRef<TrueSheet>(null)
   const scroller = useRef<ScrollViewInstance>(null)
+  const offset = useSharedValue(0)
+  const onScroll = useAnimatedScrollHandler((event) => {
+    offset.value = event.contentOffset.y
+  })
   const titleRef = useRef<ViewRef>(null)
   const presented = useRef(false)
   const scrim = splitScrim(colors.scrim)
@@ -110,8 +116,10 @@ export function MobileSheet({ open, onClose, title, subtitle, onBack, action, ta
         }
       }}
     >
-      <ScrollView
+      <Animated.ScrollView
         ref={scroller}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
         style={{ flexGrow: 0, flexShrink: 1 }}
         nestedScrollEnabled
         showsVerticalScrollIndicator={false}
@@ -121,7 +129,9 @@ export function MobileSheet({ open, onClose, title, subtitle, onBack, action, ta
         }}
       >
         {children}
-      </ScrollView>
+      </Animated.ScrollView>
+      {/* Grande feuille = liste paginée (joueurs, commentaires) : « Haut de page » comme dans les écrans. */}
+      {tall && <ScrollToTopPill scroll={offset} top={tokens.space[3]} onPress={() => scroller.current?.scrollTo({ y: 0, animated: true })} />}
     </TrueSheet>
   )
 }

@@ -26,8 +26,14 @@ const TEN_ZERO_X = TEN_ONE_X + 41
  */
 const DIGIT_X: Partial<Record<number, number>> = { 4: 10, 7: 10 }
 /** Hauteur du chiffre, calée sur le token `numericRank`. */
-const NUMERAL_HEIGHT = 120
-const NUMERAL_BASELINE = 116
+const NUMERAL_HEIGHT = 126
+/**
+ * Ligne de base : les chiffres ronds de Geist 800 montent à 117 px (0, 2, 3, 6, 8, 9) et descendent de 3 px, plus le
+ * demi-contour (1,25 px). 120 laisse de la marge en haut comme en bas : rien n'est rogné.
+ */
+const NUMERAL_BASELINE = 120
+/** Dessin remonté d'autant que la ligne de base a descendu : la position visible du chiffre ne change pas. */
+const NUMERAL_TOP = tokens.space[3] - 4
 /** Débord du SVG sous la carte : le chiffre continue derrière elle. */
 const UNDER_CARD = 48
 /** L'ombre déborde sous la carte : ses coins arrondis ne laissent pas voir un chiffre sans ombre. */
@@ -84,7 +90,7 @@ function RankNumeral({ rank }: { rank: number }) {
     <Svg
       width={width}
       height={NUMERAL_HEIGHT}
-      style={{ position: 'absolute', top: tokens.space[3], left: 0, overflow: 'visible' }}
+      style={{ position: 'absolute', top: NUMERAL_TOP, left: 0, overflow: 'visible' }}
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
     >
@@ -111,7 +117,7 @@ function CardShadow({ rank }: { rank: number }) {
   const slice = width / SHADOW_SLICES
   const target = (index: number) => shadowOpacity(((index + 0.5) * slice) / edge)
   return (
-    <View pointerEvents="none" style={{ position: 'absolute', top: tokens.space[3], left: 0, width, height: NUMERAL_HEIGHT }}>
+    <View pointerEvents="none" style={{ position: 'absolute', top: NUMERAL_TOP, left: 0, width, height: NUMERAL_HEIGHT }}>
       {Array.from({ length: SHADOW_SLICES }, (_, index) => {
         const previous = index === 0 ? 0 : target(index - 1)
         const layer = 1 - (1 - target(index)) / (1 - previous)

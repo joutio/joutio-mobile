@@ -55,6 +55,8 @@ export interface QuestionBlockProps {
   /** Sujet et avancement, par exemple « Rois de France · question 4 sur 7 ». */
   meta?: string
   image?: string
+  /** Hors duel (revue) : l'image se réduit à la place disponible, à ratio égal, au lieu de sa taille fixe. */
+  fitImage?: boolean
   /** Réponses : leur place est réservée dès l'énoncé, même avant leur apparition. */
   answers?: readonly (AnswerCardProps & { key: string })[]
   /**
@@ -76,7 +78,18 @@ export interface QuestionBlockProps {
  * l'image, centrée dans l'espace restant. L'image a une taille et un cadrage fixes (5:4, 370 pt au plus) : un grand
  * écran ne doit pas aider à répondre.
  */
-export function QuestionBlock({ text, meta, image, answers, answersShown = true, layout = 'auto', details, animated = false, style }: QuestionBlockProps) {
+export function QuestionBlock({
+  text,
+  meta,
+  image,
+  fitImage = false,
+  answers,
+  answersShown = true,
+  layout = 'auto',
+  details,
+  animated = false,
+  style,
+}: QuestionBlockProps) {
   const { colors, radius } = useTheme()
   const reduced = useReducedMotion()
   // Hauteur du bloc : le lab dimensionne en `cqh` (container query sur `.jo-question`) ; ici, mesurée.
@@ -128,7 +141,10 @@ export function QuestionBlock({ text, meta, image, answers, answersShown = true,
         {image && (
           // Rangée `minmax(0, 1fr)` : l'image, à taille fixe, est centrée dans l'espace restant (`self-center`).
           <View style={{ flex: 1, minHeight: 0, justifyContent: 'center', alignItems: 'center', marginTop: tokens.space[2] }}>
-            <Animated.View entering={play ? FADE : undefined} style={{ width: '100%', maxWidth: 370 }}>
+            <Animated.View
+              entering={play ? FADE : undefined}
+              style={fitImage ? { height: '100%', maxWidth: '100%', aspectRatio: 5 / 4 } : { width: '100%', maxWidth: 370 }}
+            >
               <Image
                 source={{ uri: image }}
                 contentFit="cover"
