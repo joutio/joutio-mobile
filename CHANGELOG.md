@@ -1,3 +1,11 @@
+## [1.13.0](https://github.com/joutio/joutio-mobile-expo/compare/v1.12.0...v1.13.0) (2026-11-05)
+
+### Features
+
+* **design-system:** port the profile components from the lab ([bd75ab9](https://github.com/joutio/joutio-mobile-expo/commit/bd75ab950c1068f2adbed2fe3994e9a3e468e9c2))
+* **result:** add BadgeUnlock and show the unlock sequence in the catalogue ([be5b21f](https://github.com/joutio/joutio-mobile-expo/commit/be5b21f7add04c9c5d3263d73e47a8b687513453))
+* **result:** swipe between unlocks in the native pager ([6b8fd96](https://github.com/joutio/joutio-mobile-expo/commit/6b8fd9607bafe3104af0e6cfd22d6f100f3c64ae))
+
 ## [1.12.0](https://github.com/joutio/joutio-mobile-expo/compare/v1.11.2...v1.12.0) (2026-11-05)
 
 ### Features
