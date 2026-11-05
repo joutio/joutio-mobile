@@ -1,10 +1,8 @@
-import { useState } from 'react'
 import { View, type StyleProp, type ViewStyle } from 'react-native'
 import { BellIcon, CaretRightIcon, CheckCircleIcon, InfoIcon, WarningIcon, XCircleIcon, type Icon } from '../icons'
 import { useTheme } from '../theme/theme-provider'
 import { tokens } from '../tokens.generated'
 import { Avatar, type AvatarProps } from './avatar'
-import { Button } from './button'
 import { PressableScale } from './pressable-scale'
 import { Spinner } from './spinner'
 import { Text } from './text'
@@ -18,16 +16,20 @@ export interface ToastProps {
   icon?: Icon
   /** Joueur à l'origine du message : remplace l'icône. */
   actor?: Pick<AvatarProps, 'name' | 'src' | 'tier'>
-  action?: { label: string; onPress?: () => void }
   /** Opération en cours (`toast.loading`, `toast.promise`) : un spinner remplace l'icône. */
   loading?: boolean
-  /** Rend tout le toast touchable. Exclut `action`. */
+  /** Rend tout le toast touchable (chevron à droite). Pas de bouton d'action dans un toast. */
   onPress?: () => void
   style?: StyleProp<ViewStyle>
 }
 
-/** Contenu d'un toast. Le comportement (file, minuterie, balayage) est dans `ToastHost`. */
-export function Toast({ tone = 'neutral', title, description, icon, actor, loading = false, action, onPress, style }: ToastProps) {
+/** Icône (ou spinner, avatar) à taille unique : tous les toasts ont la même hauteur. */
+const ICON = 32
+/** Deux lignes de texte (titre sur deux lignes, ou titre et description) et les marges : hauteur commune. */
+const HEIGHT = tokens.space[4] * 2 + tokens.typography.callout.lineHeight * 2
+
+/** Contenu d'un toast, toujours sur deux lignes au plus : titre (deux lignes, ou une avec la description). Le comportement (file, minuterie, balayage) est dans `ToastHost`. */
+export function Toast({ tone = 'neutral', title, description, icon, actor, loading = false, onPress, style }: ToastProps) {
   const { colors, radius } = useTheme()
   const tones: Record<ToastTone, { icon: Icon; color: string; regular?: boolean }> = {
     success: { icon: CheckCircleIcon, color: colors.correct },
@@ -38,34 +40,26 @@ export function Toast({ tone = 'neutral', title, description, icon, actor, loadi
   }
   const { icon: toneIcon, color, regular } = tones[tone]
   const IconComponent = icon ?? toneIcon
-  // L'icône grandit dès que le texte tient sur deux lignes : description, ou titre qui passe à la ligne.
-  const [wrapped, setWrapped] = useState(false)
-  const tall = Boolean(description) || wrapped
 
   const content = (
     <>
       {loading ? (
-        <Spinner size={tall ? 32 : 20} color={colors.muted} />
+        <Spinner size={ICON} color={colors.muted} />
       ) : actor ? (
         <Avatar {...actor} size="sm" decorative />
       ) : (
-        <IconComponent size={tall ? 32 : 20} weight={regular ? 'regular' : 'fill'} color={color} />
+        <IconComponent size={ICON} weight={regular ? 'regular' : 'fill'} color={color} />
       )}
       <View style={{ flex: 1, minWidth: 0, gap: tokens.space[1] }}>
-        <Text variant="callout" weight="600" onTextLayout={(event) => setWrapped(event.nativeEvent.lines.length > 1)}>
+        <Text variant="callout" weight="600" numberOfLines={description ? 1 : 2}>
           {title}
         </Text>
         {description && (
-          <Text variant="caption" color="muted">
+          <Text variant="caption" color="muted" numberOfLines={1}>
             {description}
           </Text>
         )}
       </View>
-      {action && !onPress && (
-        <Button variant="plain" size="S" style={{ alignSelf: 'center' }} onPress={action.onPress}>
-          {action.label}
-        </Button>
-      )}
       {onPress && <CaretRightIcon size={16} color={colors.muted} />}
     </>
   )
@@ -73,6 +67,7 @@ export function Toast({ tone = 'neutral', title, description, icon, actor, loadi
   const box: ViewStyle = {
     alignSelf: 'stretch',
     maxWidth: 358,
+    minHeight: HEIGHT,
     flexDirection: 'row',
     alignItems: 'center',
     gap: tokens.space[4],
@@ -89,7 +84,7 @@ export function Toast({ tone = 'neutral', title, description, icon, actor, loadi
       {content}
     </PressableScale>
   ) : (
-    <View accessibilityRole="alert" accessibilityLabel={action ? undefined : label} style={[box, style]}>
+    <View accessibilityRole="alert" accessibilityLabel={label} style={[box, style]}>
       {content}
     </View>
   )

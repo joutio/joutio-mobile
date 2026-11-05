@@ -192,9 +192,9 @@ export function ToastDemo() {
     <>
       <Specimen label="Tons">
         <Toast tone="success" title="Défi envoyé à Sofia R." />
-        <Toast tone="danger" title="Le défi n'a pas pu être envoyé" />
+        <Toast tone="danger" title="Le défi n'a pas pu être envoyé à Sofia R., réessaie dans quelques instants" />
         <Toast tone="warning" title="Connexion instable" description="Les scores se synchroniseront au retour du réseau." />
-        <Toast tone="info" title="Nouvelle saison" action={{ label: 'Voir' }} />
+        <Toast tone="info" title="Nouvelle saison" description="Saison 3 : nouveaux titres à gagner." onPress={() => undefined} />
         <Toast title="Marc D. te suit" actor={{ name: 'Marc Dubois', tier: 'OR' }} onPress={() => undefined} />
       </Specimen>
       <Button full onPress={() => toast.success('Défi envoyé à Sofia R.', { description: 'Tu seras prévenu de sa réponse.' })}>

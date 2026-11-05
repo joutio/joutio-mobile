@@ -1,7 +1,7 @@
 import { TrueSheetOverlay } from '@lodev09/react-native-true-sheet'
 import { useEffect, useRef, useState } from 'react'
-import { AccessibilityInfo, Pressable, View } from 'react-native'
-import { GestureDetector, usePanGesture } from 'react-native-gesture-handler'
+import { AccessibilityInfo, View } from 'react-native'
+import { GestureDetector, GestureHandlerRootView, useExclusiveGestures, usePanGesture, useTapGesture } from 'react-native-gesture-handler'
 import Animated, { Easing, ReduceMotion, useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { scheduleOnRN } from 'react-native-worklets'
@@ -147,10 +147,12 @@ interface ItemProps {
   /** Distance d'entrée et de sortie, au-dessus de l'écran. */
   travel: number
   interactive: boolean
+  /** Pile repliée : un toucher sur le toast de devant la déplie (« éventail ») au lieu d'agir sur lui. */
+  onExpand?: () => void
   onMeasure: (id: string, height: number) => void
 }
 
-function ToastItem({ entry, index, targetY, targetScale, targetOpacity, travel, interactive, onMeasure }: ItemProps) {
+function ToastItem({ entry, index, targetY, targetScale, targetOpacity, travel, interactive, onExpand, onMeasure }: ItemProps) {
   const reduced = useReducedMotion()
   const remove = useToastStore((state) => state.remove)
   const dismiss = useToastStore((state) => state.dismiss)
@@ -231,6 +233,15 @@ function ToastItem({ entry, index, targetY, targetScale, targetOpacity, travel, 
       else dragY.value = withSpring(0, GLIDE)
     },
   })
+  const tap = useTapGesture({
+    enabled: interactive && Boolean(onExpand),
+    onActivate: () => {
+      'worklet'
+      if (onExpand) scheduleOnRN(onExpand)
+    },
+  })
+  // Le balayage l'emporte sur le toucher : un geste vers le haut ferme, il ne déplie pas.
+  const gesture = useExclusiveGestures(pan, tap)
 
   const style = useAnimatedStyle(() => {
     const away = 1 - presence.value
@@ -244,7 +255,7 @@ function ToastItem({ entry, index, targetY, targetScale, targetOpacity, travel, 
 
   const { id, version: _version, leaving: _leaving, duration: _duration, ...props } = entry
   return (
-    <GestureDetector gesture={pan}>
+    <GestureDetector gesture={gesture}>
       <Animated.View
         pointerEvents={interactive ? 'auto' : 'none'}
         importantForAccessibility={index < VISIBLE ? 'auto' : 'no-hide-descendants'}
@@ -254,12 +265,8 @@ function ToastItem({ entry, index, targetY, targetScale, targetOpacity, travel, 
         }}
         style={[{ position: 'absolute', left: 0, right: 0, top: 0, alignItems: 'center', zIndex: 100 - index }, style]}
       >
-        <Animated.View style={[{ alignSelf: 'stretch', alignItems: 'center' }, fade]}>
-          <Toast
-            {...props}
-            action={props.action && { ...props.action, onPress: () => (props.action?.onPress?.(), dismiss(id)) }}
-            onPress={props.onPress && (() => (props.onPress?.(), dismiss(id)))}
-          />
+        <Animated.View pointerEvents={onExpand ? 'none' : 'auto'} style={[{ alignSelf: 'stretch', alignItems: 'center' }, fade]}>
+          <Toast {...props} onPress={props.onPress && (() => (props.onPress?.(), dismiss(id)))} />
         </Animated.View>
       </Animated.View>
     </GestureDetector>
@@ -305,33 +312,29 @@ export function ToastHost() {
 
   return (
     <TrueSheetOverlay pointerEvents="box-none">
-      <View pointerEvents="box-none" style={{ position: 'absolute', top, left: tokens.space[5], right: tokens.space[5], height: Math.max(stackHeight, 0) }}>
-        {toasts.map((entry) => {
-          const place = layout.get(entry.id) ?? { y: 0, scale: 1, opacity: 0, index: VISIBLE }
-          return (
-            <ToastItem
-              key={entry.id}
-              entry={entry}
-              index={place.index}
-              targetY={place.y}
-              targetScale={place.scale}
-              targetOpacity={place.opacity}
-              travel={top + heightOf(entry.id)}
-              interactive={!entry.leaving && (expanded || place.index === 0)}
-              onMeasure={(id, height) => setHeights((current) => (current[id] === height ? current : { ...current, [id]: height }))}
-            />
-          )
-        })}
-        {/* Pile repliée : un toucher la déplie (« éventail ») ; dépliée, chaque toast redevient touchable. */}
-        {stacked && !expanded && (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`${live.length} notifications, afficher tout`}
-            onPress={() => setExpanded(true)}
-            style={{ position: 'absolute', left: 0, right: 0, top: 0, height: stackHeight, zIndex: 200 }}
-          />
-        )}
-      </View>
+      {/* L'overlay rend ses enfants dans un conteneur natif à part, hors de la racine de l'app : sans racine propre, les
+          gestes (balayage, toucher) n'y arrivent jamais. */}
+      <GestureHandlerRootView pointerEvents="box-none" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
+        <View pointerEvents="box-none" style={{ position: 'absolute', top, left: tokens.space[5], right: tokens.space[5], height: Math.max(stackHeight, 0) }}>
+          {toasts.map((entry) => {
+            const place = layout.get(entry.id) ?? { y: 0, scale: 1, opacity: 0, index: VISIBLE }
+            return (
+              <ToastItem
+                key={entry.id}
+                entry={entry}
+                index={place.index}
+                targetY={place.y}
+                targetScale={place.scale}
+                targetOpacity={place.opacity}
+                travel={top + heightOf(entry.id)}
+                interactive={!entry.leaving && (expanded || place.index === 0)}
+                onExpand={stacked && !expanded && place.index === 0 ? () => setExpanded(true) : undefined}
+                onMeasure={(id, height) => setHeights((current) => (current[id] === height ? current : { ...current, [id]: height }))}
+              />
+            )
+          })}
+        </View>
+      </GestureHandlerRootView>
     </TrueSheetOverlay>
   )
 }
