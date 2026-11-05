@@ -121,7 +121,8 @@ function PeopleList({
               ))}
             </ListGroup>
             <FeedFooter
-              style={{ paddingTop: tokens.space[5] }}
+              // Espace au-dessus du filet du pied (et non sous lui) : il ne colle pas à la liste.
+              style={{ marginTop: tokens.space[4] }}
               state={list.isFetchNextPageError ? 'error' : list.isFetchingNextPage ? 'loading' : list.hasNextPage ? 'more' : 'end'}
               onLoadMore={() => void list.fetchNextPage()}
               onRetry={() => void list.fetchNextPage()}
@@ -199,6 +200,7 @@ export function SocialScreen() {
         label="Contacts"
         value={tab}
         onChange={setTab}
+        onRefresh={() => Promise.all([following.refetch(), followers.refetch(), myProfile.refetch()])}
         pages={[
           {
             value: 'following',

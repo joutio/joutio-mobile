@@ -1,6 +1,6 @@
 import { View, type StyleProp, type ViewStyle } from 'react-native'
 import Animated, { interpolate, useAnimatedStyle } from 'react-native-reanimated'
-import { ArrowClockwiseIcon, CaretUpIcon, CheckCircleIcon, WarningCircleIcon } from '../icons'
+import { ArrowClockwiseIcon, CaretDownIcon, CaretUpIcon, CheckCircleIcon, WarningCircleIcon } from '../icons'
 import { Button } from '../primitives/button'
 import { PressableScale } from '../primitives/pressable-scale'
 import { Spinner } from '../primitives/spinner'
@@ -98,9 +98,38 @@ export function FeedFooter({ state, onLoadMore, onRetry, endLabel = 'Tu as tout 
 
 /** Annonce de la suite : chevron, « Tire pour voir la suite » et ce qui reste ; s'efface sous la traction. */
 function PullHint({ onLoadMore, remainingLabel, style }: { onLoadMore?: () => void; remainingLabel?: string; style?: StyleProp<ViewStyle> }) {
-  const { colors } = useTheme()
   const pull = useLoadMorePull()
-  const fade = useAnimatedStyle(() => ({ opacity: pull ? interpolate(pull.value, [0, LOAD_MORE_THRESHOLD * 0.35], [1, 0], 'clamp') : 1 }))
+  // Hors de `DragToLoadMore` (liste dans une feuille) : rien à tirer, un vrai bouton charge la suite.
+  if (!pull) {
+    return (
+      <View style={[{ alignItems: 'center', gap: tokens.space[2], paddingVertical: tokens.space[3] }, style]}>
+        <Button variant="plain" tone="accent" size="S" icon={CaretDownIcon} onPress={onLoadMore} style={{ alignSelf: 'center' }}>
+          Charger la suite
+        </Button>
+        {remainingLabel && (
+          <Text variant="caption" color="muted">
+            {remainingLabel}
+          </Text>
+        )}
+      </View>
+    )
+  }
+  return <PullHintBody pull={pull} onLoadMore={onLoadMore} remainingLabel={remainingLabel} style={style} />
+}
+
+function PullHintBody({
+  pull,
+  onLoadMore,
+  remainingLabel,
+  style,
+}: {
+  pull: NonNullable<ReturnType<typeof useLoadMorePull>>
+  onLoadMore?: () => void
+  remainingLabel?: string
+  style?: StyleProp<ViewStyle>
+}) {
+  const { colors } = useTheme()
+  const fade = useAnimatedStyle(() => ({ opacity: interpolate(pull.value, [0, LOAD_MORE_THRESHOLD * 0.35], [1, 0], 'clamp') }))
   return (
     <Animated.View style={[{ alignItems: 'center' }, fade, style]}>
       <PressableScale
