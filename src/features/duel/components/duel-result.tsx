@@ -159,34 +159,35 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
   const opponentTier = data && data.opponentRated && data.opponentRating != null ? tierOf(data.opponentRating) : undefined
   const unlocks = celebrate && data && !sequenceDone ? unlocksOf(data) : []
 
-  // ─── Séquence de déblocages ───
-  const unlock = unlocks[step]
-  if (unlock && data) {
-    const last = step === unlocks.length - 1
-    const next = () => (last ? setSequenceDone(true) : setStep(step + 1))
+  // ─── Séquence de déblocages : une page par déblocage, balayables ───
+  if (unlocks.length > 0 && data) {
+    const current = unlocks[Math.min(step, unlocks.length - 1)]
     const share = () =>
+      current &&
       void Share.share({
-        message: unlock.kind === 'rank' ? `Je viens de passer ${tierLabel(unlock.tier)} sur Joutio !` : `Nouveau titre sur Joutio : ${topic}`,
+        message: current.kind === 'rank' ? `Je viens de passer ${tierLabel(current.tier)} sur Joutio !` : `Nouveau titre sur Joutio : ${topic}`,
       })
-    let content
-    if (unlock.kind === 'rank') {
-      const nextTier = ORDER[ORDER.indexOf(unlock.tier) + 1]
-      content = (
-        <RankPromotion
-          from={unlock.from}
-          tier={unlock.tier}
-          next={nextTier}
-          name={myName}
-          text="Ton cadre change sur ton profil et en duel."
-          nextRule={nextTier ? `à ${formatNumber(tokens.tier[nextTier].minElo)}.` : undefined}
-        />
-      )
-    } else {
+    const pages = unlocks.map((unlock) => {
+      if (unlock.kind === 'rank') {
+        const nextTier = ORDER[ORDER.indexOf(unlock.tier) + 1]
+        return (
+          <RankPromotion
+            key={`rank-${unlock.tier}`}
+            from={unlock.from}
+            tier={unlock.tier}
+            next={nextTier}
+            name={myName}
+            text="Ton cadre change sur ton profil et en duel."
+            nextRule={nextTier ? `à ${formatNumber(tokens.tier[nextTier].minElo)}.` : undefined}
+          />
+        )
+      }
       const key = `${resolvedTopicId}:${unlock.tier}`
       const nextTier = MASTERY_TIERS[MASTERY_TIERS.indexOf(unlock.tier) + 1]
       const name = data.topic.titles?.fr?.[unlock.tier] ?? `${tierLabel(unlock.tier)} · ${topic}`
-      content = (
+      return (
         <TitleUnlock
+          key={`title-${unlock.tier}`}
           tier={unlock.tier}
           title={name}
           topic={topic}
@@ -198,12 +199,8 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
           onWear={() => wear.mutate(key)}
         />
       )
-    }
-    return (
-      <UnlockSequence step={step} steps={unlocks.length} last={last} onContinue={next} onSkip={() => setSequenceDone(true)} onShare={share}>
-        {content}
-      </UnlockSequence>
-    )
+    })
+    return <UnlockSequence pages={pages} step={step} onStepChange={setStep} onDone={() => setSequenceDone(true)} onShare={share} />
   }
 
   // ─── Résultat ───

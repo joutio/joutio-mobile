@@ -1,5 +1,5 @@
 import MaskedView from '@react-native-masked-view/masked-view'
-import { useEffect, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, type ReactNode } from 'react'
 import { StyleSheet, View } from 'react-native'
 import Animated, { Easing, ReduceMotion, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
 import { ArrowRightIcon } from '../icons'
@@ -17,6 +17,12 @@ const bezier = (name: 'base' | 'celebration') => {
   return easing.type === 'bezier' ? Easing.bezier(easing.points[0], easing.points[1], easing.points[2], easing.points[3]) : Easing.linear
 }
 
+/**
+ * Page de la séquence au premier plan : dans le pager, les déblocages voisins sont montés d'avance, leur héros n'entre
+ * qu'à l'arrivée sur leur page (et rejoue s'il y revient). Hors séquence, toujours actif.
+ */
+export const UnlockActiveContext = createContext(true)
+
 export type HeroMotion = 'celebrate' | 'unroll' | 'drop'
 
 /**
@@ -26,12 +32,17 @@ export type HeroMotion = 'celebrate' | 'unroll' | 'drop'
  */
 function Hero({ motion, children }: { motion: HeroMotion; children: ReactNode }) {
   const reduced = useReducedMotion()
+  const active = useContext(UnlockActiveContext)
   const progress = useSharedValue(reduced ? 1 : 0)
   useEffect(() => {
     if (reduced) return
+    if (!active) {
+      progress.value = 0
+      return
+    }
     const name = motion === 'unroll' ? 'base' : 'celebration'
     progress.value = withTiming(1, { duration: tokens.motion[name].duration, easing: bezier(name), reduceMotion: ReduceMotion.Never })
-  }, [motion, reduced, progress])
+  }, [motion, reduced, progress, active])
 
   const celebrate = useAnimatedStyle(() => ({ opacity: Math.min(1, progress.value), transform: [{ scale: 0.7 + 0.3 * progress.value }] }))
   const drop = useAnimatedStyle(() => ({ opacity: Math.min(1, progress.value), transform: [{ translateY: -96 * (1 - progress.value) }] }))
