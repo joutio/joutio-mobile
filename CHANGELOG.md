@@ -1,3 +1,9 @@
+## [1.6.0](https://github.com/joutio/joutio-mobile-expo/compare/v1.5.0...v1.6.0) (2026-11-05)
+
+### Features
+
+* launch a duel, matchmaking, private rooms and the duel arena ([ffad2d8](https://github.com/joutio/joutio-mobile-expo/commit/ffad2d81f33f20fa4e3586e67857a2d6385165ff))
+
 ## [1.5.0](https://github.com/joutio/joutio-mobile-expo/compare/v1.4.2...v1.5.0) (2026-11-05)
 
 ### Features
