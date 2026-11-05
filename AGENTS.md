@@ -16,6 +16,7 @@
 | 2.1 Onboarding : lancement, connexion OTP, code, univers, notifications, premier thème, session coupée | fait |
 | 2.2 Accueil | fait, à valider sur appareil : shell à 5 onglets (`(app)/(tabs)`, `JoTabBar`), `Rail`, `TopTen`, données `/api/home` ; série et badge Défis **mockés** (`features/home/lib/home-mocks.ts`, manques BFF dans `accueil.md` § 10) ; Social, Défis et Profil provisoires |
 | 2.3 Sujets | fait, à valider sur appareil : recherche, Filtres (feuille), puces, tri, grille 2 colonnes paginée sur `/api/topics` ; multi-univers et « Masquer les sujets suivis » **simulés** (`features/topics/lib/topics-service.ts`, manques BFF dans `sujets.md` § 5) |
+| 2.4 Fiche sujet | fait, à valider sur appareil : `CollapsibleTabsScreen` (actions qui passent dans la barre, titre à gauche, ligne du joueur en barre fixe), poussée dans les piles Accueil et Sujets (`(tabs)/home/topic/[id]`, `(tabs)/topics/[id]`) ; overview, Top 10 du mois, mes 10 dernières parties et titres branchés sur le BFF ; **Mur mocké** (`features/topic/lib/wall-mocks.ts`) ; feuille de duel **sans action** (lot 5) ; avatars en initiales (DiceBear avec l'éditeur d'avatar) ; manques BFF dans `fiche-sujet.md` § 5 |
 
 Le **catalogue** (`/catalog`, `joutio://catalog`) est réservé au dev (`__DEV__`) et absent des builds de release.
 

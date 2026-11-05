@@ -18,6 +18,14 @@ export const ENDPOINTS = {
   topics: {
     list: '/api/topics',
     facets: '/api/topics/facets',
+    overview: (topicId: string) => `/api/topics/${topicId}/overview`,
+    leaderboard: (topicId: string) => `/api/topics/${topicId}/leaderboard`,
+    follow: (topicId: string) => `/api/topics/${topicId}/follow`,
+  },
+  profiles: {
+    games: (userId: string) => `/api/profiles/${userId}/games`,
+    titles: (userId: string) => `/api/profiles/${userId}/titles`,
+    title: (userId: string) => `/api/profiles/${userId}/title`,
   },
   notifications: {
     unreadCount: '/api/notifications/unread-count',

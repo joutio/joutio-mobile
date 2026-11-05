@@ -79,13 +79,15 @@ export interface ParallaxIconButtonProps {
   icon: Icon
   label: string
   onPress?: () => void
+  /** Icône pleine, état actif (sujet suivi). Annoncé comme bouton bascule. */
+  filled?: boolean
 }
 
 /**
  * Bouton de `ParallaxScreen` : pastille sombre et icône blanche sur l'image, sans pastille et à la couleur du
  * thème sur la barre. À utiliser dans `right`.
  */
-export function ParallaxIconButton({ icon: IconComponent, label, onPress }: ParallaxIconButtonProps) {
+export function ParallaxIconButton({ icon: IconComponent, label, onPress, filled }: ParallaxIconButtonProps) {
   const { colors, radius } = useTheme()
   const progress = useContext(ParallaxContext)?.progress
   // Calculées hors du worklet : `alpha` est une fonction JS.
@@ -99,13 +101,19 @@ export function ParallaxIconButton({ icon: IconComponent, label, onPress }: Para
   const onImage = useAnimatedStyle(() => ({ opacity: 1 - (progress?.value ?? 0) }))
 
   return (
-    <PressableScale accessibilityRole="button" accessibilityLabel={label} pressedScale={0.94} onPress={onPress}>
+    <PressableScale
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={filled === undefined ? undefined : { selected: filled }}
+      pressedScale={0.94}
+      onPress={onPress}
+    >
       <Animated.View style={[{ width: 44, height: 44, borderRadius: radius.full, alignItems: 'center', justifyContent: 'center' }, background]}>
         <Animated.View style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center' }, onImage]}>
-          <IconComponent size={22} color={tokens.color.dark.text} />
+          <IconComponent size={22} weight={filled ? 'fill' : 'regular'} color={tokens.color.dark.text} />
         </Animated.View>
         <Animated.View style={onBar}>
-          <IconComponent size={22} color={colors.text} />
+          <IconComponent size={22} weight={filled ? 'fill' : 'regular'} color={colors.text} />
         </Animated.View>
       </Animated.View>
     </PressableScale>

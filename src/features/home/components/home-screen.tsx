@@ -41,6 +41,7 @@ import { useMe } from '@/features/me'
 import type { TopicCardView } from '@/shared/types/bff'
 import { tierOf } from '@/shared/utils/tier'
 import { topicName } from '@/shared/utils/topic-name'
+import { openTopic } from '@/features/topic'
 import { useHome, useUnreadCount } from '../hooks/use-home'
 import { HOME_MOCKS } from '../lib/home-mocks'
 
@@ -73,7 +74,13 @@ function TopicRail({ title, topics, onSeeAll }: { title: string; topics: TopicCa
       />
       <Rail itemWidth={LANDSCAPE_WIDTH} label={title}>
         {topics.map((topic) => (
-          <TopicCard key={topic.topicId} title={topicName(topic.names)} category={toCategoryCode(topic.category)} image={imageOf(topic)} />
+          <TopicCard
+            key={topic.topicId}
+            title={topicName(topic.names)}
+            category={toCategoryCode(topic.category)}
+            image={imageOf(topic)}
+            onPress={() => openTopic('home', topic)}
+          />
         ))}
       </Rail>
     </View>
@@ -92,6 +99,10 @@ function ForYou({ trending, fresh }: { trending: TopicCardView[]; fresh: TopicCa
             category: toCategoryCode(topic.category),
             image: imageOf(topic),
           }))}
+          onSelect={(item) => {
+            const topic = trending.find((candidate) => candidate.topicId === item.id)
+            if (topic) openTopic('home', topic)
+          }}
           onSeeAll={seeAll}
         />
       )}
@@ -151,6 +162,7 @@ function Followed({ topics, loadMore, onHasMore }: { topics: TopicCardView[]; lo
             title={topicName(topic.names)}
             category={toCategoryCode(topic.category)}
             image={imageOf(topic)}
+            onPress={() => openTopic('home', topic)}
             last={index === visible.length - 1}
           />
         ))}

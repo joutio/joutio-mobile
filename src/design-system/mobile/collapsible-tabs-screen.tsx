@@ -1,5 +1,5 @@
 import { Image } from 'expo-image'
-import { useImperativeHandle, useRef, useState, type ReactNode, type Ref } from 'react'
+import { useContext, useImperativeHandle, useRef, useState, type ReactNode, type Ref } from 'react'
 import { SectionList, StyleSheet, View } from 'react-native'
 import {
   CollapsibleTabView,
@@ -9,7 +9,9 @@ import {
   type CollapsibleTabsRef,
   type Route,
 } from 'react-native-collapsible-tabs-native'
-import Animated, { useAnimatedStyle, useDerivedValue, useEvent, useSharedValue, type SharedValue } from 'react-native-reanimated'
+import { BottomTabBarHeightContext } from 'expo-router/js-tabs'
+import Animated, { useAnimatedReaction, useAnimatedStyle, useDerivedValue, useEvent, useSharedValue, type SharedValue } from 'react-native-reanimated'
+import { scheduleOnRN } from 'react-native-worklets'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useReducedMotion } from '../motion'
 import { Segmented } from '../primitives/segmented'
@@ -51,8 +53,17 @@ export interface CollapsibleTabsScreenProps<T extends string> {
   /** `false` sur un onglet, qui n'a pas d'écran précédent. */
   back?: boolean
   onBack?: () => void
-  /** Actions de droite (`ParallaxIconButton`), visibles sur l'image comme sur la barre. */
-  right?: ReactNode
+  /**
+   * Actions de droite (`ParallaxIconButton`), visibles sur l'image comme sur la barre. En fonction, reçoit `docked` :
+   * vrai quand les actions principales de l'intro (`dockAt`) sont passées sous la barre, qui prend leur relais.
+   */
+  right?: ReactNode | ((docked: boolean) => ReactNode)
+  /** Distance (pt) du haut de l'intro au bas de ses actions principales : au-delà, `right` reçoit `docked`. */
+  dockAt?: number
+  /** Titre à gauche dans la barre compacte, pour laisser la place à plusieurs actions. */
+  barTitleStart?: boolean
+  /** Barre fixe en bas de l'écran, au-dessus de la barre d'onglets (ligne du joueur dans un classement). */
+  bottomBar?: ReactNode
   /** Sous l'image : défile avec elle (statistiques, actions principales). */
   intro?: ReactNode
   tabs: readonly CollapsibleTab<T>[]
@@ -66,6 +77,8 @@ export interface CollapsibleTabsScreenProps<T extends string> {
   /** Tiré vers le bas : recharge toute la page (en-tête et onglets). Le spinner reste jusqu'à la fin de la promesse. */
   onRefresh?: () => Promise<unknown> | void
 }
+
+const INTRO_PADDING_TOP = tokens.space[2]
 
 interface HeroProps {
   image?: string | number
@@ -127,7 +140,7 @@ function Hero({ image, title, eyebrow, centered, intro, scroll, titleStart, titl
           </Animated.View>
         </View>
       </View>
-      {intro && <View style={{ paddingHorizontal: tokens.space[5], paddingTop: tokens.space[2], paddingBottom: tokens.space[3] }}>{intro}</View>}
+      {intro && <View style={{ paddingHorizontal: tokens.space[5], paddingTop: INTRO_PADDING_TOP, paddingBottom: tokens.space[3] }}>{intro}</View>}
     </View>
   )
 }
@@ -153,10 +166,16 @@ export function CollapsibleTabsScreen<T extends string>({
   back = true,
   onBack,
   right,
+  dockAt,
+  barTitleStart = false,
+  bottomBar,
   ...hero
 }: CollapsibleTabsScreenProps<T>) {
   const { colors } = useTheme()
   const insets = useSafeAreaInsets()
+  // Dans un onglet, la barre d'onglets porte déjà la zone sûre du bas.
+  const inTabs = useContext(BottomTabBarHeightContext) !== undefined
+  const bottomInset = inTabs ? 0 : insets.bottom
   const barHeight = insets.top + TOP_BAR_HEIGHT
   const refresh = usePageRefresh(onRefresh)
 
@@ -199,6 +218,19 @@ export function CollapsibleTabsScreen<T extends string>({
   const titleLength = useSharedValue(56)
   const progress = useDerivedValue(() => compactBarProgress(scroll.value, titleStart.value, titleLength.value))
   const opaque = useAnimatedStyle(() => ({ opacity: progress.value }))
+
+  // Actions principales passées sous la barre : ses icônes prennent le relais (`right(docked)`).
+  const [docked, setDocked] = useState(false)
+  const [bottomBarHeight, setBottomBarHeight] = useState(0)
+  const dockLine = dockAt === undefined ? Infinity : HERO_HEIGHT + INTRO_PADDING_TOP + dockAt - barHeight
+  useAnimatedReaction(
+    () => scroll.value > dockLine,
+    (next, previous) => {
+      if (next !== previous) scheduleOnRN(setDocked, next)
+    },
+    [dockLine],
+  )
+  const rightContent = typeof right === 'function' ? right(docked) : right
   const statusScrim = useAnimatedStyle(() => ({ opacity: 1 - progress.value }))
 
   const changeIndex = (next: number) => {
@@ -274,11 +306,32 @@ export function CollapsibleTabsScreen<T extends string>({
             pointerEvents="none"
             style={[StyleSheet.absoluteFill, { backgroundColor: colors.bg, borderBottomWidth: HAIRLINE, borderBottomColor: colors.border }, opaque]}
           />
-          <CompactBarRow title={title} back={back} onBack={onBack} right={right} titleStyle={opaque} />
+          <CompactBarRow title={title} back={back} onBack={onBack} right={rightContent} titleStart={barTitleStart} titleStyle={opaque} />
         </View>
       </ParallaxProgressProvider>
 
-      {floating && <View style={{ position: 'absolute', right: tokens.space[5], bottom: tokens.space[5] + insets.bottom }}>{floating}</View>}
+      {floating && (
+        <View style={{ position: 'absolute', right: tokens.space[5], bottom: tokens.space[5] + bottomInset + (bottomBar ? bottomBarHeight : 0) }}>
+          {floating}
+        </View>
+      )}
+      {bottomBar && (
+        <View
+          onLayout={(event) => setBottomBarHeight(event.nativeEvent.layout.height)}
+          style={{
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            bottom: 0,
+            paddingBottom: bottomInset,
+            backgroundColor: colors.surface,
+            borderTopWidth: HAIRLINE,
+            borderTopColor: colors.border,
+          }}
+        >
+          {bottomBar}
+        </View>
+      )}
     </View>
   )
 }

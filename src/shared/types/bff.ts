@@ -82,3 +82,90 @@ export interface TopicFacetsView {
   total: number
   categories: { category: string; label: string; count: number }[]
 }
+
+/** Palier de maîtrise d'un sujet (`MasteryTier` de `joutio-profile-domain`), mêmes codes que les tokens `tier`. */
+export type MasteryTier = 'FER' | 'BRONZE' | 'ARGENT' | 'OR' | 'PLATINE' | 'EMERAUDE' | 'DIAMANT'
+
+/** `GET /api/topics/{id}/overview` : en-tête et onglet Progression de la Fiche sujet. */
+export interface TopicOverviewView {
+  topic: TopicCardView
+  /** Titres thématiques par langue puis palier (`{ fr: { OR: "Connétable" } }`). Absent : repli « palier · sujet ». */
+  titles: Record<string, Record<string, string>> | null
+  myRank: number | null
+  myProgress: TopicProgressView | null
+  canManage: boolean
+}
+
+export interface TopicProgressView {
+  xp: number
+  /** Parties humaines terminées dans le sujet (condition du premier titre). */
+  games: number
+  tier: MasteryTier
+  tierProgressPercent: number
+  tierRemainingXp: number
+  nextTier: MasteryTier | null
+  completedQuestions: number
+  totalQuestions: number
+  completionPercent: number
+}
+
+export type LeaderboardPeriod = 'ALL_TIME' | 'MONTHLY'
+export type LeaderboardScope = 'WORLD' | 'FOLLOWING' | 'COUNTRY'
+
+/** `GET /api/topics/{id}/leaderboard`. */
+export interface TopicLeaderboardView {
+  entries: PageResponse<LeaderboardEntryView>
+  me: LeaderboardEntryView | null
+}
+
+export interface LeaderboardEntryView {
+  rank: number
+  userId: string
+  pseudonym: string
+  avatarOptions: string | null
+  country: string | null
+  /** Elo global (bordure d'avatar). */
+  rating: number
+  provisional: boolean
+  totalXp: number
+  monthlyXp: number
+  suspended: boolean
+}
+
+export interface TopicRefView {
+  topicId: string
+  names: TopicNames
+  category: string | null
+  imageUrl: string | null
+}
+
+export interface UserRefView {
+  userId: string
+  pseudonym: string
+  avatarOptions: string | null
+  suspended: boolean
+}
+
+export type GameOutcome = 'WIN' | 'LOSS' | 'DRAW' | 'WAITING' | 'IN_PROGRESS' | 'CANCELLED'
+
+/** `GET /api/profiles/{id}/games` : historique des parties d'un joueur (filtrable par sujet). */
+export interface GameHistoryItemView {
+  gameId: string
+  topic: TopicRefView
+  opponent: UserRefView | null
+  /** `HUMAN` ou `BOT`. */
+  opponentType: string | null
+  outcome: GameOutcome
+  myScore: number
+  opponentScore: number
+  /** XP gagnée (null : entraînement contre un bot). */
+  xp: number | null
+  playedAt: string
+}
+
+/** `GET /api/profiles/{id}/titles`. */
+export interface TitlesView {
+  /** Clé du titre porté (`topicId:TIER`), null si aucun. */
+  equippedKey: string | null
+  titles: { key: string; topicId: string; tier: MasteryTier }[]
+}

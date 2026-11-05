@@ -37,6 +37,7 @@ import {
   type CategoryCode,
 } from '@/design-system'
 import { useUnreadCount } from '@/features/home'
+import { openTopic } from '@/features/topic'
 import type { TopicCardView, TopicSort } from '@/shared/types/bff'
 import { topicName } from '@/shared/utils/topic-name'
 import { useTopicFacets, useTopics } from '../hooks/use-topics'
@@ -333,6 +334,7 @@ export function TopicsScreen() {
                       category={toCategoryCode(item.category)}
                       image={item.imageUrl ?? undefined}
                       orientation="portrait"
+                      onPress={() => openTopic('topics', item)}
                     />
                   </View>
                 </View>
