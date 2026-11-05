@@ -1,3 +1,20 @@
+## [1.12.0](https://github.com/joutio/joutio-mobile-expo/compare/v1.11.2...v1.12.0) (2026-11-05)
+
+### Features
+
+* **player:** block a player and align the profile with the lab ([7339481](https://github.com/joutio/joutio-mobile-expo/commit/73394810d78d7fdf859d7fd51130eac714b14ed9))
+* **result:** show the duel details as a second vertical page ([cef4878](https://github.com/joutio/joutio-mobile-expo/commit/cef4878d8147c462a7a37adeaa7fe03476521723))
+
+### Bug Fixes
+
+* **challenge:** pick the topic from the paginated catalogue ([3776ee8](https://github.com/joutio/joutio-mobile-expo/commit/3776ee82ccbf667bec139dec7e93c6c8392e7dd9))
+* **lists:** full-width row separators like the lab ([ca39c09](https://github.com/joutio/joutio-mobile-expo/commit/ca39c090de620981a715607d269a86eb9b717edb))
+* **load-more:** freeze the native list on the UI thread while pulling ([b9f4a28](https://github.com/joutio/joutio-mobile-expo/commit/b9f4a287010a6c426b358c4e075dd7fa087daeb7))
+* **menu:** run the chosen action once the menu modal is dismissed ([d623a87](https://github.com/joutio/joutio-mobile-expo/commit/d623a870e281af2ccc624ba9a42f134ca77725d8))
+* **report:** open the block confirmation once the report sheet is dismissed ([305f4bc](https://github.com/joutio/joutio-mobile-expo/commit/305f4bc3a3de5f449c6008b36994247de0eb416e))
+* **result:** smooth the duel review sheet ([de96b64](https://github.com/joutio/joutio-mobile-expo/commit/de96b64c49f5f567e344db0a2a4f9072250a99db))
+* **social:** align the contacts directory with the lab ([3d21c84](https://github.com/joutio/joutio-mobile-expo/commit/3d21c84927e947066addb7cb86e57e8090344fde))
+
 ## [1.11.2](https://github.com/joutio/joutio-mobile-expo/compare/v1.11.1...v1.11.2) (2026-11-05)
 
 ### Bug Fixes
