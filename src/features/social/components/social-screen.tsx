@@ -85,7 +85,7 @@ function PeopleList({
               title="Impossible de charger tes contacts"
               description="Vérifie ta connexion, puis réessaie."
               action={
-                <Button loading={list.isRefetching} onPress={() => void list.refetch()}>
+                <Button style={{ alignSelf: 'center' }} loading={list.isRefetching} onPress={() => void list.refetch()}>
                   Réessayer
                 </Button>
               }
@@ -99,11 +99,11 @@ function PeopleList({
               description={emptyDescription}
               action={
                 query ? (
-                  <Button variant="gray" tone="neutral" onPress={() => onInvite()}>
+                  <Button variant="gray" tone="neutral" style={{ alignSelf: 'center' }} onPress={() => onInvite()}>
                     Inviter un ami
                   </Button>
                 ) : (
-                  <Button variant="tinted" tone="accent" icon={UsersIcon} onPress={onInvite}>
+                  <Button variant="tinted" tone="accent" icon={UsersIcon} style={{ alignSelf: 'center' }} onPress={onInvite}>
                     Inviter un ami
                   </Button>
                 )

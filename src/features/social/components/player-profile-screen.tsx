@@ -103,7 +103,7 @@ export function PlayerProfileScreen() {
                 <Button style={{ alignSelf: 'center' }} loading={profile.isRefetching} onPress={() => void profile.refetch()}>
                   Réessayer
                 </Button>
-                <Button variant="plain" tone="neutral" onPress={() => router.back()}>
+                <Button variant="plain" tone="neutral" style={{ alignSelf: 'center' }} onPress={() => router.back()}>
                   Retour
                 </Button>
               </View>

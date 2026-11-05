@@ -51,7 +51,7 @@ export function ChallengePlayerSheet({ player, onClose }: { player: PlayerCardVi
             title="Impossible de charger les sujets"
             description="Vérifie ta connexion, puis réessaie."
             action={
-              <Button loading={topics.isRefetching} onPress={() => void topics.refetch()}>
+              <Button style={{ alignSelf: 'center' }} loading={topics.isRefetching} onPress={() => void topics.refetch()}>
                 Réessayer
               </Button>
             }
