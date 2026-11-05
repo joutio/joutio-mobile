@@ -58,7 +58,7 @@ export function TitleRow({ tier, title, topic, worn = false, locked = false, onW
       {!last && (
         <View
           pointerEvents="none"
-          style={{ position: 'absolute', left: tokens.space[5], right: 0, bottom: 0, height: HAIRLINE, backgroundColor: colors.border }}
+          style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: HAIRLINE, backgroundColor: colors.border }}
         />
       )}
     </View>

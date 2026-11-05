@@ -91,12 +91,7 @@ export function TopicRow({
       ) : (
         <CaretRightIcon size={20} color={colors.muted} />
       )}
-      {!last && (
-        <View
-          pointerEvents="none"
-          style={{ position: 'absolute', left: tokens.space[5] + 44 + tokens.space[4], right: 0, bottom: 0, height: HAIRLINE, backgroundColor: colors.border }}
-        />
-      )}
+      {!last && <View pointerEvents="none" style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: HAIRLINE, backgroundColor: colors.border }} />}
     </PressableScale>
   )
 }

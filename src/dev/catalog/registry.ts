@@ -1,7 +1,7 @@
 import type { ComponentType } from 'react'
 import { AvatarDemo, BadgeDemo, ButtonDemo, IconButtonDemo, PillDemo, PremiumBadgeDemo, SkeletonDemo } from './row1'
 import { BottomNavDemo, MobileTopBarDemo, StickyScreenDemo } from './row2'
-import { ChipDemo, FieldDemo, ListRowDemo, RadioGroupDemo, SearchFieldDemo, SegmentedDemo, SwitchDemo } from './row3'
+import { ChipDemo, FieldDemo, ListRowDemo, MatchRowDemo, PlayerRowDemo, RadioGroupDemo, SearchFieldDemo, SegmentedDemo, SwitchDemo } from './row3'
 import { BannerDemo, DialogDemo, MenuDemo, MobileSheetDemo, SheetHeaderDemo, ToastDemo } from './row4'
 import { CategoryTileDemo, CodeInputDemo, LogoDemo, PageDotsDemo, SocialButtonDemo, SplashLogoDemo, TopicCardDemo, TopicRowDemo } from './onboarding'
 import { CollapsibleTabsScreenDemo, EmptyStateDemo, FeedFooterDemo, ParallaxScreenDemo, SectionHeaderDemo } from './row5'
@@ -30,6 +30,8 @@ export const CATALOG: CatalogEntry[] = [
   { id: 'bottom-nav', title: 'BottomNav', row: 2, spec: 'components/navigation.md', Demo: BottomNavDemo },
   { id: 'sticky-bar', title: 'Screen et StickyBar', row: 2, spec: 'foundations.md § 10', Demo: StickyScreenDemo, fullscreen: true },
   { id: 'list-row', title: 'ListRow', row: 3, spec: 'components/formulaires.md', Demo: ListRowDemo },
+  { id: 'player-row', title: 'PlayerRow', row: 3, spec: 'components/listes.md', Demo: PlayerRowDemo },
+  { id: 'match-row', title: 'MatchRow', row: 3, spec: 'components/listes.md', Demo: MatchRowDemo },
   { id: 'radio-group', title: 'RadioGroup', row: 3, spec: 'components/formulaires.md', Demo: RadioGroupDemo },
   { id: 'switch', title: 'Switch', row: 3, spec: 'components/formulaires.md', Demo: SwitchDemo },
   { id: 'segmented', title: 'Segmented', row: 3, spec: 'components/formulaires.md', Demo: SegmentedDemo },

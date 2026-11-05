@@ -115,7 +115,8 @@ export function ListRow({
           pointerEvents="none"
           style={{
             position: 'absolute',
-            left: tokens.space[5] + (IconComponent ? 20 + tokens.space[4] : 0),
+            // Pleine largeur, comme le `border-b` du lab (formulaires.md § ListRow).
+            left: 0,
             right: 0,
             bottom: 0,
             height: HAIRLINE,

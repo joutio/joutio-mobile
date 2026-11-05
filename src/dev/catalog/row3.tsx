@@ -1,6 +1,23 @@
 import { useState, type ReactNode } from 'react'
 import { View } from 'react-native'
-import { BellIcon, Chip, Field, ListRow, RadioGroup, SearchField, Segmented, StarIcon, Switch, Text, tokens, useTheme } from '@/design-system'
+import {
+  BellIcon,
+  Chip,
+  Field,
+  ListGroup,
+  ListRow,
+  MatchRow,
+  PlayerRow,
+  RadioGroup,
+  SearchField,
+  Segmented,
+  StarIcon,
+  Switch,
+  SwordIcon,
+  Text,
+  tokens,
+  useTheme,
+} from '@/design-system'
 import { Specimen } from './kit'
 
 function Card({ children }: { children: ReactNode }) {
@@ -148,5 +165,53 @@ export function ChipDemo() {
         Cible tactile : 44 pt par hitSlop.
       </Text>
     </>
+  )
+}
+
+/** Lignes de Social (épée), de classement (rang, Elo) et de choix (chevron), dans une carte `surface` comme le lab. */
+export function PlayerRowDemo() {
+  return (
+    <>
+      <Specimen label="Social : Défier (épée)">
+        <ListGroup surface="surface">
+          <PlayerRow name="Sofia R." tier="DIAMANT" presence="online" sub="En ligne" ctaIcon={{ icon: SwordIcon, label: 'Défier' }} onPress={() => undefined} />
+          <PlayerRow name="Idriss B." tier="OR" presence="offline" sub="Il y a 2 h" ctaIcon={{ icon: SwordIcon, label: 'Défier' }} onPress={() => undefined} />
+          <PlayerRow
+            name="Maximilien-Alexandre de la Tour"
+            tier="FER"
+            presence="offline"
+            sub="Hier"
+            ctaIcon={{ icon: SwordIcon, label: 'Défier' }}
+            last
+            onPress={() => undefined}
+          />
+        </ListGroup>
+      </Specimen>
+      <Specimen label="Classement : rang, Elo, ligne du joueur">
+        <ListGroup surface="surface">
+          <PlayerRow rank={1} name="Léa M." tier="DIAMANT" trail="2 140" onPress={() => undefined} />
+          <PlayerRow rank={2} name="Hugo P." tier="EMERAUDE" trail="1 980" onPress={() => undefined} />
+          <PlayerRow rank={14} name="Yanis M." tier="OR" trail="1 312" highlight last onPress={() => undefined} />
+        </ListGroup>
+      </Specimen>
+      <Specimen label="Choix : chevron">
+        <ListGroup surface="surface">
+          <PlayerRow name="Camille D." tier="ARGENT" presence="online" sub="En ligne" chevron last onPress={() => undefined} />
+        </ListGroup>
+      </Specimen>
+    </>
+  )
+}
+
+export function MatchRowDemo() {
+  return (
+    <Specimen label="Victoire, défaite, nul, entraînement">
+      <ListGroup surface="surface">
+        <MatchRow topic="Rois de France" category="HISTORY" sub="Aujourd'hui" outcome="win" score="5 · 3" onPress={() => undefined} />
+        <MatchRow topic="Le Grand Chelem" category="SPORTS" sub="Hier" outcome="loss" score="2 · 6" onPress={() => undefined} />
+        <MatchRow topic="Tableau périodique" category="SCIENCE" sub="Lundi" outcome="draw" score="4 · 4" onPress={() => undefined} />
+        <MatchRow topic="Rap français" category="MUSIC" sub="12 octobre" outcome="win" score="6 · 1" bot last onPress={() => undefined} />
+      </ListGroup>
+    </Specimen>
   )
 }
