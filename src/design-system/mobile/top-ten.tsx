@@ -20,6 +20,11 @@ const DIGIT_WIDTH = { one: 42, single: 60, double: 112 }
  */
 const TEN_ONE_X = 6
 const TEN_ZERO_X = TEN_ONE_X + 41
+/**
+ * Décalage vers la droite des chiffres dont le pied gauche (barre du 4, haut du 7) touche le bord du dessin : sans lui,
+ * la carte précédente et le bord du SVG les rognent sur Android.
+ */
+const DIGIT_X: Partial<Record<number, number>> = { 4: 10, 7: 10 }
 /** Hauteur du chiffre, calée sur le token `numericRank`. */
 const NUMERAL_HEIGHT = 120
 const NUMERAL_BASELINE = 116
@@ -89,7 +94,7 @@ function RankNumeral({ rank }: { rank: number }) {
           {glyph('0', TEN_ZERO_X)}
         </>
       ) : (
-        glyph(String(rank), 0)
+        glyph(String(rank), DIGIT_X[rank] ?? 0)
       )}
     </Svg>
   )
