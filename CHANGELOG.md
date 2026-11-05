@@ -1,3 +1,13 @@
+## [1.5.0](https://github.com/joutio/joutio-mobile-expo/compare/v1.4.2...v1.5.0) (2026-11-05)
+
+### Features
+
+* topic screen ([93e78bf](https://github.com/joutio/joutio-mobile-expo/commit/93e78bf09dd383ca795f49efd922fcdab7f3ed6d))
+
+### Bug Fixes
+
+* **top-ten:** shift the 4 and the 7 so the previous card no longer clips them ([d262bbb](https://github.com/joutio/joutio-mobile-expo/commit/d262bbb399f884cb9075b70a628da2895ff6de6a))
+
 ## [1.4.2](https://github.com/joutio/joutio-mobile-expo/compare/v1.4.1...v1.4.2) (2026-11-05)
 
 ### Bug Fixes
