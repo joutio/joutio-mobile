@@ -64,7 +64,8 @@
     "tokens:check": "node scripts/sync-tokens.mjs --check",
     "assets:sync": "node scripts/sync-assets.mjs",
     "format": "prettier --write src scripts",
-    "postinstall": "patch-package"
+    "postinstall": "patch-package",
+    "icons": "node scripts/generate-app-icons.mjs"
   },
   "reanimated": {
     "staticFeatureFlags": {

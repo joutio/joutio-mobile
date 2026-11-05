@@ -74,7 +74,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       'expo-splash-screen',
       {
         image: './assets/splash-icon.png',
-        imageWidth: 120,
+        // Même taille que le logo de `LaunchScreen`, qui prend le relais en fondu.
+        imageWidth: 96,
         // Le lancement est toujours sombre (onboarding.md § 1), dans les deux thèmes.
         backgroundColor: tokens.color.dark.bg,
         dark: { backgroundColor: tokens.color.dark.bg },

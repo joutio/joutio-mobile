@@ -17,6 +17,8 @@ import { useEntryStore } from '@/shared/stores/entry-store'
 import { createQueryClient } from '@/lib/query-client'
 
 SplashScreen.preventAutoHideAsync().catch(() => undefined)
+// Le splash natif s'efface sur `LaunchScreen` (même logo, même fond) au lieu de couper net.
+SplashScreen.setOptions({ fade: true, duration: 250 })
 registerDevMenu()
 
 /** `GET /api/me` a échoué au démarrage : réessayer, ou se déconnecter. */
