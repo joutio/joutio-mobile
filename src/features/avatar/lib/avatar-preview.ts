@@ -1,5 +1,6 @@
 import { useCallback } from 'react'
 import { useMe } from '@/features/me'
+import { defaultOptionsFor } from '@/shared/avatar/styles'
 import { avatarSvg, BACKGROUND_COLORS, parseAvatarConfig, type AvatarConfig } from '@/shared/utils/avatar'
 import type { AvatarStyleId } from './avatar-styles'
 
@@ -16,15 +17,15 @@ export const DEFAULT_MICAH: AvatarConfig = {
 
 /**
  * Options d'un style à partir d'une configuration. Le style courant garde ses options telles quelles (le tirage
- * DiceBear dépend des options passées) ; un autre style reprend seulement le fond, Micah ses réglages par défaut.
+ * DiceBear dépend des options passées) ; un autre style reprend seulement le fond, Micah ses réglages de référence.
  */
 export function withStyle(config: AvatarConfig | null, style: AvatarStyleId): AvatarConfig {
   const current = config?.style ?? (config ? 'micah' : 'base')
   if (config && current === style) return config
   const background = config?.backgroundColor ? { backgroundColor: config.backgroundColor } : {}
   if (style === 'base') return { style: 'base', backgroundColor: config?.backgroundColor ?? BACKGROUND_COLORS[0] }
-  if (style === 'micah') return { ...DEFAULT_MICAH, ...background, style: 'micah' }
-  return { style, ...background }
+  // Un autre style part de ses réglages de référence (`defaults` du web), fond conservé.
+  return { ...defaultOptionsFor(style), ...background }
 }
 
 /** SVG de l'avatar du joueur connecté. */

@@ -86,6 +86,7 @@ export { ClockCounterClockwiseIcon } from 'phosphor-react-native/src/icons/Clock
 export { GearSixIcon } from 'phosphor-react-native/src/icons/GearSix'
 export { UserCircleIcon } from 'phosphor-react-native/src/icons/UserCircle'
 export { ImageIcon } from 'phosphor-react-native/src/icons/Image'
+export { ShuffleIcon } from 'phosphor-react-native/src/icons/Shuffle'
 export { VibrateIcon } from 'phosphor-react-native/src/icons/Vibrate'
 export { SpeakerHighIcon } from 'phosphor-react-native/src/icons/SpeakerHigh'
 export { FileTextIcon } from 'phosphor-react-native/src/icons/FileText'
