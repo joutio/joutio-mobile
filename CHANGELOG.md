@@ -1,3 +1,13 @@
+## [1.10.0](https://github.com/joutio/joutio-mobile-expo/compare/v1.9.0...v1.10.0) (2026-11-05)
+
+### Features
+
+* **result:** persist the review peek and push the post-duel chat ([8acb582](https://github.com/joutio/joutio-mobile-expo/commit/8acb5821123b78a8fa3726576477006a5ddeba26))
+
+### Bug Fixes
+
+* **immersive:** keep duel screens dark in light mode ([4e68959](https://github.com/joutio/joutio-mobile-expo/commit/4e68959918eb43902fad1317a99119b32c4f9400))
+
 ## [1.9.0](https://github.com/joutio/joutio-mobile-expo/compare/v1.8.0...v1.9.0) (2026-11-05)
 
 ### Features
