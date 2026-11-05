@@ -1,3 +1,9 @@
+## [1.16.0](https://github.com/joutio/joutio-mobile-expo/compare/v1.15.0...v1.16.0) (2026-11-05)
+
+### Features
+
+* **challenges:** build the Défis tab ([6a6fa6e](https://github.com/joutio/joutio-mobile-expo/commit/6a6fa6eb1dcdc1fa9bf845a013b6f1a69d1d2caa))
+
 ## [1.15.0](https://github.com/joutio/joutio-mobile-expo/compare/v1.14.0...v1.15.0) (2026-11-05)
 
 ### Features
