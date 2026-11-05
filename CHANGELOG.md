@@ -1,3 +1,9 @@
+## [1.10.2](https://github.com/joutio/joutio-mobile-expo/compare/v1.10.1...v1.10.2) (2026-11-05)
+
+### Bug Fixes
+
+* **result:** keep the reviewed question when the sheet is collapsed ([f053fb2](https://github.com/joutio/joutio-mobile-expo/commit/f053fb2823f0a51dc761f94d933a9d4823fc0c23))
+
 ## [1.10.1](https://github.com/joutio/joutio-mobile-expo/compare/v1.10.0...v1.10.1) (2026-11-05)
 
 ### Bug Fixes
