@@ -26,3 +26,40 @@ export function countryLabel(code?: string | null, locale = 'fr-FR'): string {
     return COUNTRIES[normalized] ?? normalized
   }
 }
+
+/** Pays proposés dans Réglages › Pays (liste du lab, `design/src/lab/fixtures/profile.ts`). */
+export const COUNTRY_CODES = [
+  'DZ',
+  'DE',
+  'BE',
+  'BJ',
+  'BF',
+  'CM',
+  'CA',
+  'KM',
+  'CI',
+  'ES',
+  'US',
+  'FR',
+  'GA',
+  'GN',
+  'HT',
+  'IT',
+  'LB',
+  'LU',
+  'MG',
+  'ML',
+  'MA',
+  'MR',
+  'MC',
+  'NE',
+  'PT',
+  'GB',
+  'SN',
+  'CH',
+  'TG',
+  'TN',
+] as const
+
+/** Drapeau en emoji, rendu par le système sur iOS et Android. */
+export const countryFlag = (code: string) => String.fromCodePoint(...[...code.toUpperCase()].map((letter) => 0x1f1a5 + letter.charCodeAt(0)))

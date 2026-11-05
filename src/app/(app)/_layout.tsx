@@ -1,6 +1,7 @@
 import { Stack } from 'expo-router'
 import { nativeHeaderOptions, useTheme } from '@/design-system'
 import { RematchHost } from '@/features/play/components/rematch-host'
+import { PremiumHost } from '@/features/premium/premium-host'
 
 export const unstable_settings = { anchor: '(tabs)' }
 
@@ -19,9 +20,13 @@ export default function AppLayout() {
         <Stack.Screen name="result/[gameId]/index" options={{ headerShown: false, animation: 'fade' }} />
         {/* Chat d'après-duel : écran poussé, le retour retrouve le résultat. */}
         <Stack.Screen name="result/[gameId]/chat" options={{ headerShown: false, animation: 'slide_from_right' }} />
+        {/* Éditeur d'avatar : modale plein écran, sans barre d'onglets (Annuler / Enregistrer). */}
+        <Stack.Screen name="avatar" options={{ headerShown: false, presentation: 'fullScreenModal' }} />
       </Stack>
       {/* Demandes de revanche reçues, au-dessus de tout écran (sauf pendant un duel). */}
       <RematchHost />
+      {/* Feuille Premium, ouverte depuis Réglages, Récompenses, Maîtrise ou l'éditeur d'avatar. */}
+      <PremiumHost />
     </>
   )
 }

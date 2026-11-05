@@ -9,8 +9,18 @@ export interface MeView {
   userId: string
   email: string
   pseudonym: string
+  bio: string | null
   /** Code ISO-3166 alpha-2, `null` si non renseigné (portée Pays des classements). */
   country: string | null
+  /** Options DiceBear sérialisées (JSON), `null` : avatar de base. */
+  avatarOptions: string | null
+  bannerUrl: string | null
+  /** Clé du titre porté (`topicId:TIER`), null si aucun. */
+  equippedTitle: string | null
+  followingCount: number
+  followersCount: number
+  /** Codes des récompenses débloquées. */
+  rewards: string[]
   language: Language
   /** Codes d'univers ordonnés (premier = principal), 3 au plus. */
   interests: string[]
@@ -37,6 +47,10 @@ export interface ProgressionView {
 export interface DuelStatsView {
   played: number
   wins: number
+  losses: number
+  draws: number
+  winPercent: number
+  bestScore: number
   currentWinStreak: number
   bestWinStreak: number
 }
@@ -183,7 +197,17 @@ export interface GameHistoryItemView {
 export interface TitlesView {
   /** Clé du titre porté (`topicId:TIER`), null si aucun. */
   equippedKey: string | null
-  titles: { key: string; topicId: string; tier: MasteryTier }[]
+  titles: TitleView[]
+}
+
+export interface TitleView {
+  key: string
+  topicId: string
+  tier: MasteryTier
+  tierProgressPercent: number
+  tierRemainingXp: number
+  nextTier: MasteryTier | null
+  topic: TopicRefView
 }
 
 /** `{ id }` renvoyé par une création (`IdResponse` du SDK). */
@@ -271,3 +295,68 @@ export interface ChallengeView {
 
 export type UserReportReason = 'HARASSMENT' | 'HATE_SPEECH' | 'INAPPROPRIATE_CONTENT' | 'CHEATING' | 'SPAM' | 'OTHER'
 export type QuestionReportReason = 'QUESTION' | 'IMAGE' | 'ANSWERS'
+
+export type BadgeFamily =
+  | 'VOLUME'
+  | 'VICTORY'
+  | 'MASTERY'
+  | 'EXPLOIT'
+  | 'SERIES'
+  | 'ASSIDUITY'
+  | 'SOCIAL'
+  | 'CHALLENGES'
+  | 'VISION'
+  | 'PRECISION'
+  | 'SPEED'
+  | 'EXPLORATION'
+  | 'COLLECTION'
+
+/** Un palier de badge (`BadgeCollectionView.BadgeItemView`). */
+export interface BadgeItemView {
+  code: string
+  /** Libellé source (français) du catalogue. */
+  label: string
+  tier: MasteryTier
+  metric: string
+  target: number
+  earned: boolean
+  /** Compteur courant, plafonné à `target`. */
+  progress: number
+}
+
+/** `GET /api/profiles/{id}/badges` : collection par famille. */
+export interface BadgeCollectionView {
+  earnedCount: number
+  totalCount: number
+  families: { family: BadgeFamily; badges: BadgeItemView[] }[]
+}
+
+/** `GET /api/profiles/{id}/activity` : série et jours joués (fenêtre de 365 jours par défaut). */
+export interface ActivityView {
+  userId: string
+  currentStreak: number
+  longestStreak: number
+  /** `YYYY-MM-DD`, fuseau d'activité du profil. */
+  lastActiveDate: string | null
+  totalActiveDays: number
+  days: { date: string; games: number }[]
+}
+
+/** `GET /api/me/rewards` : catalogue des récompenses (styles d'avatar). */
+export interface RewardsView {
+  rewards: {
+    code: string
+    unlocked: boolean
+    unlockedAt: string | null
+    source: string | null
+    condition: { badgeCode: string; badgeLabel: string; target: number }
+  }[]
+}
+
+export type NotificationCategory = 'FOLLOW' | 'ROOM' | 'QUESTION'
+
+/** `GET /api/notification-preferences`. */
+export interface NotificationPreferenceView {
+  category: NotificationCategory
+  enabled: boolean
+}

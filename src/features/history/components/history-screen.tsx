@@ -106,7 +106,8 @@ export function HistoryScreen() {
 
   const empty = !list.isPending && games.length === 0
   // Fiche joueur : le sous-titre est l'adversaire ; sinon on retombe sur le sujet de la première partie (deep link restauré).
-  const subtitle = params.opponentId ? params.opponentName : (params.topicName ?? games[0]?.topic.names.fr)
+  // Depuis le Profil (ni sujet ni adversaire) : toutes les parties, sans sous-titre.
+  const subtitle = params.opponentId ? params.opponentName : params.topicId ? (params.topicName ?? games[0]?.topic.names.fr) : undefined
   const backLabel = params.backLabel ?? (params.opponentId ? 'Joueur' : 'Sujet')
 
   return (

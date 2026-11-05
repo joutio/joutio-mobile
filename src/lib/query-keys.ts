@@ -17,7 +17,13 @@ export const queryKeys = {
   profiles: {
     titles: (userId: string) => ['profiles', userId, 'titles'] as const,
     games: (userId: string, filters: object) => ['profiles', userId, 'games', filters] as const,
+    profile: (userId: string) => ['profiles', userId, 'profile'] as const,
+    badges: (userId: string) => ['profiles', userId, 'badges'] as const,
+    activity: (userId: string) => ['profiles', userId, 'activity'] as const,
+    topics: (userId: string) => ['profiles', userId, 'topics'] as const,
   },
+  rewards: () => ['me', 'rewards'] as const,
+  notificationPreferences: () => ['notification-preferences'] as const,
   notifications: {
     unreadCount: () => ['notifications', 'unread-count'] as const,
   },

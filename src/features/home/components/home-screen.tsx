@@ -39,6 +39,7 @@ import {
   type CollapsibleTabsRef,
 } from '@/design-system'
 import { useMe } from '@/features/me'
+import { useMyActivity } from '@/features/profile/hooks/use-profile'
 import type { TopicCardView } from '@/shared/types/bff'
 import { tierOf } from '@/shared/utils/tier'
 import { topicName } from '@/shared/utils/topic-name'
@@ -46,7 +47,6 @@ import { openTopic } from '@/features/topic'
 import { useTopicFacets, useTopics } from '@/features/topics/hooks/use-topics'
 import type { TopicFilters } from '@/features/topics/lib/topics-service'
 import { useHome, useUnreadCount } from '../hooks/use-home'
-import { HOME_MOCKS } from '../lib/home-mocks'
 
 const LANDSCAPE_WIDTH = 240
 const GUTTER = tokens.space[5]
@@ -274,6 +274,8 @@ const BAR_SHIFT = 10
  */
 export function HomeScreen() {
   const me = useMe()
+  const activity = useMyActivity()
+  const streak = activity.data?.currentStreak
   const home = useHome()
   const unread = useUnreadCount()
   const tabsRef = useRef<CollapsibleTabsRef>(null)
@@ -358,8 +360,8 @@ export function HomeScreen() {
                   {`${tokens.tier[tier].label} · ${rating}`}
                 </Badge>
               )}
-              {/* Mock : série en jours non exposée par le BFF (`home-mocks.ts`). */}
-              <Pill icon={FireIcon}>{`${HOME_MOCKS.streakDays} jours de série`}</Pill>
+              {/* Série en jours, relue sur `/api/profiles/{id}/activity`. */}
+              {streak !== undefined && streak > 0 && <Pill icon={FireIcon}>{`${streak} jour${streak > 1 ? 's' : ''} de série`}</Pill>}
             </View>
           </View>
         }
