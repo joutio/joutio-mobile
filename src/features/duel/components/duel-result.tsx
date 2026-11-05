@@ -1,6 +1,9 @@
 import { router } from 'expo-router'
-import { useState } from 'react'
-import { Share, View } from 'react-native'
+import { useMemo, useRef, useState } from 'react'
+import { Share, ScrollView, View } from 'react-native'
+import { Gesture, GestureDetector, GestureStateManager } from 'react-native-gesture-handler'
+import { useSharedValue } from 'react-native-reanimated'
+import { scheduleOnRN } from 'react-native-worklets'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import {
   Banner,
@@ -123,6 +126,43 @@ export function DuelResult({
   const [reviewOpen, setReviewOpen] = useState(false)
   const [reportOpen, setReportOpen] = useState(false)
   const [chatOpen, setChatOpen] = useState(false)
+  // La revue s'ouvre aussi en tirant la page vers le haut : le pan n'agit qu'une fois le défilement arrivé en bas (ou
+  // quand le contenu tient sans défiler) ; au-dessus, il échoue et laisse le ScrollView défiler normalement.
+  const viewport = useRef(0)
+  const content = useRef(0)
+  const offset = useRef(0)
+  const atBottom = useSharedValue(false)
+  const updateAtBottom = () => {
+    atBottom.value = content.current <= viewport.current + 1 || offset.current + viewport.current >= content.current - 8
+  }
+  const openReviewPage = useMemo(
+    () =>
+      Gesture.Pan()
+        .activeOffsetY([-12, 12])
+        .failOffsetX([-24, 24])
+        .onTouchesMove((event) => {
+          'worklet'
+          if (!atBottom.value) GestureStateManager.fail(event.handlerTag)
+        })
+        .onEnd((event) => {
+          'worklet'
+          if (event.translationY < -24) scheduleOnRN(setReviewOpen, true)
+        }),
+    [atBottom],
+  )
+  // Le pied « Détails » reste un déclencheur direct, même quand le contenu est défilable : un swipe vers le haut sur
+  // le bouton ouvre la revue, un toucher garde son onPress.
+  const openReviewFooter = useMemo(
+    () =>
+      Gesture.Pan()
+        .activeOffsetY([-12, 12])
+        .failOffsetX([-24, 24])
+        .onEnd((event) => {
+          'worklet'
+          if (event.translationY < -24) scheduleOnRN(setReviewOpen, true)
+        }),
+    [],
+  )
 
   const isPlayer1 = game.player1Id === userId
   const opponentId = data?.opponentId ?? (isPlayer1 ? game.player2Id : game.player1Id)
@@ -227,96 +267,127 @@ export function DuelResult({
           </View>
           <IconButton icon={XIcon} label="Quitter les résultats" onPress={() => router.back()} />
         </View>
-        <View style={{ flex: 1, justifyContent: 'space-between', gap: tokens.space[5], paddingHorizontal: tokens.space[5], paddingBottom: tokens.space[3] }}>
-          <ResultHeader
-            outcome={cancelled ? 'draw' : outcome}
-            topic={topic}
-            me={{
-              name: myName,
-              tier: myTier,
-              score: myScore,
-              streak: streakOf(game, userId),
-              meta: bot ? `Elo ${formatNumber(rating)} · non classé` : undefined,
+        <GestureDetector gesture={openReviewPage}>
+          <ScrollView
+            style={{ flex: 1 }}
+            contentContainerStyle={{
+              flexGrow: 1,
+              justifyContent: 'space-between',
+              gap: tokens.space[5],
+              paddingHorizontal: tokens.space[5],
+              paddingBottom: tokens.space[3],
             }}
-            opponent={{
-              name: opponentName,
-              tier: opponentTier,
-              score: theirScore,
-              streak: streakOf(game, opponentId),
-              meta: bot ? (BOT_LEVEL[data?.botDifficulty ?? game.botDifficulty ?? ''] ?? 'Robot') : undefined,
+            showsVerticalScrollIndicator={false}
+            bounces={false}
+            scrollEventThrottle={16}
+            onLayout={(event) => {
+              viewport.current = event.nativeEvent.layout.height
+              updateAtBottom()
             }}
-          />
-          {bot || cancelled ? (
-            <Banner
-              tone="training"
-              title={cancelled ? 'Partie annulée' : 'Entraînement'}
-              message={cancelled ? 'Aucun point compté pour cette partie.' : "Pas d'expérience : la progression vient des duels contre d'autres joueurs."}
+            onContentSizeChange={(_, height) => {
+              content.current = height
+              updateAtBottom()
+            }}
+            onScroll={(event) => {
+              const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent
+              offset.current = contentOffset.y
+              content.current = contentSize.height
+              viewport.current = layoutMeasurement.height
+              updateAtBottom()
+            }}
+          >
+            <ResultHeader
+              outcome={cancelled ? 'draw' : outcome}
+              topic={topic}
+              me={{
+                name: myName,
+                tier: myTier,
+                score: myScore,
+                streak: streakOf(game, userId),
+                meta: bot ? `Elo ${formatNumber(rating)} · non classé` : undefined,
+              }}
+              opponent={{
+                name: opponentName,
+                tier: opponentTier,
+                score: theirScore,
+                streak: streakOf(game, opponentId),
+                meta: bot ? (BOT_LEVEL[data?.botDifficulty ?? game.botDifficulty ?? ''] ?? 'Robot') : undefined,
+              }}
             />
-          ) : (
-            <>
-              <EloSummary elo={rating} delta={data?.rated ? (data.eloDelta ?? 0) : 0} next={nextElo} />
-              <MasteryRing
-                tier={mastery ? tierLabel(mastery.tier as TierCode) : '—'}
-                next={mastery?.nextTier ? tierLabel(mastery.nextTier as TierCode) : undefined}
-                gained={mastery?.xpGained ?? 0}
-                remaining={mastery?.tierRemainingXp ?? 0}
-                size={150}
-                state={pendingReward ? 'pending' : 'done'}
+            {bot || cancelled ? (
+              <Banner
+                tone="training"
+                title={cancelled ? 'Partie annulée' : 'Entraînement'}
+                message={cancelled ? 'Aucun point compté pour cette partie.' : "Pas d'expérience : la progression vient des duels contre d'autres joueurs."}
               />
-            </>
-          )}
-          <View style={{ flexDirection: 'row', gap: tokens.space[3] }}>
-            <View style={{ flex: 1 }}>
-              {bot ? (
+            ) : (
+              <>
+                <EloSummary elo={rating} delta={data?.rated ? (data.eloDelta ?? 0) : 0} next={nextElo} />
+                <MasteryRing
+                  tier={mastery ? tierLabel(mastery.tier as TierCode) : '—'}
+                  next={mastery?.nextTier ? tierLabel(mastery.nextTier as TierCode) : undefined}
+                  gained={mastery?.xpGained ?? 0}
+                  remaining={mastery?.tierRemainingXp ?? 0}
+                  size={150}
+                  state={pendingReward ? 'pending' : 'done'}
+                />
+              </>
+            )}
+            <View style={{ flexDirection: 'row', gap: tokens.space[3] }}>
+              <View style={{ flex: 1 }}>
+                {bot ? (
+                  <Button
+                    full
+                    icon={LightningIcon}
+                    loading={training.isPending}
+                    onPress={() => {
+                      router.back()
+                      training.mutate({ topic: playTopic, difficulty })
+                    }}
+                  >
+                    Rejouer
+                  </Button>
+                ) : (
+                  <Button
+                    full
+                    icon={LightningIcon}
+                    loading={rematch.state === 'pending' && rematch.seconds === 0}
+                    disabled={rematch.state !== 'idle' || !opponentId}
+                    onPress={() => void rematch.send()}
+                  >
+                    {rematch.state === 'pending' && rematch.seconds > 0
+                      ? `En attente · ${rematch.seconds} s`
+                      : rematch.state === 'refused'
+                        ? 'Revanche refusée'
+                        : 'Revanche'}
+                  </Button>
+                )}
+              </View>
+              <View style={{ flex: 1 }}>
                 <Button
                   full
-                  icon={LightningIcon}
-                  loading={training.isPending}
+                  variant="gray"
+                  tone="neutral"
+                  loading={matchmaking.isPending}
                   onPress={() => {
                     router.back()
-                    training.mutate({ topic: playTopic, difficulty })
+                    matchmaking.mutate(playTopic)
                   }}
                 >
-                  Rejouer
+                  Nouvel adversaire
                 </Button>
-              ) : (
-                <Button
-                  full
-                  icon={LightningIcon}
-                  loading={rematch.state === 'pending' && rematch.seconds === 0}
-                  disabled={rematch.state !== 'idle' || !opponentId}
-                  onPress={() => void rematch.send()}
-                >
-                  {rematch.state === 'pending' && rematch.seconds > 0
-                    ? `En attente · ${rematch.seconds} s`
-                    : rematch.state === 'refused'
-                      ? 'Revanche refusée'
-                      : 'Revanche'}
-                </Button>
-              )}
+              </View>
             </View>
-            <View style={{ flex: 1 }}>
-              <Button
-                full
-                variant="gray"
-                tone="neutral"
-                loading={matchmaking.isPending}
-                onPress={() => {
-                  router.back()
-                  matchmaking.mutate(playTopic)
-                }}
-              >
-                Nouvel adversaire
+          </ScrollView>
+        </GestureDetector>
+        {!cancelled && (
+          <GestureDetector gesture={openReviewFooter}>
+            <View style={{ alignItems: 'center', paddingTop: tokens.space[2] }}>
+              <Button variant="plain" tone="neutral" size="M" icon={CaretUpIcon} style={{ alignSelf: 'center' }} onPress={() => setReviewOpen(true)}>
+                Détails
               </Button>
             </View>
-          </View>
-        </View>
-        {!cancelled && (
-          <View style={{ alignItems: 'center' }}>
-            <Button variant="plain" tone="neutral" size="M" icon={CaretUpIcon} onPress={() => setReviewOpen(true)}>
-              Détails
-            </Button>
-          </View>
+          </GestureDetector>
         )}
       </View>
       <DuelReview open={reviewOpen} onClose={() => setReviewOpen(false)} game={game} me={userId} myName={myName} opponentName={opponentName} canReport={!bot} />

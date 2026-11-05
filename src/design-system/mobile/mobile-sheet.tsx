@@ -27,6 +27,8 @@ export interface MobileSheetProps {
   footer?: ReactNode
   /** Rend le focus à l'élément qui a ouvert la feuille. */
   returnFocusTo?: RefObject<ViewRef | null>
+  /** Feuille effectivement présentée : permet de monter son contenu lourd après l'ouverture native. */
+  onDidPresent?: () => void
   children: ReactNode
 }
 
@@ -43,7 +45,7 @@ const splitScrim = (scrim: string) => {
  * Feuille modale par le bas, native (TrueSheet). Ajustée au contenu jusqu'à 80 %, ou `tall` à 92 %.
  * Contenu démonté une fois fermée. Une étape suivante s'empile dans une nouvelle feuille (`foundations.md` § 11).
  */
-export function MobileSheet({ open, onClose, title, subtitle, onBack, action, tall = false, footer, returnFocusTo, children }: MobileSheetProps) {
+export function MobileSheet({ open, onClose, title, subtitle, onBack, action, tall = false, footer, returnFocusTo, onDidPresent, children }: MobileSheetProps) {
   const { colors, radius } = useTheme()
   const { height } = useWindowDimensions()
   const insets = useSafeAreaInsets()
@@ -108,6 +110,7 @@ export function MobileSheet({ open, onClose, title, subtitle, onBack, action, ta
           </View>
         ) : undefined
       }
+      onDidPresent={onDidPresent}
       onDidDismiss={() => {
         // Balayage, voile ou retour : l'appelant repasse `open` à false.
         if (presented.current) {

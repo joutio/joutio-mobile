@@ -12,6 +12,7 @@ import {
   PageDots,
   QuestionBlock,
   RoundReviewTabs,
+  Skeleton,
   tokens,
   useTheme,
   type AnswerCardProps,
@@ -101,16 +102,29 @@ export function DuelReview({
   const rounds = sortedRounds(game).filter((round) => round.phase === 'CLOSED')
   const opponent = game.player1Id === me ? game.player2Id : game.player1Id
   const [index, setIndex] = useState(0)
+  const [ready, setReady] = useState(false)
   const [reportOpen, setReportOpen] = useState(false)
   const [reported, setReported] = useState<readonly number[]>([])
   const pager = useRef<ScrollViewInstance>(null)
   // La revue s'ouvre toujours sur la première question, même rouverte après une consultation.
   useEffect(() => {
-    if (!open) return
+    if (!open) {
+      setReady(false)
+      return
+    }
     setIndex(0)
+    // Filet si l'événement natif `onDidPresent` tarde ou est perdu : le squelette cède la place à la revue juste après
+    // le début de la présentation.
+    const timer = setTimeout(() => setReady(true), 160)
+    return () => clearTimeout(timer)
+  }, [open])
+  // Le contenu lourd (sept questions, images) n'est monté qu'une fois la feuille présentée : l'ouverture native reste
+  // immédiate, le squelette laisse la place à la revue dans la frame suivante.
+  useEffect(() => {
+    if (!open || !ready) return
     const frame = requestAnimationFrame(() => pager.current?.scrollTo({ x: 0, animated: false }))
     return () => cancelAnimationFrame(frame)
-  }, [open])
+  }, [open, ready])
   // La feuille fait 92 % ; en-tête, onglets et pied pris, la question remplit le reste sans défilement vertical.
   const pageHeight = Math.max(360, height * 0.92 - 250)
   const go = (next: number) => {
@@ -128,6 +142,7 @@ export function DuelReview({
         onClose={reportOpen ? () => setReportOpen(false) : onClose}
         title="Détails du duel"
         tall
+        onDidPresent={() => setReady(true)}
         footer={
           <View style={{ gap: tokens.space[2] }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -143,40 +158,47 @@ export function DuelReview({
           </View>
         }
       >
-        <View style={{ gap: tokens.space[4], marginHorizontal: -tokens.space[5] }}>
-          <View style={{ paddingHorizontal: tokens.space[5] }}>
-            <RoundReviewTabs
-              me={myName}
-              opponent={opponentName}
-              value={index}
-              onChange={go}
-              rounds={rounds.map((item) => ({ me: answerOf(item, me), opponent: answerOf(item, opponent), points: item.playerAnswers[me]?.points ?? 0 }))}
-            />
-          </View>
-          <ScrollView
-            ref={pager}
-            horizontal
-            pagingEnabled
-            nestedScrollEnabled
-            scrollsToTop={false}
-            showsHorizontalScrollIndicator={false}
-            contentOffset={{ x: index * width, y: 0 }}
-            onMomentumScrollEnd={(event) => setIndex(Math.round(event.nativeEvent.contentOffset.x / width))}
-          >
-            {rounds.map((item) => (
-              <ReviewPage
-                key={item.round}
-                round={item}
-                me={me}
-                opponent={opponent}
-                myName={myName}
-                opponentName={opponentName}
-                width={width}
-                height={pageHeight}
+        {ready ? (
+          <View style={{ gap: tokens.space[4], marginHorizontal: -tokens.space[5] }}>
+            <View style={{ paddingHorizontal: tokens.space[5] }}>
+              <RoundReviewTabs
+                me={myName}
+                opponent={opponentName}
+                value={index}
+                onChange={go}
+                rounds={rounds.map((item) => ({ me: answerOf(item, me), opponent: answerOf(item, opponent), points: item.playerAnswers[me]?.points ?? 0 }))}
               />
-            ))}
-          </ScrollView>
-        </View>
+            </View>
+            <ScrollView
+              ref={pager}
+              horizontal
+              pagingEnabled
+              nestedScrollEnabled
+              scrollsToTop={false}
+              showsHorizontalScrollIndicator={false}
+              contentOffset={{ x: index * width, y: 0 }}
+              onMomentumScrollEnd={(event) => setIndex(Math.round(event.nativeEvent.contentOffset.x / width))}
+            >
+              {rounds.map((item) => (
+                <ReviewPage
+                  key={item.round}
+                  round={item}
+                  me={me}
+                  opponent={opponent}
+                  myName={myName}
+                  opponentName={opponentName}
+                  width={width}
+                  height={pageHeight}
+                />
+              ))}
+            </ScrollView>
+          </View>
+        ) : (
+          <View style={{ height: pageHeight, gap: tokens.space[4] }}>
+            <Skeleton shape="row" />
+            <Skeleton shape="card" style={{ height: Math.max(180, pageHeight - 80) }} />
+          </View>
+        )}
       </MobileSheet>
       <ReportQuestionSheet
         open={open && reportOpen}
