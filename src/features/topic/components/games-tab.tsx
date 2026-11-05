@@ -10,14 +10,13 @@ import {
   SwordIcon,
   TabScrollView,
   Text,
-  toast,
   toCategoryCode,
   tokens,
   WarningCircleIcon,
   type MatchOutcome,
 } from '@/design-system'
 import type { GameHistoryItemView, GameOutcome } from '@/shared/types/bff'
-import { topicName } from '@/shared/utils/topic-name'
+import { topicName as formatTopicName } from '@/shared/utils/topic-name'
 import { useTopicGames } from '../hooks/use-topic'
 import { dayLabel, formatNumber } from '../lib/format'
 
@@ -30,7 +29,7 @@ const subOf = (game: GameHistoryItemView) => {
 }
 
 /** Onglet Parties : mes 10 dernières parties du sujet, groupées par jour. */
-export function GamesTab({ topicId }: { topicId: string }) {
+export function GamesTab({ topicId, topicName, historyPath }: { topicId: string; topicName: string; historyPath: '/home/history' | '/topics/history' }) {
   const games = useTopicGames(topicId)
   // Parties terminées seulement : une partie en attente ou annulée n'a pas d'issue à montrer.
   const finished = (games.data?.content ?? []).filter((game) => OUTCOMES[game.outcome])
@@ -50,12 +49,7 @@ export function GamesTab({ topicId }: { topicId: string }) {
       <SectionHeader
         title="Dernières parties"
         action={
-          <Button
-            variant="plain"
-            size="S"
-            // Historique complet : lot 8 du kit.
-            onPress={() => toast.info('Bientôt disponible', { description: "L'historique complet arrive avec le Profil." })}
-          >
+          <Button variant="plain" size="S" onPress={() => router.push({ pathname: historyPath, params: { topicId, topicName, backLabel: 'Sujet' } })}>
             Tout voir
           </Button>
         }
@@ -101,7 +95,7 @@ export function GamesTab({ topicId }: { topicId: string }) {
                       pathname: '/result/[gameId]',
                       params: {
                         gameId: game.gameId,
-                        topicName: topicName(game.topic.names),
+                        topicName: formatTopicName(game.topic.names),
                         topicId: game.topic.topicId,
                         category: game.topic.category ?? '',
                       },

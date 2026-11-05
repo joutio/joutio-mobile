@@ -12,6 +12,19 @@ import type {
 
 /** Top 10 de l'onglet Classement ; la page complète vit dans Classements (`classements.md`). */
 export const BOARD_SIZE = 10
+/** Page complète des classements : 20 joueurs par page. */
+export const RANKING_SIZE = 20
+
+export interface RankingFilters {
+  period: LeaderboardPeriod
+  scope: LeaderboardScope
+  /** `YYYY-MM`, utilisé par la période mensuelle. */
+  month?: string
+}
+
+export type RankingFilterState = Pick<RankingFilters, 'period' | 'scope'>
+
+export const DEFAULT_RANKING_FILTERS: RankingFilterState = { period: 'MONTHLY', scope: 'WORLD' }
 /** Dernières parties de l'onglet Parties ; l'historique complet vit dans `historique.md`. */
 export const GAMES_SIZE = 10
 
@@ -25,6 +38,18 @@ export const topicService = {
   leaderboard: (topicId: string) =>
     api.get<TopicLeaderboardView>(ENDPOINTS.topics.leaderboard(topicId), {
       params: { period: BOARD_PERIOD, scope: BOARD_SCOPE, page: 0, size: BOARD_SIZE },
+    }),
+
+  /** Page complète des classements (`classements.md`) : période, portée et pagination. */
+  leaderboardPage: (topicId: string, filters: RankingFilters, page: number) =>
+    api.get<TopicLeaderboardView>(ENDPOINTS.topics.leaderboard(topicId), {
+      params: {
+        period: filters.period,
+        scope: filters.scope,
+        month: filters.period === 'MONTHLY' ? filters.month : undefined,
+        page,
+        size: RANKING_SIZE,
+      },
     }),
 
   /** Mes dernières parties du sujet (le BFF n'expose pas celles de tous les joueurs). */

@@ -1,3 +1,4 @@
+import { router } from 'expo-router'
 import {
   Button,
   EmptyState,
@@ -8,7 +9,6 @@ import {
   Skeleton,
   TabScrollView,
   Text,
-  toast,
   tokens,
   TrophyIcon,
   WarningCircleIcon,
@@ -24,22 +24,32 @@ export const BOARD_TOP = 10
 export const boardSub = (entry: LeaderboardEntryView) => (entry.provisional ? 'Classement provisoire' : tierLabel(tierOf(entry.rating)))
 
 /** Ligne du joueur connecté, en barre fixe au-dessus de la barre d'onglets. */
-export function MyBoardRow({ entry }: { entry: LeaderboardEntryView }) {
+export function MyBoardRow({
+  entry,
+  sub = `${formatNumber(entry.monthlyXp)} XP ce mois`,
+  trail = formatNumber(entry.monthlyXp),
+}: {
+  entry: LeaderboardEntryView
+  sub?: string
+  trail?: string
+}) {
   return (
-    <PlayerRow
-      highlight
-      last
-      rank={entry.rank}
-      name={entry.pseudonym}
-      tier={entry.provisional ? undefined : tierOf(entry.rating)}
-      sub={`${formatNumber(entry.monthlyXp)} XP ce mois`}
-      trail={formatNumber(entry.monthlyXp)}
-    />
+    <PlayerRow highlight last rank={entry.rank} name={entry.pseudonym} tier={entry.provisional ? undefined : tierOf(entry.rating)} sub={sub} trail={trail} />
   )
 }
 
 /** Onglet Classement : Top 10 du mois, podium puis rangs 4 à 10. */
-export function BoardTab({ topicId, bottomInset }: { topicId: string; bottomInset: number }) {
+export function BoardTab({
+  topicId,
+  topicName,
+  rankingsPath,
+  bottomInset,
+}: {
+  topicId: string
+  topicName: string
+  rankingsPath: '/home/rankings' | '/topics/rankings'
+  bottomInset: number
+}) {
   const board = useTopicLeaderboard(topicId)
   const entries = board.data?.entries.content ?? []
   const [first, second, third, ...rest] = entries
@@ -58,12 +68,7 @@ export function BoardTab({ topicId, bottomInset }: { topicId: string; bottomInse
       <SectionHeader
         title="Top 10"
         action={
-          <Button
-            variant="plain"
-            size="S"
-            // Écran Classements : lot 8 du kit.
-            onPress={() => toast.info('Bientôt disponible', { description: 'La page Classements arrive avec le Profil.' })}
-          >
+          <Button variant="plain" size="S" onPress={() => router.push({ pathname: rankingsPath, params: { topicId, topicName, backLabel: 'Sujet' } })}>
             Tous les classements
           </Button>
         }

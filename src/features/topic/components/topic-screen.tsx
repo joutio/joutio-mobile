@@ -77,7 +77,7 @@ function Loading() {
  * Fiche sujet (`design/specs/screens/fiche-sujet.md`) : image en parallaxe, actions et chiffres du sujet, onglets
  * Mur (mock), Classement, Parties et Progression. Tirer recharge toute la page.
  */
-export function TopicScreen() {
+export function TopicScreen({ stack = 'home' }: { stack?: 'home' | 'topics' }) {
   const params = useLocalSearchParams<TopicRouteParams>()
   const topicId = params.id
   const client = useQueryClient()
@@ -184,8 +184,8 @@ export function TopicScreen() {
               onLayout={(event) => setActionsHeight(event.nativeEvent.layout.y + event.nativeEvent.layout.height)}
               style={{ flexDirection: 'row', gap: tokens.space[3] }}
             >
-              {/* 60 / 40 : le duel est l'action principale. */}
-              <Button full icon={LightningIcon} style={{ flex: 3 }} onPress={() => setDuelOpen(true)}>
+              {/* 65 / 35 : le duel est l'action principale. */}
+              <Button full icon={LightningIcon} style={{ flex: 65 }} onPress={() => setDuelOpen(true)}>
                 Lancer un duel
               </Button>
               <Button
@@ -196,7 +196,7 @@ export function TopicScreen() {
                 disabled={!topic}
                 accessibilityState={{ selected: followed }}
                 loading={follow.isPending}
-                style={{ flex: 2 }}
+                style={{ flex: 35 }}
                 onPress={toggleFollow}
               >
                 {followed ? 'Suivi' : 'Suivre'}
@@ -214,8 +214,23 @@ export function TopicScreen() {
         onTabChange={setTab}
         tabs={[
           { value: 'wall', label: 'Mur', content: <WallTab wall={wall} onComment={setCommented} /> },
-          { value: 'board', label: 'Classement', content: <BoardTab topicId={topicId} bottomInset={showMyRow ? 64 : 0} /> },
-          { value: 'games', label: 'Parties', content: <GamesTab topicId={topicId} /> },
+          {
+            value: 'board',
+            label: 'Classement',
+            content: (
+              <BoardTab
+                topicId={topicId}
+                topicName={name}
+                rankingsPath={stack === 'home' ? '/home/rankings' : '/topics/rankings'}
+                bottomInset={showMyRow ? 64 : 0}
+              />
+            ),
+          },
+          {
+            value: 'games',
+            label: 'Parties',
+            content: <GamesTab topicId={topicId} topicName={name} historyPath={stack === 'home' ? '/home/history' : '/topics/history'} />,
+          },
           { value: 'progress', label: 'Progression', content: data ? <ProgressTab overview={data} /> : <Loading /> },
         ]}
         floating={

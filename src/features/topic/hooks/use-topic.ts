@@ -1,10 +1,10 @@
-import { useMutation, useQuery, useQueryClient, type InfiniteData } from '@tanstack/react-query'
+import { keepPreviousData, useInfiniteQuery, useMutation, useQuery, useQueryClient, type InfiniteData } from '@tanstack/react-query'
 import type { TopicPage } from '@/features/topics/lib/topics-service'
 import { toast } from '@/design-system'
 import { useMe } from '@/features/me'
 import { queryKeys } from '@/lib/query-keys'
 import type { HomeView, TitlesView, TopicCardView, TopicOverviewView } from '@/shared/types/bff'
-import { topicService } from '../lib/topic-service'
+import { topicService, type RankingFilters } from '../lib/topic-service'
 
 /** En-tête, statistiques et progression du sujet. */
 export function useTopicOverview(topicId: string) {
@@ -14,6 +14,19 @@ export function useTopicOverview(topicId: string) {
 /** Top 10 du mois et ma ligne. */
 export function useTopicLeaderboard(topicId: string, enabled = true) {
   return useQuery({ queryKey: queryKeys.topic.leaderboard(topicId), queryFn: () => topicService.leaderboard(topicId), enabled, staleTime: 60_000 })
+}
+
+/** Classement complet d'un sujet (période, portée, pagination). */
+export function useTopicLeaderboardPage(topicId: string, filters: RankingFilters, enabled = true) {
+  return useInfiniteQuery({
+    queryKey: queryKeys.topic.leaderboardPage(topicId, filters),
+    queryFn: ({ pageParam }) => topicService.leaderboardPage(topicId, filters, pageParam),
+    initialPageParam: 0,
+    getNextPageParam: (last, pages) => (last.entries.last ? undefined : pages.length),
+    enabled: enabled && Boolean(topicId),
+    placeholderData: keepPreviousData,
+    staleTime: 60_000,
+  })
 }
 
 /** Mes 10 dernières parties du sujet. */

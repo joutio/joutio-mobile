@@ -1,3 +1,5 @@
 import { TopicScreen } from '@/features/topic'
 
-export default TopicScreen
+export default function TopicsTopic() {
+  return <TopicScreen stack="topics" />
+}

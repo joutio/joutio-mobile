@@ -11,10 +11,12 @@ export const queryKeys = {
     all: (topicId: string) => ['topic', topicId] as const,
     overview: (topicId: string) => ['topic', topicId, 'overview'] as const,
     leaderboard: (topicId: string) => ['topic', topicId, 'leaderboard'] as const,
+    leaderboardPage: (topicId: string, filters: object) => ['topic', topicId, 'leaderboard-page', filters] as const,
     games: (topicId: string, userId: string) => ['topic', topicId, 'games', userId] as const,
   },
   profiles: {
     titles: (userId: string) => ['profiles', userId, 'titles'] as const,
+    games: (userId: string, filters: object) => ['profiles', userId, 'games', filters] as const,
   },
   notifications: {
     unreadCount: () => ['notifications', 'unread-count'] as const,

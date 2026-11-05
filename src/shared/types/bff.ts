@@ -9,6 +9,8 @@ export interface MeView {
   userId: string
   email: string
   pseudonym: string
+  /** Code ISO-3166 alpha-2, `null` si non renseigné (portée Pays des classements). */
+  country: string | null
   language: Language
   /** Codes d'univers ordonnés (premier = principal), 3 au plus. */
   interests: string[]
