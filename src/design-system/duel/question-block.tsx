@@ -1,6 +1,6 @@
 import { Image } from 'expo-image'
 import { useEffect, useState, type ReactNode } from 'react'
-import { View, type StyleProp, type ViewStyle } from 'react-native'
+import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native'
 import Animated, { Easing, Keyframe, ReduceMotion, useAnimatedStyle, useSharedValue, withDelay, withTiming } from 'react-native-reanimated'
 import { useReducedMotion } from '../motion'
 import { Text } from '../primitives/text'
@@ -155,7 +155,11 @@ export function QuestionBlock({
                 cachePolicy="memory-disk"
                 transition={0}
                 accessibilityIgnoresInvertColors
-                style={{ width: '100%', aspectRatio: 5 / 4, borderRadius: radius.xl, borderWidth: HAIRLINE, borderColor: colors.border }}
+                style={
+                  fitImage
+                    ? [StyleSheet.absoluteFill, { borderRadius: radius.xl, borderWidth: HAIRLINE, borderColor: colors.border }]
+                    : { width: '100%', aspectRatio: 5 / 4, borderRadius: radius.xl, borderWidth: HAIRLINE, borderColor: colors.border }
+                }
               />
             </Animated.View>
           </View>

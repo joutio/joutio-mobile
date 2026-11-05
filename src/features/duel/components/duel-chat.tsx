@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { CaretLeftIcon, Composer, HAIRLINE, IconButton, Message, Pill, Text, tokens, useTheme } from '@/design-system'
@@ -12,15 +12,25 @@ interface ChatMessage {
   mine: boolean
 }
 
+const OPENING: ChatMessage = { id: 'hello', text: 'Bien joué, belle partie !', mine: false }
+/**
+ * Conversations mockées, conservées le temps de la session : le chat est un écran poussé, revenir au résultat puis
+ * le rouvrir ne doit pas effacer les messages (le BFF n'a pas encore de messagerie, décision du 2026-11-05).
+ */
+const conversations = new Map<string, ChatMessage[]>()
+
 /**
  * Chat d'après-duel (`resultat.md` § 6) : **mock** (décision du 2026-11-05), le BFF n'a pas encore de messagerie.
  * Rappel du duel en tête, réponses rapides ; les messages restent sur l'appareil.
  */
-export function DuelChat({ opponentName, recap, onBack }: { opponentName: string; recap: string; onBack: () => void }) {
+export function DuelChat({ gameId, opponentName, recap, onBack }: { gameId: string; opponentName: string; recap: string; onBack: () => void }) {
   const { colors } = useTheme()
   const insets = useSafeAreaInsets()
   const [draft, setDraft] = useState('')
-  const [messages, setMessages] = useState<ChatMessage[]>([{ id: 'hello', text: 'Bien joué, belle partie !', mine: false }])
+  const [messages, setMessages] = useState<ChatMessage[]>(() => conversations.get(gameId) ?? [OPENING])
+  useEffect(() => {
+    conversations.set(gameId, messages)
+  }, [gameId, messages])
   const send = (text: string) => {
     const value = text.trim()
     if (!value) return

@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
+import { Image } from 'expo-image'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { ScrollView, useWindowDimensions, View, type ScrollViewInstance } from 'react-native'
 import {
   AnswerTimingRow,
@@ -8,11 +9,10 @@ import {
   CheckIcon,
   FlagIcon,
   IconButton,
-  MobileSheet,
   PageDots,
+  PeekSheet,
   QuestionBlock,
   RoundReviewTabs,
-  Skeleton,
   tokens,
   useTheme,
   type AnswerCardProps,
@@ -77,56 +77,57 @@ function ReviewPage({
 }
 
 /**
- * « Détails du duel » (`resultat.md` § 6) : onglets des manches, temps de réponse, question rejouée avec ses
- * réponses (mêmes ratios que le duel, image réduite à la place disponible), page dots et flèches ; on balaie entre
- * les questions. « Signaler la question » empile sa feuille. Pseudonymes partout, jamais « toi ».
+ * « Détails du duel » (`resultat.md` § 6) : feuille persistante en `peek`, agrandie au glissement. Onglets des
+ * manches, temps de réponse, question rejouée avec ses réponses (mêmes ratios que le duel, image réduite à la place
+ * disponible), page dots et flèches ; on balaie entre les questions. « Signaler la question » empile sa feuille.
+ * Pseudonymes partout, jamais « toi ».
  */
 export function DuelReview({
-  open,
-  onClose,
   game,
   me,
   myName,
   opponentName,
   canReport,
+  active = true,
 }: {
-  open: boolean
-  onClose: () => void
   game: GameState
   me: string
   myName: string
   opponentName: string
   canReport: boolean
+  /** Écran au premier plan : la feuille se retire quand le chat est poussé par-dessus. */
+  active?: boolean
 }) {
   const { width, height } = useWindowDimensions()
-  const rounds = sortedRounds(game).filter((round) => round.phase === 'CLOSED')
+  const rounds = useMemo(() => sortedRounds(game).filter((round) => round.phase === 'CLOSED'), [game])
+  const images = useMemo(() => [...new Set(rounds.map((round) => round.imageUrl).filter((url): url is string => Boolean(url)))], [rounds])
   const opponent = game.player1Id === me ? game.player2Id : game.player1Id
+  const [expanded, setExpanded] = useState(false)
   const [index, setIndex] = useState(0)
-  const [ready, setReady] = useState(false)
+  // Hauteur de repli immédiate : le pager se monte avant la première mesure, sinon l'agrandissement affiche un vide.
+  const [pageHeight, setPageHeight] = useState(() => Math.max(280, height * 0.92 - 360))
   const [reportOpen, setReportOpen] = useState(false)
   const [reported, setReported] = useState<readonly number[]>([])
   const pager = useRef<ScrollViewInstance>(null)
-  // La revue s'ouvre toujours sur la première question, même rouverte après une consultation.
+
+  // Les images sont préchargées dès le montage de la revue : l'agrandissement n'attend pas le réseau.
   useEffect(() => {
-    if (!open) {
-      setReady(false)
+    if (images.length === 0) return
+    void Promise.all(images.map((url) => Image.prefetch(url))).catch(() => undefined)
+  }, [images])
+
+  // Chaque agrandissement repart de la première question, même après une consultation.
+  useEffect(() => {
+    if (!expanded) {
+      setIndex(0)
       return
     }
-    setIndex(0)
-    // Filet si l'événement natif `onDidPresent` tarde ou est perdu : le squelette cède la place à la revue juste après
-    // le début de la présentation.
-    const timer = setTimeout(() => setReady(true), 160)
-    return () => clearTimeout(timer)
-  }, [open])
-  // Le contenu lourd (sept questions, images) n'est monté qu'une fois la feuille présentée : l'ouverture native reste
-  // immédiate, le squelette laisse la place à la revue dans la frame suivante.
-  useEffect(() => {
-    if (!open || !ready) return
     const frame = requestAnimationFrame(() => pager.current?.scrollTo({ x: 0, animated: false }))
     return () => cancelAnimationFrame(frame)
-  }, [open, ready])
-  // La feuille fait 92 % ; en-tête, onglets et pied pris, la question remplit le reste sans défilement vertical.
-  const pageHeight = Math.max(360, height * 0.92 - 250)
+  }, [expanded])
+
+  if (rounds.length === 0) return null
+
   const go = (next: number) => {
     const target = Math.min(rounds.length - 1, Math.max(0, next))
     setIndex(target)
@@ -134,41 +135,22 @@ export function DuelReview({
   }
   const round = rounds[index]
   const done = reported.includes(index)
+  const subtitle = rounds.length > 0 ? `Question ${index + 1} sur ${rounds.length}` : undefined
 
   return (
     <>
-      <MobileSheet
-        open={open}
-        onClose={reportOpen ? () => setReportOpen(false) : onClose}
-        title="Détails du duel"
-        tall
-        onDidPresent={() => setReady(true)}
-        footer={
-          <View style={{ gap: tokens.space[2] }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-              <IconButton icon={CaretLeftIcon} label="Question précédente" variant="gray" disabled={index === 0} onPress={() => go(index - 1)} />
-              <PageDots count={rounds.length} index={index} />
-              <IconButton icon={CaretRightIcon} label="Question suivante" variant="gray" disabled={index >= rounds.length - 1} onPress={() => go(index + 1)} />
-            </View>
-            {canReport && (
-              <Button variant="plain" tone="neutral" size="M" full icon={done ? CheckIcon : FlagIcon} disabled={done} onPress={() => setReportOpen(true)}>
-                {done ? 'Question signalée' : 'Signaler la question'}
-              </Button>
-            )}
+      <PeekSheet title="Détails du duel" subtitle={subtitle} active={active} onExpandedChange={setExpanded}>
+        <View style={{ flex: 1, gap: tokens.space[3], paddingBottom: tokens.space[5] }}>
+          <View style={{ paddingHorizontal: tokens.space[5] }}>
+            <RoundReviewTabs
+              me={myName}
+              opponent={opponentName}
+              value={index}
+              onChange={go}
+              rounds={rounds.map((item) => ({ me: answerOf(item, me), opponent: answerOf(item, opponent), points: item.playerAnswers[me]?.points ?? 0 }))}
+            />
           </View>
-        }
-      >
-        {ready ? (
-          <View style={{ gap: tokens.space[4], marginHorizontal: -tokens.space[5] }}>
-            <View style={{ paddingHorizontal: tokens.space[5] }}>
-              <RoundReviewTabs
-                me={myName}
-                opponent={opponentName}
-                value={index}
-                onChange={go}
-                rounds={rounds.map((item) => ({ me: answerOf(item, me), opponent: answerOf(item, opponent), points: item.playerAnswers[me]?.points ?? 0 }))}
-              />
-            </View>
+          <View style={{ flex: 1, minHeight: 0, overflow: 'hidden' }} onLayout={(event) => setPageHeight(event.nativeEvent.layout.height)}>
             <ScrollView
               ref={pager}
               horizontal
@@ -176,6 +158,7 @@ export function DuelReview({
               nestedScrollEnabled
               scrollsToTop={false}
               showsHorizontalScrollIndicator={false}
+              style={{ flex: 1, overflow: 'hidden' }}
               contentOffset={{ x: index * width, y: 0 }}
               onMomentumScrollEnd={(event) => setIndex(Math.round(event.nativeEvent.contentOffset.x / width))}
             >
@@ -193,15 +176,22 @@ export function DuelReview({
               ))}
             </ScrollView>
           </View>
-        ) : (
-          <View style={{ height: pageHeight, gap: tokens.space[4] }}>
-            <Skeleton shape="row" />
-            <Skeleton shape="card" style={{ height: Math.max(180, pageHeight - 80) }} />
+          <View style={{ gap: tokens.space[3], paddingHorizontal: tokens.space[5], paddingTop: tokens.space[4] }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <IconButton icon={CaretLeftIcon} label="Question précédente" variant="gray" disabled={index === 0} onPress={() => go(index - 1)} />
+              <PageDots count={rounds.length} index={index} />
+              <IconButton icon={CaretRightIcon} label="Question suivante" variant="gray" disabled={index >= rounds.length - 1} onPress={() => go(index + 1)} />
+            </View>
+            {canReport && (
+              <Button variant="plain" tone="neutral" size="M" full icon={done ? CheckIcon : FlagIcon} disabled={done} onPress={() => setReportOpen(true)}>
+                {done ? 'Question signalée' : 'Signaler la question'}
+              </Button>
+            )}
           </View>
-        )}
-      </MobileSheet>
+        </View>
+      </PeekSheet>
       <ReportQuestionSheet
-        open={open && reportOpen}
+        open={expanded && reportOpen}
         onClose={() => setReportOpen(false)}
         questionId={round?.questionId ?? null}
         gameId={game.gameId}
