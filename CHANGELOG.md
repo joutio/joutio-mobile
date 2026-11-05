@@ -1,3 +1,10 @@
+## [1.14.0](https://github.com/joutio/joutio-mobile-expo/compare/v1.13.0...v1.14.0) (2026-11-05)
+
+### Features
+
+* **design-system:** add the settings, avatar and media building blocks ([116d05d](https://github.com/joutio/joutio-mobile-expo/commit/116d05dba460721d3e7ea5e3cd7ad8d7f5f4101f))
+* **profile:** build the profile, settings, avatar editor and Premium sheet ([c2e20cd](https://github.com/joutio/joutio-mobile-expo/commit/c2e20cd8bacc3a2df1a39807a7b1f79446062f64))
+
 ## [1.13.0](https://github.com/joutio/joutio-mobile-expo/compare/v1.12.0...v1.13.0) (2026-11-05)
 
 ### Features
