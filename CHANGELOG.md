@@ -1,3 +1,15 @@
+## [1.15.0](https://github.com/joutio/joutio-mobile-expo/compare/v1.14.0...v1.15.0) (2026-11-05)
+
+### Features
+
+* **avatar:** align the avatar editor with joutio-web ([469c440](https://github.com/joutio/joutio-mobile-expo/commit/469c4408fb76963a3f0d18b76490db35d5d42ccf))
+
+### Bug Fixes
+
+* **lists:** load more in sheets, space the Social footer and refresh Social ([f44f545](https://github.com/joutio/joutio-mobile-expo/commit/f44f5458316fdf461a9bc447c6c676b3abd47ea8))
+* **player-row:** ripple across the whole row on Android ([dc994be](https://github.com/joutio/joutio-mobile-expo/commit/dc994be53391c3ae2258bae675d44e6eabef14a8))
+* **result:** ease the swipe to the duel details ([284c65a](https://github.com/joutio/joutio-mobile-expo/commit/284c65a717e1701a39e5dca8a915df5eb41ea230))
+
 ## [1.14.0](https://github.com/joutio/joutio-mobile-expo/compare/v1.13.0...v1.14.0) (2026-11-05)
 
 ### Features
