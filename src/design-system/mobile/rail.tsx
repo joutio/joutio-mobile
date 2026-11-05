@@ -15,14 +15,12 @@ const GAP = tokens.space[4]
 const GUTTER = tokens.space[5]
 
 /**
- * Rangée horizontale de cartes (`navigation.md`) : défilement sans barre, aimanté au début de chaque carte, marges de
- * 16 pt, écart de 12 pt.
+ * Rangée horizontale de cartes (`navigation.md`) : défilement **libre** sans barre (inertie native, sans aimantation,
+ * 2026-11-05), marges de 16 pt, écart de 12 pt.
  */
 export function Rail({ itemWidth, label, style, children }: RailProps) {
   const items = Children.toArray(children)
   const widthOf = (index: number) => (typeof itemWidth === 'function' ? itemWidth(index) : itemWidth)
-  // Aimantation au début de chaque carte, comme `snap-start` + `scroll-px-4` du lab.
-  const offsets = items.reduce<number[]>((acc, _, index) => [...acc, index === 0 ? 0 : acc[index - 1]! + widthOf(index - 1) + GAP], [])
 
   return (
     <ScrollView
@@ -32,8 +30,6 @@ export function Rail({ itemWidth, label, style, children }: RailProps) {
       accessibilityLabel={label}
       accessibilityRole="list"
       showsHorizontalScrollIndicator={false}
-      snapToOffsets={offsets}
-      decelerationRate="fast"
       style={style}
       contentContainerStyle={{ paddingHorizontal: GUTTER, gap: GAP }}
     >

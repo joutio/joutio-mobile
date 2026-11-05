@@ -1,8 +1,7 @@
 import { useScrollToTop } from 'expo-router'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { FlashList, type FlashListRef } from '@shopify/flash-list'
-import { ScrollView, useWindowDimensions, View } from 'react-native'
-import { RefreshControl } from 'react-native-gesture-handler'
+import { RefreshControl, ScrollView, useWindowDimensions, View } from 'react-native'
 import { useSharedValue } from 'react-native-reanimated'
 import {
   ArrowsDownUpIcon,
@@ -15,6 +14,7 @@ import {
   FeedFooter,
   haptic,
   IconButton,
+  ListGroup,
   ListRow,
   LoadMoreScrollView,
   MagnifyingGlassIcon,
@@ -103,10 +103,18 @@ export function TopicsScreen() {
   const topics = useTopics(filters)
   const facets = useTopicFacets(search)
 
-  // Un changement de recherche ou de filtre ramène au seuil de collage (ici, le haut de la grille).
+  // Un changement de recherche, de filtre ou de tri ramène au seuil de collage (ici, le haut de la grille) : tout de
+  // suite, puis à l'arrivée des nouveaux résultats (l'ancienne page reste affichée en attendant, `keepPreviousData`).
+  const backToTop = useRef(false)
   useEffect(() => {
+    backToTop.current = true
     list.current?.scrollToOffset({ offset: 0, animated: false })
   }, [filters])
+  useEffect(() => {
+    if (!backToTop.current || topics.isPlaceholderData || topics.isPending) return
+    backToTop.current = false
+    list.current?.scrollToOffset({ offset: 0, animated: false })
+  }, [topics.data, topics.isPlaceholderData, topics.isPending])
 
   // Un tri à égalité (abonnés, parties) peut renvoyer un même sujet sur deux pages : une seule carte par sujet.
   const items = useMemo(
@@ -239,20 +247,27 @@ export function TopicsScreen() {
             </View>
             <View style={{ gap: tokens.space[4] }}>
               <SectionHeader title="Trier par" />
-              <RadioGroup label="Trier par">
-                {SORTS.map((option, index) => (
-                  <ListRow
-                    key={option.value}
-                    label={option.label}
-                    control="radio"
-                    on={sort === option.value}
-                    onToggle={() => setSort(option.value)}
-                    last={index === SORTS.length - 1}
-                  />
-                ))}
-              </RadioGroup>
+              <ListGroup>
+                <RadioGroup label="Trier par">
+                  {SORTS.map((option, index) => (
+                    <ListRow
+                      key={option.value}
+                      label={option.label}
+                      control="radio"
+                      on={sort === option.value}
+                      onToggle={() => setSort(option.value)}
+                      last={index === SORTS.length - 1}
+                    />
+                  ))}
+                </RadioGroup>
+              </ListGroup>
             </View>
-            <ListRow icon={EyeSlashIcon} label="Masquer les sujets suivis" control="toggle" on={hideFollowed} onToggle={setHideFollowed} last />
+            <View style={{ gap: tokens.space[4] }}>
+              <SectionHeader title="Affichage" />
+              <ListGroup>
+                <ListRow icon={EyeSlashIcon} label="Masquer les sujets suivis" control="toggle" on={hideFollowed} onToggle={setHideFollowed} last />
+              </ListGroup>
+            </View>
           </View>
         </MobileSheet>
       }
@@ -283,6 +298,8 @@ export function TopicsScreen() {
           <FlashList
             ref={list}
             renderScrollComponent={LoadMoreScrollView}
+            // Activé par défaut en v2 : à un nouveau tri, il garderait en vue le sujet affiché avant, au lieu du haut.
+            maintainVisibleContentPosition={{ disabled: true }}
             refreshControl={
               <RefreshControl
                 refreshing={refreshing}

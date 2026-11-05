@@ -1,6 +1,7 @@
 import { useId, type ReactNode } from 'react'
 import { View, type StyleProp, type ViewStyle } from 'react-native'
-import Svg, { Defs, LinearGradient, Stop, Text as SvgText } from 'react-native-svg'
+import Svg, { Text as SvgText } from 'react-native-svg'
+import { alpha } from '../theme/color'
 import { Button } from '../primitives/button'
 import { SectionHeader } from '../primitives/section-header'
 import { TopicCard, type TopicCardProps } from '../primitives/topic-card'
@@ -13,11 +14,27 @@ const MAX = 10
 export const TOP_TEN_CARD_WIDTH = 172
 /** Part visible du chiffre : la carte recouvre le reste, il suffit de le reconnaître. */
 const DIGIT_WIDTH = { one: 42, single: 60, double: 112 }
-/** Resserre le 10 sans que le zéro touche le 1 (−0,08 em du lab). */
-const DOUBLE_SPACING = -0.08 * tokens.typography.numericRank.fontSize
+/**
+ * « 10 » en deux glyphes : le 1, décalé du bord gauche (la carte 9 ne le rogne plus), chevauche légèrement le 0, qui
+ * passe **par-dessus**. Origines mesurées sur Geist 800 au token `numericRank`.
+ */
+const TEN_ONE_X = 6
+const TEN_ZERO_X = TEN_ONE_X + 41
 /** Hauteur du chiffre, calée sur le token `numericRank`. */
 const NUMERAL_HEIGHT = 120
 const NUMERAL_BASELINE = 116
+/** Débord du SVG sous la carte : le chiffre continue derrière elle. */
+const UNDER_CARD = 48
+/** L'ombre déborde sous la carte : ses coins arrondis ne laissent pas voir un chiffre sans ombre. */
+const SHADOW_UNDER = 16
+/**
+ * Ombre portée par la carte sur le nombre (rendu france.tv) : de son bord gauche (nulle) jusqu'à la carte (presque le
+ * fond), en courbe douce (ease-in). Dessinée en fines tranches pleines plutôt qu'en dégradé translucide : le rendu
+ * des dégradés varie selon le chemin d'affichage (fenêtre de l'émulateur en GPU hôte : marche d'escalier).
+ */
+const SHADOW_SLICES = 40
+const SHADOW_MAX = 0.94
+const shadowOpacity = (t: number) => SHADOW_MAX * Math.pow(Math.min(1, t), 1.6)
 
 export interface TopTenTopic extends Pick<TopicCardProps, 'title' | 'category' | 'image'> {
   /** Identifiant stable (clé de liste). */
@@ -36,45 +53,66 @@ export interface TopTenProps {
 
 const digitWidth = (rank: number) => (rank >= MAX ? DIGIT_WIDTH.double : rank === 1 ? DIGIT_WIDTH.one : DIGIT_WIDTH.single)
 
-/** Chiffre plein et sombre, au contour clair qui s'efface sous la carte. */
+/** Chiffre plein au contour clair, assombri près de la carte par l'ombre qu'elle porte. */
 function RankNumeral({ rank }: { rank: number }) {
   const { colors } = useTheme()
   const id = useId().replace(/:/g, '')
-  const stroke = `${id}-stroke`
-  const fill = `${id}-fill`
   const { fontSize, letterSpacing } = tokens.typography.numericRank
+  const width = digitWidth(rank) + UNDER_CARD
+  const ten = rank >= MAX
+  const glyph = (text: string, x: number) => (
+    <SvgText
+      x={x}
+      y={NUMERAL_BASELINE}
+      fontFamily={fontFace('Geist', '800')}
+      fontSize={fontSize}
+      letterSpacing={letterSpacing}
+      fill={colors.rankFill}
+      stroke={colors.rankStroke}
+      strokeOpacity={0.9}
+      strokeWidth={2.5}
+    >
+      {text}
+    </SvgText>
+  )
   return (
     <Svg
-      width={digitWidth(rank) + 48}
+      width={width}
       height={NUMERAL_HEIGHT}
       style={{ position: 'absolute', top: tokens.space[3], left: 0, overflow: 'visible' }}
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
     >
-      <Defs>
-        <LinearGradient id={stroke} x1="0" x2="1" y1="0" y2="0">
-          <Stop offset="0" stopColor={colors.rankStroke} />
-          <Stop offset="0.5" stopColor={colors.rankStroke} stopOpacity={0.35} />
-          <Stop offset="1" stopColor={colors.rankStroke} stopOpacity={0.05} />
-        </LinearGradient>
-        <LinearGradient id={fill} x1="0" x2="1" y1="0" y2="0">
-          <Stop offset="0" stopColor={colors.rankFill} />
-          <Stop offset="1" stopColor={colors.bg} />
-        </LinearGradient>
-      </Defs>
-      <SvgText
-        x={0}
-        y={NUMERAL_BASELINE}
-        fontFamily={fontFace('Geist', '800')}
-        fontSize={fontSize}
-        letterSpacing={rank >= MAX ? DOUBLE_SPACING : letterSpacing}
-        fill={`url(#${fill})`}
-        stroke={`url(#${stroke})`}
-        strokeWidth={2.5}
-      >
-        {String(rank)}
-      </SvgText>
+      {ten ? (
+        <>
+          {glyph('1', TEN_ONE_X)}
+          {glyph('0', TEN_ZERO_X)}
+        </>
+      ) : (
+        glyph(String(rank), 0)
+      )}
     </Svg>
+  )
+}
+
+/**
+ * Ombre de la carte sur le nombre : couches qui partent chacune d'un peu plus à droite et vont jusqu'au bout. Leurs
+ * opacités se composent (1 − Π(1 − aᵢ)) pour suivre exactement la courbe ; aucune couture d'arrondi au pixel.
+ */
+function CardShadow({ rank }: { rank: number }) {
+  const { colors } = useTheme()
+  const edge = digitWidth(rank)
+  const width = edge + SHADOW_UNDER
+  const slice = width / SHADOW_SLICES
+  const target = (index: number) => shadowOpacity(((index + 0.5) * slice) / edge)
+  return (
+    <View pointerEvents="none" style={{ position: 'absolute', top: tokens.space[3], left: 0, width, height: NUMERAL_HEIGHT }}>
+      {Array.from({ length: SHADOW_SLICES }, (_, index) => {
+        const previous = index === 0 ? 0 : target(index - 1)
+        const layer = 1 - (1 - target(index)) / (1 - previous)
+        return <View key={index} style={{ position: 'absolute', top: 0, bottom: 0, left: index * slice, right: 0, backgroundColor: alpha(colors.bg, layer) }} />
+      })}
+    </View>
   )
 }
 
@@ -82,6 +120,7 @@ function Ranked({ rank, children }: { rank: number; children: ReactNode }) {
   return (
     <View style={{ paddingLeft: digitWidth(rank) }}>
       <RankNumeral rank={rank} />
+      <CardShadow rank={rank} />
       {children}
     </View>
   )

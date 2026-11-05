@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode, type Ref } from 'react'
 import {
   Platform,
+  ScrollView,
   View,
   type LayoutChangeEvent,
   type NativeScrollEvent,
@@ -9,7 +10,7 @@ import {
   type ScrollViewProps,
 } from 'react-native'
 import { createTabList } from 'react-native-collapsible-tabs-native'
-import { GestureDetector, ScrollView as GestureScrollView, usePanGesture, type PanGesture } from 'react-native-gesture-handler'
+import { GestureDetector, GestureStateManager, usePanGesture, type PanGesture } from 'react-native-gesture-handler'
 import Animated, { interpolate, useAnimatedStyle, useSharedValue, withSpring, type SharedValue } from 'react-native-reanimated'
 import { scheduleOnRN } from 'react-native-worklets'
 import { haptic } from '../haptics'
@@ -111,19 +112,52 @@ export function DragToLoadMore({ enabled, loading = false, onLoadMore, children 
     onLoadMore()
   }
 
+  /** Dernière position du doigt (absoluteY) et départ en X, pour décider à la main de l'activation. */
+  const lastY = useSharedValue(0)
+  const startX = useSharedValue(0)
+  /** Montée cumulée du doigt depuis son dernier mouvement vers le bas. */
+  const climbed = useSharedValue(0)
+  const activated = useSharedValue(false)
+
   const pan = usePanGesture({
     enabled,
-    activeOffsetY: [-4, 4],
-    failOffsetX: [-24, 24],
-    onUpdate: (event) => {
+    // Activation à la main : seulement liste en bas et doigt qui monte. Au milieu de la liste, ou vers le bas, le geste
+    // ne s'active jamais : le défilement natif et le pull-to-refresh du haut (SwipeRefreshLayout, RefreshControl)
+    // gardent le toucher. Actif, Gesture Handler prend le toucher et la liste native s'arrête.
+    manualActivation: true,
+    onTouchesDown: (event) => {
       'worklet'
-      if (phase.value === 2 || !enabledValue.value) return
-      if (!atEndValue.value && pull.value === 0) {
-        anchor.value = Number.NaN
+      const touch = event.allTouches[0]
+      if (!touch) return
+      lastY.value = touch.absoluteY
+      startX.value = touch.absoluteX
+      climbed.value = 0
+      anchor.value = Number.NaN
+      activated.value = false
+    },
+    onTouchesMove: (event) => {
+      'worklet'
+      const touch = event.allTouches[0]
+      if (!touch || activated.value) return
+      const dy = touch.absoluteY - lastY.value
+      lastY.value = touch.absoluteY
+      if (dy < 0) climbed.value -= dy
+      else if (dy > 0) climbed.value = 0
+      if (Math.abs(touch.absoluteX - startX.value) > 24 && pull.value === 0) {
+        GestureStateManager.fail(event.handlerTag)
         return
       }
-      if (Number.isNaN(anchor.value)) anchor.value = event.translationY
-      const over = anchor.value - event.translationY
+      if (phase.value === 0 && enabledValue.value && atEndValue.value && climbed.value > 4) {
+        anchor.value = touch.absoluteY
+        activated.value = true
+        GestureStateManager.activate(event.handlerTag)
+        return
+      }
+    },
+    onUpdate: (event) => {
+      'worklet'
+      if (phase.value === 2 || !enabledValue.value || Number.isNaN(anchor.value)) return
+      const over = anchor.value - event.absoluteY
       const next = over > 0 ? rubberBand(over, viewport.value) : 0
       pull.value = next
       if (next > 0 && phase.value === 0) {
@@ -139,6 +173,7 @@ export function DragToLoadMore({ enabled, loading = false, onLoadMore, children 
     onFinalize: () => {
       'worklet'
       anchor.value = Number.NaN
+      activated.value = false
       if (phase.value !== 1) return
       scheduleOnRN(setLocked, false)
       armed.value = false
@@ -227,20 +262,19 @@ export function DragToLoadMore({ enabled, loading = false, onLoadMore, children 
 type ScrollEvent = NativeSyntheticEvent<NativeScrollEvent>
 
 /**
- * `ScrollView` à poser sous `DragToLoadMore` (seul ou en `renderScrollComponent` d'une FlashList) : il partage son
- * geste avec la traction, mesure s'il est en bas, coupe le rebond natif en bas (iOS) et l'étirement (Android), et se
+ * `ScrollView` (React Native, pour que le pull-to-refresh natif du haut garde la main) à poser sous `DragToLoadMore`
+ * (seul ou en `renderScrollComponent` d'une FlashList) : il mesure s'il est en bas, coupe le rebond natif en bas (iOS) et l'étirement (Android), et se
  * fige pendant la traction.
  */
 export function LoadMoreScrollView({ onScroll, onLayout, onContentSizeChange, ref, ...props }: ScrollViewProps & { ref?: Ref<ScrollViewInstance | null> }) {
   const context = useContext(LoadMoreContext)
-  if (!context) return <GestureScrollView ref={ref} onScroll={onScroll} onLayout={onLayout} onContentSizeChange={onContentSizeChange} {...props} />
-  const { pan, enabled, locked, atEnd, measure, setViewport, setContent } = context
+  if (!context) return <ScrollView ref={ref} onScroll={onScroll} onLayout={onLayout} onContentSizeChange={onContentSizeChange} {...props} />
+  const { enabled, locked, atEnd, measure, setViewport, setContent } = context
   return (
-    <GestureScrollView
+    <ScrollView
       scrollEventThrottle={16}
       {...props}
       ref={ref}
-      simultaneousWith={pan}
       scrollEnabled={!locked && props.scrollEnabled !== false}
       bounces={Platform.OS === 'ios' && enabled && atEnd ? false : props.bounces}
       alwaysBounceVertical={props.alwaysBounceVertical ?? true}
