@@ -1,3 +1,9 @@
+## [1.4.1](https://github.com/joutio/joutio-mobile-expo/compare/v1.4.0...v1.4.1) (2026-11-05)
+
+### Bug Fixes
+
+* **mobile:** free rails, grouped filters, home refresh, top 10 numerals ([577b0bd](https://github.com/joutio/joutio-mobile-expo/commit/577b0bd24875b4c2a3b327adb25eae12d4f42aa8))
+
 ## [1.4.0](https://github.com/joutio/joutio-mobile-expo/compare/v1.3.0...v1.4.0) (2026-11-05)
 
 ### Features
