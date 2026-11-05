@@ -1,4 +1,5 @@
 export * from './answer-timing-row'
+export * from './badge-unlock'
 export * from './elo-summary'
 export * from './mastery-ring'
 export * from './rank-promotion'

@@ -17,26 +17,29 @@ const bezier = (name: 'base' | 'celebration') => {
   return easing.type === 'bezier' ? Easing.bezier(easing.points[0], easing.points[1], easing.points[2], easing.points[3]) : Easing.linear
 }
 
-export type HeroMotion = 'celebrate' | 'unroll'
+export type HeroMotion = 'celebrate' | 'unroll' | 'drop'
 
 /**
  * Arrivée du héros : `jo-celebrate` (fondu et échelle 0,7 → 1, 700 ms, easing `celebration`) ou `jo-unroll` (le
- * ruban se déroule depuis le centre, `clip-path: inset(0 50%)` → `inset(0)`, 500 ms, easing `base`).
+ * ruban se déroule depuis le centre, `clip-path: inset(0 50%)` → `inset(0)`, 500 ms, easing `base`) ou `jo-drop` (le
+ * badge tombe de 96 px en fondu et ressort, 700 ms, easing `celebration`).
  */
 function Hero({ motion, children }: { motion: HeroMotion; children: ReactNode }) {
   const reduced = useReducedMotion()
   const progress = useSharedValue(reduced ? 1 : 0)
   useEffect(() => {
     if (reduced) return
-    const name = motion === 'celebrate' ? 'celebration' : 'base'
+    const name = motion === 'unroll' ? 'base' : 'celebration'
     progress.value = withTiming(1, { duration: tokens.motion[name].duration, easing: bezier(name), reduceMotion: ReduceMotion.Never })
   }, [motion, reduced, progress])
 
   const celebrate = useAnimatedStyle(() => ({ opacity: Math.min(1, progress.value), transform: [{ scale: 0.7 + 0.3 * progress.value }] }))
+  const drop = useAnimatedStyle(() => ({ opacity: Math.min(1, progress.value), transform: [{ translateY: -96 * (1 - progress.value) }] }))
   const unrollMask = useAnimatedStyle(() => ({ transform: [{ scaleX: progress.value }] }))
   const unrollFade = useAnimatedStyle(() => ({ opacity: progress.value }))
 
   if (motion === 'celebrate') return <Animated.View style={celebrate}>{children}</Animated.View>
+  if (motion === 'drop') return <Animated.View style={drop}>{children}</Animated.View>
   return (
     <MaskedView maskElement={<Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: '#000' }, unrollMask]} />}>
       <Animated.View style={unrollFade}>{children}</Animated.View>

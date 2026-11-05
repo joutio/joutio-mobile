@@ -4,13 +4,15 @@ import { BottomNavDemo, MobileTopBarDemo, StickyScreenDemo } from './row2'
 import { ChipDemo, FieldDemo, ListRowDemo, MatchRowDemo, PlayerRowDemo, RadioGroupDemo, SearchFieldDemo, SegmentedDemo, SwitchDemo } from './row3'
 import { BannerDemo, DialogDemo, MenuDemo, MobileSheetDemo, SheetHeaderDemo, ToastDemo } from './row4'
 import { CategoryTileDemo, CodeInputDemo, LogoDemo, PageDotsDemo, SocialButtonDemo, SplashLogoDemo, TopicCardDemo, TopicRowDemo } from './onboarding'
+import { BadgeFamilyRowDemo, RankLadderDemo, RewardCardDemo, StreakCalendarDemo, StreakDemo, TopicsDonutDemo } from './profile'
+import { UnlockSequenceDemo } from './result'
 import { CollapsibleTabsScreenDemo, EmptyStateDemo, FeedFooterDemo, ParallaxScreenDemo, SectionHeaderDemo } from './row5'
 
 export interface CatalogEntry {
   id: string
   title: string
   /** Rangée du socle (kit mobile § 3). */
-  row: 1 | 2 | 3 | 4 | 5 | 6
+  row: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8
   /** Spec de référence dans `design/specs/`. */
   spec: string
   Demo: ComponentType
@@ -57,6 +59,13 @@ export const CATALOG: CatalogEntry[] = [
   { id: 'page-dots', title: 'PageDots', row: 6, spec: 'components/feedback.md', Demo: PageDotsDemo },
   { id: 'topic-row', title: 'TopicRow', row: 6, spec: 'components/contenu.md', Demo: TopicRowDemo },
   { id: 'topic-card', title: 'TopicCard', row: 6, spec: 'components/contenu.md', Demo: TopicCardDemo },
+  { id: 'unlock-sequence', title: 'UnlockSequence (rang, titre, badge)', row: 7, spec: 'screens/resultat.md', Demo: UnlockSequenceDemo, fullscreen: true },
+  { id: 'streak', title: 'Streak', row: 8, spec: 'screens/profil.md', Demo: StreakDemo },
+  { id: 'streak-calendar', title: 'StreakCalendar', row: 8, spec: 'screens/profil.md', Demo: StreakCalendarDemo },
+  { id: 'topics-donut', title: 'TopicsDonut', row: 8, spec: 'screens/profil.md', Demo: TopicsDonutDemo },
+  { id: 'badge-family-row', title: 'BadgeFamilyRow', row: 8, spec: 'screens/profil.md', Demo: BadgeFamilyRowDemo },
+  { id: 'rank-ladder', title: 'RankLadder', row: 8, spec: 'screens/profil.md', Demo: RankLadderDemo },
+  { id: 'reward-card', title: 'RewardCard', row: 8, spec: 'screens/profil.md', Demo: RewardCardDemo },
 ]
 
 export const ROW_TITLES: Record<CatalogEntry['row'], string> = {
@@ -66,4 +75,6 @@ export const ROW_TITLES: Record<CatalogEntry['row'], string> = {
   4: 'Feuilles et retours',
   5: 'Contenu',
   6: 'Métier : onboarding',
+  7: 'Métier : résultat',
+  8: 'Métier : profil',
 }

@@ -10,7 +10,7 @@ import { CATALOG, ROW_TITLES } from '@/dev/catalog/registry'
 export default function CatalogIndex() {
   const { colors, radius } = useTheme()
   const enter = useEntryStore((state) => state.enter)
-  const rows = [1, 2, 3, 4, 5, 6] as const
+  const rows = [1, 2, 3, 4, 5, 6, 7, 8] as const
   return (
     <Screen nativeHeader contentStyle={{ padding: tokens.space[5], gap: tokens.space[6] }}>
       <ThemeSwitch />
