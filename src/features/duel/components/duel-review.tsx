@@ -118,16 +118,7 @@ export function DuelReview({
     void Promise.all(images.map((url) => Image.prefetch(url))).catch(() => undefined)
   }, [images])
 
-  // Chaque agrandissement repart de la première question, même après une consultation.
-  useEffect(() => {
-    if (!expanded) {
-      setIndex(0)
-      return
-    }
-    const frame = requestAnimationFrame(() => pager.current?.scrollTo({ x: 0, animated: false }))
-    return () => cancelAnimationFrame(frame)
-  }, [expanded])
-
+  // La question consultée est conservée quand la feuille est repliée puis rouverte : pas de retour forcé à Q1.
   if (rounds.length === 0) return null
 
   const go = (next: number) => {
