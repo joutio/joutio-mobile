@@ -18,6 +18,14 @@ export interface ResultRouteParams {
  * partie sont relus en REST, sans ouvrir l'arène ni son flux STOMP ; les déblocages ne sont pas rejoués.
  */
 export function ResultScreen() {
+  return (
+    <ForceDark>
+      <ResultScreenContent />
+    </ForceDark>
+  )
+}
+
+function ResultScreenContent() {
   const params = useLocalSearchParams<ResultRouteParams>()
   const gameId = params.gameId
   const { colors } = useTheme()

@@ -1,3 +1,4 @@
+import { StatusBar } from 'expo-status-bar'
 import { createContext, useContext, type ReactNode } from 'react'
 import { useColorScheme } from 'react-native'
 import { tokens, type ThemeName } from '../tokens.generated'
@@ -47,8 +48,16 @@ export function ThemeScope({ scheme, children }: { scheme: ThemeName; children: 
   return <ThemeContext.Provider value={THEMES[scheme]}>{children}</ThemeContext.Provider>
 }
 
-/** Écran toujours sombre. */
-export const ForceDark = ({ children }: { children: ReactNode }) => <ThemeScope scheme="dark">{children}</ThemeScope>
+/**
+ * Écran toujours sombre. Le chrome natif suit le sous-arbre : la barre d'état passe en icônes claires même quand le
+ * thème système est clair (les écrans immersifs du lab portent `data-jo-theme="dark"` + `DarkChrome`).
+ */
+export const ForceDark = ({ children }: { children: ReactNode }) => (
+  <ThemeScope scheme="dark">
+    <StatusBar style="light" />
+    {children}
+  </ThemeScope>
+)
 
 export function useTheme(): Theme {
   const theme = useContext(ThemeContext)

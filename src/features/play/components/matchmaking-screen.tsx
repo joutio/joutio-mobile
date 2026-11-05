@@ -19,6 +19,7 @@ import {
   toast,
   tokens,
   useTheme,
+  useToastSuppression,
   type MapPlayer,
 } from '@/design-system'
 import { PlayerPicker } from '@/features/topic/components/duel-sheet'
@@ -78,6 +79,15 @@ function Chrome() {
  * serveur (`deadlineAt`). À l'expiration : entraînement automatique (préférence du profil) ou les choix.
  */
 export function MatchmakingScreen() {
+  return (
+    <ForceDark>
+      <MatchmakingScreenContent />
+    </ForceDark>
+  )
+}
+
+function MatchmakingScreenContent() {
+  useToastSuppression()
   const params = useLocalSearchParams<MatchmakingRouteParams>()
   const topic: PlayTopic = { topicId: params.topicId, name: params.topicName, category: params.category }
   useServerClock()
@@ -171,138 +181,136 @@ export function MatchmakingScreen() {
   const found = status === 'MATCHED'
 
   return (
-    <ForceDark>
-      <View style={{ flex: 1, backgroundColor: colors.bg }}>
-        <MatchmakingMap
-          width={width}
-          height={height}
-          state={found ? 'found' : 'search'}
-          pins={status === 'SEARCHING' ? PINS : []}
-          opponent={found ? { name: opponent?.pseudonym ?? 'Adversaire', ...FOUND_AT, label: opponent?.pseudonym } : undefined}
-        />
-        {!found && <Chrome />}
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+      <MatchmakingMap
+        width={width}
+        height={height}
+        state={found ? 'found' : 'search'}
+        pins={status === 'SEARCHING' ? PINS : []}
+        opponent={found ? { name: opponent?.pseudonym ?? 'Adversaire', ...FOUND_AT, label: opponent?.pseudonym } : undefined}
+      />
+      {!found && <Chrome />}
 
-        {status === 'SEARCHING' && (
-          <View style={[bottom, { alignItems: 'center', gap: tokens.space[4] }]}>
-            <Text variant="title2" align="center">
-              {topic.name}
+      {status === 'SEARCHING' && (
+        <View style={[bottom, { alignItems: 'center', gap: tokens.space[4] }]}>
+          <Text variant="title2" align="center">
+            {topic.name}
+          </Text>
+          <View
+            accessible
+            accessibilityRole="timer"
+            accessibilityLabel={`Recherche d'un adversaire${seconds === null ? '' : `, ${seconds} secondes`}`}
+            style={{
+              height: 40,
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: tokens.space[4],
+              paddingHorizontal: tokens.space[5],
+              borderRadius: radius.full,
+              backgroundColor: colors.accent,
+            }}
+          >
+            <Text variant="callout" weight="600" color="onAccent">
+              Recherche d'un adversaire…
             </Text>
-            <View
-              accessible
-              accessibilityRole="timer"
-              accessibilityLabel={`Recherche d'un adversaire${seconds === null ? '' : `, ${seconds} secondes`}`}
-              style={{
-                height: 40,
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: tokens.space[4],
-                paddingHorizontal: tokens.space[5],
-                borderRadius: radius.full,
-                backgroundColor: colors.accent,
-              }}
-            >
-              <Text variant="callout" weight="600" color="onAccent">
-                Recherche d'un adversaire…
+            {seconds !== null && (
+              <Text variant="callout" weight="600" mono color="onAccent">
+                {seconds} s
               </Text>
-              {seconds !== null && (
-                <Text variant="callout" weight="600" mono color="onAccent">
-                  {seconds} s
-                </Text>
-              )}
-            </View>
-            <Button full size="L" variant="tinted" tone="destructive" onPress={() => router.back()}>
-              Annuler la recherche
-            </Button>
+            )}
           </View>
-        )}
+          <Button full size="L" variant="tinted" tone="destructive" onPress={() => router.back()}>
+            Annuler la recherche
+          </Button>
+        </View>
+      )}
 
-        {found && (
-          <View
-            style={[
-              bottom,
-              {
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: tokens.space[5],
-                padding: tokens.space[5],
-                borderRadius: radius.lg,
-                borderWidth: 1,
-                borderColor: colors.border,
-                backgroundColor: colors.surface,
-              },
-            ]}
-          >
-            <Avatar name={opponent?.pseudonym ?? '?'} size="lg" decorative />
-            <View style={{ flex: 1, minWidth: 0 }}>
-              <Text variant="caption" weight="600" color="correct">
-                Adversaire trouvé
-              </Text>
-              <Text variant="headline" numberOfLines={1}>
-                {opponent?.pseudonym ?? '…'}
-              </Text>
-              <Text variant="caption" color="muted" numberOfLines={1}>
-                {opponentMeta}
-              </Text>
-            </View>
-            <CheckCircleIcon size={30} weight="fill" color={colors.correct} />
+      {found && (
+        <View
+          style={[
+            bottom,
+            {
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: tokens.space[5],
+              padding: tokens.space[5],
+              borderRadius: radius.lg,
+              borderWidth: 1,
+              borderColor: colors.border,
+              backgroundColor: colors.surface,
+            },
+          ]}
+        >
+          <Avatar name={opponent?.pseudonym ?? '?'} size="lg" decorative />
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text variant="caption" weight="600" color="correct">
+              Adversaire trouvé
+            </Text>
+            <Text variant="headline" numberOfLines={1}>
+              {opponent?.pseudonym ?? '…'}
+            </Text>
+            <Text variant="caption" color="muted" numberOfLines={1}>
+              {opponentMeta}
+            </Text>
           </View>
-        )}
+          <CheckCircleIcon size={30} weight="fill" color={colors.correct} />
+        </View>
+      )}
 
-        {status === 'EXPIRED' && autoTrain.enabled && (
-          <View style={[bottom, { gap: tokens.space[4] }]}>
-            <Banner
-              tone="training"
-              title="Aucun adversaire, lancement d'un entraînement…"
-              message="Partie sans XP ni série. Tu pourras retenter un duel humain ensuite."
-            />
-            <Button full size="L" variant="tinted" tone="destructive" onPress={() => router.back()}>
-              {"Annuler l'entraînement"}
-            </Button>
-          </View>
-        )}
+      {status === 'EXPIRED' && autoTrain.enabled && (
+        <View style={[bottom, { gap: tokens.space[4] }]}>
+          <Banner
+            tone="training"
+            title="Aucun adversaire, lancement d'un entraînement…"
+            message="Partie sans XP ni série. Tu pourras retenter un duel humain ensuite."
+          />
+          <Button full size="L" variant="tinted" tone="destructive" onPress={() => router.back()}>
+            {"Annuler l'entraînement"}
+          </Button>
+        </View>
+      )}
 
-        {status === 'EXPIRED' && !autoTrain.enabled && (
-          <View
-            style={[
-              bottom,
-              {
-                borderRadius: radius.xl,
-                borderWidth: 1,
-                borderColor: colors.border,
-                backgroundColor: colors.surface,
-                paddingVertical: tokens.space[6],
-                paddingHorizontal: tokens.space[5],
-              },
-            ]}
-          >
-            <EmptyState
-              icon={RobotIcon}
-              title="Aucun adversaire trouvé"
-              description={`${topic.name} · 10 s de recherche. Relance une recherche, ou entraîne-toi contre un robot (sans expérience gagnée) le temps qu'un adversaire se présente.`}
-              action={
-                <View style={{ alignSelf: 'stretch', gap: tokens.space[3] }}>
-                  <Button full size="L" icon={RobotIcon} loading={training.isPending} onPress={() => training.mutate()}>
-                    S'entraîner contre un robot
+      {status === 'EXPIRED' && !autoTrain.enabled && (
+        <View
+          style={[
+            bottom,
+            {
+              borderRadius: radius.xl,
+              borderWidth: 1,
+              borderColor: colors.border,
+              backgroundColor: colors.surface,
+              paddingVertical: tokens.space[6],
+              paddingHorizontal: tokens.space[5],
+            },
+          ]}
+        >
+          <EmptyState
+            icon={RobotIcon}
+            title="Aucun adversaire trouvé"
+            description={`${topic.name} · 10 s de recherche. Relance une recherche, ou entraîne-toi contre un robot (sans expérience gagnée) le temps qu'un adversaire se présente.`}
+            action={
+              <View style={{ alignSelf: 'stretch', gap: tokens.space[3] }}>
+                <Button full size="L" icon={RobotIcon} loading={training.isPending} onPress={() => training.mutate()}>
+                  S'entraîner contre un robot
+                </Button>
+                <View style={{ flexDirection: 'row', gap: tokens.space[3] }}>
+                  <Button full variant="tinted" style={{ flex: 1 }} loading={retry.isPending} onPress={() => retry.mutate()}>
+                    Relancer
                   </Button>
-                  <View style={{ flexDirection: 'row', gap: tokens.space[3] }}>
-                    <Button full variant="tinted" style={{ flex: 1 }} loading={retry.isPending} onPress={() => retry.mutate()}>
-                      Relancer
-                    </Button>
-                    <Button full variant="gray" tone="neutral" style={{ flex: 1 }} onPress={() => setPickerOpen(true)}>
-                      Défier un ami
-                    </Button>
-                  </View>
-                  <Button full variant="plain" tone="neutral" onPress={() => router.back()}>
-                    Fermer
+                  <Button full variant="gray" tone="neutral" style={{ flex: 1 }} onPress={() => setPickerOpen(true)}>
+                    Défier un ami
                   </Button>
                 </View>
-              }
-            />
-          </View>
-        )}
+                <Button full variant="plain" tone="neutral" onPress={() => router.back()}>
+                  Fermer
+                </Button>
+              </View>
+            }
+          />
+        </View>
+      )}
 
-        {connection === 'reconnecting' && status === 'SEARCHING' && <ReconnectCountdown onLeave={() => router.back()} leaveLabel="Annuler la recherche" />}
-      </View>
+      {connection === 'reconnecting' && status === 'SEARCHING' && <ReconnectCountdown onLeave={() => router.back()} leaveLabel="Annuler la recherche" />}
       <MobileSheet open={pickerOpen} onClose={() => setPickerOpen(false)} title="Qui veux-tu défier ?" subtitle={topic.name} tall>
         <PlayerPicker
           topic={topic}
@@ -312,6 +320,6 @@ export function MatchmakingScreen() {
           }}
         />
       </MobileSheet>
-    </ForceDark>
+    </View>
   )
 }

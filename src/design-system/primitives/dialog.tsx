@@ -9,7 +9,7 @@ import { haptic } from '../haptics'
 import type { Icon } from '../icons'
 import { useReducedMotion } from '../motion'
 import { alpha } from '../theme/color'
-import { useTheme } from '../theme/theme-provider'
+import { ForceDark, useTheme } from '../theme/theme-provider'
 import { tokens } from '../tokens.generated'
 import { Button } from './button'
 import type { ButtonTone, ButtonVariant } from './button-styles'
@@ -35,6 +35,8 @@ export interface DialogOptions {
   actions: DialogAction[]
   /** Présentation en bas d'écran plutôt qu'au centre. */
   sheet?: boolean
+  /** Confirmation d'un écran immersif : le panneau reste sombre même si le thème système est clair. */
+  forceDark?: boolean
   /** Fermeture sans choix (voile, retour Android) ; avec `showDialog` uniquement. */
   onClose?: () => void
 }
@@ -217,8 +219,8 @@ export function DialogHost() {
   const close = useDialogStore((state) => state.close)
   const chosen = useRef(false)
   if (!current) return null
-  const { key, ...options } = current
-  return (
+  const { key, forceDark, ...options } = current
+  const dialog = (
     <Dialog
       key={key}
       {...options}
@@ -240,4 +242,5 @@ export function DialogHost() {
       }}
     />
   )
+  return forceDark ? <ForceDark>{dialog}</ForceDark> : dialog
 }

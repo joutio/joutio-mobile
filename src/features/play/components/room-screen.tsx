@@ -23,10 +23,10 @@ import {
 import { useMe } from '@/features/me'
 import { config } from '@/lib/config'
 import { readServerNow, useServerClock } from '@/lib/realtime/server-clock'
-import { useConnectionStore } from '@/lib/ws'
+import { useConnectionStore, type ConnectionStatus } from '@/lib/ws'
 import { tierOf } from '@/shared/utils/tier'
 import { topicName } from '@/shared/utils/topic-name'
-import { PREPARATION_STEPS, preparationStep } from '../domain/room'
+import { PREPARATION_STEPS, preparationStep, type RoomStatus } from '../domain/room'
 import { useRoom, useRoomPresence } from '../hooks/use-play'
 import { playService } from '../lib/play-service'
 
@@ -54,6 +54,45 @@ function useCountdown(expiresAt: string | null) {
   // Au-delà d'une heure (salon de 24 h) : heures et minutes ; dans la dernière heure : minutes et secondes.
   if (left >= 3600) return `${Math.floor(left / 3600)} h ${String(Math.floor((left % 3600) / 60)).padStart(2, '0')}`
   return `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`
+}
+
+/** Préparation d'une salle : sombre comme le duel qui suit, couleurs lues dans le sous-arbre `ForceDark`. */
+function Preparation({
+  topic,
+  roomStatus,
+  opponentName,
+  vsBot,
+  connection,
+  onCancel,
+}: {
+  topic: string
+  roomStatus: RoomStatus
+  opponentName?: string
+  vsBot?: boolean
+  connection: ConnectionStatus
+  onCancel: () => void
+}) {
+  const { colors } = useTheme()
+  const step = preparationStep(roomStatus)
+  return (
+    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: tokens.space[6], padding: tokens.space[5], backgroundColor: colors.bg }}>
+      <SplashLogo variant="loading" />
+      <View style={{ alignItems: 'center', gap: tokens.space[2] }}>
+        <Text variant="headline">{topic}</Text>
+        <Text variant="callout" color="muted" accessibilityLiveRegion="polite">
+          {roomStatus === 'WAITING_PLAYERS' && !vsBot
+            ? opponentName
+              ? `En attente de ${opponentName}`
+              : "En attente de l'adversaire"
+            : (PREPARATION_STEPS[step]?.label ?? 'Préparation du duel…')}
+        </Text>
+      </View>
+      <Button variant="plain" tone="neutral" style={{ alignSelf: 'center' }} onPress={onCancel}>
+        Annuler
+      </Button>
+      {connection === 'reconnecting' && <ReconnectCountdown onLeave={onCancel} leaveLabel="Quitter" />}
+    </View>
+  )
 }
 
 /**
@@ -127,26 +166,9 @@ export function RoomScreen() {
 
   // Préparation (bot, appariement, défi, ou salon complet) : sombre, comme le duel qui suit.
   if (!waitingForPlayer) {
-    const step = preparationStep(roomStatus)
     return (
       <ForceDark>
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: tokens.space[6], padding: tokens.space[5], backgroundColor: colors.bg }}>
-          <SplashLogo variant="loading" />
-          <View style={{ alignItems: 'center', gap: tokens.space[2] }}>
-            <Text variant="headline">{topic}</Text>
-            <Text variant="callout" color="muted" accessibilityLiveRegion="polite">
-              {roomStatus === 'WAITING_PLAYERS' && !room?.vsBot
-                ? opponentName
-                  ? `En attente de ${opponentName}`
-                  : "En attente de l'adversaire"
-                : (PREPARATION_STEPS[step]?.label ?? 'Préparation du duel…')}
-            </Text>
-          </View>
-          <Button variant="plain" tone="neutral" style={{ alignSelf: 'center' }} onPress={close}>
-            Annuler
-          </Button>
-          {connection === 'reconnecting' && <ReconnectCountdown onLeave={close} leaveLabel="Quitter" />}
-        </View>
+        <Preparation topic={topic} roomStatus={roomStatus} opponentName={opponentName} vsBot={room?.vsBot} connection={connection} onCancel={close} />
       </ForceDark>
     )
   }
