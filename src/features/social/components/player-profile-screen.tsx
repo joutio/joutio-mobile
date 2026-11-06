@@ -225,10 +225,11 @@ export function PlayerProfileScreen() {
                 </Button>
               )}
               {canAct && (
+                // 65 / 35 : le défi est l'action principale, comme « Lancer un duel » sur la Fiche sujet.
                 <View onLayout={(event) => setActionsY(event.nativeEvent.layout.y)} style={{ flexDirection: 'row', gap: tokens.space[2] }}>
                   <Button
                     full
-                    style={{ flex: 1 }}
+                    style={{ flex: 65 }}
                     icon={challenged ? CheckIcon : LightningIcon}
                     variant={challenged ? 'gray' : 'filled'}
                     tone={challenged ? 'neutral' : 'accent'}
@@ -239,7 +240,7 @@ export function PlayerProfileScreen() {
                   </Button>
                   <Button
                     full
-                    style={{ flex: 1 }}
+                    style={{ flex: 35 }}
                     icon={data.following ? CheckIcon : undefined}
                     variant={data.following ? 'gray' : 'tinted'}
                     tone={data.following ? 'neutral' : 'accent'}
