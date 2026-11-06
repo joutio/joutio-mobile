@@ -139,27 +139,24 @@ export function AvatarEditorScreen() {
     label: t('avatar.editor.style'),
     content: (
       <TabScrollView contentContainerStyle={{ ...PAGE, gap: tokens.space[4] }}>
-        {styles.map((entry) => {
-          const active = entry.id === style
-          return (
-            <RewardCard
-              key={entry.id}
-              title={entry.title}
-              rule={entry.rule}
-              progress={entry.progress}
-              progressLabel={entry.progressLabel}
-              state={active ? 'active' : entry.usable ? 'unlocked' : entry.state}
-              image={render(withStyle(choice, entry.id as AvatarStyleId))}
-              cta={
-                entry.usable && !active
-                  ? { label: 'Utiliser', onPress: () => setChoice(withStyle(choice, entry.id)) }
-                  : entry.state === 'premium'
-                    ? { label: 'Découvrir Premium', onPress: () => showPremium() }
-                    : undefined
-              }
-            />
-          )
-        })}
+        <RadioGroup label="Style d'avatar" style={{ gap: tokens.space[4] }}>
+          {styles.map((entry) => {
+            const active = entry.id === style
+            return (
+              <RewardCard
+                key={entry.id}
+                title={entry.title}
+                rule={entry.rule}
+                progress={entry.progress}
+                progressLabel={entry.progressLabel}
+                state={active ? 'active' : entry.usable ? 'unlocked' : entry.state}
+                image={render(withStyle(choice, entry.id as AvatarStyleId))}
+                onSelect={entry.usable ? () => setChoice(withStyle(choice, entry.id)) : undefined}
+                cta={entry.state === 'premium' ? { label: 'Découvrir Premium', onPress: () => showPremium() } : undefined}
+              />
+            )
+          })}
+        </RadioGroup>
       </TabScrollView>
     ),
   }

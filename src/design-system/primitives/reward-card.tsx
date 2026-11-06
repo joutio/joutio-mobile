@@ -4,6 +4,7 @@ import { tokens } from '../tokens.generated'
 import { Avatar } from './avatar'
 import { Badge, type BadgeVariant } from './badge'
 import { Button } from './button'
+import { PressableScale } from './pressable-scale'
 import { ProgressBar } from './progress-bar'
 import { Text } from './text'
 
@@ -25,29 +26,30 @@ export interface RewardCardProps {
   progress?: number
   progressLabel?: string
   cta?: { label: string; onPress?: () => void }
+  /** Choix dans une liste (éditeur d'avatar) : toute la carte se touche, comme un bouton radio. */
+  onSelect?: () => void
   style?: StyleProp<ViewStyle>
 }
 
 /** Style d'avatar à débloquer : aperçu, état, condition et avancement. */
-export function RewardCard({ title, rule, state = 'unlocked', image, progress, progressLabel, cta, style }: RewardCardProps) {
+export function RewardCard({ title, rule, state = 'unlocked', image, progress, progressLabel, cta, onSelect, style }: RewardCardProps) {
   const { colors, radius } = useTheme()
   const { variant, label } = STATES[state]
-  return (
-    <View
-      style={[
-        {
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: tokens.space[5],
-          borderRadius: radius.lg,
-          backgroundColor: colors.surface,
-          padding: tokens.space[5],
-          borderWidth: state === 'active' ? 2 : 0,
-          borderColor: colors.accent,
-        },
-        style,
-      ]}
-    >
+  const cardStyle: StyleProp<ViewStyle> = [
+    {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: tokens.space[5],
+      borderRadius: radius.lg,
+      backgroundColor: colors.surface,
+      padding: tokens.space[5],
+      borderWidth: state === 'active' ? 2 : 0,
+      borderColor: colors.accent,
+    },
+    style,
+  ]
+  const content = (
+    <>
       <Avatar name={title} src={image} size="xl" locked={state === 'locked' || state === 'premium'} />
       <View style={{ flex: 1, minWidth: 0, gap: tokens.space[2] }}>
         <View accessible style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: tokens.space[3] }}>
@@ -68,6 +70,20 @@ export function RewardCard({ title, rule, state = 'unlocked', image, progress, p
           </View>
         )}
       </View>
-    </View>
+    </>
   )
+  if (onSelect)
+    return (
+      <PressableScale
+        accessibilityRole="radio"
+        accessibilityState={{ checked: state === 'active' }}
+        accessibilityLabel={[title, STATES[state].label, rule].filter(Boolean).join(', ')}
+        haptic="selection"
+        onPress={onSelect}
+        style={cardStyle}
+      >
+        {content}
+      </PressableScale>
+    )
+  return <View style={cardStyle}>{content}</View>
 }
