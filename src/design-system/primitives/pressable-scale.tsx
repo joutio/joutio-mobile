@@ -1,5 +1,5 @@
 import { useState, type ReactNode, type Ref } from 'react'
-import { Platform, Pressable, type PressableProps, type StyleProp, type ViewStyle } from 'react-native'
+import { Platform, Pressable, StyleSheet, type PressableProps, type StyleProp, type ViewStyle } from 'react-native'
 import Animated, { Easing, ReduceMotion, useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated'
 import { haptic as playHaptic, type HapticName } from '../haptics'
 import type { ViewRef } from '../a11y'
@@ -33,6 +33,52 @@ export interface PressableScaleProps extends Omit<PressableProps, 'style' | 'chi
   children?: ReactNode | ((state: { pressed: boolean }) => ReactNode)
 }
 
+/** Propriétés de mise en page du contenu : elles passent sur le `Pressable` intérieur quand une enveloppe découpe le ripple. */
+const INNER_KEYS = [
+  'padding',
+  'paddingHorizontal',
+  'paddingVertical',
+  'paddingTop',
+  'paddingBottom',
+  'paddingLeft',
+  'paddingRight',
+  'paddingStart',
+  'paddingEnd',
+  'flexDirection',
+  'flexWrap',
+  'alignItems',
+  'alignContent',
+  'justifyContent',
+  'gap',
+  'rowGap',
+  'columnGap',
+] as const satisfies readonly (keyof ViewStyle)[]
+
+const RADIUS_KEYS = [
+  'borderRadius',
+  'borderTopLeftRadius',
+  'borderTopRightRadius',
+  'borderBottomLeftRadius',
+  'borderBottomRightRadius',
+  'borderTopStartRadius',
+  'borderTopEndRadius',
+  'borderBottomStartRadius',
+  'borderBottomEndRadius',
+] as const satisfies readonly (keyof ViewStyle)[]
+
+/** Sépare le style : la carte (taille, fond, coins, marges) dehors, le contenu (marges internes, flex) dedans. */
+function splitForClip(style: ViewStyle): { outer: ViewStyle; inner: ViewStyle } {
+  const outer: Record<string, unknown> = { ...style }
+  const inner: Record<string, unknown> = {}
+  for (const key of INNER_KEYS) {
+    if (key in outer) {
+      inner[key] = outer[key]
+      delete outer[key]
+    }
+  }
+  return { outer: outer as ViewStyle, inner: inner as ViewStyle }
+}
+
 /** `jo-pressed` du lab : Pressable + échelle Reanimated au token `micro`, rien sous mouvement réduit. */
 export function PressableScale({
   pressedScale = 0.98,
@@ -58,30 +104,58 @@ export function PressableScale({
   const animated = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }))
 
   const resolvedStyle = typeof style === 'function' ? style({ pressed }) : style
+  const ripplePress = nativeRipple ? { color: alpha(colors.text, 0.12) } : props.android_ripple
+  const handlers = {
+    onPressIn: (event: Parameters<NonNullable<PressableProps['onPressIn']>>[0]) => {
+      setPressed(true)
+      // Enfoncement immédiat, relâchement en ressort : la sensation des contrôles système.
+      if (pressedScale !== 1 && !reduced)
+        scale.value = withTiming(pressedScale, { duration: 90, easing: Easing.out(Easing.quad), reduceMotion: ReduceMotion.Never })
+      onPressIn?.(event)
+    },
+    onPressOut: (event: Parameters<NonNullable<PressableProps['onPressOut']>>[0]) => {
+      setPressed(false)
+      if (pressedScale !== 1 && !reduced) scale.value = withSpring(1, { mass: 1, stiffness: 520, damping: 26, reduceMotion: ReduceMotion.Never })
+      onPressOut?.(event)
+    },
+    onPress: (event: Parameters<NonNullable<PressableProps['onPress']>>[0]) => {
+      if (haptic) playHaptic(haptic)
+      onPress?.(event)
+    },
+  }
+  const scaleStyle = forcePressed && pressedScale !== 1 ? { transform: [{ scale: pressedScale }] } : animated
+
+  // Android : le masque du ripple est rectangulaire et `overflow: hidden` ne découpe que les enfants d'une vue, pas
+  // son propre fond. Une carte arrondie qui porte le ripple passe donc par une enveloppe qui découpe ses coins.
+  const flat = nativeRipple ? (StyleSheet.flatten(resolvedStyle) ?? {}) : undefined
+  if (flat && RADIUS_KEYS.some((key) => flat[key] !== undefined && flat[key] !== 0)) {
+    const { outer, inner } = splitForClip(flat)
+    return (
+      <Animated.View style={[outer, { overflow: 'hidden' }, scaleStyle]}>
+        <Pressable
+          ref={ref}
+          {...props}
+          {...handlers}
+          disabled={disabled}
+          android_ripple={ripplePress}
+          accessibilityState={{ disabled: Boolean(disabled), ...props.accessibilityState }}
+          style={[inner, { flexGrow: 1 }]}
+        >
+          {typeof children === 'function' ? children({ pressed }) : children}
+        </Pressable>
+      </Animated.View>
+    )
+  }
+
   return (
     <AnimatedPressable
       ref={ref}
       {...props}
       disabled={disabled}
-      android_ripple={nativeRipple ? { color: alpha(colors.text, 0.12) } : props.android_ripple}
+      android_ripple={ripplePress}
       accessibilityState={{ disabled: Boolean(disabled), ...props.accessibilityState }}
-      onPressIn={(event) => {
-        setPressed(true)
-        // Enfoncement immédiat, relâchement en ressort : la sensation des contrôles système.
-        if (pressedScale !== 1 && !reduced)
-          scale.value = withTiming(pressedScale, { duration: 90, easing: Easing.out(Easing.quad), reduceMotion: ReduceMotion.Never })
-        onPressIn?.(event)
-      }}
-      onPressOut={(event) => {
-        setPressed(false)
-        if (pressedScale !== 1 && !reduced) scale.value = withSpring(1, { mass: 1, stiffness: 520, damping: 26, reduceMotion: ReduceMotion.Never })
-        onPressOut?.(event)
-      }}
-      onPress={(event) => {
-        if (haptic) playHaptic(haptic)
-        onPress?.(event)
-      }}
-      style={[resolvedStyle, forcePressed && pressedScale !== 1 ? { transform: [{ scale: pressedScale }] } : animated]}
+      {...handlers}
+      style={[resolvedStyle, scaleStyle]}
     >
       {typeof children === 'function' ? children({ pressed }) : children}
     </AnimatedPressable>
