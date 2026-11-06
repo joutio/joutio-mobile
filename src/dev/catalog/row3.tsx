@@ -18,7 +18,7 @@ import {
   tokens,
   useTheme,
 } from '@/design-system'
-import { Specimen } from './kit'
+import { Specimen, SAMPLE_BANNER } from './kit'
 
 function Card({ children }: { children: ReactNode }) {
   const { colors, radius } = useTheme()
@@ -207,7 +207,7 @@ export function MatchRowDemo() {
   return (
     <Specimen label="Victoire, défaite, nul, entraînement">
       <ListGroup surface="surface">
-        <MatchRow topic="Rois de France" category="HISTORY" sub="Aujourd'hui" outcome="win" score="5 · 3" onPress={() => undefined} />
+        <MatchRow topic="Rois de France" category="HISTORY" image={SAMPLE_BANNER} sub="Aujourd'hui" outcome="win" score="5 · 3" onPress={() => undefined} />
         <MatchRow topic="Le Grand Chelem" category="SPORTS" sub="Hier" outcome="loss" score="2 · 6" onPress={() => undefined} />
         <MatchRow topic="Tableau périodique" category="SCIENCE" sub="Lundi" outcome="draw" score="4 · 4" onPress={() => undefined} />
         <MatchRow topic="Rap français" category="MUSIC" sub="12 octobre" outcome="win" score="6 · 1" bot last onPress={() => undefined} />

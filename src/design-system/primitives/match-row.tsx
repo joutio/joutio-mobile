@@ -1,3 +1,4 @@
+import { Image } from 'expo-image'
 import { View, type StyleProp, type ViewStyle } from 'react-native'
 import { CategoryIcon } from '../brand/category-icon'
 import { RobotIcon } from '../icons'
@@ -20,6 +21,8 @@ export interface MatchRowProps {
   /** Titre de la ligne : le sujet, ou l'adversaire quand la liste est déjà filtrée sur un sujet. */
   topic: string
   category: CategoryCode
+  /** Vignette du sujet ; sans elle, la tuile prend la couleur et l'icône de l'univers. */
+  image?: string | number
   sub?: string
   outcome: MatchOutcome
   score: string
@@ -31,7 +34,7 @@ export interface MatchRowProps {
 }
 
 /** Partie terminée : tuile de l'univers, titre, issue et score. */
-export function MatchRow({ topic, category, sub, outcome, score, bot = false, last = false, onPress, style }: MatchRowProps) {
+export function MatchRow({ topic, category, image, sub, outcome, score, bot = false, last = false, onPress, style }: MatchRowProps) {
   const { colors, radius } = useTheme()
   const { label, color } = OUTCOMES[outcome]
   return (
@@ -62,10 +65,19 @@ export function MatchRow({ topic, category, sub, outcome, score, bot = false, la
           alignItems: 'center',
           justifyContent: 'center',
           borderRadius: radius.md,
-          backgroundColor: tokens.category[category].color,
+          backgroundColor: image !== undefined ? colors.raised : tokens.category[category].color,
         }}
       >
-        <CategoryIcon category={category} size={22} weight="fill" color={colors.onAccent} style={{ opacity: 0.8 }} />
+        {image !== undefined ? (
+          <Image
+            source={typeof image === 'number' ? image : { uri: image }}
+            contentFit="cover"
+            accessibilityIgnoresInvertColors
+            style={{ width: 44, height: 44, borderRadius: radius.md }}
+          />
+        ) : (
+          <CategoryIcon category={category} size={22} weight="fill" color={colors.onAccent} style={{ opacity: 0.8 }} />
+        )}
         {bot && (
           <View
             style={{
@@ -104,12 +116,7 @@ export function MatchRow({ topic, category, sub, outcome, score, bot = false, la
           {score}
         </Text>
       </View>
-      {!last && (
-        <View
-          pointerEvents="none"
-          style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: HAIRLINE, backgroundColor: colors.border }}
-        />
-      )}
+      {!last && <View pointerEvents="none" style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: HAIRLINE, backgroundColor: colors.border }} />}
     </PressableScale>
   )
 }

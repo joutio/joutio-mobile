@@ -216,6 +216,7 @@ export function HistoryScreen() {
                       key={game.gameId}
                       topic={topicName(game.topic.names)}
                       category={toCategoryCode(game.topic.category)}
+                      image={game.topic.imageUrl ?? undefined}
                       sub={game.opponentType === 'BOT' ? 'Entraînement' : (game.opponent?.pseudonym ?? 'Adversaire')}
                       outcome={OUTCOMES[game.outcome] ?? 'draw'}
                       score={`${game.myScore} · ${game.opponentScore}`}

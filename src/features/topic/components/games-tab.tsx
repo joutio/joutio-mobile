@@ -85,6 +85,7 @@ export function GamesTab({ topicId, topicName, historyPath }: { topicId: string;
                   key={game.gameId}
                   topic={game.opponent?.pseudonym ?? (game.opponentType === 'BOT' ? 'Robot' : 'Adversaire')}
                   category={toCategoryCode(game.topic.category)}
+                  image={game.topic.imageUrl ?? undefined}
                   sub={subOf(game)}
                   outcome={OUTCOMES[game.outcome] ?? 'draw'}
                   score={`${game.myScore} · ${game.opponentScore}`}
