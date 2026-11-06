@@ -159,14 +159,15 @@ export function StatsTab({
           </View>
           <View style={{ gap: tokens.space[4] }}>
             <SectionHeader title="Bilan" />
-            <Card>
-              <OutcomeBar wins={wins} draws={draws} losses={losses} />
-            </Card>
+            {/* Toujours les trois blocs, puis la barre de ratio (décision du 2026-11-06). */}
             <View style={{ flexDirection: 'row', gap: tokens.space[3] }}>
               <Stat label="Victoires" value={formatNumber(wins)} tone="up" compact />
               <Stat label={draws > 1 ? 'Nuls' : 'Nul'} value={formatNumber(draws)} compact />
               <Stat label="Défaites" value={formatNumber(losses)} tone="down" compact />
             </View>
+            <Card>
+              <OutcomeBar wins={wins} draws={draws} losses={losses} />
+            </Card>
           </View>
           {donut.length > 0 && (
             <View style={{ gap: tokens.space[4] }}>
