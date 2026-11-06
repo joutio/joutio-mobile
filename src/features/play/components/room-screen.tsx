@@ -29,6 +29,8 @@ import { topicName } from '@/shared/utils/topic-name'
 import { PREPARATION_STEPS, preparationStep, type RoomStatus } from '../domain/room'
 import { useRoom, useRoomPresence } from '../hooks/use-play'
 import { playService } from '../lib/play-service'
+import { userAvatar } from '@/shared/utils/avatar'
+import { useMyAvatar } from '@/features/avatar/lib/avatar-preview'
 
 export interface RoomRouteParams {
   roomId: string
@@ -107,6 +109,7 @@ export function RoomScreen() {
   const { colors } = useTheme()
   const insets = useSafeAreaInsets()
   const me = useMe(true)
+  const myAvatar = useMyAvatar()
   const userId = me.data?.userId ?? ''
   const { view, room, status } = useRoom(roomId)
   const connection = useConnectionStore((state) => state.status)
@@ -195,7 +198,10 @@ export function RoomScreen() {
             </Text>
           )}
         </View>
-        <RoomPlayers me={{ name: myName, tier: myTier }} opponent={opponentPresent && opponentName ? { name: opponentName } : undefined} />
+        <RoomPlayers
+          me={{ name: myName, src: myAvatar, tier: myTier }}
+          opponent={opponentPresent && opponentName ? { name: opponentName, src: userAvatar(view.data?.opponent) } : undefined}
+        />
         <InviteCard
           url={link}
           copied={copied}

@@ -8,6 +8,7 @@ import { useMe } from '@/features/me'
 import { usePendingJoin } from '@/shared/stores/pending-join-store'
 import { topicName } from '@/shared/utils/topic-name'
 import { playService } from '../lib/play-service'
+import { userAvatar } from '@/shared/utils/avatar'
 
 const RULES = '7 manches de 10 secondes, la dernière compte double. Le plus rapide à bien répondre marque le plus de points.'
 
@@ -72,7 +73,11 @@ export function JoinScreen() {
       ) : (
         <>
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: tokens.space[5] }}>
-            {authenticated && room.isPending ? <Skeleton shape="circle" width={140} /> : <Avatar name={host ?? 'Joutio'} size="preview" decorative />}
+            {authenticated && room.isPending ? (
+              <Skeleton shape="circle" width={140} />
+            ) : (
+              <Avatar name={host ?? 'Joutio'} src={userAvatar(view?.opponent)} size="preview" decorative />
+            )}
             <Text variant="title1" align="center" accessibilityRole="header">
               {host ? `${host} t'invite à un duel` : 'Tu es invité à un duel'}
             </Text>

@@ -218,7 +218,7 @@ export function ProfileScreen() {
           ])
         }
       />
-      <RanksSheet open={ranksOpen} onClose={() => setRanksOpen(false)} name={name} tier={tier} />
+      <RanksSheet open={ranksOpen} onClose={() => setRanksOpen(false)} name={name} avatar={avatar} tier={tier} />
       <MasterySheet
         open={masteryOpen}
         onClose={() => setMasteryOpen(false)}

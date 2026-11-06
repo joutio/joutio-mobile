@@ -51,6 +51,7 @@ import { useFollowPlayer, useHeadToHead, usePlayerProfile } from '../hooks/use-s
 import { useBlockMocks, useIsBlocked } from '../lib/block-mocks'
 import { presenceLine } from '../lib/presence'
 import { ChallengePlayerSheet } from './challenge-player-sheet'
+import { userAvatar } from '@/shared/utils/avatar'
 
 const GUTTER = tokens.space[5]
 const OUTCOMES: Partial<Record<GameOutcome, MatchOutcome>> = { WIN: 'win', LOSS: 'loss', DRAW: 'draw' }
@@ -164,7 +165,7 @@ export function PlayerProfileScreen() {
       <ParallaxScreen
         image={data?.bannerUrl ?? undefined}
         title={data?.pseudonym ?? 'Joueur'}
-        eyebrow={data ? <Avatar name={data.pseudonym} tier={tier} size="xl" /> : undefined}
+        eyebrow={data ? <Avatar name={data.pseudonym} src={userAvatar(data)} tier={tier} size="xl" /> : undefined}
         centered
         barTitleStart
         onBack={() => router.back()}

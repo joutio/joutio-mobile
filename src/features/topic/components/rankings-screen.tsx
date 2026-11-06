@@ -30,6 +30,7 @@ import { formatNumber, monthlyLegend } from '../lib/format'
 import { DEFAULT_RANKING_FILTERS, type RankingFilterState } from '../lib/topic-service'
 import { boardSub, MyBoardRow } from './board-tab'
 import { RankingsFiltersSheet } from './rankings-filters-sheet'
+import { userAvatar } from '@/shared/utils/avatar'
 
 const GUTTER = tokens.space[5]
 const MONTH = new Intl.DateTimeFormat('fr-FR', { month: 'long' })
@@ -186,6 +187,7 @@ export function RankingsScreen() {
                   <Podium
                     players={podium.map((entry) => ({
                       name: entry.pseudonym,
+                      src: userAvatar(entry),
                       tier: entry.provisional ? undefined : tierOf(entry.rating),
                       value: formatNumber(scoreOf(entry)),
                     }))}
@@ -220,6 +222,7 @@ export function RankingsScreen() {
                   <PlayerRow
                     rank={entry.rank}
                     name={entry.pseudonym}
+                    src={userAvatar(entry)}
                     tier={entry.provisional ? undefined : tierOf(entry.rating)}
                     sub={boardSub(entry)}
                     trail={formatNumber(scoreOf(entry))}

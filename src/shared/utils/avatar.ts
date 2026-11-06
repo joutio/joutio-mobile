@@ -38,3 +38,14 @@ export function avatarSvg(json: string | null | undefined, seed: string): string
   cache.set(key, svg)
   return svg
 }
+
+/** Joueur porteur de ses options d'avatar (`UserRefView`, `LeaderboardEntryView`, `PlayerCardView`…). */
+export interface AvatarOwner {
+  userId: string
+  avatarOptions: string | null
+}
+
+/** Avatar d'un joueur à partir de **ses** options (graine = son `userId`) ; `undefined` : initiales. */
+export function userAvatar(user: AvatarOwner | null | undefined): string | undefined {
+  return user ? (avatarSvg(user.avatarOptions, user.userId) ?? undefined) : undefined
+}

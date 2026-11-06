@@ -21,6 +21,7 @@ import {
   TrashIcon,
   UserPlusIcon,
 } from '@/design-system'
+import { useMyAvatar } from '@/features/avatar/lib/avatar-preview'
 import { useMe } from '@/features/me'
 import { tierOf } from '@/shared/utils/tier'
 import { CANDIDATES_MOCK, CANDIDATES_PAGE, TEAM_MOCK, type TeamMemberMock, type TeamRole } from '../lib/team-mocks'
@@ -33,6 +34,7 @@ import { CANDIDATES_MOCK, CANDIDATES_PAGE, TEAM_MOCK, type TeamMemberMock, type 
 export function TeamScreen() {
   const params = useLocalSearchParams<{ id: string; name?: string }>()
   const me = useMe(true)
+  const ownerAvatar = useMyAvatar()
   const [team, setTeam] = useState<readonly TeamMemberMock[]>(TEAM_MOCK)
   const [selected, setSelected] = useState<TeamMemberMock>()
   const [inviteOpen, setInviteOpen] = useState(false)
@@ -74,7 +76,7 @@ export function TeamScreen() {
       <SectionHeader title={`${title} · ${members.length + (withOwner ? 1 : 0)}`} />
       {(members.length > 0 || withOwner) && (
         <ListGroup surface="surface">
-          {withOwner && <PlayerRow name={ownerName} tier={ownerTier} sub="Créateur" last={members.length === 0} />}
+          {withOwner && <PlayerRow name={ownerName} src={ownerAvatar} tier={ownerTier} sub="Créateur" last={members.length === 0} />}
           {members.map((member, index) => (
             <PlayerRow key={member.id} name={member.name} tier={member.tier} chevron onPress={() => setSelected(member)} last={index === members.length - 1} />
           ))}

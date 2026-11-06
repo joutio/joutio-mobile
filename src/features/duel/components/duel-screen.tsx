@@ -45,6 +45,8 @@ import { useGameStream, usePrefetchQuestionImages, useServerNow } from '../hooks
 import { gameService } from '../lib/game-service'
 import { DuelCancelled } from './duel-cancelled'
 import { DuelResult } from './duel-result'
+import { useMyAvatar } from '@/features/avatar/lib/avatar-preview'
+import { usePlayerAvatar } from '@/features/social/hooks/use-player-avatar'
 
 export interface DuelRouteParams {
   gameId: string
@@ -97,6 +99,10 @@ function DuelScreenContent() {
   const game = stream.state
   // Lu ici, avec les autres hooks : jamais après les retours anticipés (chargement, résultat) ci-dessous.
   const answerDetails = useDeviceSettings((state) => state.answerDetails)
+  // Avatars : le mien, et celui de l'adversaire lu sur son profil (le flux de la partie ne porte pas ses options).
+  const myAvatar = useMyAvatar()
+  const opponentId = game ? (game.player1Id === userId ? game.player2Id : game.player1Id) : null
+  const opponentAvatar = usePlayerAvatar(opponentId, game?.player2Type !== 'BOT')
   usePrefetchQuestionImages(game?.questionImageUrls ?? [])
   const arena = useDuelArena({
     gameId,
@@ -235,9 +241,16 @@ function DuelScreenContent() {
               deadline={timerState === 'running' && arena.answerDeadlineAt ? { at: arena.answerDeadlineAt, now: () => now } : undefined}
             />
             <DuelHeader
-              me={{ name: myName, score: myShown, tier: myTier, scoreState: revealed ? (arena.gauge.you === 'idle' ? 'rest' : arena.gauge.you) : 'rest' }}
+              me={{
+                name: myName,
+                src: myAvatar,
+                score: myShown,
+                tier: myTier,
+                scoreState: revealed ? (arena.gauge.you === 'idle' ? 'rest' : arena.gauge.you) : 'rest',
+              }}
               opponent={{
                 name: opponentName,
+                src: opponentAvatar,
                 score: theirShown,
                 scoreState: revealed ? (arena.gauge.them === 'idle' ? 'rest' : arena.gauge.them) : 'rest',
               }}
@@ -294,8 +307,13 @@ function DuelScreenContent() {
         {versus && (
           <VersusIntro
             key="versus"
-            me={{ name: myName, tier: myTier, detail: myTier ? `${tokens.tier[myTier].label} · ${me.data?.progression?.rating ?? ''}` : undefined }}
-            opponent={{ name: opponentName, detail: game.player2Type === 'BOT' ? 'Entraînement' : undefined }}
+            me={{
+              name: myName,
+              src: myAvatar,
+              tier: myTier,
+              detail: myTier ? `${tokens.tier[myTier].label} · ${me.data?.progression?.rating ?? ''}` : undefined,
+            }}
+            opponent={{ name: opponentName, src: opponentAvatar, detail: game.player2Type === 'BOT' ? 'Entraînement' : undefined }}
             topic={topic}
             category={category}
             rounds={ROUNDS}

@@ -31,6 +31,7 @@ import {
   type PlayTopic,
 } from '@/features/play/hooks/use-play'
 import { tierOf } from '@/shared/utils/tier'
+import { userAvatar } from '@/shared/utils/avatar'
 
 type Step = 'modes' | 'training' | 'player'
 type Mode = 'world' | 'training' | 'room' | 'player'
@@ -79,6 +80,7 @@ export function PlayerPicker({ topic, onSent }: { topic: PlayTopic; onSent: () =
               <PlayerRow
                 key={player.userId}
                 name={player.pseudonym}
+                src={userAvatar(player)}
                 tier={player.provisional ? undefined : tierOf(player.rating)}
                 presence={player.presence?.status === 'ONLINE' ? 'online' : 'offline'}
                 sub={player.presence?.status === 'ONLINE' ? 'En ligne' : undefined}

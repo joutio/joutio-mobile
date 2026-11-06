@@ -17,6 +17,7 @@ import type { LeaderboardEntryView } from '@/shared/types/bff'
 import { tierOf } from '@/shared/utils/tier'
 import { useTopicLeaderboard } from '../hooks/use-topic'
 import { formatNumber, monthlyLegend, tierLabel } from '../lib/format'
+import { userAvatar } from '@/shared/utils/avatar'
 
 /** Rang à partir duquel la ligne du joueur passe en barre fixe (hors du top 10). */
 export const BOARD_TOP = 10
@@ -34,7 +35,16 @@ export function MyBoardRow({
   trail?: string
 }) {
   return (
-    <PlayerRow highlight last rank={entry.rank} name={entry.pseudonym} tier={entry.provisional ? undefined : tierOf(entry.rating)} sub={sub} trail={trail} />
+    <PlayerRow
+      highlight
+      last
+      rank={entry.rank}
+      name={entry.pseudonym}
+      src={userAvatar(entry)}
+      tier={entry.provisional ? undefined : tierOf(entry.rating)}
+      sub={sub}
+      trail={trail}
+    />
   )
 }
 
@@ -100,6 +110,7 @@ export function BoardTab({
           <Podium
             players={podium.map((entry) => ({
               name: entry.pseudonym,
+              src: userAvatar(entry),
               tier: entry.provisional ? undefined : tierOf(entry.rating),
               value: formatNumber(entry.monthlyXp),
             }))}
@@ -111,6 +122,7 @@ export function BoardTab({
                   key={entry.userId}
                   rank={entry.rank}
                   name={entry.pseudonym}
+                  src={userAvatar(entry)}
                   tier={entry.provisional ? undefined : tierOf(entry.rating)}
                   sub={boardSub(entry)}
                   trail={formatNumber(entry.monthlyXp)}

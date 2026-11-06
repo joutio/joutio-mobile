@@ -39,6 +39,8 @@ import type { GameResultView } from '../domain/game-dto'
 import { useGameResult } from '../hooks/use-game'
 import { DuelReview, reviewRoundsOf } from './duel-review'
 import { ReportPlayerSheet } from './report-sheets'
+import { useMyAvatar } from '@/features/avatar/lib/avatar-preview'
+import { usePlayerAvatar } from '@/features/social/hooks/use-player-avatar'
 
 const ORDER = Object.keys(tokens.tier) as TierCode[]
 const masteryOf = (xp: number): MasteryTier => MASTERY_TIERS.reduce<MasteryTier>((best, tier) => (xp >= MASTERY_XP[tier] ? tier : best), 'FER')
@@ -145,6 +147,8 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
   const resolvedTopicId = data?.topic.topicId ?? topicId ?? game.topicId ?? ''
   const playTopic = { topicId: resolvedTopicId, name: topic, category }
   const rematch = useSendRematch({ userId, opponentId, topic: playTopic, gameId })
+  const myAvatar = useMyAvatar()
+  const opponentAvatar = usePlayerAvatar(opponentId, !bot)
   // Elo à l'instant de la partie (snapshot du bilan) : une partie consultée plus tard ne doit pas afficher l'Elo
   // courant du profil. Le repli sur `/api/me` ne sert qu'avant l'arrivée du bilan.
   const gameProgression = data?.progression
@@ -177,6 +181,7 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
             tier={unlock.tier}
             next={nextTier}
             name={myName}
+            src={myAvatar}
             text="Ton cadre change sur ton profil et en duel."
             nextRule={nextTier ? `à ${formatNumber(tokens.tier[nextTier].minElo)}.` : undefined}
           />
@@ -266,6 +271,7 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
                     topic={topic}
                     me={{
                       name: myName,
+                      src: myAvatar,
                       tier: myTier,
                       score: myScore,
                       streak: streakOf(game, userId),
@@ -273,6 +279,7 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
                     }}
                     opponent={{
                       name: opponentName,
+                      src: opponentAvatar,
                       tier: opponentTier,
                       score: theirScore,
                       streak: streakOf(game, opponentId),

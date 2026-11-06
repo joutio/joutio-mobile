@@ -21,7 +21,19 @@ import type { BadgeFamilySummary } from '../lib/badges'
 import { masteryOf, RANKS, rankRule } from '../lib/format'
 
 /** Rangs : les 7 rangs et leur seuil, le rang du joueur agrandi, les suivants verrouillés. */
-export function RanksSheet({ open, onClose, name, tier }: { open: boolean; onClose: () => void; name: string; tier: TierCode | undefined }) {
+export function RanksSheet({
+  open,
+  onClose,
+  name,
+  avatar,
+  tier,
+}: {
+  open: boolean
+  onClose: () => void
+  name: string
+  avatar?: string
+  tier: TierCode | undefined
+}) {
   const { colors, radius } = useTheme()
   const current = tier ? RANKS.indexOf(tier) : -1
   return (
@@ -47,7 +59,7 @@ export function RanksSheet({ open, onClose, name, tier }: { open: boolean; onClo
                 borderBottomColor: colors.border,
               }}
             >
-              <Avatar name={name} tier={rank} size={isCurrent ? 'lg' : 'list'} locked={index > current} decorative />
+              <Avatar name={name} src={avatar} tier={rank} size={isCurrent ? 'lg' : 'list'} locked={index > current} decorative />
               <View style={{ flex: 1, minWidth: 0 }}>
                 <Text variant="headline" numberOfLines={1}>
                   {tokens.tier[rank].label}

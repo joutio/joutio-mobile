@@ -33,6 +33,7 @@ import { useMyProfile } from '../hooks/use-social'
 import { presenceOf, presenceSub } from '../lib/presence'
 import { ChallengePlayerSheet } from './challenge-player-sheet'
 import { SocialSortSheet } from './social-sort-sheet'
+import { userAvatar } from '@/shared/utils/avatar'
 
 const GUTTER = tokens.space[5]
 
@@ -111,6 +112,7 @@ function PeopleList({
                 <PlayerRow
                   key={player.userId}
                   name={player.pseudonym}
+                  src={userAvatar(player)}
                   tier={player.provisional ? undefined : tierOf(player.rating)}
                   presence={presenceOf(player.presence)}
                   sub={presenceSub(player.presence)}

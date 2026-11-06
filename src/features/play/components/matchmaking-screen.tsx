@@ -30,6 +30,7 @@ import { countryLabel } from '@/shared/utils/country'
 import { tierOf } from '@/shared/utils/tier'
 import { useAutoTrain, useBotDifficulty, useTicket, type PlayTopic } from '../hooks/use-play'
 import { playService } from '../lib/play-service'
+import { userAvatar } from '@/shared/utils/avatar'
 
 /** Joueurs décoratifs qui apparaissent sur la carte pendant la recherche (le BFF n'expose pas la file d'attente). */
 const PINS: MapPlayer[] = [
@@ -187,7 +188,7 @@ function MatchmakingScreenContent() {
         height={height}
         state={found ? 'found' : 'search'}
         pins={status === 'SEARCHING' ? PINS : []}
-        opponent={found ? { name: opponent?.pseudonym ?? 'Adversaire', ...FOUND_AT, label: opponent?.pseudonym } : undefined}
+        opponent={found ? { name: opponent?.pseudonym ?? 'Adversaire', src: userAvatar(opponent), ...FOUND_AT, label: opponent?.pseudonym } : undefined}
       />
       {!found && <Chrome />}
 
@@ -241,7 +242,7 @@ function MatchmakingScreenContent() {
             },
           ]}
         >
-          <Avatar name={opponent?.pseudonym ?? '?'} size="lg" decorative />
+          <Avatar name={opponent?.pseudonym ?? '?'} src={userAvatar(opponent)} size="lg" decorative />
           <View style={{ flex: 1, minWidth: 0 }}>
             <Text variant="caption" weight="600" color="correct">
               Adversaire trouvé
