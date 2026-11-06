@@ -89,7 +89,7 @@ export interface StatsTabProps {
   onStreak: () => void
   onRewards: () => void
   onRanks: () => void
-  onMastery: () => void
+  onPlayed: () => void
 }
 
 export function StatsTab({
@@ -106,7 +106,7 @@ export function StatsTab({
   onStreak,
   onRewards,
   onRanks,
-  onMastery,
+  onPlayed,
 }: StatsTabProps) {
   const played = wins + draws + losses
   const rank = tier && !provisional ? rankProgress(tier, rating) : undefined
@@ -171,22 +171,19 @@ export function StatsTab({
           </View>
           {donut.length > 0 && (
             <View style={{ gap: tokens.space[4] }}>
-              <SectionHeader title="Sujets joués" />
+              <SectionHeader
+                title="Sujets joués"
+                action={
+                  <Button variant="plain" size="S" onPress={onPlayed}>
+                    Tout voir
+                  </Button>
+                }
+              />
               <Card padding={tokens.space[3]}>
                 <TopicsDonut label="Sujets joués" data={donut} play={active} />
               </Card>
             </View>
           )}
-          <ListGroup surface="surface">
-            <ListRow
-              icon={ChartLineUpIcon}
-              label="Maîtrise par sujet"
-              control="chevron"
-              value={`${topics?.length ?? 0} sujet${(topics?.length ?? 0) > 1 ? 's' : ''}`}
-              onPress={onMastery}
-              last
-            />
-          </ListGroup>
         </>
       )}
     </TabScrollView>

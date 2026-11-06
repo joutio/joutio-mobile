@@ -1,24 +1,7 @@
 import { View } from 'react-native'
-import {
-  Avatar,
-  Button,
-  CrownSimpleIcon,
-  HAIRLINE,
-  MobileSheet,
-  Pill,
-  RankLadder,
-  Text,
-  TopicRow,
-  toCategoryCode,
-  tokens,
-  useTheme,
-  type TierCode,
-} from '@/design-system'
-import { formatNumber, tierLabel } from '@/features/topic/lib/format'
-import type { TopicStatView } from '@/shared/types/bff'
-import { topicName } from '@/shared/utils/topic-name'
+import { Avatar, HAIRLINE, MobileSheet, Pill, RankLadder, Text, tokens, useTheme, type TierCode } from '@/design-system'
 import type { BadgeFamilySummary } from '../lib/badges'
-import { masteryOf, RANKS, rankRule } from '../lib/format'
+import { RANKS, rankRule } from '../lib/format'
 
 /** Rangs : les 7 rangs et leur seuil, le rang du joueur agrandi, les suivants verrouillés. */
 export function RanksSheet({
@@ -72,53 +55,6 @@ export function RanksSheet({
             </View>
           )
         })}
-      </View>
-    </MobileSheet>
-  )
-}
-
-/** Maîtrise par sujet : palier et XP de chaque sujet joué, puis l'encart Premium. */
-export function MasterySheet({
-  open,
-  onClose,
-  topics,
-  onPremium,
-}: {
-  open: boolean
-  onClose: () => void
-  topics: readonly TopicStatView[]
-  onPremium: () => void
-}) {
-  const { colors, radius } = useTheme()
-  const sorted = [...topics].sort((a, b) => b.xp - a.xp)
-  return (
-    <MobileSheet
-      open={open}
-      onClose={onClose}
-      title="Maîtrise par sujet"
-      tall
-      footer={
-        <View style={{ gap: tokens.space[3] }}>
-          <Text variant="caption" color="muted" align="center">
-            Victoires et temps de réponse sujet par sujet avec Premium.
-          </Text>
-          <Button full variant="tinted" icon={CrownSimpleIcon} onPress={onPremium}>
-            Découvrir Premium
-          </Button>
-        </View>
-      }
-    >
-      <View style={{ overflow: 'hidden', borderRadius: radius.md, backgroundColor: colors.raised }}>
-        {sorted.map((topic, index) => (
-          <TopicRow
-            key={topic.topicId}
-            title={topicName(topic.names)}
-            category={toCategoryCode(undefined)}
-            image={topic.imageUrl ?? undefined}
-            sub={`${tierLabel(masteryOf(topic.xp))} · ${formatNumber(topic.xp)} XP`}
-            last={index === sorted.length - 1}
-          />
-        ))}
       </View>
     </MobileSheet>
   )

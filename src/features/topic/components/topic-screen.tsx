@@ -53,13 +53,19 @@ export interface TopicRouteParams {
   [key: string]: string | undefined
 }
 
-/** Ouvre la Fiche sujet depuis un onglet (Accueil ou Sujets), dans la pile de cet onglet. */
+export type TopicStack = 'home' | 'topics' | 'profile'
+
+const TOPIC_PATH = { home: '/home/topic/[id]', topics: '/topics/[id]', profile: '/profile/topic/[id]' } as const
+const RANKINGS_PATH = { home: '/home/rankings', topics: '/topics/rankings', profile: '/profile/rankings' } as const
+const HISTORY_PATH = { home: '/home/history', topics: '/topics/history', profile: '/profile/history' } as const
+
+/** Ouvre la Fiche sujet depuis un onglet (Accueil, Sujets ou Profil), dans la pile de cet onglet. */
 export function openTopic(
-  tab: 'home' | 'topics',
+  tab: TopicStack,
   topic: { topicId: string; names: Record<string, string>; bannerUrl: string | null; imageUrl: string | null; category: string | null },
 ) {
   router.push({
-    pathname: tab === 'home' ? '/home/topic/[id]' : '/topics/[id]',
+    pathname: TOPIC_PATH[tab],
     params: { id: topic.topicId, name: topicName(topic.names), image: topic.bannerUrl ?? topic.imageUrl ?? undefined, category: topic.category ?? undefined },
   })
 }
@@ -78,7 +84,7 @@ function Loading() {
  * Fiche sujet (`design/specs/screens/fiche-sujet.md`) : image en parallaxe, actions et chiffres du sujet, onglets
  * Mur (mock), Classement, Parties et Progression. Tirer recharge toute la page.
  */
-export function TopicScreen({ stack = 'home' }: { stack?: 'home' | 'topics' }) {
+export function TopicScreen({ stack = 'home' }: { stack?: TopicStack }) {
   const params = useLocalSearchParams<TopicRouteParams>()
   const topicId = params.id
   const client = useQueryClient()
@@ -226,19 +232,12 @@ export function TopicScreen({ stack = 'home' }: { stack?: 'home' | 'topics' }) {
           {
             value: 'board',
             label: 'Classement',
-            content: (
-              <BoardTab
-                topicId={topicId}
-                topicName={name}
-                rankingsPath={stack === 'home' ? '/home/rankings' : '/topics/rankings'}
-                bottomInset={showMyRow ? 64 : 0}
-              />
-            ),
+            content: <BoardTab topicId={topicId} topicName={name} rankingsPath={RANKINGS_PATH[stack]} bottomInset={showMyRow ? 64 : 0} />,
           },
           {
             value: 'games',
             label: 'Parties',
-            content: <GamesTab topicId={topicId} topicName={name} historyPath={stack === 'home' ? '/home/history' : '/topics/history'} />,
+            content: <GamesTab topicId={topicId} topicName={name} historyPath={HISTORY_PATH[stack]} />,
           },
           { value: 'progress', label: 'Progression', content: data ? <ProgressTab overview={data} /> : <Loading /> },
         ]}

@@ -29,7 +29,15 @@ const subOf = (game: GameHistoryItemView) => {
 }
 
 /** Onglet Parties : mes 10 dernières parties du sujet, groupées par jour. */
-export function GamesTab({ topicId, topicName, historyPath }: { topicId: string; topicName: string; historyPath: '/home/history' | '/topics/history' }) {
+export function GamesTab({
+  topicId,
+  topicName,
+  historyPath,
+}: {
+  topicId: string
+  topicName: string
+  historyPath: '/home/history' | '/topics/history' | '/profile/history'
+}) {
   const games = useTopicGames(topicId)
   // Parties terminées seulement : une partie en attente ou annulée n'a pas d'issue à montrer.
   const finished = (games.data?.content ?? []).filter((game) => OUTCOMES[game.outcome])

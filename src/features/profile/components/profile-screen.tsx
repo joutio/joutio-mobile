@@ -25,7 +25,6 @@ import { avatarStylesFor } from '@/features/avatar/lib/avatar-styles'
 import { useHistoryGames } from '@/features/history/hooks/use-history'
 import { DEFAULT_HISTORY_FILTERS } from '@/features/history/lib/history-service'
 import { useMe } from '@/features/me'
-import { usePremiumSheet } from '@/features/premium/premium-store'
 import { useMyTitles } from '@/features/topic/hooks/use-topic'
 import { formatNumber, tierLabel } from '@/features/topic/lib/format'
 import { queryKeys } from '@/lib/query-keys'
@@ -35,7 +34,7 @@ import { useMyActivity, useMyBadges, useMyRewards, useMyTopics } from '../hooks/
 import { badgesSummary, familiesOf, type BadgeFamilySummary } from '../lib/badges'
 import { titleLabel } from '../lib/format'
 import { streakHint, weekOf } from '../lib/streak'
-import { BadgeFamilySheet, MasterySheet, RanksSheet } from './profile-sheets'
+import { BadgeFamilySheet, RanksSheet } from './profile-sheets'
 import { BadgesTab, HistoryTab, StatsTab, TitlesTab } from './profile-tabs'
 
 type Tab = 'stats' | 'badges' | 'titles' | 'history'
@@ -55,11 +54,9 @@ export function ProfileScreen() {
   const rewards = useMyRewards()
   const titles = useMyTitles()
   const games = useHistoryGames(userId, DEFAULT_HISTORY_FILTERS)
-  const showPremium = usePremiumSheet((state) => state.show)
   const avatar = useMyAvatar()
   const [tab, setTab] = useState<Tab>('stats')
   const [ranksOpen, setRanksOpen] = useState(false)
-  const [masteryOpen, setMasteryOpen] = useState(false)
   const [family, setFamily] = useState<BadgeFamilySummary>()
   const [familyOpen, setFamilyOpen] = useState(false)
 
@@ -157,7 +154,7 @@ export function ProfileScreen() {
                 onStreak={() => router.push('/profile/streak')}
                 onRewards={() => router.push('/profile/rewards')}
                 onRanks={() => setRanksOpen(true)}
-                onMastery={() => setMasteryOpen(true)}
+                onPlayed={() => router.push('/profile/played')}
               />
             ) : (
               <TabSkeleton />
@@ -219,15 +216,6 @@ export function ProfileScreen() {
         }
       />
       <RanksSheet open={ranksOpen} onClose={() => setRanksOpen(false)} name={name} avatar={avatar} tier={tier} />
-      <MasterySheet
-        open={masteryOpen}
-        onClose={() => setMasteryOpen(false)}
-        topics={topics.data ?? []}
-        onPremium={() => {
-          setMasteryOpen(false)
-          showPremium()
-        }}
-      />
       <BadgeFamilySheet open={familyOpen} family={family} onClose={() => setFamilyOpen(false)} />
     </>
   )

@@ -57,7 +57,7 @@ export function BoardTab({
 }: {
   topicId: string
   topicName: string
-  rankingsPath: '/home/rankings' | '/topics/rankings'
+  rankingsPath: '/home/rankings' | '/topics/rankings' | '/profile/rankings'
   bottomInset: number
 }) {
   const board = useTopicLeaderboard(topicId)
