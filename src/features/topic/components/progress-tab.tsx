@@ -24,11 +24,6 @@ export function ProgressTab({ overview }: { overview: TopicOverviewView }) {
     >
       <View style={{ gap: tokens.space[5], padding: tokens.space[5], borderRadius: radius.lg, backgroundColor: colors.surface }}>
         <ProgressBar
-          label={`Progression · ${progress?.completedQuestions ?? 0} / ${progress?.totalQuestions ?? topic.questionsCount}`}
-          value={progress?.completionPercent ?? 0}
-          showValue
-        />
-        <ProgressBar
           label={
             progress?.nextTier
               ? `Maîtrise · ${formatNumber(progress.tierRemainingXp)} XP avant ${tierLabel(progress.nextTier)}`

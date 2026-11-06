@@ -15,6 +15,7 @@ import {
   PencilSimpleIcon,
   ShareNetworkIcon,
   Skeleton,
+  ProgressBar,
   Stat,
   TabScrollView,
   useTransitionDone,
@@ -207,6 +208,14 @@ export function TopicScreen({ stack = 'home' }: { stack?: 'home' | 'topics' }) {
                 ? stats.map((stat) => <Stat key={stat.label} {...stat} compact />)
                 : stats.map((stat) => <Skeleton key={stat.label} shape="card" style={{ flex: 1, height: 76 }} />)}
             </View>
+            {/* Questions vues sur le total du sujet, sous les trois blocs (`fiche-sujet.md` § 1). */}
+            {data && (
+              <ProgressBar
+                label={`Progression : ${data.myProgress?.completedQuestions ?? 0} / ${data.myProgress?.totalQuestions ?? data.topic.questionsCount}`}
+                value={data.myProgress?.completionPercent ?? 0}
+                showValue
+              />
+            )}
           </View>
         }
         tabsLabel="Contenu du sujet"
