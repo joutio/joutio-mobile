@@ -43,6 +43,11 @@ import { ReportPlayerSheet } from './report-sheets'
 import { useMyAvatar } from '@/features/avatar/lib/avatar-preview'
 import { usePlayerAvatar } from '@/features/social/hooks/use-player-avatar'
 
+/** Résistance de la bascule vers Détails du duel : part de page à tirer, ou lancer franc (vitesse native) passé 8 %. */
+const SWITCH_DISTANCE = 0.25
+const FLING_DISTANCE = 0.08
+const FLING_SPEED = 1.2
+
 const ORDER = Object.keys(tokens.tier) as TierCode[]
 const masteryOf = (xp: number): MasteryTier => MASTERY_TIERS.reduce<MasteryTier>((best, tier) => (xp >= MASTERY_XP[tier] ? tier : best), 'FER')
 
@@ -133,6 +138,7 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
   const [reportOpen, setReportOpen] = useState(false)
   // Deux pages verticales fixes (résultat, Détails du duel), hauteur mesurée sous la barre.
   const pagerRef = useRef<ScrollViewInstance>(null)
+  const dragStart = useRef(0)
   const [pageHeight, setPageHeight] = useState(0)
   const [page, setPage] = useState(0)
   const hasReview = useMemo(() => !cancelled && reviewRoundsOf(game).length > 0, [cancelled, game])
@@ -250,12 +256,24 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
             <ScrollView
               ref={pagerRef}
               style={{ flex: 1 }}
-              // Aimanté sur les deux pages sans `pagingEnabled` (qui exige de passer la moitié de la page) : un petit
-              // lancer suffit, et un seul cran à la fois.
-              snapToOffsets={[0, pageHeight]}
+              // Deux pages avec un peu de résistance (2026-11-06) : la bascule exige un quart de page tiré, ou un lancer
+              // franc au-delà de 8 % ; sinon la page revient. Ni `pagingEnabled` (moitié de page) ni `snapToOffsets`
+              // (un effleurement suffisait).
               decelerationRate="fast"
-              disableIntervalMomentum
               bounces={false}
+              onScrollBeginDrag={(event: NativeSyntheticEvent<NativeScrollEvent>) => {
+                dragStart.current = event.nativeEvent.contentOffset.y
+              }}
+              onScrollEndDrag={(event: NativeSyntheticEvent<NativeScrollEvent>) => {
+                const offset = event.nativeEvent.contentOffset.y
+                const travelled = offset - dragStart.current
+                const speed = Math.abs(event.nativeEvent.velocity?.y ?? 0)
+                const from = Math.round(dragStart.current / pageHeight)
+                const passed = Math.abs(travelled) > pageHeight * SWITCH_DISTANCE || (Math.abs(travelled) > pageHeight * FLING_DISTANCE && speed > FLING_SPEED)
+                const target = passed ? Math.min(1, Math.max(0, from + Math.sign(travelled))) : from
+                setPage(target)
+                pagerRef.current?.scrollTo({ y: target * pageHeight, animated: true })
+              }}
               nestedScrollEnabled
               scrollEnabled={hasReview}
               scrollsToTop={false}

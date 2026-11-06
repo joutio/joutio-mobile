@@ -209,8 +209,9 @@ sans ligne de co-auteur.
   sont **collées en bas** dans leur propre zone (pied `relative`), comme l'en-tête : le contenu défile entre les deux,
   jamais sous le bouton. Android : `dismissThreshold="short"`. Une étape
   suivante s'empile dans une nouvelle feuille. Recherche d'une liste en feuille : `stickyHeader` (collée en haut).
-  **Pages verticales fixes** (2026-11-05, résultat → Détails du duel) : `ScrollView` natif `pagingEnabled`, hauteur
-  de page mesurée par `onLayout`, pas de feuille persistante. Pager **horizontal** : `@expo/ui/community/pager-view`
+  **Pages verticales fixes** (2026-11-05, résultat → Détails du duel) : `ScrollView` natif, hauteur de page mesurée
+  par `onLayout`, pas de feuille persistante ; bascule décidée au relâcher avec un peu de résistance (2026-11-06 : un
+  quart de page tiré, ou un lancer franc passé 8 %), sinon retour. Pager **horizontal** : `@expo/ui/community/pager-view`
   (natif, SwiftUI / Compose), jamais un `ScrollView` piloté par `contentOffset`.
 - **Défilement collé** : `StickyBar` + `stickyHeaderIndices` et `useStickyBar()` ; sous une barre compacte
   (`ParallaxScreen`), collage par Reanimated.
