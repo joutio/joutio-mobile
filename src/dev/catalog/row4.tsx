@@ -5,6 +5,7 @@ import {
   Banner,
   Button,
   DotsThreeIcon,
+  Field,
   FlagIcon,
   LightningIcon,
   SignOutIcon,
@@ -237,6 +238,44 @@ export function BannerDemo() {
       <Banner tone="info" title="Saison 3 en cours" message="Fin dans 12 jours." />
       <Banner tone="live" title="Partie en cours" message="Contre Sofia R. · manche 3" action={{ label: 'Reprendre' }} />
       <Banner tone="training" title="Entraînement" message="Sans Elo ni XP." />
+    </>
+  )
+}
+
+/** Saisie dans une feuille : la feuille s'ouvre et le champ prend le focus, le bouton doit rester au-dessus du clavier. */
+export function MobileSheetInputDemo() {
+  const [open, setOpen] = useState(false)
+  const [name, setName] = useState('')
+  // Ouverture après la transition d'entrée de l'écran : une feuille présentée pendant le push ne s'ouvre pas.
+  useEffect(() => {
+    const timer = setTimeout(() => setOpen(true), 700)
+    return () => clearTimeout(timer)
+  }, [])
+  return (
+    <>
+      <Button full onPress={() => setOpen(true)}>
+        Ouvrir la feuille avec saisie
+      </Button>
+      <MobileSheet
+        open={open}
+        onClose={() => setOpen(false)}
+        title="Nouveau sujet"
+        footer={
+          <Button full size="L" disabled={name.trim() === ''} onPress={() => setOpen(false)}>
+            Créer le brouillon
+          </Button>
+        }
+      >
+        <Field
+          autoFocus
+          label="Nom"
+          placeholder="Par exemple, Châteaux de la Loire"
+          value={name}
+          maxLength={40}
+          counter={`${name.length} / 40`}
+          onChangeText={setName}
+        />
+      </MobileSheet>
     </>
   )
 }

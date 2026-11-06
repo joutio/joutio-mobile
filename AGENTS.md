@@ -206,7 +206,8 @@ sans ligne de co-auteur.
 - **Écrans toujours sombres** (duel, intros, déblocages, reconnexion) : `ForceDark`. Toasts suspendus avec
   `useToastSuppression()`.
 - **Feuilles** : `MobileSheet` (TrueSheet), ajustée au contenu jusqu'à 80 % ou `tall` à 92 %. Les actions (`footer`)
-  sont **collées en bas** dans leur propre zone (pied `relative`), comme l'en-tête : le contenu défile entre les deux,
+  sont **collées en bas** dans leur propre zone (pied `absolute` depuis le 2026-11-06 : il remonte au-dessus du clavier,
+  le défilement réserve sa hauteur), comme l'en-tête : le contenu défile entre les deux,
   jamais sous le bouton. Android : `dismissThreshold="short"`. Une étape
   suivante s'empile dans une nouvelle feuille. Recherche d'une liste en feuille : `stickyHeader` (collée en haut).
   **Pages verticales fixes** (2026-11-05, résultat → Détails du duel) : `ScrollView` natif, hauteur de page mesurée

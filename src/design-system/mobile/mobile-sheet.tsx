@@ -109,8 +109,11 @@ export function MobileSheet({
       // la hauteur plafonnée, sinon ils gardent leur hauteur naturelle, ne défilent pas et poussent le pied hors écran.
       style={{ flexShrink: 1, minHeight: 0 }}
       header={<SheetHeader title={title} subtitle={subtitle} onBack={onBack} action={action} onClose={onClose} titleRef={titleRef} handle={false} />}
-      // Actions dans leur propre zone, collée au bas de la feuille, comme l'en-tête en haut : le contenu défile
-      // **entre** les deux et ne passe jamais sous le bouton (pied `relative`, le défaut de TrueSheet).
+      // Actions dans leur propre zone, collée au bas de la feuille, comme l'en-tête en haut. Pied `absolute` (2026-11-06) :
+      // un pied `relative` reste derrière le clavier, le bouton d'enregistrement disparaissait pendant la saisie ; en
+      // `absolute`, il remonte au-dessus du clavier, et le défilement réserve sa hauteur (`contentInsetAdjustment`
+      // automatique) : le contenu ne passe jamais sous le bouton.
+      footerOptions={footer ? { position: 'absolute' } : undefined}
       // Android : fermeture au balayage court, comme la feuille Material 3 (sur iOS, le geste reste celui du système).
       dismissThreshold="short"
       // iOS 26 : la feuille flotte au-dessus du bas de l'écran (coins arrondis, marges), la zone de l'indicateur

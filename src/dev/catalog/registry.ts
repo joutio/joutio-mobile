@@ -2,7 +2,7 @@ import type { ComponentType } from 'react'
 import { AvatarDemo, BadgeDemo, ButtonDemo, IconButtonDemo, PillDemo, PremiumBadgeDemo, SkeletonDemo } from './row1'
 import { BottomNavDemo, MobileTopBarDemo, StickyScreenDemo } from './row2'
 import { ChipDemo, FieldDemo, ListRowDemo, MatchRowDemo, PlayerRowDemo, RadioGroupDemo, SearchFieldDemo, SegmentedDemo, SwitchDemo } from './row3'
-import { BannerDemo, DialogDemo, MenuDemo, MobileSheetDemo, SheetHeaderDemo, ToastDemo } from './row4'
+import { BannerDemo, DialogDemo, MenuDemo, MobileSheetDemo, MobileSheetInputDemo, SheetHeaderDemo, ToastDemo } from './row4'
 import { CategoryTileDemo, CodeInputDemo, LogoDemo, PageDotsDemo, SocialButtonDemo, SplashLogoDemo, TopicCardDemo, TopicRowDemo } from './onboarding'
 import { BadgeFamilyRowDemo, RankLadderDemo, RewardCardDemo, StreakCalendarDemo, StreakDemo, TopicsDonutDemo } from './profile'
 import { ChallengeListRowDemo, NotificationRowDemo } from './inbox'
@@ -43,6 +43,7 @@ export const CATALOG: CatalogEntry[] = [
   { id: 'search-field', title: 'SearchField', row: 3, spec: 'components/formulaires.md', Demo: SearchFieldDemo },
   { id: 'chip', title: 'Chip', row: 3, spec: 'components/primitives.md', Demo: ChipDemo },
   { id: 'mobile-sheet', title: 'MobileSheet', row: 4, spec: 'components/navigation.md', Demo: MobileSheetDemo },
+  { id: 'mobile-sheet-input', title: 'MobileSheet avec saisie', row: 4, spec: 'components/navigation.md', Demo: MobileSheetInputDemo },
   { id: 'sheet-header', title: 'SheetHeader', row: 4, spec: 'components/navigation.md', Demo: SheetHeaderDemo },
   { id: 'dialog', title: 'Dialog', row: 4, spec: 'components/feedback.md', Demo: DialogDemo },
   { id: 'menu', title: 'Menu', row: 4, spec: 'components/feedback.md', Demo: MenuDemo },
