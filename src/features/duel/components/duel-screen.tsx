@@ -94,6 +94,8 @@ function DuelScreenContent() {
   const connection = useConnectionStore((state) => state.status)
   const now = useServerNow()
   const game = stream.state
+  // Lu ici, avec les autres hooks : jamais après les retours anticipés (chargement, résultat) ci-dessous.
+  const answerDetails = useDeviceSettings((state) => state.answerDetails)
   usePrefetchQuestionImages(game?.questionImageUrls ?? [])
   const arena = useDuelArena({
     gameId,
@@ -193,7 +195,6 @@ function DuelScreenContent() {
   // L'apparition des réponses n'est autorisée que dans la scène de question, une fois le temps de lecture écoulé
   // (ou à la révélation). Hors de la question, `answersShown` reste faux : un montage à la fin de l'intro ne doit
   // jamais figer les cartes à leur état final.
-  const answerDetails = useDeviceSettings((state) => state.answerDetails)
   const answersShown = questionReady && (scene.kind === 'reveal' || (scene.kind === 'question' && !scene.locked))
   // Un joueur présent pendant l'intro n'est pas « en retard » même si le premier rendu de la question arrive après
   // `LATE_JOIN_MS` (latence JS/réseau) : l'intro prouve qu'il a vu le début de la manche.
