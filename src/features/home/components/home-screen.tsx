@@ -37,6 +37,7 @@ import {
   useReducedMotion,
   type CategoryCode,
   type CollapsibleTabsRef,
+  TOP_BAR_HEIGHT,
 } from '@/design-system'
 import { useMe } from '@/features/me'
 import { useMyActivity } from '@/features/profile/hooks/use-profile'
@@ -308,7 +309,16 @@ export function HomeScreen() {
   const premium = me.data?.premium ?? false
 
   const header = (
-    <View style={{ minHeight: 52, flexDirection: 'row', alignItems: 'center', paddingLeft: GUTTER, paddingRight: tokens.space[3], gap: tokens.space[3] }}>
+    <View
+      style={{
+        minHeight: TOP_BAR_HEIGHT,
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingLeft: GUTTER,
+        paddingRight: tokens.space[3],
+        gap: tokens.space[3],
+      }}
+    >
       <View style={{ flex: 1, minWidth: 0, alignSelf: 'stretch', justifyContent: 'center', overflow: 'hidden' }}>
         <Animated.View style={logoStyle} accessibilityElementsHidden={stuck} importantForAccessibility={stuck ? 'no-hide-descendants' : 'auto'}>
           <Logo variant="lockup" size={28} />

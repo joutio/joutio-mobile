@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { View, type StyleProp, type ViewStyle } from 'react-native'
+import { Platform, View, type StyleProp, type ViewStyle } from 'react-native'
 import { CaretLeftIcon } from '../icons'
 import { Button } from '../primitives/button'
 import { IconButton } from '../primitives/icon-button'
@@ -8,8 +8,8 @@ import { useTheme } from '../theme/theme-provider'
 import { tokens } from '../tokens.generated'
 import { GlassBackground } from './glass'
 
-/** Hauteur de la barre, hors safe area. */
-export const TOP_BAR_HEIGHT = 52
+/** Hauteur de la barre : 52 pt sur iOS (lab), 64 dp sur Android comme la barre Material (décision du 2026-11-06). */
+export const TOP_BAR_HEIGHT = Platform.OS === 'android' ? 64 : 52
 
 interface Common {
   glass?: boolean

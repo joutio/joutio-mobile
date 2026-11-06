@@ -47,7 +47,9 @@ Décisions :
 - **Hybride natif** (2026-11-03, `design/PARITY.md` § 3) : chrome et contrôles standards natifs, teintés par les
   tokens ; composants de marque faits main d'après le lab.
     - En-têtes : `native-stack` via `nativeHeaderOptions(theme)` (+ `largeTitleOptions` sur une racine) ; `Screen`
-      en mode `nativeHeader`. `MobileTopBar` ne sert plus qu'aux cas sans en-tête natif.
+      en mode `nativeHeader`. `MobileTopBar` ne sert plus qu'aux cas sans en-tête natif. Sa hauteur `TOP_BAR_HEIGHT`
+      suit la plateforme (2026-11-06) : 52 pt sur iOS (lab), 64 dp sur Android (barre Material) ; toute barre faite main la
+      reprend.
     - `Switch` système ; `Segmented` natif (SwiftUI / Material 3) sauf `scrollable` ou lié à un pager (`position` :
       l'indicateur suit le doigt, la barre défile avec et s'aimante) — barre d'onglets maison, à
       indicateur glissant) ; `Menu` Joutio identique sur iOS et Android (le `DropdownMenu` Compose de `@expo/ui` ne

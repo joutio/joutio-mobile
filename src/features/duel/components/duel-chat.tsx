@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { CaretLeftIcon, Composer, HAIRLINE, IconButton, Message, Pill, Text, tokens, useTheme } from '@/design-system'
+import { CaretLeftIcon, Composer, HAIRLINE, IconButton, Message, Pill, Text, tokens, useTheme, TOP_BAR_HEIGHT } from '@/design-system'
 
 /** Réponses rapides du chat d'après-duel. */
 const SUGGESTIONS = ['Bien joué !', 'Revanche ?', 'Trop fort', 'GG']
@@ -46,7 +46,7 @@ export function DuelChat({ gameId, opponentName, recap, onBack }: { gameId: stri
           alignItems: 'center',
           gap: tokens.space[3],
           paddingHorizontal: tokens.space[3],
-          minHeight: 52 + insets.top,
+          minHeight: TOP_BAR_HEIGHT + insets.top,
         }}
       >
         <IconButton icon={CaretLeftIcon} label="Retour au résultat" onPress={onBack} />

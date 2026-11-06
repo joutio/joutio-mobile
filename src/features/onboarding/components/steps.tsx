@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { ScrollView, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { PageDots, tokens, useTheme } from '@/design-system'
+import { PageDots, tokens, useTheme, TOP_BAR_HEIGHT } from '@/design-system'
 
 export const STEP_COUNT = 3
 
@@ -29,7 +29,7 @@ export function Steps({ index, action, fill = false, footer, children }: StepsPr
     <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top }}>
       <View
         style={{
-          minHeight: 52,
+          minHeight: TOP_BAR_HEIGHT,
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'space-between',

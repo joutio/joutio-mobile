@@ -24,6 +24,7 @@ import {
   type MatchOutcome,
   type RoundResult,
   type TierCode,
+  TOP_BAR_HEIGHT,
 } from '@/design-system'
 import { useMe } from '@/features/me'
 import { useBotDifficulty, useStartMatchmaking, useStartTraining } from '@/features/play/hooks/use-play'
@@ -221,7 +222,9 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
   return (
     <>
       <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top }}>
-        <View style={{ height: 52, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: tokens.space[3] }}>
+        <View
+          style={{ height: TOP_BAR_HEIGHT, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: tokens.space[3] }}
+        >
           <View style={{ flexDirection: 'row', gap: tokens.space[2] }}>
             {!bot && !cancelled && (
               <>
