@@ -43,6 +43,8 @@ import { useDebounced } from '@/shared/hooks/use-debounced'
 import type { TopicCardView, TopicSort } from '@/shared/types/bff'
 import { topicName } from '@/shared/utils/topic-name'
 import { useTopicFacets, useTopics } from '../hooks/use-topics'
+import { OfflineBanner } from '@/shared/components/offline-banner'
+import { useOnline } from '@/shared/hooks/use-online'
 
 const GUTTER = tokens.space[5]
 const GAP = tokens.space[4]
@@ -58,12 +60,12 @@ const countLabel = (count: number) => `${count} ${count > 1 ? 'sujets' : 'sujet'
 const toggle = (list: readonly CategoryCode[], category: CategoryCode) =>
   list.includes(category) ? list.filter((item) => item !== category) : [...list, category]
 
-function Loading() {
+function Loading({ animated = true }: { animated?: boolean }) {
   return (
     <View accessible accessibilityLabel="Chargement" style={{ flexDirection: 'row', flexWrap: 'wrap', gap: GAP, paddingHorizontal: GUTTER }}>
       {[0, 1, 2, 3].map((index) => (
         <View key={index} style={{ flexBasis: '45%', flexGrow: 1 }}>
-          <Skeleton shape="card" style={{ aspectRatio: 3 / 4, height: undefined }} />
+          <Skeleton shape="card" animated={animated} style={{ aspectRatio: 3 / 4, height: undefined }} />
         </View>
       ))}
     </View>
@@ -94,6 +96,7 @@ export function TopicsScreen() {
   const search = useDebounced(query.trim())
   const filters = useMemo(() => ({ query: search, categories, sort, hideFollowed }), [search, categories, sort, hideFollowed])
   const topics = useTopics(filters)
+  const online = useOnline()
   const facets = useTopicFacets(search)
 
   // Un changement de recherche, de filtre ou de tri ramène au seuil de collage (ici, le haut de la grille) : tout de
@@ -158,48 +161,54 @@ export function TopicsScreen() {
           </Chip>
         ))}
       </ScrollView>
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: tokens.space[3], paddingHorizontal: GUTTER }}>
-        <Text variant="callout" color="muted">
-          {countLabel(topics.isError ? 0 : count)}
-        </Text>
-        <Chip icon={ArrowsDownUpIcon} onPress={() => setSheetOpen(true)}>
-          {sortLabel}
-        </Chip>
-      </View>
+      {/* Hors connexion (`etats-systeme.md`) : la bannière remplace le compteur et le tri, squelettes fixes dessous. */}
+      {online ? (
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: tokens.space[3], paddingHorizontal: GUTTER }}>
+          <Text variant="callout" color="muted">
+            {countLabel(topics.isError ? 0 : count)}
+          </Text>
+          <Chip icon={ArrowsDownUpIcon} onPress={() => setSheetOpen(true)}>
+            {sortLabel}
+          </Chip>
+        </View>
+      ) : (
+        <OfflineBanner onRetry={() => void topics.refetch()} style={{ marginHorizontal: GUTTER }} />
+      )}
     </View>
   )
 
-  const emptyState = topics.isPending ? (
-    <Loading />
-  ) : topics.isError ? (
-    <EmptyState
-      icon={WarningCircleIcon}
-      title="Impossible de charger les sujets"
-      description="Vérifie ta connexion, puis réessaie."
-      action={
-        <Button style={{ alignSelf: 'center' }} loading={topics.isRefetching} onPress={() => void topics.refetch()}>
-          Réessayer
-        </Button>
-      }
-    />
-  ) : (
-    <EmptyState
-      icon={MagnifyingGlassIcon}
-      title="Aucun sujet trouvé"
-      description="Essaie un autre mot ou retire des filtres."
-      action={
-        <Button
-          style={{ alignSelf: 'center' }}
-          onPress={() => {
-            reset()
-            setQuery('')
-          }}
-        >
-          Réinitialiser
-        </Button>
-      }
-    />
-  )
+  const emptyState =
+    topics.isPending || !online ? (
+      <Loading animated={online} />
+    ) : topics.isError ? (
+      <EmptyState
+        icon={WarningCircleIcon}
+        title="Impossible de charger les sujets"
+        description="Vérifie ta connexion, puis réessaie."
+        action={
+          <Button style={{ alignSelf: 'center' }} loading={topics.isRefetching} onPress={() => void topics.refetch()}>
+            Réessayer
+          </Button>
+        }
+      />
+    ) : (
+      <EmptyState
+        icon={MagnifyingGlassIcon}
+        title="Aucun sujet trouvé"
+        description="Essaie un autre mot ou retire des filtres."
+        action={
+          <Button
+            style={{ alignSelf: 'center' }}
+            onPress={() => {
+              reset()
+              setQuery('')
+            }}
+          >
+            Réinitialiser
+          </Button>
+        }
+      />
+    )
 
   return (
     <Screen

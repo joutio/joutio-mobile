@@ -47,6 +47,7 @@ import { openTopic } from '@/features/topic'
 import { useTopicFacets, useTopics } from '@/features/topics/hooks/use-topics'
 import type { TopicFilters } from '@/features/topics/lib/topics-service'
 import { useHome, useUnreadCount } from '../hooks/use-home'
+import { OfflineBanner } from '@/shared/components/offline-banner'
 
 const LANDSCAPE_WIDTH = 240
 const GUTTER = tokens.space[5]
@@ -230,6 +231,7 @@ function TabPage({ tab, home }: { tab: Tab; home: ReturnType<typeof useHome> }) 
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ gap: tokens.space[7], paddingTop: tokens.space[5], paddingBottom: tokens.space[7] }}
       >
+        <OfflineBanner onRetry={() => void home.refetch()} style={{ marginHorizontal: tokens.space[5] }} />
         {home.isPending && <Loading />}
         {home.isError && (
           <EmptyState

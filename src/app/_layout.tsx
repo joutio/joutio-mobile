@@ -15,6 +15,7 @@ import { registerDevMenu } from '@/dev/dev-menu'
 import { config } from '@/lib/config'
 import { useEntryStore } from '@/shared/stores/entry-store'
 import { createQueryClient } from '@/lib/query-client'
+import { useNetworkBridge } from '@/shared/hooks/use-online'
 
 SplashScreen.preventAutoHideAsync().catch(() => undefined)
 // Le splash natif s'efface sur `LaunchScreen` (même logo, même fond) au lieu de couper net.
@@ -74,6 +75,7 @@ function Navigation() {
 
 function Root() {
   const { colors, scheme } = useTheme()
+  useNetworkBridge()
 
   // Fond natif derrière les transitions : sans lui, la navigation montre un fond clair.
   useEffect(() => {

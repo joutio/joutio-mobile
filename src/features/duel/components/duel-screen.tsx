@@ -43,6 +43,7 @@ import type { GameState } from '../domain/game'
 import { useDuelArena } from '../hooks/use-duel-arena'
 import { useGameStream, usePrefetchQuestionImages, useServerNow } from '../hooks/use-game'
 import { gameService } from '../lib/game-service'
+import { DuelCancelled } from './duel-cancelled'
 import { DuelResult } from './duel-result'
 
 export interface DuelRouteParams {
@@ -174,6 +175,10 @@ function DuelScreenContent() {
       </ForceDark>
     )
   }
+
+  // Partie expirée côté serveur (`GAME_EXPIRED`) : écran dédié, Elo inchangé (`etats-systeme.md`).
+  if (game.status === 'CANCELED' && game.canceledReason === 'GAME_EXPIRED')
+    return <DuelCancelled started={game.firstRoundAt !== null} topicId={params.topicId} topicName={topic} category={params.category} />
 
   if (finished) return <DuelResult gameId={gameId} game={game} topic={topic} topicId={params.topicId} category={params.category} />
 
