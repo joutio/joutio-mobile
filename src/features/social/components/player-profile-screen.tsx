@@ -52,6 +52,7 @@ import { useBlockMocks, useIsBlocked } from '../lib/block-mocks'
 import { presenceLine } from '../lib/presence'
 import { ChallengePlayerSheet } from './challenge-player-sheet'
 import { userAvatar } from '@/shared/utils/avatar'
+import { confirmUnfollow } from '../lib/confirm-unfollow'
 
 const GUTTER = tokens.space[5]
 const OUTCOMES: Partial<Record<GameOutcome, MatchOutcome>> = { WIN: 'win', LOSS: 'loss', DRAW: 'draw' }
@@ -147,6 +148,12 @@ export function PlayerProfileScreen() {
   const seen = data ? presenceLine(data.presence) : ''
   const played = (head.data?.played ?? 0) > 0
 
+  const toggleFollow = () => {
+    if (!data || follow.isPending) return
+    if (!data.following) return follow.mutate(true)
+    confirmUnfollow(data.pseudonym, () => follow.mutate(false))
+  }
+
   // Mock (pas d'endpoint BFF) : le blocage retire aussi l'abonnement, qui, lui, est réel.
   const block = () => {
     if (!data) return
@@ -181,12 +188,7 @@ export function PlayerProfileScreen() {
                     disabled={challenged}
                     onPress={() => setChallengeOpen(true)}
                   />
-                  <ParallaxIconButton
-                    icon={HeartIcon}
-                    label={data.following ? 'Ne plus suivre' : 'Suivre'}
-                    filled={data.following}
-                    onPress={() => follow.mutate(!data.following)}
-                  />
+                  <ParallaxIconButton icon={HeartIcon} label={data.following ? 'Ne plus suivre' : 'Suivre'} filled={data.following} onPress={toggleFollow} />
                 </>
               )}
               <Menu
@@ -243,7 +245,7 @@ export function PlayerProfileScreen() {
                     tone={data.following ? 'neutral' : 'accent'}
                     accessibilityState={{ selected: data.following }}
                     loading={follow.isPending}
-                    onPress={() => follow.mutate(!data.following)}
+                    onPress={toggleFollow}
                   >
                     {data.following ? 'Suivi' : 'Suivre'}
                   </Button>

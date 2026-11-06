@@ -22,6 +22,7 @@ import { tierOf } from '@/shared/utils/tier'
 import { topicName } from '@/shared/utils/topic-name'
 import { isExpired, isUnread, relativeTime } from '../lib/notifications-service'
 import { useMarkRead, useDeleteNotification } from '../hooks/use-notifications'
+import { confirmUnfollow } from '@/features/social/lib/confirm-unfollow'
 
 /** Pictogramme des notifications sans joueur (système). */
 const ICONS: Record<NotificationView['type'], Icon> = {
@@ -133,7 +134,7 @@ export function NotificationItem({ notification, challenge, last }: { notificati
                 label: profile.following ? 'Suivi' : 'Suivre',
                 variant: profile.following ? 'gray' : 'tinted',
                 loading: follow.isPending,
-                onPress: () => follow.mutate(!profile.following),
+                onPress: () => (profile.following ? confirmUnfollow(profile.pseudonym, () => follow.mutate(false)) : follow.mutate(true)),
               }
             : undefined
       }
