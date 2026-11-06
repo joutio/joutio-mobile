@@ -16,7 +16,7 @@ import {
 import type { LeaderboardEntryView } from '@/shared/types/bff'
 import { tierOf } from '@/shared/utils/tier'
 import { useTopicLeaderboard } from '../hooks/use-topic'
-import { formatNumber, monthlyLegend, tierLabel } from '../lib/format'
+import { formatNumber, tierLabel } from '../lib/format'
 import { userAvatar } from '@/shared/utils/avatar'
 
 /** Rang à partir duquel la ligne du joueur passe en barre fixe (hors du top 10). */
@@ -27,8 +27,8 @@ export const boardSub = (entry: LeaderboardEntryView) => (entry.provisional ? 'C
 /** Ligne du joueur connecté, en barre fixe au-dessus de la barre d'onglets. */
 export function MyBoardRow({
   entry,
-  sub = `${formatNumber(entry.monthlyXp)} XP ce mois`,
-  trail = formatNumber(entry.monthlyXp),
+  sub = `${formatNumber(entry.totalXp)} XP au total`,
+  trail = formatNumber(entry.totalXp),
 }: {
   entry: LeaderboardEntryView
   sub?: string
@@ -48,7 +48,7 @@ export function MyBoardRow({
   )
 }
 
-/** Onglet Classement : Top 10 du mois, podium puis rangs 4 à 10. */
+/** Onglet Classement : Top 10 depuis toujours, podium puis rangs 4 à 10. */
 export function BoardTab({
   topicId,
   topicName,
@@ -84,7 +84,7 @@ export function BoardTab({
         }
       />
       <Text variant="caption" color="muted">
-        {monthlyLegend()}
+        XP cumulée · Mondial
       </Text>
       {board.isPending ? (
         <>
@@ -112,7 +112,7 @@ export function BoardTab({
               name: entry.pseudonym,
               src: userAvatar(entry),
               tier: entry.provisional ? undefined : tierOf(entry.rating),
-              value: formatNumber(entry.monthlyXp),
+              value: formatNumber(entry.totalXp),
             }))}
           />
           {rest.length > 0 && (
@@ -125,7 +125,7 @@ export function BoardTab({
                   src={userAvatar(entry)}
                   tier={entry.provisional ? undefined : tierOf(entry.rating)}
                   sub={boardSub(entry)}
-                  trail={formatNumber(entry.monthlyXp)}
+                  trail={formatNumber(entry.totalXp)}
                   highlight={entry.userId === board.data?.me?.userId}
                   last={index === rest.length - 1}
                 />

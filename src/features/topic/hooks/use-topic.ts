@@ -11,7 +11,7 @@ export function useTopicOverview(topicId: string, enabled = Boolean(topicId)) {
   return useQuery({ queryKey: queryKeys.topic.overview(topicId), queryFn: () => topicService.overview(topicId), enabled, staleTime: 30_000 })
 }
 
-/** Top 10 du mois et ma ligne. */
+/** Top 10 depuis toujours et ma ligne. */
 export function useTopicLeaderboard(topicId: string, enabled = true) {
   return useQuery({ queryKey: queryKeys.topic.leaderboard(topicId), queryFn: () => topicService.leaderboard(topicId), enabled, staleTime: 60_000 })
 }

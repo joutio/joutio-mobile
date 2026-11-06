@@ -28,8 +28,8 @@ export const DEFAULT_RANKING_FILTERS: RankingFilterState = { period: 'MONTHLY', 
 /** Dernières parties de l'onglet Parties ; l'historique complet vit dans `historique.md`. */
 export const GAMES_SIZE = 10
 
-/** Légende de l'onglet Classement : XP du mois, monde entier. */
-export const BOARD_PERIOD: LeaderboardPeriod = 'MONTHLY'
+/** Onglet Classement de la fiche sujet : XP cumulée depuis toujours, monde entier (décision du 2026-11-06). */
+export const BOARD_PERIOD: LeaderboardPeriod = 'ALL_TIME'
 export const BOARD_SCOPE: LeaderboardScope = 'WORLD'
 
 export const topicService = {
