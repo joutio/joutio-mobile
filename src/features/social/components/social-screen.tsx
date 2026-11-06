@@ -34,6 +34,7 @@ import { presenceOf, presenceSub } from '../lib/presence'
 import { ChallengePlayerSheet } from './challenge-player-sheet'
 import { SocialSortSheet } from './social-sort-sheet'
 import { userAvatar } from '@/shared/utils/avatar'
+import { OfflineBanner } from '@/shared/components/offline-banner'
 
 const GUTTER = tokens.space[5]
 
@@ -204,6 +205,11 @@ export function SocialScreen() {
               onPress={() => setSortOpen(true)}
             />
           </View>
+          <OfflineBanner
+            message="Tes contacts se chargent dès ton retour en ligne."
+            onRetry={() => void Promise.all([following.refetch(), followers.refetch()])}
+            style={{ marginHorizontal: GUTTER, marginTop: tokens.space[3] }}
+          />
         </View>
       }
     >
