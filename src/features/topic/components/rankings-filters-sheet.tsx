@@ -4,8 +4,8 @@ import type { LeaderboardPeriod, LeaderboardScope } from '@/shared/types/bff'
 import type { RankingFilterState } from '../lib/topic-service'
 
 const PERIODS: { value: LeaderboardPeriod; label: string }[] = [
-  { value: 'MONTHLY', label: 'Ce mois' },
   { value: 'ALL_TIME', label: 'Depuis toujours' },
+  { value: 'MONTHLY', label: 'Ce mois' },
 ]
 
 const SCOPES: { value: LeaderboardScope; label: string }[] = [

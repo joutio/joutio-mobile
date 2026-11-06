@@ -24,7 +24,8 @@ export interface RankingFilters {
 
 export type RankingFilterState = Pick<RankingFilters, 'period' | 'scope'>
 
-export const DEFAULT_RANKING_FILTERS: RankingFilterState = { period: 'MONTHLY', scope: 'WORLD' }
+/** Tous les classements : depuis toujours, monde entier par défaut, comme l'onglet de la Fiche sujet (2026-11-06). */
+export const DEFAULT_RANKING_FILTERS: RankingFilterState = { period: 'ALL_TIME', scope: 'WORLD' }
 /** Dernières parties de l'onglet Parties ; l'historique complet vit dans `historique.md`. */
 export const GAMES_SIZE = 10
 

@@ -66,7 +66,7 @@ export function RankingsScreen() {
 
   const filters = useMemo(() => ({ ...filterState, month }), [filterState, month])
   const list = useTopicLeaderboardPage(topicId, filters, Boolean(topicId))
-  const active = filterState.period !== 'MONTHLY' || filterState.scope !== 'WORLD'
+  const active = filterState.period !== DEFAULT_RANKING_FILTERS.period || filterState.scope !== DEFAULT_RANKING_FILTERS.scope
   const hasCountry = Boolean(me.data?.country)
 
   const entries = useMemo(() => {
