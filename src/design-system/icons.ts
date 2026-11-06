@@ -138,3 +138,9 @@ export const CATEGORY_ICONS: Record<CategoryIconName, Icon> = {
   'globe-hemisphere-west': GlobeHemisphereWestIcon,
   lightbulb: LightbulbIcon,
 }
+export { HourglassMediumIcon } from 'phosphor-react-native/src/icons/HourglassMedium'
+export { ListChecksIcon } from 'phosphor-react-native/src/icons/ListChecks'
+export { SquaresFourIcon } from 'phosphor-react-native/src/icons/SquaresFour'
+export { PlusIcon } from 'phosphor-react-native/src/icons/Plus'
+export { UserCircleDashedIcon } from 'phosphor-react-native/src/icons/UserCircleDashed'
+export { HourglassLowIcon } from 'phosphor-react-native/src/icons/HourglassLow'

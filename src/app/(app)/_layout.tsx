@@ -22,6 +22,8 @@ export default function AppLayout() {
         <Stack.Screen name="result/[gameId]/chat" options={{ headerShown: false, animation: 'slide_from_right' }} />
         {/* Éditeur d'avatar : modale plein écran, sans barre d'onglets (Annuler / Enregistrer). */}
         <Stack.Screen name="avatar" options={{ headerShown: false, presentation: 'fullScreenModal' }} />
+        {/* Éditeur de question (Mes sujets) : modale plein écran, Annuler / Enregistrer. */}
+        <Stack.Screen name="question-editor" options={{ headerShown: false, presentation: 'fullScreenModal' }} />
       </Stack>
       {/* Demandes de revanche reçues, au-dessus de tout écran (sauf pendant un duel). */}
       <RematchHost />

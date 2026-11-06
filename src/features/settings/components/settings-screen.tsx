@@ -193,7 +193,7 @@ export function SettingsScreen() {
       <Section title="Compte">
         <ListGroup surface="surface">
           <ListRow icon={CrownSimpleIcon} label="Premium" control="chevron" value={data?.premium ? 'Actif' : 'Bientôt'} onPress={() => showPremium()} />
-          <ListRow icon={PencilSimpleIcon} label="Mes sujets" control="value" value="Bientôt" disabled />
+          <ListRow icon={PencilSimpleIcon} label="Mes sujets" control="chevron" onPress={() => router.push('/profile/topics')} />
           <ListRow icon={ShieldCheckIcon} label="Confidentialité et données" control="chevron" onPress={() => openPage('/privacy')} />
           <ListRow icon={FileTextIcon} label="Conditions d'utilisation" control="chevron" onPress={() => openPage('/terms')} />
           <ListRow icon={SignOutIcon} label="Se déconnecter" control="none" destructive onPress={confirmLogout} last />

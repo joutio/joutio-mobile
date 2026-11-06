@@ -22,6 +22,11 @@ export const queryKeys = {
     activity: (userId: string) => ['profiles', userId, 'activity'] as const,
     topics: (userId: string) => ['profiles', userId, 'topics'] as const,
   },
+  authoring: {
+    topics: () => ['authoring', 'topics'] as const,
+    questions: (topicId: string) => ['authoring', 'questions', topicId] as const,
+    reports: (topicId: string) => ['authoring', 'reports', topicId] as const,
+  },
   rewards: () => ['me', 'rewards'] as const,
   challenges: () => ['challenges', 'mine'] as const,
   rooms: () => ['rooms', 'mine'] as const,

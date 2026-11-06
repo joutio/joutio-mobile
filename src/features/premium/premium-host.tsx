@@ -16,6 +16,7 @@ import {
   UserCircleIcon,
   useTheme,
 } from '@/design-system'
+import { LIMIT_REASONS } from '@/features/authoring/domain/limits'
 import { usePremiumSheet } from './premium-store'
 
 const PERKS = [
@@ -39,7 +40,12 @@ export function PremiumHost() {
   const hide = usePremiumSheet((state) => state.hide)
   const joined = useDeviceSettings((state) => state.premiumWaitlist)
   const set = useDeviceSettings((state) => state.set)
-  const pitch = context === 'quota' ? QUOTA_REASON : 'Premium arrive bientôt. Il ne change rien aux duels : même chrono, mêmes questions, même Elo.'
+  const pitch =
+    context === 'quota'
+      ? QUOTA_REASON
+      : context === 'offer'
+        ? 'Premium arrive bientôt. Il ne change rien aux duels : même chrono, mêmes questions, même Elo.'
+        : LIMIT_REASONS[context]
   return (
     <MobileSheet
       open={open}

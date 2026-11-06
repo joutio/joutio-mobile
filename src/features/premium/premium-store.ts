@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 
-export type PremiumContext = 'offer' | 'quota'
+/** `topics`, `questions`, `team` : plafonds de création (`creation.md` § 3). */
+export type PremiumContext = 'offer' | 'quota' | 'topics' | 'questions' | 'team'
 
 interface PremiumState {
   open: boolean

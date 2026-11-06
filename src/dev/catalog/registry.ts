@@ -7,13 +7,14 @@ import { CategoryTileDemo, CodeInputDemo, LogoDemo, PageDotsDemo, SocialButtonDe
 import { BadgeFamilyRowDemo, RankLadderDemo, RewardCardDemo, StreakCalendarDemo, StreakDemo, TopicsDonutDemo } from './profile'
 import { ChallengeListRowDemo, NotificationRowDemo } from './inbox'
 import { UnlockSequenceDemo } from './result'
+import { AdSlotDemo, AnswerEditorRowDemo, ModerationCardDemo } from './authoring'
 import { CollapsibleTabsScreenDemo, EmptyStateDemo, FeedFooterDemo, ParallaxScreenDemo, SectionHeaderDemo } from './row5'
 
 export interface CatalogEntry {
   id: string
   title: string
   /** Rangée du socle (kit mobile § 3). */
-  row: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
+  row: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10
   /** Spec de référence dans `design/specs/`. */
   spec: string
   Demo: ComponentType
@@ -69,6 +70,9 @@ export const CATALOG: CatalogEntry[] = [
   { id: 'reward-card', title: 'RewardCard', row: 8, spec: 'screens/profil.md', Demo: RewardCardDemo },
   { id: 'challenge-list-row', title: 'ChallengeListRow', row: 9, spec: 'screens/defis.md', Demo: ChallengeListRowDemo },
   { id: 'notification-row', title: 'NotificationRow', row: 9, spec: 'screens/notifications.md', Demo: NotificationRowDemo },
+  { id: 'answer-editor-row', title: 'AnswerEditorRow', row: 10, spec: 'screens/creation.md', Demo: AnswerEditorRowDemo },
+  { id: 'moderation-card', title: 'ModerationCard', row: 10, spec: 'screens/creation.md', Demo: ModerationCardDemo },
+  { id: 'ad-slot', title: 'AdSlot', row: 10, spec: 'screens/etats-systeme.md', Demo: AdSlotDemo },
 ]
 
 export const ROW_TITLES: Record<CatalogEntry['row'], string> = {
@@ -81,4 +85,5 @@ export const ROW_TITLES: Record<CatalogEntry['row'], string> = {
   7: 'Métier : résultat',
   8: 'Métier : profil',
   9: 'Métier : défis et notifications',
+  10: 'Métier : création et états système',
 }
