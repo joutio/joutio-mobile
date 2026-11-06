@@ -1,3 +1,9 @@
+## [1.18.1](https://github.com/joutio/joutio-mobile-expo/compare/v1.18.0...v1.18.1) (2026-11-06)
+
+### Bug Fixes
+
+* **sheet:** keep the footer actions above the keyboard ([cf0dd49](https://github.com/joutio/joutio-mobile-expo/commit/cf0dd49dc2b181076e20e90ebfc61d6d2da3906b))
+
 ## [1.18.0](https://github.com/joutio/joutio-mobile-expo/compare/v1.17.0...v1.18.0) (2026-11-06)
 
 ### Features

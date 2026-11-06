@@ -1,6 +1,6 @@
 {
   "name": "joutio-mobile-expo",
-  "version": "1.18.0",
+  "version": "1.18.1",
   "main": "expo-router/entry",
   "dependencies": {
     "@dicebear/core": "^10.7.0",
