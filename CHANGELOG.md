@@ -1,3 +1,28 @@
+## [1.18.0](https://github.com/joutio/joutio-mobile-expo/compare/v1.17.0...v1.18.0) (2026-11-06)
+
+### Features
+
+* **authoring:** build topic creation and moderation ([86708c5](https://github.com/joutio/joutio-mobile-expo/commit/86708c5d5c7b99056f1e1849fa18b5a5fe5ef0e9))
+* **avatar:** pick a style by tapping its card, without the Use button ([b5b2f14](https://github.com/joutio/joutio-mobile-expo/commit/b5b2f14f7b4e8f922036487277c923a22d1de63d))
+* **avatars:** show every player's own DiceBear avatar ([6fbdd69](https://github.com/joutio/joutio-mobile-expo/commit/6fbdd6979c55a1b033a75595aad483e799bcd55c))
+* **match-row:** show the topic thumbnail, the universe tile only without one ([5e0236f](https://github.com/joutio/joutio-mobile-expo/commit/5e0236f0e894e111f3ec2bca9a260544133a6440))
+* **player:** give Défier 65% of the action row ([600f49a](https://github.com/joutio/joutio-mobile-expo/commit/600f49a6b717696cb4671e88f425977964489f9e))
+* **profile:** open a played topics page from Sujets joués instead of the mastery sheet ([cd023db](https://github.com/joutio/joutio-mobile-expo/commit/cd023db1df6668328dea0ce8400209180533d57a))
+* **profile:** show the three outcome blocks before the ratio bar in Bilan ([5d85542](https://github.com/joutio/joutio-mobile-expo/commit/5d85542ac0c0edbd53271d549b0ead8ad80bc9dd))
+* **rankings:** default all rankings to all time ([3ec1e01](https://github.com/joutio/joutio-mobile-expo/commit/3ec1e0171e5682b134cf0aa58e95c058411abe1b))
+* **result:** add some resistance before switching to the duel details ([97252f0](https://github.com/joutio/joutio-mobile-expo/commit/97252f0ad7f845708d1a3c94b5c9fffe74fc3758))
+* **social:** confirm before unfollowing a player, like a topic ([6463208](https://github.com/joutio/joutio-mobile-expo/commit/6463208fadf8a8132773bd165a764f207c61351d))
+* **system-states:** show the offline banner and the expired duel screens ([cb0e8c8](https://github.com/joutio/joutio-mobile-expo/commit/cb0e8c8a6aeb4d12fc1661b344514a1590fb1b93))
+* **system-states:** show the offline banner on the topic page and Social ([841a907](https://github.com/joutio/joutio-mobile-expo/commit/841a9075dee473e0d354034fceba1269f4e77621))
+* **top-bar:** use the platform height, 64 dp on Android and 52 pt on iOS ([4a493e6](https://github.com/joutio/joutio-mobile-expo/commit/4a493e6534b93cfdd6fbe7302d63c569c0b394dd))
+* **topic:** move the question progress under the topic stats ([c21a770](https://github.com/joutio/joutio-mobile-expo/commit/c21a77010048cdef7dd5d9ed5d8b2bf432f45c85))
+* **topic:** show the all-time top 10 by default on the topic board ([8013ab7](https://github.com/joutio/joutio-mobile-expo/commit/8013ab75654c346e0dfc8c446d1d86dc0e85f6e2))
+
+### Bug Fixes
+
+* **duel:** read the answer-details setting before the early returns ([f8d58be](https://github.com/joutio/joutio-mobile-expo/commit/f8d58bed4e42560670d39cf1430f8618398f4068))
+* **pressable:** clip the Android ripple to rounded cards ([070defe](https://github.com/joutio/joutio-mobile-expo/commit/070defe1ff02331d3858dcc86966e9235aa0a1e8))
+
 ## [1.17.0](https://github.com/joutio/joutio-mobile-expo/compare/v1.16.0...v1.17.0) (2026-11-05)
 
 ### Features
