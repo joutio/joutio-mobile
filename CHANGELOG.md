@@ -1,3 +1,22 @@
+## [1.19.0](https://github.com/joutio/joutio-mobile-expo/compare/v1.18.1...v1.19.0) (2026-11-07)
+
+### Features
+
+* **connection:** global connection banner above the top bar with retry feedback ([b5af552](https://github.com/joutio/joutio-mobile-expo/commit/b5af55210c950a39427d711b1ededf9ac9c4a26c))
+* **lists:** one load-more gesture everywhere, scroll onto the new items ([9f428bb](https://github.com/joutio/joutio-mobile-expo/commit/9f428bb5e6beae887fd40a59b0ef762ab3005069))
+* **notifications:** no call to action in a notification, a tap opens the screen that offers it ([003a5f4](https://github.com/joutio/joutio-mobile-expo/commit/003a5f428fad43c0aedc78b05e3b21b81c370430))
+* **profile:** refresh everywhere, Android banner stretch, explicit avatar editing, played questions card ([9b53172](https://github.com/joutio/joutio-mobile-expo/commit/9b531729e313fda8b2ea9d4eab90f3e80b6f4934))
+* **room:** one preparation salon for every room, like joutio-web ([f7be81f](https://github.com/joutio/joutio-mobile-expo/commit/f7be81f250d9f8d89f1f82a3d78550a436c5dcf3))
+* **search:** global search from Home and Social, topics and players ([92ff370](https://github.com/joutio/joutio-mobile-expo/commit/92ff37053f9972585d9124c0b611600fc165660e))
+
+### Bug Fixes
+
+* **keyboard:** focused inputs stay visible above the keyboard ([803be5f](https://github.com/joutio/joutio-mobile-expo/commit/803be5f5c23afd2ca4bf1cae5e2192d013820fa7))
+* **result:** lighter switch to the duel details, way back up, sharp first review image ([feab23e](https://github.com/joutio/joutio-mobile-expo/commit/feab23ece5597a7f605278452fbcddc7865ddc6d))
+* **top-ten:** a stale momentum no longer swallows taps in the rail ([ef96e30](https://github.com/joutio/joutio-mobile-expo/commit/ef96e300f6ac946698bc32a92a6661b6b1be3fa5))
+* **top-ten:** the rank numeral never takes a touch ([fceba19](https://github.com/joutio/joutio-mobile-expo/commit/fceba198a0c76ba6e2099ef830f6341c639e8342))
+* **topic:** played questions card without a heading ([3e1bda4](https://github.com/joutio/joutio-mobile-expo/commit/3e1bda42b701d0981f8646e408f0a5ba74e253bb))
+
 ## [1.18.1](https://github.com/joutio/joutio-mobile-expo/compare/v1.18.0...v1.18.1) (2026-11-06)
 
 ### Bug Fixes
