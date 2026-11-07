@@ -121,14 +121,17 @@ export function useProfileFields(me: MeView | undefined) {
     </ListGroup>
   )
 
-  const save = (disabled: boolean, onSave: () => void) => (
+  const saving = savePseudonym.isPending || saveBio.isPending || saveInterests.isPending || saveBanner.isPending
+  const save = (disabled: boolean, onSave: () => Promise<unknown>) => (
     <Button
       full
       disabled={disabled}
-      onPress={() => {
-        onSave()
-        close()
-      }}
+      loading={saving}
+      onPress={() =>
+        void onSave()
+          .then(close)
+          .catch(() => undefined)
+      }
     >
       Enregistrer
     </Button>
@@ -140,7 +143,7 @@ export function useProfileFields(me: MeView | undefined) {
         open={field === 'pseudonym'}
         onClose={close}
         title="Pseudonyme"
-        footer={save(pseudonym.trim() === '' || pseudonym.trim() === me?.pseudonym, () => savePseudonym.mutate(pseudonym.trim()))}
+        footer={save(pseudonym.trim() === '' || pseudonym.trim() === me?.pseudonym, () => savePseudonym.mutateAsync(pseudonym.trim()))}
       >
         <Field
           label="Pseudonyme"
@@ -153,7 +156,7 @@ export function useProfileFields(me: MeView | undefined) {
           onChangeText={setPseudonym}
         />
       </MobileSheet>
-      <MobileSheet open={field === 'bio'} onClose={close} title="Bio" footer={save(bio === (me?.bio ?? ''), () => saveBio.mutate(bio.trim() || null))}>
+      <MobileSheet open={field === 'bio'} onClose={close} title="Bio" footer={save(bio === (me?.bio ?? ''), () => saveBio.mutateAsync(bio.trim() || null))}>
         <Field
           label="Bio"
           placeholder="Facultative · quelques mots sur toi"
@@ -181,9 +184,9 @@ export function useProfileFields(me: MeView | undefined) {
                   label={item.name}
                   control="radio"
                   on={country === item.code}
+                  disabled={saveCountry.isPending}
                   onToggle={() => {
-                    saveCountry.mutate(item.code)
-                    close()
+                    saveCountry.mutate(item.code, { onSuccess: close })
                   }}
                   last={index === countries.length - 1}
                 />
@@ -200,7 +203,7 @@ export function useProfileFields(me: MeView | undefined) {
         title="Centres d'intérêt"
         subtitle={`${interests.length} sur ${MAX_INTERESTS}`}
         tall
-        footer={save(interests.join() === (me?.interests ?? []).join(), () => saveInterests.mutate(interests))}
+        footer={save(interests.join() === (me?.interests ?? []).join(), () => saveInterests.mutateAsync(interests))}
       >
         <View style={{ gap: tokens.space[4] }}>
           <Text variant="callout" color="muted">
@@ -230,7 +233,7 @@ export function useProfileFields(me: MeView | undefined) {
         open={field === 'banner'}
         onClose={close}
         title="Bannière"
-        footer={save(uploading || banner === (me?.bannerUrl ?? null), () => saveBanner.mutate(banner))}
+        footer={save(uploading || banner === (me?.bannerUrl ?? null), () => saveBanner.mutateAsync(banner))}
       >
         <ImagePicker
           image={banner ?? undefined}

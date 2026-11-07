@@ -198,7 +198,13 @@ export function MyTopicScreen() {
           names.mutate(changes, { onSuccess: close })
         }}
       />
-      <UniverseSheet open={sheet === 'universe'} value={code} onClose={close} onChange={(next) => next !== code && category.mutate(next)} />
+      <UniverseSheet
+        open={sheet === 'universe'}
+        value={code}
+        onClose={close}
+        busy={category.isPending}
+        onChange={(next) => (next !== code ? category.mutateAsync(next) : undefined)}
+      />
       <MobileSheet open={sheet === 'image'} onClose={close} title="Vignette" subtitle="Facultative">
         <ImagePicker
           image={imageUrl}

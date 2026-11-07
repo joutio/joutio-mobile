@@ -1,3 +1,5 @@
+import { useMutation } from '@tanstack/react-query'
+import { usePlaySession } from '@/features/play/hooks/play-session'
 import { router, useLocalSearchParams, usePreventRemove } from 'expo-router'
 import { useEffect, useRef, useState } from 'react'
 import { View } from 'react-native'
@@ -15,6 +17,7 @@ import {
   TimerBar,
   toCategoryCode,
   tokens,
+  toast,
   useTheme,
   useToastSuppression,
   VersusIntro,
@@ -139,6 +142,16 @@ function DuelScreenContent() {
 
   // Abandon : le retour système (et toute navigation arrière) ouvre la confirmation tant que la partie dure.
   const [abandoned, setAbandoned] = useState(false)
+  const { hideGame } = usePlaySession()
+  const abandon = useMutation({
+    mutationFn: () => gameService.abandon(gameId),
+    onMutate: () => hideGame(gameId, true),
+    onSuccess: () => setAbandoned(true),
+    onError: () => {
+      hideGame(gameId, false)
+      toast.error("Le duel n'a pas pu être abandonné")
+    },
+  })
   const [introDone, setIntroDone] = useState<number | null>(null)
   const askAbandon = () =>
     showDialog({
@@ -152,10 +165,7 @@ function DuelScreenContent() {
         {
           label: 'Abandonner',
           tone: 'destructive',
-          onPress: () => {
-            gameService.abandon(gameId).catch(() => undefined)
-            setAbandoned(true)
-          },
+          onPress: () => abandon.mutateAsync(),
         },
         { label: 'Continuer', variant: 'plain' },
       ],

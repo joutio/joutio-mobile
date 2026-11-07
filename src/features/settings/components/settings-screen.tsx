@@ -95,7 +95,7 @@ export function SettingsScreen() {
       icon: SignOutIcon,
       sheet: true,
       actions: [
-        { label: 'Se déconnecter', variant: 'tinted', tone: 'destructive', onPress: () => logout.mutate() },
+        { label: 'Se déconnecter', variant: 'tinted', tone: 'destructive', onPress: () => logout.mutateAsync() },
         { label: 'Annuler', variant: 'plain', tone: 'neutral' },
       ],
     })
@@ -155,7 +155,12 @@ export function SettingsScreen() {
       <Section title="Profil">{rows}</Section>
 
       <Section title="Langue">
-        <Segmented<Language> label="Langue" options={LANGUAGES} value={data?.language ?? 'fr'} onChange={(next) => language.mutate(next)} />
+        <Segmented<Language>
+          label="Langue"
+          options={LANGUAGES}
+          value={data?.language ?? 'fr'}
+          onChange={(next) => !language.isPending && language.mutate(next)}
+        />
       </Section>
 
       <Section title="Apparence">
@@ -180,6 +185,7 @@ export function SettingsScreen() {
             sub="Après 10 s sans joueur, sans XP ni série"
             control="toggle"
             on={autoTrain.enabled}
+            disabled={autoTrain.pending}
             onToggle={autoTrain.set}
             last
           />
@@ -193,6 +199,7 @@ export function SettingsScreen() {
             label="Défis et salons"
             control="toggle"
             on={rooms}
+            disabled={setPreference.isPending}
             onToggle={(enabled) => setPreference.mutate({ category: 'ROOM', enabled })}
           />
           <ListRow

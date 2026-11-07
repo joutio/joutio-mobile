@@ -278,3 +278,26 @@ Expo change à chaque SDK. Avant de toucher une API Expo, EAS ou React Native : 
 - `npx expo install <paquet>` plutôt que `npm install` (versions compatibles avec le SDK).
 - Lancer `npm run typecheck` et `npm run doctor` avant de déclarer une tâche terminée.
 - Une bibliothèque native ajoutée exige un nouveau dev build (`npm run ios|android`).
+
+### Recherche Social / Sujets (2026-11-07)
+
+- `SearchHeader` compose les composants du lab déjà portés dans le design system : `MobileTopBar`, `SearchField` (TextInput natif React Native), `Button` Annuler, `IconButton` et icônes Joutio. Aucun module Swift/Kotlin dédié.
+- Au focus : repli du titre et de ses actions, remontée du même champ, disparition du filtre et apparition d’Annuler à droite. Les onglets restent accessibles ; les filtres appliqués sont conservés.
+- Annuler vide le texte, ferme le clavier et restaure le titre et le filtre ; masquer le clavier ou valider garde la recherche. Android : premier Retour ferme le clavier, suivant annule. Quitter la page désactive la recherche et conserve son texte.
+- Reanimated : transitions de layout synchronisées (250 ms), fondus/déplacements via transform/opacity ; mouvement réduit respecté. Pas de hauteur/largeur pilotée manuellement par frame. Safe area portée par `Screen`.
+- `SearchField` expose `onFocus`, `onBlur`, `inputRef` et `cancelVisible` pour cet usage ; comportement par défaut préservé ailleurs. Catalogue : `search-header`.
+
+### Mutations et cohérence du cache (2026-11-07, règle produit)
+
+- Toute mutation de données visibles est **optimiste** : appliquer le changement dans `onMutate` à toutes les vues concernées (détail, listes, rails, compteurs et badges), annuler les lectures déjà en vol, puis envoyer la commande.
+- Le bouton porte `loading={mutation.isPending}` jusqu’à la réponse, et ne permet pas de soumission répétée. Si une ligne disparaît optimistement, son action disparaît avec elle ; les actions globales restent en chargement. Les contrôles sans bouton (switch/segmented) restent désactivés pendant leur commande.
+- Succès HTTP = commande validée par Axon : conserver le cache optimiste. **Aucun `invalidateQueries`, `refetch` ni GET de confirmation après succès ou settlement d’une mutation**. La projection suit ; ne pas la relire pour confirmer une écriture. Un ID ou DTO renvoyé par la commande peut remplacer la valeur provisoire sur place.
+- Échec : restaurer les changements de cette mutation, préserver les autres modifications en cours et afficher une erreur. En lot, restaurer seulement les commandes refusées. `lib/optimistic-cache.ts` fournit une transaction et une restauration ciblée.
+- Les lectures initiales d’un nouvel écran, le rafraîchissement explicitement demandé et les événements d’un autre joueur restent autorisés. Authentification, envoi OTP, upload et identifiants serveur nécessitent leur réponse avant navigation/utilisation : ne jamais inventer de jeton ou d’URL serveur. Les données calculées (récompense d’un duel) restent autoritaires et suivent leurs flux existants.
+- Régressions à vérifier : changement immédiat avant la réponse, loading pendant une réponse retardée, absence de GET post-commande, rollback en erreur et en lot partiel, cohérence des compteurs/listes, retour de navigation et relecture d’une projection ancienne.
+
+- Cloches : utiliser `features/notifications/components/NotificationButton` dans les en-têtes (primitif `NotificationBell` du design system). Afficher le **nombre** non lu, jamais une simple pastille ; le cache du compteur est partagé entre tous les écrans et mis à jour optimistement avec l’inbox.
+- Social : pas de loupe globale en en-tête. Recherche de contacts vide → bouton « Rechercher globalement », avec `q` repris dans la recherche globale. Onglets sans chiffres ; total de la liste active et puce du tri courant dans une rangée sous les onglets, comme Sujets.
+- Pager / refresh Android : le patch `react-native-collapsible-tabs-native` arbitre la direction dès `dispatchTouchEvent`, avant `SwipeRefreshLayout`. Le refresh attend une direction verticale ; un geste horizontal reste horizontal jusqu’au relâchement, y compris sur une page vide. Ce correctif partagé couvre Social, Accueil, Profil, fiche sujet, modération et avatar. Ne pas désactiver le pager par un état React en cours de geste.
+
+- Charger la suite : `DragToLoadMore` déclenche `haptic('light')` **une seule fois** quand il accepte le chargement (traction ou pied touché), après le verrou anti-doublon. Le réglage appareil des vibrations est respecté ; aucun retour répété pendant le tiré ou une requête en cours.

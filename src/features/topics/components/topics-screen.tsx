@@ -1,3 +1,5 @@
+import { useUnreadCount } from '@/features/home/hooks/use-home'
+import { NotificationButton } from '@/features/notifications/components/notification-button'
 import { useScrollToTop } from 'expo-router'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { FlashList, type FlashListRef } from '@shopify/flash-list'
@@ -5,7 +7,6 @@ import { RefreshControl, ScrollView, useWindowDimensions, View } from 'react-nat
 import { useSharedValue } from 'react-native-reanimated'
 import {
   ArrowsDownUpIcon,
-  BellIcon,
   Button,
   Chip,
   DragToLoadMore,
@@ -13,21 +14,17 @@ import {
   EyeSlashIcon,
   FeedFooter,
   haptic,
-  IconButton,
   ListGroup,
   ListRow,
   LoadMoreScrollView,
   MagnifyingGlassIcon,
   MobileSheet,
-  MobileTopBar,
   RadioGroup,
   ScrollToTopPill,
   Screen,
-  SearchField,
+  SearchHeader,
   SectionHeader,
   Skeleton,
-  SlidersHorizontalIcon,
-  StickyBar,
   Text,
   TopicCard,
   tokens,
@@ -36,7 +33,6 @@ import {
   WarningCircleIcon,
   type CategoryCode,
 } from '@/design-system'
-import { useUnreadCount } from '@/features/home'
 import { openTopic } from '@/features/topic'
 import { DEFAULT_TOPIC_SORT } from '../lib/topics-service'
 import { useDebounced } from '@/shared/hooks/use-debounced'
@@ -73,15 +69,15 @@ function Loading({ animated = true }: { animated?: boolean }) {
 }
 
 /**
- * Sujets (`design/specs/screens/sujets.md`) : barre « Sujets » et cloche fixes ; recherche et Filtres collés dessous ;
+ * Sujets (`design/specs/screens/sujets.md`) : en-tête de recherche animé avec les composants Joutio ;
  * puces d'univers, compteur et tri ; grille de 2 colonnes, 20 sujets par page. Toucher Sujets remonte en haut.
  */
 export function TopicsScreen() {
+  const unread = useUnreadCount()
   const { colors } = useTheme()
   const { width } = useWindowDimensions()
   // Largeur fixe d'une colonne : une carte seule sur sa ligne ne s'étire pas sur toute la largeur.
   const cardWidth = (width - GUTTER * 2 - GAP) / 2
-  const unread = useUnreadCount()
   const list = useRef<FlashListRef<TopicCardView>>(null)
   useScrollToTop(list)
 
@@ -90,7 +86,6 @@ export function TopicsScreen() {
   const [sort, setSort] = useState<TopicSort>(DEFAULT_SORT)
   const [hideFollowed, setHideFollowed] = useState(false)
   const [sheetOpen, setSheetOpen] = useState(false)
-  const [scrolled, setScrolled] = useState(false)
   const offset = useSharedValue(0)
 
   const search = useDebounced(query.trim())
@@ -211,9 +206,14 @@ export function TopicsScreen() {
       inTabs
       scroll={false}
       header={
-        <MobileTopBar
+        <SearchHeader
           title="Sujets"
-          right={<IconButton icon={BellIcon} label="Notifications" variant="plain" tone="neutral" badge={unread.data?.count ? 'dot' : undefined} />}
+          value={query}
+          onChange={setQuery}
+          placeholder="Chercher un sujet"
+          onFilter={() => setSheetOpen(true)}
+          filterDot={categories.length > 0 || sort !== DEFAULT_SORT || hideFollowed}
+          notifications={<NotificationButton />}
         />
       }
       overlay={
@@ -270,22 +270,6 @@ export function TopicsScreen() {
         </MobileSheet>
       }
     >
-      <StickyBar
-        stuck={scrolled}
-        style={{ flexDirection: 'row', alignItems: 'center', gap: tokens.space[3], paddingHorizontal: GUTTER, paddingVertical: tokens.space[3] }}
-      >
-        <View style={{ flex: 1 }}>
-          <SearchField value={query} onChange={setQuery} onCancel={() => setQuery('')} placeholder="Chercher un sujet" label="Chercher un sujet" />
-        </View>
-        <IconButton
-          icon={SlidersHorizontalIcon}
-          label="Filtres"
-          variant="gray"
-          tone="neutral"
-          badge={categories.length || undefined}
-          onPress={() => setSheetOpen(true)}
-        />
-      </StickyBar>
       <View style={{ flex: 1 }}>
         {/* Suite : traction en bas de la grille (`DragToLoadMore`), loader sous la liste. */}
         <DragToLoadMore
@@ -314,9 +298,9 @@ export function TopicsScreen() {
             contentContainerStyle={{ paddingTop: tokens.space[3], paddingBottom: tokens.space[7] }}
             showsVerticalScrollIndicator={false}
             keyboardDismissMode="on-drag"
+            keyboardShouldPersistTaps="handled"
             onScroll={(event) => {
               offset.value = event.nativeEvent.contentOffset.y
-              setScrolled(event.nativeEvent.contentOffset.y > 0)
             }}
             ListHeaderComponent={listHeader}
             ListEmptyComponent={emptyState}

@@ -46,6 +46,7 @@ interface ModalBar extends Common {
   cancel?: string
   confirm?: string
   confirmDisabled?: boolean
+  confirmLoading?: boolean
   onCancel?: () => void
   onConfirm?: () => void
 }
@@ -117,7 +118,7 @@ export function MobileTopBar(props: MobileTopBarProps) {
           </Text>
         }
         right={
-          <Button variant="plain" size="M" disabled={confirmDisabled} style={{ alignSelf: 'center' }} onPress={onConfirm}>
+          <Button variant="plain" size="M" loading={props.confirmLoading} disabled={confirmDisabled} style={{ alignSelf: 'center' }} onPress={onConfirm}>
             {confirm}
           </Button>
         }

@@ -1,9 +1,9 @@
+import { NotificationButton } from '@/features/notifications/components/notification-button'
 import { router, useScrollToTop } from 'expo-router'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { ScrollView, View } from 'react-native'
 import Animated, { interpolate, useAnimatedStyle, useDerivedValue, useSharedValue } from 'react-native-reanimated'
 import {
-  BellIcon,
   Button,
   Chip,
   CompassIcon,
@@ -273,11 +273,11 @@ const BAR_SHIFT = 10
  * au rythme du défilement (courbe `compactBarProgress`, mesurée). Toucher Accueil dans la bottom nav remonte en haut.
  */
 export function HomeScreen() {
+  const unread = useUnreadCount()
   const me = useMe()
   const activity = useMyActivity()
   const streak = activity.data?.currentStreak
   const home = useHome()
-  const unread = useUnreadCount()
   const tabsRef = useRef<CollapsibleTabsRef>(null)
   useScrollToTop(tabsRef)
 
@@ -339,14 +339,7 @@ export function HomeScreen() {
           tone="neutral"
           onPress={() => router.push('/home/search')}
         />
-        <IconButton
-          icon={BellIcon}
-          label="Notifications"
-          variant="plain"
-          tone="neutral"
-          badge={unread.data?.count || undefined}
-          onPress={() => router.push('/home/notifications')}
-        />
+        <NotificationButton />
       </View>
     </View>
   )

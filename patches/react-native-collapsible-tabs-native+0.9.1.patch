@@ -1,13 +1,33 @@
 diff --git a/node_modules/react-native-collapsible-tabs-native/android/src/main/java/com/collapsibletabs/ui/CollapsibleTabsHostView.kt b/node_modules/react-native-collapsible-tabs-native/android/src/main/java/com/collapsibletabs/ui/CollapsibleTabsHostView.kt
-index 84f3869..8438622 100644
+index 84f3869..18d023c 100644
 --- a/node_modules/react-native-collapsible-tabs-native/android/src/main/java/com/collapsibletabs/ui/CollapsibleTabsHostView.kt
 +++ b/node_modules/react-native-collapsible-tabs-native/android/src/main/java/com/collapsibletabs/ui/CollapsibleTabsHostView.kt
-@@ -157,7 +157,55 @@ class CollapsibleTabsHostView(context: Context) : ViewGroup(context) {
+@@ -157,7 +157,76 @@ class CollapsibleTabsHostView(context: Context) : ViewGroup(context) {
       *  event, and a pager drag begins inside ViewPager2 where we have none. */
      private var lastTouch: MotionEvent? = null
  
 +    /** A horizontal list inside a page owns the current gesture (see the refresh callback). */
 +    private var horizontalChildDrag = false
++    // Refresh must wait for a vertical decision; otherwise SwipeRefreshLayout steals
++    // a diagonal pager swipe before ViewPager2 can claim it (also on empty pages).
++    private var gestureStartX = 0f
++    private var gestureStartY = 0f
++    private var gestureDirection = 0 // 0 undecided, 1 horizontal, 2 vertical
++    private val gestureSlop = android.view.ViewConfiguration.get(context).scaledTouchSlop
++
++    private fun observeGestureDirection(ev: MotionEvent) {
++        when (ev.actionMasked) {
++            MotionEvent.ACTION_DOWN -> { gestureStartX = ev.x; gestureStartY = ev.y; gestureDirection = 0 }
++            MotionEvent.ACTION_POINTER_DOWN -> { gestureDirection = 1 }
++            MotionEvent.ACTION_MOVE -> if (gestureDirection == 0) {
++                val dx = kotlin.math.abs(ev.x - gestureStartX)
++                val dy = kotlin.math.abs(ev.y - gestureStartY)
++                if (kotlin.math.max(dx, dy) > gestureSlop) {
++                    gestureDirection = if (dx >= dy) 1 else 2
++                }
++            }
++        }
++    }
 +
 +    // Observe before SwipeRefreshLayout intercepts: JS gesture observers receive
 +    // CANCEL as soon as the native refresh starts consuming the drag.
@@ -25,7 +45,7 @@ index 84f3869..8438622 100644
 +                stretchStartY = if (headerOffset == 0 && (activeScrollView()?.scrollY ?: 0) == 0) ev.y else Float.NaN
 +            }
 +            MotionEvent.ACTION_MOVE -> {
-+                if (headerOffset > 0 || (activeScrollView()?.scrollY ?: 0) > 0 || horizontalChildDrag) {
++                if (headerOffset > 0 || (activeScrollView()?.scrollY ?: 0) > 0 || horizontalChildDrag || gestureDirection == 1) {
 +                    stretchStartY = Float.NaN
 +                    stretchPull = 0f
 +                } else {
@@ -54,11 +74,12 @@ index 84f3869..8438622 100644
 +    }
 +
      override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
++        observeGestureDirection(ev)
 +        observeStretch(ev)
          lastTouch?.recycle()
          lastTouch = MotionEvent.obtain(ev)
          // Fabric re-applies a view's padding on every layout update
-@@ -683,7 +731,11 @@ class CollapsibleTabsHostView(context: Context) : ViewGroup(context) {
+@@ -683,7 +752,11 @@ class CollapsibleTabsHostView(context: Context) : ViewGroup(context) {
          // A pull only starts from the very top: header expanded AND the
          // active page at scroll 0. Otherwise the gesture is a scroll.
          refreshLayout.setOnChildScrollUpCallback { _, _ ->
@@ -67,11 +88,11 @@ index 84f3869..8438622 100644
 +            // SwipeRefreshLayout ignores requestDisallowInterceptTouchEvent when
 +            // its child is not a nested-scrolling view, so a carousel drag that
 +            // drifts downward at the top would otherwise be stolen by the refresh.
-+            horizontalChildDrag || headerOffset > 0 || (activeScrollView()?.scrollY ?: 0) > 0
++            gestureDirection != 2 || horizontalChildDrag || headerOffset > 0 || (activeScrollView()?.scrollY ?: 0) > 0
          }
          addView(refreshLayout)
      }
-@@ -1045,14 +1097,12 @@ class CollapsibleTabsHostView(context: Context) : ViewGroup(context) {
+@@ -1045,14 +1118,12 @@ class CollapsibleTabsHostView(context: Context) : ViewGroup(context) {
  
      private var lastEmittedOffset = -1
  
@@ -88,7 +109,7 @@ index 84f3869..8438622 100644
      }
  
      private fun updateCollapsed() {
-@@ -1251,23 +1301,30 @@ class CollapsibleTabsHostView(context: Context) : ViewGroup(context) {
+@@ -1251,23 +1322,30 @@ class CollapsibleTabsHostView(context: Context) : ViewGroup(context) {
           */
          private fun disallowPagerInterceptForNestedHorizontal(ev: MotionEvent): Boolean {
              val dx = ev.x - downX
@@ -121,7 +142,7 @@ index 84f3869..8438622 100644
              return true
          }
  
-@@ -1308,6 +1365,7 @@ class CollapsibleTabsHostView(context: Context) : ViewGroup(context) {
+@@ -1308,6 +1386,7 @@ class CollapsibleTabsHostView(context: Context) : ViewGroup(context) {
                      forwarding = false
                      forwardTarget = null
                      nestedDecided = false
@@ -129,7 +150,7 @@ index 84f3869..8438622 100644
                  }
                  MotionEvent.ACTION_MOVE -> {
                      if (!downOnBand) {
-@@ -1419,6 +1477,7 @@ class CollapsibleTabsHostView(context: Context) : ViewGroup(context) {
+@@ -1419,6 +1498,7 @@ class CollapsibleTabsHostView(context: Context) : ViewGroup(context) {
          lastTouch = null
          layoutPassScheduled = false
          reconcileAnimator?.cancel()

@@ -1,9 +1,9 @@
+import { NotificationButton } from '@/features/notifications/components/notification-button'
 import { useQueryClient } from '@tanstack/react-query'
 import { router } from 'expo-router'
 import { useState } from 'react'
 import { RefreshControl, ScrollView, View } from 'react-native'
 import {
-  BellIcon,
   Button,
   ChallengeListRow,
   Chip,
@@ -23,7 +23,6 @@ import {
   useTheme,
   WarningCircleIcon,
 } from '@/design-system'
-import { useUnreadCount } from '@/features/home/hooks/use-home'
 import { useMe } from '@/features/me'
 import { useCreatePrivateRoom } from '@/features/play/hooks/use-play'
 import { readServerNow } from '@/lib/realtime/server-clock'
@@ -73,7 +72,6 @@ export function ChallengesScreen() {
   const userId = me.data?.userId ?? ''
   const challenges = useMyChallenges(Boolean(userId))
   const rooms = useMyRooms(Boolean(userId))
-  const unread = useUnreadCount()
   const accept = useAcceptChallenge()
   const decline = useDeclineChallenges()
   const cancel = useCancelChallenge()
@@ -108,7 +106,12 @@ export function ChallengesScreen() {
       icon: LightningIcon,
       tone: 'danger',
       actions: [
-        { label: 'Tout refuser', variant: 'filled', tone: 'destructive', onPress: () => decline.mutate(received.map((challenge) => challenge.challengeId)) },
+        {
+          label: 'Tout refuser',
+          variant: 'filled',
+          tone: 'destructive',
+          onPress: () => decline.mutateAsync(received.map((challenge) => challenge.challengeId)),
+        },
         { label: 'Annuler', variant: 'plain', tone: 'neutral' },
       ],
     })
@@ -133,13 +136,23 @@ export function ChallengesScreen() {
                 disabled: accept.isPending,
                 onPress: () => accept.mutate(challenge),
               },
-              secondary: { label: 'Refuser', onPress: () => decline.mutate([challenge.challengeId]) },
+              secondary: {
+                label: 'Refuser',
+                disabled: decline.isPending,
+                loading: decline.isPending && Boolean(decline.variables?.includes(challenge.challengeId)),
+                onPress: () => decline.mutate([challenge.challengeId]),
+              },
             }
           : {
               primaryVariant: 'tinted' as const,
               // Relancer n'existe pas côté BFF (`defis.md` § 5) : visible, inactif.
               primary: { label: 'Relancer', disabled: true },
-              secondary: { label: 'Annuler', onPress: () => cancel.mutate([challenge.challengeId]) },
+              secondary: {
+                label: 'Annuler',
+                disabled: cancel.isPending || challenge.challengeId.startsWith('pending-'),
+                loading: cancel.isPending && Boolean(cancel.variables?.includes(challenge.challengeId)),
+                onPress: () => cancel.mutate([challenge.challengeId]),
+              },
             })}
       />
     )
@@ -147,20 +160,7 @@ export function ChallengesScreen() {
 
   const header = (
     <View>
-      <MobileTopBar
-        title="Défis"
-        subtitle={subtitle}
-        right={
-          <IconButton
-            icon={BellIcon}
-            label="Notifications"
-            variant="plain"
-            tone="neutral"
-            badge={unread.data?.count ? 'dot' : undefined}
-            onPress={() => router.push('/home/notifications')}
-          />
-        }
-      />
+      <MobileTopBar title="Défis" subtitle={subtitle} right={<NotificationButton />} />
       {!empty && !failed && (
         <ScrollView
           horizontal
@@ -255,7 +255,7 @@ export function ChallengesScreen() {
                       </Button>
                     ) : undefined
                   ) : (
-                    <Button variant="plain" tone="destructive" size="S" onPress={refuseAll}>
+                    <Button variant="plain" tone="destructive" size="S" loading={decline.isPending} onPress={refuseAll}>
                       Tout refuser
                     </Button>
                   )
@@ -285,6 +285,7 @@ export function ChallengesScreen() {
                     label={topicName(room.topic.names)}
                     sub={`En attente d'un joueur${room.expiresAt ? ` · expire dans ${duration(Date.parse(room.expiresAt) - now)}` : ''}`}
                     control="chevron"
+                    disabled={room.roomId.startsWith('pending-')}
                     onPress={() =>
                       router.push({
                         pathname: '/room/[roomId]',

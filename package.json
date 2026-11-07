@@ -66,6 +66,7 @@
     "android:dev": "bash scripts/android-dev.sh",
     "ios": "expo run:ios",
     "typecheck": "tsc --noEmit",
+    "test:mutations": "node tests/mutations.test.cjs",
     "doctor": "npx expo-doctor",
     "tokens:sync": "node scripts/sync-tokens.mjs",
     "tokens:check": "node scripts/sync-tokens.mjs --check",

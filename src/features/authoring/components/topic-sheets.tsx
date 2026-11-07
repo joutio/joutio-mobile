@@ -19,11 +19,13 @@ export function UniverseSheet({
   value,
   onClose,
   onChange,
+  busy = false,
 }: {
   open: boolean
   value: CategoryCode
   onClose: () => void
-  onChange: (category: CategoryCode) => void
+  onChange: (category: CategoryCode) => void | Promise<unknown>
+  busy?: boolean
 }) {
   return (
     <MobileSheet open={open} onClose={onClose} title="Univers" tall>
@@ -35,9 +37,11 @@ export function UniverseSheet({
               label={universeLabel(option)}
               control="radio"
               on={value === option}
+              disabled={busy}
               onToggle={() => {
-                onChange(option)
-                onClose()
+                const result = onChange(option)
+                if (result instanceof Promise) void result.then(onClose).catch(() => undefined)
+                else onClose()
               }}
               last={index === UNIVERSES.length - 1}
             />

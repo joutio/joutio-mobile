@@ -111,6 +111,7 @@ export function QuestionEditorScreen() {
         title={`Question ${params.number ?? ''}`.trim()}
         cancel="Annuler"
         confirm="Enregistrer"
+        confirmLoading={save.isPending}
         confirmDisabled={!ready || save.isPending}
         onCancel={() => router.back()}
         onConfirm={onSave}

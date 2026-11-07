@@ -85,6 +85,7 @@ export function MyTopicsScreen() {
         {list.map((topic, index) => (
           <TopicRow
             key={topic.topicId}
+            disabled={topic.topicId.startsWith('pending-')}
             title={topicName(topic.names)}
             category={toCategoryCode(topic.category)}
             image={topic.imageUrl ?? undefined}

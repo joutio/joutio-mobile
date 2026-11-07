@@ -9,6 +9,7 @@ import { Avatar, type Presence } from './avatar'
 import { Button, type ButtonProps } from './button'
 import { IconButton } from './icon-button'
 import { PressableScale } from './pressable-scale'
+import { Spinner } from './spinner'
 import { Text } from './text'
 
 const PODIUM: Record<number, TierCode> = { 1: 'OR', 2: 'ARGENT', 3: 'BRONZE' }
@@ -31,6 +32,8 @@ export interface PlayerRowProps {
   /** Atténue un joueur hors ligne. */
   dimOffline?: boolean
   last?: boolean
+  loading?: boolean
+  disabled?: boolean
   onPress?: () => void
   style?: StyleProp<ViewStyle>
 }
@@ -54,6 +57,8 @@ export function PlayerRow({
   dimOffline = false,
   last = false,
   onPress,
+  loading = false,
+  disabled = false,
   style,
 }: PlayerRowProps) {
   const { colors } = useTheme()
@@ -77,7 +82,7 @@ export function PlayerRow({
       <PressableScale
         accessibilityRole={onPress ? 'button' : 'text'}
         accessibilityLabel={[rank !== undefined ? `${rank}e` : undefined, name, sub, trail].filter(Boolean).join(', ')}
-        disabled={!onPress}
+        disabled={!onPress || disabled || loading}
         pressedScale={1}
         ripple
         onPress={onPress}
@@ -123,7 +128,7 @@ export function PlayerRow({
               {trail}
             </Text>
           )}
-          {chevron && <CaretRightIcon size={20} color={colors.muted} />}
+          {loading ? <Spinner size={20} color={colors.muted} /> : chevron && <CaretRightIcon size={20} color={colors.muted} />}
         </View>
         {cta && (
           <Button

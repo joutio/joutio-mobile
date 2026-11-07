@@ -1,4 +1,4 @@
-import { router } from 'expo-router'
+import { router, useLocalSearchParams } from 'expo-router'
 import { useState } from 'react'
 import { ScrollView, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -40,7 +40,8 @@ export function SearchScreen({ stack }: { stack: SearchStack }) {
   const { colors } = useTheme()
   const insets = useSafeAreaInsets()
   const online = useOnline()
-  const [query, setQuery] = useState('')
+  const { q } = useLocalSearchParams<{ q?: string }>()
+  const [query, setQuery] = useState(q ?? '')
   const results = useSuggestions(query)
   const { recents, remember, clear } = useRecentSearches()
   const items = results.data ?? []

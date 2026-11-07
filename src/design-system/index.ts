@@ -100,3 +100,7 @@ export * from './duel'
 export * from './mobile/use-transition-done'
 export * from './result'
 export * from './device-settings'
+
+export { SearchHeader, type SearchHeaderProps } from './mobile/search-header'
+
+export { NotificationBell, type NotificationBellProps } from './primitives/notification-bell'

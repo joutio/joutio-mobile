@@ -85,6 +85,8 @@ export function PlayerPickerSheet({ open, onClose, topic, onSent }: { open: bool
               {players.map((player, index) => (
                 <PlayerRow
                   key={player.userId}
+                  loading={challenge.isPending && challenge.variables?.opponent.userId === player.userId}
+                  disabled={challenge.isPending}
                   name={player.pseudonym}
                   src={userAvatar(player)}
                   tier={player.provisional ? undefined : tierOf(player.rating)}

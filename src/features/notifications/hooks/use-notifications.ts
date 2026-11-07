@@ -1,6 +1,7 @@
 import { useInfiniteQuery, useMutation, useQueryClient, type InfiniteData } from '@tanstack/react-query'
 import { toast } from '@/design-system'
 import { useMe } from '@/features/me'
+import { optimisticUpdate } from '@/lib/optimistic-cache'
 import { queryKeys } from '@/lib/query-keys'
 import { usePersonalNotifications, type NotificationView } from '@/lib/realtime/personal-notifications'
 import type { PageResponse } from '@/shared/types/bff'
@@ -27,37 +28,70 @@ export function useNotifications() {
 export function useNotificationsRealtime() {
   const client = useQueryClient()
   const userId = useMe(true).data?.userId
-  usePersonalNotifications(userId, () => {
-    void client.invalidateQueries({ queryKey: queryKeys.notifications.all() })
+  usePersonalNotifications(userId, (notification, deleted) => {
+    if (!deleted) {
+      void client.invalidateQueries({ queryKey: queryKeys.notifications.all() })
+      return
+    }
+    const data = client.getQueryData<Pages>(queryKeys.notifications.list())
+    const existing = data?.pages.flatMap((page) => page.content).find((item) => item.notificationId === notification.notificationId)
+    if (!existing) return // Already removed locally, or outside the loaded pages.
+    client.setQueryData<Pages>(queryKeys.notifications.list(), (data) =>
+      data
+        ? {
+            ...data,
+            pages: data.pages.map((page) => ({
+              ...page,
+              content: page.content.filter((item) => item.notificationId !== notification.notificationId),
+              totalElements: Math.max(0, page.totalElements - 1),
+            })),
+          }
+        : data,
+    )
+    if (existing.readAt === null)
+      client.setQueryData<{ count: number }>(queryKeys.notifications.unreadCount(), (count) => (count ? { count: Math.max(0, count.count - 1) } : count))
   })
 }
 
 /** Applique un changement à la liste et au compteur en cache, restaurés si le BFF refuse. */
-function useInboxMutation<V>(run: (value: V) => Promise<unknown>, change: (list: NotificationView[], value: V) => NotificationView[], error: string) {
+function useInboxMutation<V>(
+  run: (value: V) => Promise<unknown>,
+  change: (list: NotificationView[], value: V) => NotificationView[],
+  error: string,
+  all: false | 'read' | 'delete' = false,
+) {
   const client = useQueryClient()
   const listKey = queryKeys.notifications.list()
   const countKey = queryKeys.notifications.unreadCount()
   return useMutation({
     mutationFn: run,
-    onMutate: async (value: V) => {
-      await client.cancelQueries({ queryKey: queryKeys.notifications.all() })
-      const previous = client.getQueryData<Pages>(listKey)
-      const previousCount = client.getQueryData<{ count: number }>(countKey)
-      if (previous) {
-        const next = { ...previous, pages: previous.pages.map((page) => ({ ...page, content: change(page.content, value) })) }
-        client.setQueryData<Pages>(listKey, next)
-        const unread = next.pages.flatMap((page) => page.content).filter((item) => item.readAt === null).length
-        const before = previous.pages.flatMap((page) => page.content).filter((item) => item.readAt === null).length
-        if (previousCount) client.setQueryData(countKey, { count: Math.max(0, previousCount.count - (before - unread)) })
-      }
-      return { previous, previousCount }
-    },
+    onMutate: (value: V) =>
+      optimisticUpdate(client, [queryKeys.notifications.all()], () => {
+        const previous = client.getQueryData<Pages>(listKey)
+        const previousCount = client.getQueryData<{ count: number }>(countKey)
+        if (previous) {
+          const contents = previous.pages.map((page) => change(page.content, value))
+          const removed = previous.pages.reduce((sum, page, index) => sum + page.content.length - (contents[index]?.length ?? 0), 0)
+          const next = {
+            ...previous,
+            pages: previous.pages.map((page, index) => ({
+              ...page,
+              content: contents[index] ?? [],
+              totalElements: all === 'delete' ? 0 : Math.max(0, page.totalElements - removed),
+              totalPages: all === 'delete' ? 0 : Math.ceil(Math.max(0, page.totalElements - removed) / page.size),
+              last: all === 'delete' ? true : page.last,
+            })),
+          }
+          client.setQueryData<Pages>(listKey, next)
+          const unread = next.pages.flatMap((page) => page.content).filter((item) => item.readAt === null).length
+          const before = previous.pages.flatMap((page) => page.content).filter((item) => item.readAt === null).length
+          if (previousCount) client.setQueryData(countKey, { count: all ? 0 : Math.max(0, previousCount.count - (before - unread)) })
+        } else if (all) client.setQueryData(countKey, { count: 0 })
+      }),
     onError: (_error, _value, context) => {
-      if (context?.previous) client.setQueryData(listKey, context.previous)
-      if (context?.previousCount) client.setQueryData(countKey, context.previousCount)
+      context?.rollback()
       toast.error(error, { description: 'Vérifie ta connexion, puis réessaie.' })
     },
-    onSettled: () => void client.invalidateQueries({ queryKey: countKey }),
   })
 }
 
@@ -75,6 +109,7 @@ export const useMarkAllRead = () =>
     (_: void) => notificationsService.readAll(),
     (list) => list.map((item) => (item.readAt === null ? { ...item, readAt: now() } : item)),
     "Les notifications n'ont pas pu être marquées comme lues",
+    'read',
   )
 
 export const useDeleteNotification = () =>
@@ -89,4 +124,5 @@ export const useDeleteAllNotifications = () =>
     (_: void) => notificationsService.removeAll(),
     () => [],
     "Les notifications n'ont pas pu être supprimées",
+    'delete',
   )

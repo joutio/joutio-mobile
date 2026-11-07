@@ -21,6 +21,7 @@ export interface TopicRowProps {
   on?: boolean
   /** Dernière ligne de la liste : sans filet. */
   last?: boolean
+  disabled?: boolean
   onPress?: () => void
   style?: StyleProp<ViewStyle>
 }
@@ -35,6 +36,7 @@ export function TopicRow({
   on = false,
   last = false,
   onPress,
+  disabled = false,
   style,
 }: TopicRowProps) {
   const { colors, radius } = useTheme()
@@ -45,6 +47,7 @@ export function TopicRow({
       accessibilityRole={radio ? 'radio' : 'link'}
       accessibilityLabel={`${title}, ${sub}`}
       accessibilityState={radio ? { checked: on } : undefined}
+      disabled={disabled}
       pressedScale={1}
       ripple
       haptic={radio ? 'selection' : undefined}

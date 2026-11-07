@@ -1,3 +1,7 @@
+import { useQueryClient } from '@tanstack/react-query'
+import { queryKeys } from '@/lib/query-keys'
+import { optimisticUpdate, optimisticId } from '@/lib/optimistic-cache'
+import { settleChallenge } from '../lib/play-cache'
 import { router } from 'expo-router'
 import { useEffect, useRef, useState } from 'react'
 import { toast } from '@/design-system'
@@ -5,7 +9,7 @@ import { api } from '@/lib/api'
 import { ENDPOINTS } from '@/lib/endpoints'
 import { usePersonalNotifications } from '@/lib/realtime/personal-notifications'
 import { readServerNow } from '@/lib/realtime/server-clock'
-import type { ChallengeView, IdResponse } from '@/shared/types/bff'
+import type { ChallengeView, IdResponse, MeView, PlayerProfileView } from '@/shared/types/bff'
 import { nameUuid } from '@/shared/utils/name-uuid'
 
 export const rematchService = {
@@ -33,9 +37,8 @@ export function useSecondsUntil(at: string | null) {
 export type RematchState = 'idle' | 'pending' | 'refused'
 
 /**
- * Envoyer une revanche depuis le résultat : le défi est créé, son échéance lue **une fois** (REST), puis la réponse
- * arrive par le flux personnel STOMP — `ROOM_ACCEPTED` (l'adversaire a accepté, la salle existe) ou
- * `CHALLENGE_DECLINED`. À l'échéance, une seule relecture du défi sert de filet (notifications désactivées).
+ * Envoyer une revanche depuis le résultat : le défi apparaît optimistement, puis la réponse
+ * arrive par le flux personnel STOMP — `ROOM_ACCEPTED` ou `CHALLENGE_DECLINED`. Aucun GET de confirmation.
  */
 export function useSendRematch({
   userId,
@@ -48,6 +51,8 @@ export function useSendRematch({
   topic: { topicId: string; name: string; category?: string }
   gameId: string
 }) {
+  const client = useQueryClient()
+  const [sending, setSending] = useState(false)
   const [state, setState] = useState<RematchState>('idle')
   const [challenge, setChallenge] = useState<{ id: string; expiresAt: string } | null>(null)
   const seconds = useSecondsUntil(challenge?.expiresAt ?? null)
@@ -56,6 +61,7 @@ export function useSendRematch({
   const accepted = (roomId: string) => {
     if (settled.current) return
     settled.current = true
+    if (challenge) settleChallenge(client, challenge.id, 'ACCEPTED')
     toRoom(roomId, topic.topicId, topic.name, topic.category)
   }
 
@@ -66,47 +72,62 @@ export function useSendRematch({
     }
     if (notification.type === 'CHALLENGE_DECLINED' && notification.sourceId === challenge.id) {
       settled.current = true
+      settleChallenge(client, challenge.id, 'DECLINED')
       setState('refused')
       setChallenge(null)
       toast.info('Revanche refusée')
     }
   })
 
-  // Échéance : un seul contrôle du défi (filet si la notification n'est jamais arrivée).
+  // The short expiry is a UI deadline; decisions arrive through STOMP, never a confirmation GET.
   useEffect(() => {
-    if (state !== 'pending' || !challenge || seconds > 0) return
-    rematchService
-      .get(challenge.id)
-      .then((view) => {
-        if (view.status === 'ACCEPTED' && view.roomId) return accepted(view.roomId)
-        if (settled.current) return
-        setState('idle')
-        setChallenge(null)
-        toast.info('Pas de réponse', { description: 'Ton adversaire n’a pas répondu à temps.' })
-      })
-      .catch(() => {
-        setState('idle')
-        setChallenge(null)
-      })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state, challenge, seconds])
+    if (state !== 'pending' || !challenge || seconds > 0 || settled.current) return
+    settled.current = true
+    settleChallenge(client, challenge.id, 'EXPIRED')
+    setState('idle')
+    setChallenge(null)
+    toast.info('Pas de réponse', { description: 'Ton adversaire n’a pas répondu à temps.' })
+  }, [client, state, challenge, seconds])
 
   const send = async () => {
     if (state !== 'idle' || !opponentId) return
     settled.current = false
     setState('pending')
+    setSending(true)
+    const tempId = optimisticId()
+    const me = client.getQueryData<MeView>(queryKeys.me())
+    const opponent = client.getQueryData<PlayerProfileView>(queryKeys.profiles.profile(opponentId))
+    const transaction = await optimisticUpdate(client, [queryKeys.challenges()], () => {
+      const pending: ChallengeView = {
+        challengeId: tempId,
+        topic: { topicId: topic.topicId, names: { fr: topic.name }, category: topic.category ?? null, imageUrl: null },
+        challenger: { userId: userId ?? '', pseudonym: me?.pseudonym ?? '', avatarOptions: me?.avatarOptions ?? null, suspended: false },
+        opponent: { userId: opponentId, pseudonym: opponent?.pseudonym ?? 'Adversaire', avatarOptions: opponent?.avatarOptions ?? null, suspended: false },
+        status: 'PENDING',
+        roomId: null,
+        gameId,
+        createdAt: new Date().toISOString(),
+        expiresAt: '',
+      }
+      client.setQueryData<ChallengeView[]>(queryKeys.challenges(), (items) => [pending, ...(items ?? [])])
+    })
     try {
       const { id } = await rematchService.create(topic.topicId, opponentId, gameId)
-      const view = await rematchService.get(id)
-      if (view.status === 'ACCEPTED' && view.roomId) return accepted(view.roomId)
-      setChallenge({ id, expiresAt: view.expiresAt })
+      client.setQueryData<ChallengeView[]>(queryKeys.challenges(), (items) =>
+        items?.map((item) => (item.challengeId === tempId ? { ...item, challengeId: id } : item)),
+      )
+      if (settled.current) return
+      setChallenge({ id, expiresAt: new Date(readServerNow() + 10_000).toISOString() })
     } catch {
+      transaction.rollback()
       setState('idle')
       toast.error("La revanche n'a pas pu être proposée", { description: 'Vérifie ta connexion, puis réessaie.' })
+    } finally {
+      setSending(false)
     }
   }
 
-  return { state, seconds, send }
+  return { state, seconds, send, sending }
 }
 
 /** Salle d'un défi accepté : le serveur la dérive du défi (`ChallengeRoomId.of`), on la calcule de même. */

@@ -1,4 +1,7 @@
-import { useMutation } from '@tanstack/react-query'
+import { optimisticUpdate } from '@/lib/optimistic-cache'
+import { queryKeys } from '@/lib/query-keys'
+import { settleChallenge } from '../lib/play-cache'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { router } from 'expo-router'
 import { useEffect, useState } from 'react'
 import { View } from 'react-native'
@@ -15,6 +18,7 @@ import { usePlayerAvatar } from '@/features/social/hooks/use-player-avatar'
  */
 export function RematchHost() {
   const { colors } = useTheme()
+  const client = useQueryClient()
   const me = useMe(true)
   const immersive = useToastStore((state) => state.suspended > 0)
   const [requests, setRequests] = useState<NotificationView[]>([])
@@ -41,6 +45,7 @@ export function RematchHost() {
 
   const accept = useMutation({
     mutationFn: (challengeId: string) => rematchService.accept(challengeId),
+    onMutate: (id: string) => optimisticUpdate(client, [queryKeys.challenges()], () => settleChallenge(client, id, 'ACCEPTED')),
     onSuccess: (_result, challengeId) => {
       close()
       router.push({
@@ -48,9 +53,19 @@ export function RematchHost() {
         params: { roomId: roomOfChallenge(challengeId), topicId: request?.topicId ?? '', topicName: opponent.topic, category: '' },
       })
     },
-    onError: () => {
-      close()
+    onError: (_error, _id, context) => {
+      context?.rollback()
       toast.error("La revanche n'est plus disponible")
+    },
+  })
+
+  const decline = useMutation({
+    mutationFn: rematchService.decline,
+    onMutate: (id: string) => optimisticUpdate(client, [queryKeys.challenges()], () => settleChallenge(client, id, 'DECLINED')),
+    onSuccess: close,
+    onError: (_error, _id, context) => {
+      context?.rollback()
+      toast.error("Le refus n'a pas pu être envoyé")
     },
   })
 
@@ -75,10 +90,10 @@ export function RematchHost() {
         topic={opponent.topic}
         seconds={seconds}
         accepting={accept.isPending}
+        declining={decline.isPending}
         onAccept={() => request.sourceId && accept.mutate(request.sourceId)}
         onDecline={() => {
-          if (request.sourceId) rematchService.decline(request.sourceId).catch(() => undefined)
-          close()
+          if (request.sourceId) decline.mutate(request.sourceId)
         }}
       />
     </View>

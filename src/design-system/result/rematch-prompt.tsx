@@ -18,6 +18,7 @@ export interface RematchPromptProps {
   total?: number
   lowAt?: number
   accepting?: boolean
+  declining?: boolean
   onAccept?: () => void
   onDecline?: () => void
   style?: StyleProp<ViewStyle>
@@ -29,7 +30,20 @@ const R = (RING - STROKE) / 2
 const C = 2 * Math.PI * R
 
 /** Proposition de revanche, posée par l'écran au-dessus d'un voile : anneau du délai autour de l'avatar. */
-export function RematchPrompt({ name, tier, src, topic, seconds, total = 10, lowAt = 3, accepting = false, onAccept, onDecline, style }: RematchPromptProps) {
+export function RematchPrompt({
+  name,
+  tier,
+  src,
+  topic,
+  seconds,
+  total = 10,
+  lowAt = 3,
+  accepting = false,
+  declining = false,
+  onAccept,
+  onDecline,
+  style,
+}: RematchPromptProps) {
   const { colors, radius } = useTheme()
   const fraction = Math.min(1, Math.max(0, seconds / total))
   const urgent = isTimerUrgent(seconds, 'running', lowAt)
@@ -86,12 +100,12 @@ export function RematchPrompt({ name, tier, src, topic, seconds, total = 10, low
       </Text>
       <View style={{ alignSelf: 'stretch', flexDirection: 'row', gap: tokens.space[3], marginTop: tokens.space[2] }}>
         <View style={{ flex: 1 }}>
-          <Button variant="tinted" tone="destructive" full disabled={accepting} onPress={onDecline}>
+          <Button variant="tinted" tone="destructive" full loading={declining} disabled={accepting} onPress={onDecline}>
             Refuser
           </Button>
         </View>
         <View style={{ flex: 1 }}>
-          <Button full loading={accepting} onPress={onAccept}>
+          <Button full loading={accepting} disabled={declining} onPress={onAccept}>
             Accepter
           </Button>
         </View>

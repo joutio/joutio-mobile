@@ -19,6 +19,7 @@ import {
   WarningCircleIcon,
   type RoomPlayer,
 } from '@/design-system'
+import { useCloseRoom } from '@/features/challenges/hooks/use-challenges'
 import { useMe } from '@/features/me'
 import { config } from '@/lib/config'
 import { readServerNow, useServerClock } from '@/lib/realtime/server-clock'
@@ -84,6 +85,7 @@ export function RoomScreen() {
   const { view, room, status } = useRoom(roomId)
   const presence = useRoomPresence(roomId, true)
   const wizz = useWizzRoom(roomId)
+  const cancellation = useCloseRoom()
   const now = useServerNow()
   const focused = useIsFocused()
   const { trackRoom } = usePlaySession()
@@ -110,7 +112,13 @@ export function RoomScreen() {
   const myPresent = room ? (isInitiator ? room.initiatorPresent : room.participantPresent) : false
   const opponentPresent = vsBot ? true : room ? (isInitiator ? room.participantPresent : room.initiatorPresent) : false
   const countdown = waiting ? countdownOf(room?.expiresAt ?? view.data?.expiresAt ?? null, now) : null
-  const wizzInfo = room ? wizzState(room, userId || null, now) : { available: false, cooldownEndsAt: null }
+  const serverWizz = room ? wizzState(room, userId || null, now) : { available: false, cooldownEndsAt: null }
+  const localCooldown = wizz.sentAt === null ? 0 : wizz.sentAt + 10_000
+  const wizzInfo = {
+    ...serverWizz,
+    available: serverWizz.available && localCooldown <= now,
+    cooldownEndsAt: Math.max(serverWizz.cooldownEndsAt ?? 0, localCooldown) || null,
+  }
   const wizzSeconds = wizzInfo.cooldownEndsAt ? Math.max(0, Math.ceil((wizzInfo.cooldownEndsAt - now) / 1000)) : 0
   const wizzVisible = nominative && waiting && (wizzInfo.available || wizz.isPending || wizzSeconds > 0)
 
@@ -135,9 +143,12 @@ export function RoomScreen() {
   )
 
   const cancel = () => {
-    leftRef.current = true
-    playService.cancelRoom(roomId).catch(() => undefined)
-    router.back()
+    cancellation.mutate(roomId, {
+      onSuccess: () => {
+        leftRef.current = true
+        router.back()
+      },
+    })
   }
   const close = () => router.back()
 
@@ -202,7 +213,7 @@ export function RoomScreen() {
               </Button>
             )}
             {isInitiator && (
-              <Button full size="L" variant="tinted" tone="destructive" onPress={cancel}>
+              <Button full size="L" variant="tinted" tone="destructive" loading={cancellation.isPending} disabled={cancellation.isPending} onPress={cancel}>
                 {cancelLabel}
               </Button>
             )}

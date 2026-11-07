@@ -1,10 +1,11 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { AppState } from 'react-native'
 import { useConnectionStore } from '@/lib/ws'
 import { usePersonalNotifications } from '@/lib/realtime/personal-notifications'
 import { challengesService } from '@/features/challenges/lib/challenges-service'
 import { gameService } from '@/features/duel/lib/game-service'
+import { reconcileRooms } from '../lib/play-cache'
 import { topicName } from '@/shared/utils/topic-name'
 import { RoomWatch } from '../components/room-watch'
 import { GameWatch } from '../components/game-watch'
@@ -20,20 +21,31 @@ export interface OngoingGame {
 interface PlaySession {
   games: OngoingGame[]
   trackRoom: (roomId: string) => void
+  hideGame: (gameId: string, hidden: boolean) => void
 }
 
-const Context = createContext<PlaySession>({ games: [], trackRoom: () => undefined })
+const Context = createContext<PlaySession>({ games: [], trackRoom: () => undefined, hideGame: () => undefined })
 export const usePlaySession = () => useContext(Context)
 
 /** Scoped to the signed-in player. Room/game streams survive navigation, never poll. */
 export function PlaySessionProvider({ userId, children }: { userId: string; children: ReactNode }) {
+  const client = useQueryClient()
   const [roomIds, setRoomIds] = useState<string[]>([])
+  const [hiddenGames, setHiddenGames] = useState<string[]>([])
+  const hideGame = useCallback(
+    (id: string, hidden: boolean) => setHiddenGames((items) => (hidden ? [...new Set([...items, id])] : items.filter((item) => item !== id))),
+    [],
+  )
   const [games, setGames] = useState<OngoingGame[]>([])
   const finished = useRef(new Set<string>())
   const retiredRooms = useRef(new Set<string>())
   const connection = useConnectionStore((state) => state.status)
   const active = useQuery({ queryKey: ['active-games', userId], queryFn: gameService.active, enabled: Boolean(userId) })
-  const rooms = useQuery({ queryKey: ['tracked-rooms', userId], queryFn: challengesService.rooms, enabled: Boolean(userId) })
+  const rooms = useQuery({
+    queryKey: ['tracked-rooms', userId],
+    queryFn: async () => reconcileRooms(client.getQueryData(['tracked-rooms', userId]), await challengesService.rooms()),
+    enabled: Boolean(userId),
+  })
   const refresh = useCallback(() => {
     if (!userId) return
     void active.refetch()
@@ -83,7 +95,10 @@ export function PlaySessionProvider({ userId, children }: { userId: string; chil
       if (!['CANCELLED', 'EXPIRED', 'FAILED'].includes(room.status)) trackRoom(room.roomId)
     }
   }, [rooms.data, trackRoom])
-  const value = useMemo(() => ({ games: [...games].sort((a, b) => a.createdAt.localeCompare(b.createdAt)), trackRoom }), [games, trackRoom])
+  const value = useMemo(
+    () => ({ hideGame, games: games.filter((game) => !hiddenGames.includes(game.gameId)).sort((a, b) => a.createdAt.localeCompare(b.createdAt)), trackRoom }),
+    [games, trackRoom, hideGame, hiddenGames],
+  )
   return (
     <Context.Provider value={value}>
       {roomIds.map((id) => (

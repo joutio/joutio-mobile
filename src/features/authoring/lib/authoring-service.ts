@@ -36,27 +36,33 @@ export const authoringService = {
   /** Envoie les opérations dans l'ordre ; renvoie l'identifiant de la question (créée ou modifiée). */
   async saveQuestion(topicId: string, questionId: string | undefined, operations: readonly QuestionOperation[]): Promise<string> {
     let id = questionId
-    for (const operation of operations) {
-      switch (operation.kind) {
-        case 'create':
-          id = (await api.post<IdResponse>(ENDPOINTS.topics.questions(topicId), operation.payload)).id
-          break
-        case 'translation':
-          await api.post<void>(ENDPOINTS.questions.translations(id ?? ''), { language: operation.language, text: operation.text, answers: operation.answers })
-          break
-        case 'text':
-          await api.put<void>(ENDPOINTS.questions.text(id ?? ''), { language: operation.language, text: operation.text })
-          break
-        case 'answers':
-          await api.put<void>(ENDPOINTS.questions.answers(id ?? ''), { language: operation.language, answers: operation.answers })
-          break
-        case 'correctAnswer':
-          await api.put<void>(ENDPOINTS.questions.correctAnswer(id ?? ''), { correctAnswer: operation.correctAnswer })
-          break
-        case 'imageUrl':
-          await api.put<void>(ENDPOINTS.questions.imageUrl(id ?? ''), { imageUrl: operation.imageUrl })
-          break
+    const completed: QuestionOperation[] = []
+    try {
+      for (const operation of operations) {
+        switch (operation.kind) {
+          case 'create':
+            id = (await api.post<IdResponse>(ENDPOINTS.topics.questions(topicId), operation.payload)).id
+            break
+          case 'translation':
+            await api.post<void>(ENDPOINTS.questions.translations(id ?? ''), { language: operation.language, text: operation.text, answers: operation.answers })
+            break
+          case 'text':
+            await api.put<void>(ENDPOINTS.questions.text(id ?? ''), { language: operation.language, text: operation.text })
+            break
+          case 'answers':
+            await api.put<void>(ENDPOINTS.questions.answers(id ?? ''), { language: operation.language, answers: operation.answers })
+            break
+          case 'correctAnswer':
+            await api.put<void>(ENDPOINTS.questions.correctAnswer(id ?? ''), { correctAnswer: operation.correctAnswer })
+            break
+          case 'imageUrl':
+            await api.put<void>(ENDPOINTS.questions.imageUrl(id ?? ''), { imageUrl: operation.imageUrl })
+            break
+        }
+        completed.push(operation)
       }
+    } catch (cause) {
+      throw Object.assign(new Error('partial question save', { cause }), { questionId: id, completedOperations: completed })
     }
     return id ?? ''
   },

@@ -19,7 +19,7 @@ export interface DialogAction {
   label: string
   variant?: ButtonVariant
   tone?: ButtonTone
-  onPress?: () => void
+  onPress?: () => unknown
 }
 
 export type DialogTone = 'neutral' | 'accent' | 'danger'
@@ -43,7 +43,7 @@ export interface DialogOptions {
 
 export interface DialogProps extends DialogOptions {
   open: boolean
-  /** Toute fermeture : voile, retour Android, choix d'une action (appelé avant son `onPress`). */
+  /** Fermeture par voile/retour, ou après la réussite de l’action asynchrone choisie. */
   onClose: () => void
 }
 
@@ -62,6 +62,11 @@ export function Dialog({ open, onClose, title, message, icon: IconComponent, ton
   const insets = useSafeAreaInsets()
   const reduced = useReducedMotion()
   const titleRef = useRef<ViewRef>(null)
+  const [pendingAction, setPendingAction] = useState<DialogAction | null>(null)
+  const choosing = useRef(false)
+  const dismiss = () => {
+    if (!choosing.current) onClose()
+  }
   const [mounted, setMounted] = useState(open)
   const progress = useSharedValue(0)
 
@@ -98,14 +103,27 @@ export function Dialog({ open, onClose, title, message, icon: IconComponent, ton
     danger: { backgroundColor: alpha(colors.wrong, 0.16), color: colors.wrong },
   }[tone]
 
-  // Choisir une action ferme toujours le dialog.
-  const choose = (action: DialogAction) => {
-    onClose()
-    action.onPress?.()
+  // Async commands keep their button loading until the server response; failures stay retryable.
+  const choose = async (action: DialogAction) => {
+    if (choosing.current) return
+    choosing.current = true
+    try {
+      const result = action.onPress?.()
+      if (result instanceof Promise) {
+        setPendingAction(action)
+        await result
+      }
+      onClose()
+    } catch {
+      /* Mutation hooks own rollback and error messages. */
+    } finally {
+      choosing.current = false
+      setPendingAction(null)
+    }
   }
 
   return (
-    <Modal visible transparent animationType="none" statusBarTranslucent navigationBarTranslucent onRequestClose={onClose}>
+    <Modal visible transparent animationType="none" statusBarTranslucent navigationBarTranslucent onRequestClose={dismiss}>
       <View
         style={[
           StyleSheet.absoluteFill,
@@ -116,7 +134,7 @@ export function Dialog({ open, onClose, title, message, icon: IconComponent, ton
           <Pressable
             accessibilityLabel="Fermer"
             accessibilityRole="button"
-            onPress={onClose}
+            onPress={dismiss}
             style={[StyleSheet.absoluteFill, { backgroundColor: colors.scrim }]}
           />
         </Animated.View>
@@ -178,7 +196,9 @@ export function Dialog({ open, onClose, title, message, icon: IconComponent, ton
                   variant={variant}
                   tone={action.tone ?? (variant === 'filled' ? 'accent' : 'neutral')}
                   size={variant === 'plain' ? 'M' : 'L'}
-                  onPress={() => choose(action)}
+                  loading={pendingAction === action}
+                  disabled={pendingAction !== null}
+                  onPress={() => void choose(action)}
                 >
                   {action.label}
                 </Button>
@@ -228,13 +248,24 @@ export function DialogHost() {
         ...action,
         onPress: () => {
           chosen.current = true
-          action.onPress?.()
+          try {
+            const result = action.onPress?.()
+            if (result instanceof Promise)
+              return result.catch((error: unknown) => {
+                chosen.current = false
+                throw error
+              })
+            return result
+          } catch (error) {
+            chosen.current = false
+            throw error
+          }
         },
       }))}
       open={open}
       onClose={() => {
         close()
-        // `choose` ferme avant d'appeler l'action : on attend la fin du tour pour savoir s'il y a eu un choix.
+        // Le choix est marqué avant l’action ; les fermetures sans choix restent distinguées.
         queueMicrotask(() => {
           if (!chosen.current) options.onClose?.()
           chosen.current = false

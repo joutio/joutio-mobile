@@ -2,8 +2,9 @@ import { keepPreviousData, useInfiniteQuery, useMutation, useQuery, useQueryClie
 import type { TopicPage } from '@/features/topics/lib/topics-service'
 import { toast } from '@/design-system'
 import { useMe } from '@/features/me'
+import { optimisticUpdate } from '@/lib/optimistic-cache'
 import { queryKeys } from '@/lib/query-keys'
-import type { HomeView, TitlesView, TopicCardView, TopicOverviewView } from '@/shared/types/bff'
+import type { HomeView, TitlesView, TopicCardView, TopicOverviewView, MeView, PlayerProfileView } from '@/shared/types/bff'
 import { topicService, type RankingFilters } from '../lib/topic-service'
 
 /** En-tête, statistiques et progression du sujet. */
@@ -59,42 +60,71 @@ export function useFollowTopic(topicId: string) {
   const key = queryKeys.topic.overview(topicId)
   return useMutation({
     mutationFn: (follow: boolean) => topicService.follow(topicId, follow),
-    onMutate: async (follow) => {
-      await client.cancelQueries({ queryKey: key })
-      const previous = client.getQueryData<TopicOverviewView>(key)
-      if (previous && previous.topic.followed !== follow) {
-        client.setQueryData<TopicOverviewView>(key, {
-          ...previous,
-          topic: { ...previous.topic, followed: follow, followersCount: Math.max(0, previous.topic.followersCount + (follow ? 1 : -1)) },
-        })
-      }
-      return { previous }
-    },
+    onMutate: (follow: boolean) =>
+      optimisticUpdate(client, [key, ['topics'], queryKeys.home()], () => {
+        const previous = client.getQueryData<TopicOverviewView>(key)
+        if (previous)
+          client.setQueryData<TopicOverviewView>(key, {
+            ...previous,
+            topic: {
+              ...previous.topic,
+              followed: follow,
+              followersCount: Math.max(0, previous.topic.followersCount + (previous.topic.followed === follow ? 0 : follow ? 1 : -1)),
+            },
+          })
+        // Mise à jour sur place des listes déjà chargées (catalogue, rails de l'Accueil) : pas de rechargement complet,
+        // donc pas d'attente au retour sur Sujets. Appartenance et compteurs sont corrigés localement.
+        const flip = (topic: TopicCardView) =>
+          topic.topicId === topicId
+            ? { ...topic, followed: follow, followersCount: Math.max(0, topic.followersCount + (topic.followed === follow ? 0 : follow ? 1 : -1)) }
+            : topic
+        for (const [key, data] of client.getQueriesData<InfiniteData<TopicPage>>({ queryKey: ['topics', 'list'] })) {
+          const filters = key[2] as { followed?: boolean; hideFollowed?: boolean; query?: string; categories?: readonly string[] }
+          const card = previous?.topic
+          const add =
+            follow &&
+            filters.followed &&
+            card &&
+            !data?.pages.some((page) => page.topics.some((topic) => topic.topicId === topicId)) &&
+            (!filters.query || Object.values(card.names).some((name) => name.toLowerCase().includes(filters.query!.toLowerCase()))) &&
+            (!filters.categories?.length || filters.categories.includes(card.category ?? ''))
+          client.setQueryData(
+            key,
+            data
+              ? {
+                  ...data,
+                  pages: data.pages.map((page, index) => ({
+                    ...page,
+                    topics: [...(add && index === 0 ? [flip(card)] : []), ...page.topics.map(flip)].filter(
+                      (topic) => !((filters.followed && !topic.followed) || (filters.hideFollowed && topic.followed)),
+                    ),
+                  })),
+                }
+              : data,
+          )
+        }
+        const card = previous?.topic
+        client.setQueryData<HomeView>(queryKeys.home(), (data) =>
+          data
+            ? {
+                ...data,
+                followedTopics: follow
+                  ? data.followedTopics.some((topic) => topic.topicId === topicId)
+                    ? data.followedTopics.map(flip)
+                    : card
+                      ? [...data.followedTopics, flip(card)]
+                      : data.followedTopics
+                  : data.followedTopics.filter((topic) => topic.topicId !== topicId),
+                trendingTopics: data.trendingTopics.map(flip),
+                newTopics: data.newTopics.map(flip),
+                recommendedTopics: data.recommendedTopics.map(flip),
+              }
+            : data,
+        )
+      }),
     onError: (_error, follow, context) => {
-      if (context?.previous) client.setQueryData(key, context.previous)
+      context?.rollback()
       toast.error(follow ? "Le sujet n'a pas pu être suivi" : "Le sujet n'a pas pu être retiré", { description: 'Vérifie ta connexion, puis réessaie.' })
-    },
-    onSuccess: (_result, follow) => {
-      // Mise à jour sur place des listes déjà chargées (catalogue, rails de l'Accueil) : pas de rechargement complet,
-      // donc pas d'attente au retour sur Sujets. Seules les listes « suivis » et leurs compteurs sont relus.
-      const flip = (topic: TopicCardView) => (topic.topicId === topicId ? { ...topic, followed: follow } : topic)
-      client.setQueriesData<InfiniteData<TopicPage>>({ queryKey: ['topics', 'list'] }, (data) =>
-        data ? { ...data, pages: data.pages.map((page) => ({ ...page, topics: page.topics.map(flip) })) } : data,
-      )
-      client.setQueryData<HomeView>(queryKeys.home(), (data) =>
-        data
-          ? { ...data, trendingTopics: data.trendingTopics.map(flip), newTopics: data.newTopics.map(flip), recommendedTopics: data.recommendedTopics.map(flip) }
-          : data,
-      )
-      void client.invalidateQueries({
-        queryKey: ['topics', 'list'],
-        predicate: (query) => (query.queryKey[2] as { followed?: boolean } | undefined)?.followed === true,
-      })
-      void client.invalidateQueries({
-        queryKey: ['topics', 'facets'],
-        predicate: (query) => (query.queryKey[3] as { followed?: boolean } | undefined)?.followed === true,
-      })
-      void client.invalidateQueries({ queryKey: queryKeys.home(), refetchType: 'none' })
     },
   })
 }
@@ -107,19 +137,15 @@ export function useWearTitle() {
   const key = queryKeys.profiles.titles(userId)
   return useMutation({
     mutationFn: (titleKey: string) => topicService.wearTitle(userId, titleKey),
-    onMutate: async (titleKey) => {
-      await client.cancelQueries({ queryKey: key })
-      const previous = client.getQueryData<TitlesView>(key)
-      if (previous) client.setQueryData<TitlesView>(key, { ...previous, equippedKey: titleKey })
-      return { previous }
-    },
+    onMutate: (titleKey: string) =>
+      optimisticUpdate(client, [key, queryKeys.me(), queryKeys.profiles.profile(userId)], () => {
+        client.setQueryData<TitlesView>(key, (titles) => (titles ? { ...titles, equippedKey: titleKey } : titles))
+        client.setQueryData<MeView>(queryKeys.me(), (me) => (me ? { ...me, equippedTitle: titleKey } : me))
+        client.setQueryData<PlayerProfileView>(queryKeys.profiles.profile(userId), (profile) => (profile ? { ...profile, equippedTitle: titleKey } : profile))
+      }),
     onError: (_error, _key, context) => {
-      if (context?.previous) client.setQueryData(key, context.previous)
-      toast.error("Le titre n'a pas pu être porté", { description: 'Vérifie ta connexion, puis réessaie.' })
-    },
-    onSettled: () => {
-      void client.invalidateQueries({ queryKey: key })
-      void client.invalidateQueries({ queryKey: queryKeys.me() })
+      context?.rollback()
+      toast.error("Le titre n'a pas pu être porté")
     },
   })
 }

@@ -357,7 +357,7 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
                         <Button
                           full
                           icon={LightningIcon}
-                          loading={rematch.state === 'pending' && rematch.seconds === 0}
+                          loading={rematch.sending}
                           disabled={rematch.state !== 'idle' || !opponentId}
                           onPress={() => void rematch.send()}
                         >

@@ -1,21 +1,21 @@
+import { NotificationButton } from '@/features/notifications/components/notification-button'
 import { router } from 'expo-router'
 import { useState } from 'react'
 import { Share, View } from 'react-native'
 import {
-  BellIcon,
   Button,
+  Chip,
+  ArrowsDownUpIcon,
+  Text,
   DragToLoadMore,
   EmptyState,
   FeedFooter,
-  IconButton,
   ListGroup,
   MagnifyingGlassIcon,
-  MobileTopBar,
   PlayerRow,
   Screen,
-  SearchField,
+  SearchHeader,
   Skeleton,
-  SlidersHorizontalIcon,
   SwordIcon,
   TabLoadMoreScrollView,
   TabsScrollView,
@@ -24,7 +24,6 @@ import {
   WarningCircleIcon,
 } from '@/design-system'
 import { useMe } from '@/features/me'
-import { useUnreadCount } from '@/features/home'
 import { useContacts } from '@/features/play/hooks/use-play'
 import { formatNumber } from '@/features/topic/lib/format'
 import type { PeopleSort, PlayerCardView } from '@/shared/types/bff'
@@ -32,7 +31,7 @@ import { tierOf } from '@/shared/utils/tier'
 import { useMyProfile } from '../hooks/use-social'
 import { presenceOf, presenceSub } from '../lib/presence'
 import { ChallengePlayerSheet } from './challenge-player-sheet'
-import { SocialSortSheet } from './social-sort-sheet'
+import { SocialSortSheet, SOCIAL_SORTS } from './social-sort-sheet'
 import { userAvatar } from '@/shared/utils/avatar'
 import { feedFooterProps, pagedQuery } from '@/shared/utils/paging'
 
@@ -48,6 +47,8 @@ function PeopleList({
   onOpen,
   onChallenge,
   onInvite,
+  sort,
+  onSort,
 }: {
   list: ReturnType<typeof useContacts>
   direction: Direction
@@ -55,9 +56,17 @@ function PeopleList({
   onOpen: (player: PlayerCardView) => void
   onChallenge: (player: PlayerCardView) => void
   onInvite: () => void
+  sort: PeopleSort
+  onSort: () => void
 }) {
   const players = list.data?.pages.flatMap((page) => page.content) ?? []
-  const emptyTitle = query ? 'Aucun joueur trouvé' : direction === 'following' ? "Tu ne suis personne pour l'instant" : "Tu n'as pas encore d'abonné"
+  const emptyTitle = query
+    ? direction === 'following'
+      ? 'Aucun Abonnement trouvé'
+      : 'Aucun Abonné trouvé'
+    : direction === 'following'
+      ? "Tu ne suis personne pour l'instant"
+      : "Tu n'as pas encore d'abonné"
   const emptyDescription = query
     ? 'Vérifie le pseudonyme ou essaie un autre mot.'
     : direction === 'following'
@@ -65,12 +74,32 @@ function PeopleList({
       : 'Invite un ami ou joue des duels pour te faire connaître.'
 
   return (
-    <DragToLoadMore
-      enabled={Boolean(list.hasNextPage) && !list.isFetchNextPageError}
-      loading={list.isFetchingNextPage}
-      onLoadMore={() => list.fetchNextPage()}
-    >
-      <TabLoadMoreScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingTop: tokens.space[2], paddingBottom: tokens.space[7] }}>
+    <DragToLoadMore enabled={Boolean(list.hasNextPage) && !list.isFetchNextPageError} loading={list.isFetchingNextPage} onLoadMore={() => list.fetchNextPage()}>
+      <TabLoadMoreScrollView
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingTop: tokens.space[2], paddingBottom: tokens.space[7] }}
+      >
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: tokens.space[3],
+            paddingHorizontal: GUTTER,
+            paddingBottom: tokens.space[4],
+          }}
+        >
+          <Text variant="callout" color="muted">
+            {list.data
+              ? `${formatNumber(list.data.pages[0]?.totalElements ?? 0)} ${direction === 'following' ? 'abonnement' : 'abonné'}${(list.data.pages[0]?.totalElements ?? 0) > 1 ? 's' : ''}`
+              : '…'}
+          </Text>
+          <Chip icon={ArrowsDownUpIcon} onPress={onSort}>
+            {SOCIAL_SORTS.find((option) => option.value === sort)?.label ?? 'Présence'}
+          </Chip>
+        </View>
         {list.isPending ? (
           <View accessibilityLabel="Chargement" style={{ gap: tokens.space[3], paddingHorizontal: GUTTER }}>
             {Array.from({ length: 6 }, (_, index) => (
@@ -98,7 +127,11 @@ function PeopleList({
               title={emptyTitle}
               description={emptyDescription}
               action={
-                query ? undefined : (
+                query.trim() ? (
+                  <Button full icon={MagnifyingGlassIcon} onPress={() => router.push({ pathname: '/social/search', params: { q: query.trim() } })}>
+                    Rechercher globalement
+                  </Button>
+                ) : (
                   <Button full onPress={onInvite}>
                     Inviter un ami
                   </Button>
@@ -143,7 +176,6 @@ function PeopleList({
 export function SocialScreen() {
   const me = useMe(true)
   const myProfile = useMyProfile(true)
-  const unread = useUnreadCount()
   const [tab, setTab] = useState<Direction>('following')
   const [query, setQuery] = useState('')
   const [sort, setSort] = useState<PeopleSort>('PRESENCE')
@@ -159,60 +191,22 @@ export function SocialScreen() {
   const openPlayer = (player: PlayerCardView) => {
     router.push({ pathname: '/social/player/[id]', params: { id: player.userId } })
   }
-  const label = (name: string, count: number | undefined) => (count === undefined ? name : `${name} · ${formatNumber(count)}`)
 
   return (
     <Screen
       inTabs
       scroll={false}
       header={
-        <View>
-          <MobileTopBar
-            title="Social"
-            right={
-              <>
-                <IconButton
-                  icon={MagnifyingGlassIcon}
-                  label="Rechercher un sujet ou un joueur"
-                  variant="plain"
-                  tone="neutral"
-                  onPress={() => router.push('/social/search')}
-                />
-                <IconButton
-                  icon={BellIcon}
-                  label="Notifications"
-                  variant="plain"
-                  tone="neutral"
-                  badge={unread.data?.count ? 'dot' : undefined}
-                  onPress={() => router.push('/home/notifications')}
-                />
-              </>
-            }
-          />
-          {/* Lab : `pt-1`, puis `gap-3` jusqu'au `Segmented` (qui porte déjà 9 pt au-dessus de lui). */}
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: tokens.space[3],
-              paddingHorizontal: GUTTER,
-              paddingTop: tokens.space[2],
-              paddingBottom: tokens.space[4] - (tokens.space[3] + 1),
-            }}
-          >
-            <View style={{ flex: 1 }}>
-              <SearchField value={query} onChange={setQuery} placeholder="Chercher un joueur" label="Chercher un joueur" />
-            </View>
-            <IconButton
-              icon={SlidersHorizontalIcon}
-              label="Trier les contacts"
-              variant="gray"
-              tone="neutral"
-              badge={sort === 'PRESENCE' ? undefined : 'dot'}
-              onPress={() => setSortOpen(true)}
-            />
-          </View>
-        </View>
+        <SearchHeader
+          title="Social"
+          value={query}
+          onChange={setQuery}
+          placeholder="Chercher un joueur"
+          filterLabel="Trier les contacts"
+          filterDot={sort !== 'PRESENCE'}
+          onFilter={() => setSortOpen(true)}
+          notifications={<NotificationButton />}
+        />
       }
     >
       <TabsScrollView
@@ -223,13 +217,35 @@ export function SocialScreen() {
         pages={[
           {
             value: 'following',
-            label: label('Abonnements', myProfile.data?.followingCount),
-            content: <PeopleList list={following} direction="following" query={query} onOpen={openPlayer} onChallenge={setChallenged} onInvite={invite} />,
+            label: 'Abonnements',
+            content: (
+              <PeopleList
+                list={following}
+                direction="following"
+                query={query}
+                onOpen={openPlayer}
+                onChallenge={setChallenged}
+                onInvite={invite}
+                sort={sort}
+                onSort={() => setSortOpen(true)}
+              />
+            ),
           },
           {
             value: 'followers',
-            label: label('Abonnés', myProfile.data?.followersCount),
-            content: <PeopleList list={followers} direction="followers" query={query} onOpen={openPlayer} onChallenge={setChallenged} onInvite={invite} />,
+            label: 'Abonnés',
+            content: (
+              <PeopleList
+                list={followers}
+                direction="followers"
+                query={query}
+                onOpen={openPlayer}
+                onChallenge={setChallenged}
+                onInvite={invite}
+                sort={sort}
+                onSort={() => setSortOpen(true)}
+              />
+            ),
           },
         ]}
       />

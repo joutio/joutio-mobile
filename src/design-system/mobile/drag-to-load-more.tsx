@@ -1,3 +1,4 @@
+import { haptic } from '../haptics'
 import { requireNativeViewManager } from 'expo-modules-core'
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode, type Ref } from 'react'
 import { findNodeHandle, ScrollView, View, type ScrollViewInstance, type ScrollViewProps, type StyleProp, type ViewProps, type ViewStyle } from 'react-native'
@@ -58,6 +59,7 @@ export function DragToLoadMore({ enabled, loading = false, onLoadMore, style, ov
   const load = useCallback(() => {
     if (locked.current || latest.current.loading) return
     locked.current = true
+    haptic('light')
     const id = ++cycle.current
     setBusy(true)
     pull.value = LOAD_MORE_THRESHOLD

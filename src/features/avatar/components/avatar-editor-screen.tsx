@@ -194,11 +194,11 @@ export function AvatarEditorScreen() {
         title="Mon avatar"
         cancel="Annuler"
         confirm="Enregistrer"
+        confirmLoading={save.isPending}
         confirmDisabled={!changed || save.isPending}
         onCancel={() => router.back()}
         onConfirm={() => {
-          save.mutate(JSON.stringify(choice))
-          router.back()
+          save.mutate(JSON.stringify(choice), { onSuccess: () => router.back() })
         }}
       />
       <View style={{ alignItems: 'center', gap: tokens.space[3], paddingVertical: tokens.space[4] }}>

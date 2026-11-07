@@ -17,7 +17,7 @@ function useStartSession() {
   return async (session: MobileLoginResponse | null) => {
     if (!session) return
     await persistSession({ accessToken: session.accessToken, refreshToken: session.refreshToken, expiresIn: session.expiresIn, userId: session.userId })
-    await queryClient.invalidateQueries({ queryKey: queryKeys.me() })
+    queryClient.removeQueries({ queryKey: queryKeys.me() })
     setSession(true)
   }
 }

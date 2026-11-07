@@ -1,8 +1,17 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient, type InfiniteData } from '@tanstack/react-query'
 import { toast } from '@/design-system'
 import { useMe } from '@/features/me'
+import { optimisticUpdate } from '@/lib/optimistic-cache'
 import { queryKeys } from '@/lib/query-keys'
-import type { MeView, NotificationCategory, NotificationPreferenceView } from '@/shared/types/bff'
+import type {
+  MeView,
+  PlayerProfileView,
+  PageResponse,
+  PlayerCardView,
+  ChallengeView,
+  NotificationCategory,
+  NotificationPreferenceView,
+} from '@/shared/types/bff'
 import { profileService } from '../lib/profile-service'
 
 const useUserId = () => useMe(true).data?.userId ?? ''
@@ -59,25 +68,42 @@ const SAVERS: { [K in MeField]: (userId: string, value: NonNullable<MeView[K]> |
 
 /**
  * Modifie un champ du profil : `me` est mis à jour sur place (le Profil et les Réglages le lisent), restauré si le BFF
- * refuse ; la fiche publique est invalidée sans recharger l'écran courant.
+ * refuse ; la fiche publique et les listes connues suivent la même transaction optimiste.
  */
 export function useUpdateMe<K extends MeField>(field: K) {
   const client = useQueryClient()
   const userId = useUserId()
   return useMutation({
     mutationFn: (value: MeView[K]) => SAVERS[field](userId, value as never),
-    onMutate: async (value) => {
-      await client.cancelQueries({ queryKey: queryKeys.me() })
-      const previous = client.getQueryData<MeView>(queryKeys.me())
-      if (previous) client.setQueryData<MeView>(queryKeys.me(), { ...previous, [field]: value })
-      return { previous }
-    },
+    onMutate: (value) =>
+      optimisticUpdate(client, [queryKeys.me(), queryKeys.profiles.profile(userId), ['contacts'], queryKeys.challenges()], () => {
+        client.setQueryData<MeView>(queryKeys.me(), (me) => (me ? { ...me, [field]: value } : me))
+        if (field !== 'interests')
+          client.setQueryData<PlayerProfileView>(queryKeys.profiles.profile(userId), (profile) => (profile ? { ...profile, [field]: value } : profile))
+        if (field === 'pseudonym' || field === 'avatarOptions') {
+          client.setQueriesData<InfiniteData<PageResponse<PlayerCardView>>>({ queryKey: ['contacts'] }, (data) =>
+            data
+              ? {
+                  ...data,
+                  pages: data.pages.map((page) => ({
+                    ...page,
+                    content: page.content.map((player) => (player.userId === userId ? { ...player, [field]: value } : player)),
+                  })),
+                }
+              : data,
+          )
+          client.setQueryData<ChallengeView[]>(queryKeys.challenges(), (items) =>
+            items?.map((challenge) => ({
+              ...challenge,
+              challenger: challenge.challenger.userId === userId ? { ...challenge.challenger, [field]: value } : challenge.challenger,
+              opponent: challenge.opponent.userId === userId ? { ...challenge.opponent, [field]: value } : challenge.opponent,
+            })),
+          )
+        }
+      }),
     onError: (_error, _value, context) => {
-      if (context?.previous) client.setQueryData(queryKeys.me(), context.previous)
+      context?.rollback()
       toast.error("La modification n'a pas été enregistrée", { description: 'Vérifie ta connexion, puis réessaie.' })
-    },
-    onSuccess: () => {
-      void client.invalidateQueries({ queryKey: queryKeys.profiles.profile(userId), refetchType: 'none' })
     },
   })
 }
@@ -92,16 +118,16 @@ export function useSetNotificationPreference() {
   const key = queryKeys.notificationPreferences()
   return useMutation({
     mutationFn: ({ category, enabled }: { category: NotificationCategory; enabled: boolean }) => profileService.setNotificationPreference(category, enabled),
-    onMutate: async ({ category, enabled }) => {
-      await client.cancelQueries({ queryKey: key })
-      const previous = client.getQueryData<NotificationPreferenceView[]>(key)
-      const others = (previous ?? []).filter((item) => item.category !== category)
-      client.setQueryData<NotificationPreferenceView[]>(key, [...others, { category, enabled }])
-      return { previous }
-    },
+    onMutate: ({ category, enabled }) =>
+      optimisticUpdate(client, [key], () => {
+        client.setQueryData<NotificationPreferenceView[]>(key, (items) => [
+          ...(items ?? []).filter((item) => item.category !== category),
+          { category, enabled },
+        ])
+      }),
     onError: (_error, _value, context) => {
-      if (context?.previous) client.setQueryData(key, context.previous)
-      toast.error("Le réglage n'a pas été enregistré", { description: 'Vérifie ta connexion, puis réessaie.' })
+      context?.rollback()
+      toast.error("Le réglage n'a pas été enregistré")
     },
   })
 }

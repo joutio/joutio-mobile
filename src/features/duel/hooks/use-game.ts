@@ -1,6 +1,8 @@
-import { useQuery } from '@tanstack/react-query'
+import { queryKeys } from '@/lib/query-keys'
+import type { MeView, PlayerProfileView, TopicOverviewView } from '@/shared/types/bff'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Image } from 'expo-image'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { ENDPOINTS } from '@/lib/endpoints'
 import { readServerNow } from '@/lib/realtime/server-clock'
 import { useNotificationStream } from '@/lib/realtime/use-notification-stream'
@@ -41,15 +43,43 @@ export function useServerNow(intervalMs = 100) {
 
 /** Bilan autoritaire d'un duel terminé ; la récompense arrive après la projection (quelques secondes). */
 export function useGameResult(gameId: string, enabled: boolean, waitForReward = true) {
-  return useQuery({
+  const client = useQueryClient()
+  const applied = useRef<string | null>(null)
+  const result = useQuery({
     queryKey: ['games', gameId, 'result'],
     queryFn: () => gameService.result(gameId),
     enabled,
     retry: 3,
     // La récompense est calculée après la fin : on relit tant qu'elle n'est pas là, puis plus jamais. Une partie
     // consultée depuis l'historique est immuable : inutile de sonder une récompense qui n'arrivera plus.
-    refetchInterval: (query) => (waitForReward && query.state.data && query.state.data.reward === null ? 1_500 : false),
+    refetchInterval: (query) => (waitForReward && query.state.data && query.state.data.reward === null && !query.state.data.botGame ? 1_500 : false),
   })
+  useEffect(() => {
+    const data = result.data
+    if (!waitForReward || !data || (!data.botGame && !data.reward) || applied.current === gameId) return
+    applied.current = gameId
+    const me = client.getQueryData<MeView>(queryKeys.me())
+    if (me) {
+      client.setQueryData<MeView>(queryKeys.me(), { ...me, progression: data.progression })
+      client.setQueryData<PlayerProfileView>(queryKeys.profiles.profile(me.userId), (profile) =>
+        profile ? { ...profile, progression: data.progression } : profile,
+      )
+    }
+    client.setQueryData<TopicOverviewView>(queryKeys.topic.overview(data.topic.topicId), (view) =>
+      view?.myProgress
+        ? {
+            ...view,
+            myProgress: {
+              ...view.myProgress,
+              xp: data.topicMastery.xp,
+              tierProgressPercent: data.topicMastery.tierProgressPercent,
+              tierRemainingXp: data.topicMastery.tierRemainingXp,
+            },
+          }
+        : view,
+    )
+  }, [client, gameId, result.data, waitForReward])
+  return result
 }
 
 /**

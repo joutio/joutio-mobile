@@ -6,14 +6,17 @@ import { haptic, toast } from '@/design-system'
 import { showQuotaDialog } from '@/features/challenges/lib/quota'
 import { useMe } from '@/features/me'
 import { ENDPOINTS } from '@/lib/endpoints'
+import { optimisticUpdate, optimisticId } from '@/lib/optimistic-cache'
 import { queryKeys } from '@/lib/query-keys'
+import { readServerNow } from '@/lib/realtime/server-clock'
 import { useNotificationStream } from '@/lib/realtime/use-notification-stream'
 import { getItem, setItem } from '@/lib/storage'
-import type { MeView, PeopleSort } from '@/shared/types/bff'
+import type { MeView, PeopleSort, ChallengeView } from '@/shared/types/bff'
 import type { BotDifficulty } from '@/features/duel/domain/game-dto'
 import { applyMatchmakingNotification, emptyMatchmaking, type Matchmaking } from '../domain/matchmaking'
 import type { MatchmakingNotification } from '../domain/matchmaking-notification'
 import { applyRoomNotification, emptyRoom, type Room } from '../domain/room'
+import type { RoomView } from '../domain/room'
 import type { RoomNotification } from '../domain/room-notification'
 import { CONTACTS_PAGE_SIZE, playService } from '../lib/play-service'
 
@@ -57,17 +60,14 @@ export function useAutoTrain() {
   const enabled = me.data?.autoTrainOnTimeout ?? true
   const mutation = useMutation({
     mutationFn: (next: boolean) => playService.setAutoTrain(me.data?.userId ?? '', next),
-    onMutate: (next) => {
-      const previous = client.getQueryData<MeView>(queryKeys.me())
-      if (previous) client.setQueryData<MeView>(queryKeys.me(), { ...previous, autoTrainOnTimeout: next })
-      return { previous }
-    },
+    onMutate: (next: boolean) =>
+      optimisticUpdate(client, [queryKeys.me()], () => client.setQueryData<MeView>(queryKeys.me(), (me) => (me ? { ...me, autoTrainOnTimeout: next } : me))),
     onError: (_error, _next, context) => {
-      if (context?.previous) client.setQueryData(queryKeys.me(), context.previous)
-      toast.error("Le réglage n'a pas pu être enregistré", { description: 'Vérifie ta connexion, puis réessaie.' })
+      context?.rollback()
+      toast.error("Le réglage n'a pas pu être enregistré")
     },
   })
-  return { enabled, set: (next: boolean) => mutation.mutate(next) }
+  return { enabled, pending: mutation.isPending, set: (next: boolean) => mutation.mutate(next) }
 }
 
 /* ───────────────────────── Lancements ───────────────────────── */
@@ -97,25 +97,73 @@ export function useCreatePrivateRoom() {
   const client = useQueryClient()
   return useMutation({
     mutationFn: (topic: PlayTopic) => playService.createRoom(topic.topicId),
-    onSuccess: ({ id }, topic) => {
-      void client.invalidateQueries({ queryKey: queryKeys.rooms() })
+    onMutate: async (topic) => {
+      const tempId = optimisticId()
+      const transaction = await optimisticUpdate(client, [queryKeys.rooms()], () => {
+        const room: RoomView = {
+          roomId: tempId,
+          topic: { topicId: topic.topicId, names: { fr: topic.name }, category: topic.category ?? null, imageUrl: null },
+          status: 'WAITING_PLAYERS',
+          vsBot: false,
+          canCancel: true,
+          opponent: null,
+          initiatorPresent: false,
+          participantPresent: false,
+          gameId: null,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          expiresAt: '',
+        }
+        client.setQueryData<RoomView[]>(queryKeys.rooms(), (rooms) => [...(rooms ?? []), room])
+      })
+      return { ...transaction, tempId }
+    },
+    onSuccess: ({ id }, topic, context) => {
+      client.setQueryData<RoomView[]>(queryKeys.rooms(), (rooms) => rooms?.map((room) => (room.roomId === context.tempId ? { ...room, roomId: id } : room)))
       router.push({ pathname: '/room/[roomId]', params: { roomId: id, ...topicParams(topic) } })
     },
-    onError: (error) => showQuotaDialog(error) || launchError("Le salon n'a pas pu être créé")(),
+    onError: (error, _topic, context) => {
+      context?.rollback()
+      showQuotaDialog(error) || launchError("Le salon n'a pas pu être créé")()
+    },
   })
 }
 
 /** Défi nominatif : envoyé, l'invité l'accepte depuis ses Défis. */
 export function useChallengePlayer() {
   const client = useQueryClient()
+  const me = useMe(true)
   return useMutation({
     mutationFn: ({ topic, opponent }: { topic: PlayTopic; opponent: { userId: string; pseudonym: string } }) =>
       playService.challenge(topic.topicId, opponent.userId),
-    onSuccess: (_result, { topic, opponent }) => {
-      toast.success('Défi envoyé', { description: `${opponent.pseudonym} · ${topic.name}` })
-      void client.invalidateQueries({ queryKey: queryKeys.challenges() })
+    onMutate: async ({ topic, opponent }) => {
+      const tempId = optimisticId()
+      const transaction = await optimisticUpdate(client, [queryKeys.challenges()], () => {
+        const challenge: ChallengeView = {
+          challengeId: tempId,
+          topic: { topicId: topic.topicId, names: { fr: topic.name }, category: topic.category ?? null, imageUrl: null },
+          challenger: { userId: me.data?.userId ?? '', pseudonym: me.data?.pseudonym ?? '', avatarOptions: me.data?.avatarOptions ?? null, suspended: false },
+          opponent: { ...opponent, avatarOptions: null, suspended: false },
+          status: 'PENDING',
+          roomId: null,
+          gameId: null,
+          createdAt: new Date().toISOString(),
+          expiresAt: '',
+        }
+        client.setQueryData<ChallengeView[]>(queryKeys.challenges(), (items) => [challenge, ...(items ?? [])])
+      })
+      return { ...transaction, tempId }
     },
-    onError: (error) => showQuotaDialog(error) || launchError("Le défi n'a pas pu être envoyé")(),
+    onSuccess: ({ id }, { topic, opponent }, context) => {
+      client.setQueryData<ChallengeView[]>(queryKeys.challenges(), (items) =>
+        items?.map((item) => (item.challengeId === context.tempId ? { ...item, challengeId: id } : item)),
+      )
+      toast.success('Défi envoyé', { description: `${opponent.pseudonym} · ${topic.name}` })
+    },
+    onError: (error, _variables, context) => {
+      context?.rollback()
+      showQuotaDialog(error) || launchError("Le défi n'a pas pu être envoyé")()
+    },
   })
 }
 
@@ -207,5 +255,19 @@ export function useRoomPresence(roomId: string, enabled: boolean) {
 
 /** Relance de l'adversaire absent. */
 export function useWizzRoom(roomId: string) {
-  return useMutation({ mutationFn: () => playService.wizzRoom(roomId), onSuccess: () => haptic('light') })
+  const [sentAt, setSentAt] = useState<number | null>(null)
+  const mutation = useMutation({
+    mutationFn: () => playService.wizzRoom(roomId),
+    onMutate: () => {
+      const previous = sentAt
+      setSentAt(readServerNow())
+      return { previous }
+    },
+    onError: (_error, _variables, context) => {
+      setSentAt(context?.previous ?? null)
+      toast.error("La relance n'a pas pu être envoyée")
+    },
+    onSuccess: () => haptic('light'),
+  })
+  return { ...mutation, sentAt }
 }

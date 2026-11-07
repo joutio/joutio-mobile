@@ -1,6 +1,7 @@
-import { useRef, useState } from 'react'
-import { TextInput, View, type TextInputInstance, type StyleProp, type ViewStyle } from 'react-native'
+import { useRef, useState, type RefObject } from 'react'
+import { TextInput, type TextInputInstance, type StyleProp, type ViewStyle } from 'react-native'
 import Animated, { Easing, FadeInRight, FadeOutRight, LinearTransition } from 'react-native-reanimated'
+import { useReducedMotion } from '../motion'
 import { MagnifyingGlassIcon, XCircleIcon } from '../icons'
 import { useTheme } from '../theme/theme-provider'
 import { tokens } from '../tokens.generated'
@@ -17,6 +18,11 @@ export interface SearchFieldProps {
   /** Affiche « Annuler » pendant la saisie. */
   onCancel?: () => void
   onSubmit?: () => void
+  onFocus?: () => void
+  onBlur?: () => void
+  inputRef?: RefObject<TextInputInstance | null>
+  /** Contrôle l’annulation indépendamment du texte et du clavier (en-tête de liste). */
+  cancelVisible?: boolean
   /** Force l'état actif (catalogue). */
   active?: boolean
   autoFocus?: boolean
@@ -41,19 +47,28 @@ export function SearchField({
   label = 'Rechercher',
   onCancel,
   onSubmit,
+  onFocus,
+  onBlur,
+  inputRef,
+  cancelVisible,
   active = false,
   autoFocus,
   style,
 }: SearchFieldProps) {
   const { colors, radius } = useTheme()
   const [focused, setFocused] = useState(false)
-  const input = useRef<TextInputInstance>(null)
+  const localInput = useRef<TextInputInstance>(null)
+  const input = inputRef ?? localInput
+  const reduced = useReducedMotion()
   const engaged = active || focused || value !== ''
 
   return (
-    <View style={[{ alignSelf: 'stretch', flexDirection: 'row', alignItems: 'center', gap: tokens.space[3] }, style]}>
+    <Animated.View
+      layout={reduced ? undefined : RESIZE}
+      style={[{ alignSelf: 'stretch', flexDirection: 'row', alignItems: 'center', gap: tokens.space[3] }, style]}
+    >
       <Animated.View
-        layout={RESIZE}
+        layout={reduced ? undefined : RESIZE}
         style={{
           flex: 1,
           minWidth: 0,
@@ -82,8 +97,14 @@ export function SearchField({
           onSubmitEditing={onSubmit}
           selectionColor={colors.accent}
           cursorColor={colors.accent}
-          onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
+          onFocus={() => {
+            setFocused(true)
+            onFocus?.()
+          }}
+          onBlur={() => {
+            setFocused(false)
+            onBlur?.()
+          }}
           maxFontSizeMultiplier={MAX_FONT_SCALE}
           style={[inputStyle('body'), { flex: 1, minWidth: 0, paddingHorizontal: 0, color: colors.text }]}
         />
@@ -102,8 +123,8 @@ export function SearchField({
           </PressableScale>
         )}
       </Animated.View>
-      {onCancel && engaged && (
-        <Animated.View entering={CANCEL_IN} exiting={CANCEL_OUT} style={{ alignSelf: 'center' }}>
+      {onCancel && (cancelVisible ?? engaged) && (
+        <Animated.View entering={reduced ? undefined : CANCEL_IN} exiting={reduced ? undefined : CANCEL_OUT} style={{ alignSelf: 'center' }}>
           <Button
             variant="plain"
             size="S"
@@ -116,6 +137,6 @@ export function SearchField({
           </Button>
         </Animated.View>
       )}
-    </View>
+    </Animated.View>
   )
 }

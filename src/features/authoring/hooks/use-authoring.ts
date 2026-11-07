@@ -2,8 +2,13 @@ import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tansta
 import { toast, type CategoryCode } from '@/design-system'
 import { useMe } from '@/features/me'
 import { usePremiumSheet } from '@/features/premium/premium-store'
+import { optimisticUpdate, optimisticId } from '@/lib/optimistic-cache'
+import { applyQuestionOperations } from '../domain/question-cache'
 import { queryKeys } from '@/lib/query-keys'
-import type { Language, PageResponse, TopicCardView } from '@/shared/types/bff'
+import type { Language, PageResponse, TopicCardView, TopicOverviewView, HomeView } from '@/shared/types/bff'
+import type { InfiniteData } from '@tanstack/react-query'
+import type { TopicPage } from '@/features/topics/lib/topics-service'
+
 import type { OwnerQuestionReport, QuestionEditorView } from '../domain/authoring'
 import { limitsFor, type LimitReason } from '../domain/limits'
 import type { QuestionOperation } from '../domain/question-draft'
@@ -35,17 +40,33 @@ function patchTopic(client: QueryClient, topicId: string, patch: (topic: TopicCa
   client.setQueryData<PageResponse<TopicCardView>>(queryKeys.authoring.topics(), (page) =>
     page ? { ...page, content: page.content.map((topic) => (topic.topicId === topicId ? patch(topic) : topic)) } : page,
   )
+  client.setQueryData<TopicOverviewView>(queryKeys.topic.overview(topicId), (view) => (view ? { ...view, topic: patch(view.topic) } : view))
+  const apply = (topic: TopicCardView) => (topic.topicId === topicId ? patch(topic) : topic)
+  client.setQueriesData<InfiniteData<TopicPage>>({ queryKey: ['topics', 'list'] }, (data) =>
+    data ? { ...data, pages: data.pages.map((page) => ({ ...page, topics: page.topics.map(apply) })) } : data,
+  )
+  client.setQueryData<HomeView>(queryKeys.home(), (home) =>
+    home
+      ? {
+          ...home,
+          followedTopics: home.followedTopics.map(apply),
+          trendingTopics: home.trendingTopics.map(apply),
+          newTopics: home.newTopics.map(apply),
+          recommendedTopics: home.recommendedTopics.map(apply),
+        }
+      : home,
+  )
 }
 
 export function useCreateTopic() {
   const client = useQueryClient()
   return useMutation({
     mutationFn: ({ name, category }: { name: string; category: CategoryCode }) => authoringService.createTopic(name, category),
-    onSuccess: ({ id }, { name, category }) => {
-      // Le brouillon apparaît tout de suite ; la projection le confirme au prochain chargement.
-      client.setQueryData<PageResponse<TopicCardView>>(queryKeys.authoring.topics(), (page) => {
+    onMutate: async ({ name, category }) => {
+      const tempId = optimisticId()
+      const transaction = await optimisticUpdate(client, [['authoring']], () => {
         const draft: TopicCardView = {
-          topicId: id,
+          topicId: tempId,
           names: { fr: name },
           description: null,
           category,
@@ -57,11 +78,22 @@ export function useCreateTopic() {
           followed: false,
           status: 'DRAFT',
         }
-        return page ? { ...page, content: [draft, ...page.content], totalElements: page.totalElements + 1 } : page
+        client.setQueryData<PageResponse<TopicCardView>>(queryKeys.authoring.topics(), (page) =>
+          page
+            ? { ...page, content: [draft, ...page.content], totalElements: page.totalElements + 1 }
+            : { content: [draft], totalElements: 1, totalPages: 1, page: 0, size: 100, first: true, last: true },
+        )
       })
+      return { ...transaction, tempId }
+    },
+    onSuccess: ({ id }, _variables, context) => {
+      patchTopic(client, context.tempId, (topic) => ({ ...topic, topicId: id }))
       client.setQueryData<QuestionEditorView[]>(queryKeys.authoring.questions(id), [])
     },
-    onError: () => toast.error("Le sujet n'a pas pu être créé", retryHint),
+    onError: (_error, _variables, context) => {
+      context?.rollback()
+      toast.error("Le sujet n'a pas pu être créé", retryHint)
+    },
   })
 }
 
@@ -70,10 +102,26 @@ export function useUpdateTopicNames(topicId: string) {
   const client = useQueryClient()
   return useMutation({
     mutationFn: async (names: Partial<Record<Language, string>>) => {
-      for (const [language, name] of Object.entries(names) as [Language, string][]) await authoringService.updateName(topicId, language, name)
+      const completedNames: Partial<Record<Language, string>> = {}
+      try {
+        for (const [language, name] of Object.entries(names) as [Language, string][]) {
+          await authoringService.updateName(topicId, language, name)
+          completedNames[language] = name
+        }
+      } catch (cause) {
+        throw Object.assign(new Error('partial names', { cause }), { completedNames })
+      }
     },
-    onSuccess: (_result, names) => patchTopic(client, topicId, (topic) => ({ ...topic, names: { ...topic.names, ...names } })),
-    onError: () => toast.error("Le nom n'a pas pu être enregistré", retryHint),
+    onMutate: (names: Partial<Record<Language, string>>) =>
+      optimisticUpdate(client, [['authoring'], ['topic', topicId], ['topics'], queryKeys.home()], () =>
+        patchTopic(client, topicId, (topic) => ({ ...topic, names: { ...topic.names, ...names } })),
+      ),
+    onError: (error, _variables, context) => {
+      context?.rollback()
+      if ('completedNames' in error)
+        patchTopic(client, topicId, (topic) => ({ ...topic, names: { ...topic.names, ...(error.completedNames as Partial<Record<Language, string>>) } }))
+      toast.error("Le nom n'a pas pu être enregistré", retryHint)
+    },
   })
 }
 
@@ -81,8 +129,14 @@ export function useUpdateTopicCategory(topicId: string) {
   const client = useQueryClient()
   return useMutation({
     mutationFn: (category: CategoryCode) => authoringService.updateCategory(topicId, category),
-    onSuccess: (_result, category) => patchTopic(client, topicId, (topic) => ({ ...topic, category })),
-    onError: () => toast.error("L'univers n'a pas pu être enregistré", retryHint),
+    onMutate: (category: CategoryCode) =>
+      optimisticUpdate(client, [['authoring'], ['topic', topicId], ['topics'], queryKeys.home()], () =>
+        patchTopic(client, topicId, (topic) => ({ ...topic, category })),
+      ),
+    onError: (_error, _variables, context) => {
+      context?.rollback()
+      toast.error('L’univers n’a pas pu être enregistré', retryHint)
+    },
   })
 }
 
@@ -90,8 +144,14 @@ export function useUpdateTopicImage(topicId: string) {
   const client = useQueryClient()
   return useMutation({
     mutationFn: (imageUrl: string | null) => authoringService.updateImageUrl(topicId, imageUrl),
-    onSuccess: (_result, imageUrl) => patchTopic(client, topicId, (topic) => ({ ...topic, imageUrl })),
-    onError: () => toast.error("La vignette n'a pas pu être enregistrée", retryHint),
+    onMutate: (imageUrl: string | null) =>
+      optimisticUpdate(client, [['authoring'], ['topic', topicId], ['topics'], queryKeys.home()], () =>
+        patchTopic(client, topicId, (topic) => ({ ...topic, imageUrl })),
+      ),
+    onError: (_error, _variables, context) => {
+      context?.rollback()
+      toast.error('La vignette n’a pas pu être enregistrée', retryHint)
+    },
   })
 }
 
@@ -99,13 +159,15 @@ export function usePublishTopic(topicId: string) {
   const client = useQueryClient()
   return useMutation({
     mutationFn: () => authoringService.publish(topicId),
-    onSuccess: () => {
-      patchTopic(client, topicId, (topic) => ({ ...topic, status: 'PUBLISHED' }))
-      // Le catalogue et l'Accueil découvriront le sujet à leur prochain chargement.
-      void client.invalidateQueries({ queryKey: ['topics'] })
-      toast.success('Sujet publié')
+    onMutate: () =>
+      optimisticUpdate(client, [['authoring'], ['topic', topicId], ['topics'], queryKeys.home()], () =>
+        patchTopic(client, topicId, (topic) => ({ ...topic, status: 'PUBLISHED' })),
+      ),
+    onSuccess: () => toast.success('Sujet publié'),
+    onError: (_error, _variables, context) => {
+      context?.rollback()
+      toast.error("Le sujet n'a pas pu être publié", { description: 'Il faut 7 questions approuvées.' })
     },
-    onError: () => toast.error("Le sujet n'a pas pu être publié", { description: 'Il faut 7 questions approuvées.' }),
   })
 }
 
@@ -137,17 +199,83 @@ function syncApprovedCount(client: QueryClient, topicId: string) {
 export function useSaveQuestion(topicId: string) {
   const client = useQueryClient()
   return useMutation({
-    mutationFn: ({ questionId, operations }: { questionId?: string; operations: readonly QuestionOperation[]; resolveReports?: boolean }) =>
-      authoringService.saveQuestion(topicId, questionId, operations),
-    onSuccess: async (questionId, { resolveReports }) => {
-      if (resolveReports) await authoringService.resolveReports(questionId, 'RESOLVED').catch(() => undefined)
-      // La question modifiée repasse en validation côté serveur : on relit la liste plutôt que de deviner son statut.
-      await client.invalidateQueries({ queryKey: queryKeys.authoring.questions(topicId) })
-      if (resolveReports) void client.invalidateQueries({ queryKey: queryKeys.authoring.reports(topicId) })
-      syncApprovedCount(client, topicId)
+    mutationFn: async ({
+      questionId,
+      operations,
+      resolveReports,
+    }: {
+      questionId?: string
+      operations: readonly QuestionOperation[]
+      resolveReports?: boolean
+    }) => {
+      const id = await authoringService.saveQuestion(topicId, questionId, operations)
+      let reportsResolved = true
+      if (resolveReports) {
+        try {
+          await authoringService.resolveReports(id, 'RESOLVED')
+        } catch {
+          reportsResolved = false
+        }
+      }
+      return { id, reportsResolved }
+    },
+    onMutate: async ({ questionId, operations, resolveReports }) => {
+      const localId = questionId ?? optimisticId()
+      const transaction = await optimisticUpdate(client, [['authoring'], ['topic', topicId], ['topics'], queryKeys.home()], () => {
+        client.setQueryData<QuestionEditorView[]>(queryKeys.authoring.questions(topicId), (list) => {
+          const next = applyQuestionOperations(
+            list?.find((question) => question.questionId === localId),
+            localId,
+            operations,
+          )
+          return next
+            ? list?.some((question) => question.questionId === localId)
+              ? list.map((question) => (question.questionId === localId ? next : question))
+              : [next, ...(list ?? [])]
+            : list
+        })
+        syncApprovedCount(client, topicId)
+      })
+      const reportTransaction = resolveReports
+        ? await optimisticUpdate(client, [['authoring']], () => {
+            patchQuestion(client, topicId, localId, (question) => ({ ...question, openReportCount: 0 }))
+            client.setQueriesData<ReportedQuestion[]>({ queryKey: queryKeys.authoring.reports(topicId) }, (items) =>
+              items?.filter((item) => item.question.questionId !== localId),
+            )
+          })
+        : undefined
+      return { ...transaction, reportTransaction, localId }
+    },
+    onSuccess: ({ id, reportsResolved }, _variables, context) => {
+      if (!reportsResolved) {
+        context.reportTransaction?.rollback()
+        toast.error('Question enregistrée, mais les signalements restent à clore', retryHint)
+      }
+      patchQuestion(client, topicId, context.localId, (question) => ({ ...question, questionId: id }))
       toast.success('Question enregistrée')
     },
-    onError: () => toast.error("La question n'a pas pu être enregistrée", retryHint),
+    onError: (error, _variables, context) => {
+      context?.reportTransaction?.rollback()
+      context?.rollback()
+      if ('completedOperations' in error && Array.isArray(error.completedOperations) && 'questionId' in error && typeof error.questionId === 'string') {
+        const id = error.questionId
+        const completed = error.completedOperations as QuestionOperation[]
+        client.setQueryData<QuestionEditorView[]>(queryKeys.authoring.questions(topicId), (list) => {
+          const next = applyQuestionOperations(
+            list?.find((question) => question.questionId === id),
+            id,
+            completed,
+          )
+          return next
+            ? list?.some((question) => question.questionId === id)
+              ? list.map((question) => (question.questionId === id ? next : question))
+              : [next, ...(list ?? [])]
+            : list
+        })
+        syncApprovedCount(client, topicId)
+      }
+      toast.error("La question n'a pas pu être entièrement enregistrée", retryHint)
+    },
   })
 }
 
@@ -156,13 +284,16 @@ export function useModerateQuestion(topicId: string) {
   return useMutation({
     mutationFn: ({ questionId, decision, reason }: { questionId: string; decision: 'approve' | 'reject'; reason?: string }) =>
       decision === 'approve' ? authoringService.approve(questionId) : authoringService.reject(questionId, reason ?? ''),
-    onSuccess: (_result, { questionId, decision }) => {
-      patchQuestion(client, topicId, questionId, (question) => ({ ...question, status: decision === 'approve' ? 'APPROVED' : 'REJECTED' }))
-      syncApprovedCount(client, topicId)
-      toast.success(decision === 'approve' ? 'Question approuvée' : 'Question rejetée')
+    onMutate: ({ questionId, decision }) =>
+      optimisticUpdate(client, [['authoring'], ['topic', topicId], ['topics'], queryKeys.home()], () => {
+        patchQuestion(client, topicId, questionId, (question) => ({ ...question, status: decision === 'approve' ? 'APPROVED' : 'REJECTED' }))
+        syncApprovedCount(client, topicId)
+      }),
+    onSuccess: (_result, { decision }) => toast.success(decision === 'approve' ? 'Question approuvée' : 'Question rejetée'),
+    onError: (_error, { decision }, context) => {
+      context?.rollback()
+      toast.error(decision === 'approve' ? "La question n'a pas pu être approuvée" : "La question n'a pas pu être rejetée", retryHint)
     },
-    onError: (_error, { decision }) =>
-      toast.error(decision === 'approve' ? "La question n'a pas pu être approuvée" : "La question n'a pas pu être rejetée", retryHint),
   })
 }
 
@@ -192,10 +323,17 @@ export function useDismissReports(topicId: string) {
   const client = useQueryClient()
   return useMutation({
     mutationFn: (questionId: string) => authoringService.resolveReports(questionId, 'DISMISSED'),
-    onSuccess: (_result, questionId) => {
-      patchQuestion(client, topicId, questionId, (question) => ({ ...question, openReportCount: 0 }))
-      toast.success('Signalement clos')
+    onMutate: (questionId: string) =>
+      optimisticUpdate(client, [['authoring']], () => {
+        patchQuestion(client, topicId, questionId, (question) => ({ ...question, openReportCount: 0 }))
+        client.setQueriesData<ReportedQuestion[]>({ queryKey: queryKeys.authoring.reports(topicId) }, (items) =>
+          items?.filter((item) => item.question.questionId !== questionId),
+        )
+      }),
+    onSuccess: () => toast.success('Signalement clos'),
+    onError: (_error, _variables, context) => {
+      context?.rollback()
+      toast.error("Le signalement n'a pas pu être clos", retryHint)
     },
-    onError: () => toast.error("Le signalement n'a pas pu être clos", retryHint),
   })
 }
