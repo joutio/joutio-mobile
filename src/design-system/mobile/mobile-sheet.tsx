@@ -184,7 +184,9 @@ export function MobileSheet({
           enabled={loadMore.enabled}
           loading={loadMore.loading}
           onLoadMore={loadMore.onLoadMore}
-          style={{ flexGrow: 0, flexShrink: 1, flexBasis: 'auto' }}
+          // Pas d'enveloppe : le défilement reste l'enfant direct de la feuille et garde sa hauteur (dans une
+          // enveloppe, il était mesuré à 0 et la liste disparaissait — 2026-11-07).
+          overlay
         >
           <LoadMoreScrollView
             ref={scroller}

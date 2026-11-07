@@ -211,6 +211,9 @@ sans ligne de co-auteur.
   le défilement réserve sa hauteur), comme l'en-tête : le contenu défile entre les deux,
   jamais sous le bouton ; le conteneur natif du pied porte le fond `surface` (`footerStyle`), safe area basse Android comprise (2026-11-07). Android : `dismissThreshold="short"`. Une étape
   suivante s'empile dans une nouvelle feuille. Recherche d'une liste en feuille : `stickyHeader` (collée en haut).
+  **Liste paginée en feuille** (`loadMore`) : le défilement reste l'**enfant direct** de la feuille (`DragToLoadMore`
+  `overlay`, loader en surimpression, traction portée par le défilement). Dans une enveloppe, le `ScrollView` est
+  mesuré à **0 de haut** et la feuille paraît vide (2026-11-07 : « Choisis un sujet », « Qui veux-tu défier ? »).
   **Pages verticales fixes** (2026-11-05, résultat → Détails du duel) : `ScrollView` natif, hauteur de page mesurée
   par `onLayout`, pas de feuille persistante ; bascule décidée au relâcher avec une légère résistance (2026-11-07 : un
   huitième de page tiré, ou un lancer passé 3 %, vitesse ramenée en pt sur Android), sinon retour ; affordance miroir en

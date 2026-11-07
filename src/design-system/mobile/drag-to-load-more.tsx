@@ -84,6 +84,11 @@ interface LoadMoreContextValue {
   register: (ref: AnimatedRef<Animated.ScrollView> | null) => void
   /** Charge la suite sans geste (pied de liste touché) : même loader et même dévoilement que la traction. */
   load: () => void
+  /**
+   * Feuille : pas d'enveloppe autour du défilement (il reste l'enfant direct de la feuille et garde sa hauteur) ; la
+   * traction se pose alors sur le défilement lui-même, et le loader en surimpression.
+   */
+  overlay: boolean
 }
 
 const LoadMoreContext = createContext<LoadMoreContextValue | null>(null)
@@ -109,6 +114,11 @@ export interface DragToLoadMoreProps {
   onLoadMore: () => void
   /** Remplace `flex: 1` (feuille ajustée à son contenu : hauteur naturelle, plafonnée). */
   style?: StyleProp<ViewStyle>
+  /**
+   * Feuille : le défilement reste l'enfant direct du contenu (une enveloppe le laissait sans hauteur, la liste
+   * disparaissait). Le loader se pose en surimpression, le geste sur le défilement.
+   */
+  overlay?: boolean
   /** La liste, dont le défilement est `LoadMoreScrollView` (`renderScrollComponent` d'une FlashList) ou `TabLoadMoreScrollView`. */
   children: ReactNode
 }
@@ -122,7 +132,7 @@ export interface DragToLoadMoreProps {
  *
  * Geste (Gesture Handler) et physique (Reanimated) tournent sur le thread UI.
  */
-export function DragToLoadMore({ enabled, loading = false, onLoadMore, style, children }: DragToLoadMoreProps) {
+export function DragToLoadMore({ enabled, loading = false, onLoadMore, style, overlay = false, children }: DragToLoadMoreProps) {
   const reduced = useReducedMotion()
   // Un rail horizontal (Top 10, puces…) possède le geste : le pan du pied de liste ne doit jamais l'intercepter.
   const horizontalOwned = useHorizontalGesture()?.owned
@@ -360,6 +370,7 @@ export function DragToLoadMore({ enabled, loading = false, onLoadMore, style, ch
         scroller.current = ref
       },
       load: requestLoad,
+      overlay,
       measure: (event) => {
         offset.current = event.contentOffset.y
         content.current = event.contentSize.height
@@ -377,8 +388,28 @@ export function DragToLoadMore({ enabled, loading = false, onLoadMore, style, ch
       },
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [pan, enabled, locked, noBounce, requestLoad],
+    [pan, enabled, locked, noBounce, requestLoad, overlay],
   )
+
+  if (overlay) {
+    return (
+      <LoadMoreContext.Provider value={value}>
+        <>
+          <GestureDetector gesture={pan}>{children}</GestureDetector>
+          <Animated.View
+            pointerEvents="none"
+            accessible={busy}
+            accessibilityLabel="Chargement de la suite"
+            accessibilityLiveRegion="polite"
+            accessibilityState={{ busy }}
+            style={[{ position: 'absolute', left: 0, right: 0, bottom: 0, height: LOADER_HEIGHT, alignItems: 'center', justifyContent: 'center' }, loaderStyle]}
+          >
+            <LoadMoreIndicator pull={pull} threshold={LOAD_MORE_THRESHOLD} loading={busy} />
+          </Animated.View>
+        </>
+      </LoadMoreContext.Provider>
+    )
+  }
 
   return (
     <LoadMoreContext.Provider value={value}>
@@ -411,6 +442,8 @@ type ScrollEvent = NativeSyntheticEvent<NativeScrollEvent>
 export function LoadMoreScrollView({ onScroll, onLayout, onContentSizeChange, ref, ...props }: ScrollViewProps & { ref?: Ref<ScrollViewInstance | null> }) {
   const context = useContext(LoadMoreContext)
   const fallback = useSharedValue(false)
+  const fallbackPull = useSharedValue(0)
+  const pull = context?.pull ?? fallbackPull
   const locked = context?.locked ?? fallback
   const userScrollEnabled = props.scrollEnabled !== false
   // Posé depuis le thread UI par le geste : la liste native se fige sans attendre un rendu React.
@@ -430,12 +463,17 @@ export function LoadMoreScrollView({ onScroll, onLayout, onContentSizeChange, re
     },
     [animatedRef, ref],
   )
+  // Feuille (`overlay`) : la traction est portée par le défilement, faute d'enveloppe autour de lui. Créée avant le
+  // retour anticipé pour que l'ordre des hooks ne change jamais.
+  const overlay = context?.overlay ?? false
+  const listStyle = useAnimatedStyle(() => ({ transform: [{ translateY: overlay ? -pull.value : 0 }] }))
   if (!context) return <ScrollView ref={ref} onScroll={onScroll} onLayout={onLayout} onContentSizeChange={onContentSizeChange} {...props} />
   const { enabled, noBounce, measure, setViewport, setContent } = context
   return (
     <Animated.ScrollView
       scrollEventThrottle={16}
       {...props}
+      style={overlay ? [props.style, listStyle] : props.style}
       ref={setRef}
       animatedProps={animatedProps}
       bounces={Platform.OS === 'ios' && enabled && noBounce ? false : props.bounces}
