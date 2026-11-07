@@ -8,7 +8,7 @@ import { Text } from '../primitives/text'
 import { useTheme } from '../theme/theme-provider'
 import { tokens } from '../tokens.generated'
 import { HAIRLINE } from '../theme/hairline'
-import { LOAD_MORE_THRESHOLD, useLoadMorePull } from './drag-to-load-more'
+import { LOAD_MORE_THRESHOLD, useLoadMoreAction, useLoadMorePull } from './drag-to-load-more'
 
 export type FeedFooterState = 'more' | 'loading' | 'error' | 'end'
 
@@ -141,6 +141,9 @@ function PullHintBody({
   style?: StyleProp<ViewStyle>
 }) {
   const { colors } = useTheme()
+  // Le pied touché charge par le même chemin que la traction (`DragToLoadMore`) : loader sous la liste, puis dévoilement
+  // des nouveaux éléments. Appeler la requête directement les laissait sous le bas de l'écran, rognés (2026-11-07).
+  const load = useLoadMoreAction()
   const fade = useAnimatedStyle(() => ({ opacity: interpolate(pull.value, [0, LOAD_MORE_THRESHOLD * 0.35], [1, 0], 'clamp') }))
   return (
     <Animated.View style={[{ alignItems: 'center' }, fade, style]}>
@@ -149,7 +152,7 @@ function PullHintBody({
         accessibilityLabel={remainingLabel ? `Charger la suite, ${remainingLabel}` : 'Charger la suite'}
         accessibilityHint="Ou tire la liste vers le haut"
         pressedScale={0.98}
-        onPress={onLoadMore}
+        onPress={load ?? onLoadMore}
         style={{
           minHeight: 44,
           alignItems: 'center',

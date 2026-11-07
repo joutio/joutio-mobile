@@ -44,8 +44,13 @@ const MIN_LOADING_MS = 600
 const NEAR_END = 120
 /** Part de la hauteur visible dévoilée après l'arrivée de la suite : on voit les nouveaux éléments en entier. */
 const REVEAL = 0.5
-/** Attente maximale (frames) de la mesure du nouveau contenu avant de refermer sans compenser. */
+/** Attente maximale (frames) de la stabilisation de la hauteur du contenu avant de compenser. */
 const SETTLE_FRAMES = 30
+/**
+ * Requête qui n'aboutit pas (hors connexion : React Query met la requête en pause, `isFetchingNextPage` reste vrai) :
+ * au-delà de ce délai, la liste se referme au lieu de rester tirée avec son loader qui tourne (2026-11-07).
+ */
+const LOAD_TIMEOUT_MS = 12_000
 /** Ressort du retour et de la fermeture : sans rebond visible, comme un pull-to-refresh. */
 const SPRING = { damping: 26, stiffness: 260, mass: 1 }
 
@@ -77,6 +82,8 @@ interface LoadMoreContextValue {
   pull: SharedValue<number>
   /** Le défilement s'enregistre : à la fin du chargement, la liste défile jusqu'aux nouveaux éléments. */
   register: (ref: AnimatedRef<Animated.ScrollView> | null) => void
+  /** Charge la suite sans geste (pied de liste touché) : même loader et même dévoilement que la traction. */
+  load: () => void
 }
 
 const LoadMoreContext = createContext<LoadMoreContextValue | null>(null)
@@ -84,6 +91,14 @@ const LoadMoreContext = createContext<LoadMoreContextValue | null>(null)
 /** Traction du `DragToLoadMore` parent, `null` hors de lui. */
 export function useLoadMorePull() {
   return useContext(LoadMoreContext)?.pull ?? null
+}
+
+/**
+ * Charge la suite du `DragToLoadMore` parent (pied de liste : le bouton doit passer par la traction, sinon les nouveaux
+ * éléments arrivent sous le bas de la liste, rognés et sans dévoilement). `null` hors de lui.
+ */
+export function useLoadMoreAction() {
+  return useContext(LoadMoreContext)?.load ?? null
 }
 
 export interface DragToLoadMoreProps {
@@ -121,18 +136,30 @@ export function DragToLoadMore({ enabled, loading = false, onLoadMore, style, ch
   /** 0 libre, 1 traction en cours, 2 chargement. */
   const phase = useSharedValue(0)
   const enabledValue = useSharedValue(enabled)
+  /** Mêmes valeurs hors du thread UI (pied touché) : un ref plutôt qu'une lecture de `SharedValue` en JS. */
+  const enabledRef = useRef(enabled)
   useEffect(() => {
     enabledValue.value = enabled
+    enabledRef.current = enabled
   }, [enabled, enabledValue])
 
   const locked = useSharedValue(false)
   const [noBounce, setNoBounce] = useState(false)
   const [busy, setBusy] = useState(false)
+  const busyRef = useRef(false)
+  useEffect(() => {
+    busyRef.current = busy
+  }, [busy])
+  const onLoadMoreRef = useRef(onLoadMore)
+  useEffect(() => {
+    onLoadMoreRef.current = onLoadMore
+  }, [onLoadMore])
   const content = useRef(0)
   const viewportHeight = useRef(0)
   const offset = useRef(0)
   const startedAt = useRef(0)
   const contentAtStart = useRef(0)
+  const offsetAtStart = useRef(0)
   const scroller = useRef<AnimatedRef<Animated.ScrollView> | null>(null)
 
   const updateEnd = () => {
@@ -143,12 +170,26 @@ export function DragToLoadMore({ enabled, loading = false, onLoadMore, style, ch
     setNoBounce((current) => (current === near ? current : near))
   }
 
-  const start = () => {
+  /** Début commun aux deux chemins (traction, pied touché) : le loader reste ouvert tant que la requête tourne. */
+  const begin = useCallback(() => {
     startedAt.current = Date.now()
     contentAtStart.current = content.current
+    offsetAtStart.current = offset.current
+    busyRef.current = true
     setBusy(true)
-    onLoadMore()
-  }
+    onLoadMoreRef.current()
+  }, [])
+
+  const start = begin
+
+  /** Pied de liste touché : sans geste, c'est ici que la phase de chargement et la traction sont posées. */
+  const requestLoad = useCallback(() => {
+    if (busyRef.current || !enabledRef.current) return
+    phase.value = 2
+    locked.value = false
+    pull.value = withSpring(LOADER_HEIGHT, SPRING)
+    begin()
+  }, [begin, locked, phase, pull])
 
   /** Dernière position du doigt (absoluteY) et départ en X, pour décider à la main de l'activation. */
   const lastY = useSharedValue(0)
@@ -231,33 +272,56 @@ export function DragToLoadMore({ enabled, loading = false, onLoadMore, style, ch
 
   // Fin de la requête (au moins MIN_LOADING_MS) : la liste se referme **sur les nouveaux éléments** (2026-11-07).
   // Refermer seulement (pull → 0) laissait le défilement en place : la suite arrivait au ras du bas de l'écran, rognée.
-  // Dès que le nouveau contenu est mesuré, dans la même frame sur le thread UI, la traction retombe et le défilement
-  // avance d'autant — rien ne bouge à l'écran, la zone du loader montre le début de la suite —, puis la liste défile
-  // en douceur pour la dévoiler.
+  // Dès que la hauteur du contenu est stabilisée, dans la même frame sur le thread UI, la traction retombe et le
+  // défilement avance d'autant — rien ne bouge à l'écran, la zone du loader montre le début de la suite —, puis la
+  // liste défile pour la dévoiler.
   useEffect(() => {
-    if (!busy || loading) return
+    if (!busy) return
     let cancelled = false
     let frame: number | null = null
     const close = () => {
+      if (cancelled) return
       pull.value = withSpring(0, SPRING)
       phase.value = 0
       setBusy(false)
     }
-    const settle = (frames: number) => {
+    // Requête qui n'aboutit pas (hors connexion : elle est en pause, `isFetchingNextPage` reste vrai) : la liste se
+    // referme au lieu de rester tirée avec un loader qui tourne indéfiniment (2026-11-07).
+    if (loading) {
+      const guard = setTimeout(close, LOAD_TIMEOUT_MS)
+      return () => {
+        cancelled = true
+        clearTimeout(guard)
+      }
+    }
+    const settle = (frames: number, previous: number | null) => {
       if (cancelled) return
       const grown = content.current - contentAtStart.current
       const ref = scroller.current
-      if (grown < LOADER_HEIGHT && frames < SETTLE_FRAMES) {
-        frame = requestAnimationFrame(() => settle(frames + 1))
+      // Une liste virtualisée rend la suite en plusieurs fois : on attend que la hauteur se stabilise (deux mesures
+      // égales) plutôt qu'une croissance donnée — sinon une page courte (dernier élément, pied plus court) n'était
+      // jamais compensée, et les nouveaux éléments restaient rognés en bas.
+      // Deux mesures à 2 pt près (une image qui se charge déplace la hauteur d'un pixel).
+      const stable = previous !== null && Math.abs(grown - previous) <= 2
+      if (ref && frames < SETTLE_FRAMES && !stable) {
+        frame = requestAnimationFrame(() => settle(frames + 1, grown))
         return
       }
-      if (grown < LOADER_HEIGHT || !ref) {
+      if (!ref || content.current <= 0 || viewportHeight.current <= 0) {
         close()
         return
       }
-      const from = offset.current + LOADER_HEIGHT
-      const max = Math.max(from, content.current - viewportHeight.current)
-      const to = Math.min(max, from + viewportHeight.current * REVEAL)
+      // Le joueur a remonté la liste pendant la requête : on ne la déplace pas sous ses yeux.
+      if (offset.current < offsetAtStart.current - 8) {
+        close()
+        return
+      }
+      const end = Math.max(0, content.current - viewportHeight.current)
+      // Rien ne bouge à l'écran : la traction retombe de la hauteur du loader et le défilement avance d'autant.
+      const from = Math.min(offset.current + LOADER_HEIGHT, end)
+      // Puis on dévoile : une demi-page quand la suite est longue, le bas de la liste quand elle est courte — dans les
+      // deux cas les nouveaux éléments sont visibles en entier, jamais coupés par le bas de l'écran.
+      const to = Math.min(end, from + viewportHeight.current * REVEAL)
       const animate = !reduced
       scheduleOnUI(() => {
         'worklet'
@@ -268,7 +332,7 @@ export function DragToLoadMore({ enabled, loading = false, onLoadMore, style, ch
       phase.value = 0
       setBusy(false)
     }
-    const timer = setTimeout(() => settle(0), Math.max(0, MIN_LOADING_MS - (Date.now() - startedAt.current)))
+    const timer = setTimeout(() => settle(0, null), Math.max(0, MIN_LOADING_MS - (Date.now() - startedAt.current)))
     return () => {
       cancelled = true
       clearTimeout(timer)
@@ -295,6 +359,7 @@ export function DragToLoadMore({ enabled, loading = false, onLoadMore, style, ch
       register: (ref) => {
         scroller.current = ref
       },
+      load: requestLoad,
       measure: (event) => {
         offset.current = event.contentOffset.y
         content.current = event.contentSize.height
@@ -312,7 +377,7 @@ export function DragToLoadMore({ enabled, loading = false, onLoadMore, style, ch
       },
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [pan, enabled, locked, noBounce],
+    [pan, enabled, locked, noBounce, requestLoad],
   )
 
   return (
