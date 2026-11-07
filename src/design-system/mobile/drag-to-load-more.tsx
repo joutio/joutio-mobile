@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode, type Ref } from 'react'
+import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode, type Ref } from 'react'
 import {
   Platform,
   ScrollView,
@@ -157,9 +157,22 @@ export function DragToLoadMore({ enabled, loading = false, onLoadMore, style, ov
   const [noBounce, setNoBounce] = useState(false)
   const [busy, setBusy] = useState(false)
   const busyRef = useRef(false)
+  /** La requête a rendu sa page : le loader s'efface sans attendre la refermeture de la liste (2026-11-07). */
+  const [dataReady, setDataReady] = useState(false)
+  /** La requête a été vue en cours : évite d'effacer le loader pendant la frame où elle démarre. */
+  const fetchingSeen = useRef(false)
   useEffect(() => {
     busyRef.current = busy
   }, [busy])
+  useEffect(() => {
+    if (loading) fetchingSeen.current = true
+  }, [loading])
+  // La page est arrivée : le loader disparaît **dans la frame où les nouveaux éléments apparaissent** — en `useEffect`,
+  // ou en jouant seulement l'opacité, ils s'affichaient une frame avec lui (liste qui recale son bas avant la
+  // refermeture). `useLayoutEffect` : le démontage est appliqué avant la peinture de ce rendu.
+  useLayoutEffect(() => {
+    if (busy && fetchingSeen.current && !loading) setDataReady(true)
+  }, [busy, loading])
   const onLoadMoreRef = useRef(onLoadMore)
   useEffect(() => {
     onLoadMoreRef.current = onLoadMore
@@ -186,11 +199,16 @@ export function DragToLoadMore({ enabled, loading = false, onLoadMore, style, ov
     contentAtStart.current = content.current
     offsetAtStart.current = offset.current
     busyRef.current = true
+    fetchingSeen.current = false
+    setDataReady(false)
     setBusy(true)
     onLoadMoreRef.current()
   }, [])
 
   const start = begin
+
+  /** Le loader revient dès qu'une nouvelle traction commence (il est démonté une fois la page précédente arrivée). */
+  const showLoader = useCallback(() => setDataReady(false), [])
 
   /** Pied de liste touché : sans geste, c'est ici que la phase de chargement et la traction sont posées. */
   const requestLoad = useCallback(() => {
@@ -255,7 +273,10 @@ export function DragToLoadMore({ enabled, loading = false, onLoadMore, style, ov
       const over = anchor.value - event.absoluteY
       const next = over > 0 ? rubberBand(over, viewport.value) : 0
       pull.value = next
-      if (next > 0 && phase.value === 0) phase.value = 1
+      if (next > 0 && phase.value === 0) {
+        phase.value = 1
+        scheduleOnRN(showLoader)
+      }
       const nowArmed = next >= LOAD_MORE_THRESHOLD
       if (nowArmed !== armed.value) {
         armed.value = nowArmed
@@ -335,35 +356,27 @@ export function DragToLoadMore({ enabled, loading = false, onLoadMore, style, ov
       const animate = !reduced
       scheduleOnUI(() => {
         'worklet'
-        // Le loader s'éteint **une frame avant** que la liste se pose : appliqués dans la même frame, l'opacité et le
-        // défilement natif n'arrivent pas ensemble et les nouveaux éléments apparaissaient avec le loader encore là
-        // (2026-11-07). Une frame plus tard, le défilement est déjà en place quand l'écran se redessine.
-        // Le loader s'éteint **une frame avant** que la liste se pose : écrits dans la même frame, l'opacité et le
-        // défilement natif n'arrivent pas ensemble, et les nouveaux éléments apparaissaient avec le loader encore là
-        // (2026-11-07). Le défilement part au rafraîchissement suivant, quand l'opacité est déjà appliquée.
         pull.value = 0
-        const reveal = () => {
-          'worklet'
-          scrollTo(ref, 0, from, false)
-          if (to > from) scrollTo(ref, 0, to, animate)
-        }
-        if (typeof requestAnimationFrame === 'function') requestAnimationFrame(reveal)
-        else reveal()
+        scrollTo(ref, 0, from, false)
+        if (to > from) scrollTo(ref, 0, to, animate)
       })
       phase.value = 0
       setBusy(false)
     }
-    const timer = setTimeout(() => settle(0, null), Math.max(0, MIN_LOADING_MS - (Date.now() - startedAt.current)))
+    // La page est déjà là (`dataReady`, posé dans le même rendu qu'elle) : on referme tout de suite, plutôt que dans un
+    // timer — la bande du loader resterait vide sous la liste le temps du délai (2026-11-07).
+    const timer = dataReady ? null : setTimeout(() => settle(0, null), Math.max(0, MIN_LOADING_MS - (Date.now() - startedAt.current)))
+    if (dataReady) settle(0, null)
     return () => {
       cancelled = true
-      clearTimeout(timer)
+      if (timer !== null) clearTimeout(timer)
       if (frame !== null) cancelAnimationFrame(frame)
     }
-  }, [busy, loading, phase, pull, reduced])
+  }, [busy, loading, dataReady, phase, pull, reduced])
 
   const listStyle = useAnimatedStyle(() => ({ transform: [{ translateY: -pull.value }] }))
   const loaderStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(pull.value, [0, LOAD_MORE_THRESHOLD * 0.4], [0, 1], 'clamp'),
+    opacity: dataReady ? 0 : interpolate(pull.value, [0, LOAD_MORE_THRESHOLD * 0.4], [0, 1], 'clamp'),
     // Centré dans l'espace libéré sous la liste.
     transform: [
       { translateY: (LOADER_HEIGHT - pull.value) / 2 },
@@ -407,16 +420,21 @@ export function DragToLoadMore({ enabled, loading = false, onLoadMore, style, ov
       <LoadMoreContext.Provider value={value}>
         <>
           <GestureDetector gesture={pan}>{children}</GestureDetector>
-          <Animated.View
-            pointerEvents="none"
-            accessible={busy}
-            accessibilityLabel="Chargement de la suite"
-            accessibilityLiveRegion="polite"
-            accessibilityState={{ busy }}
-            style={[{ position: 'absolute', left: 0, right: 0, bottom: 0, height: LOADER_HEIGHT, alignItems: 'center', justifyContent: 'center' }, loaderStyle]}
-          >
-            <LoadMoreIndicator pull={pull} threshold={LOAD_MORE_THRESHOLD} loading={busy} />
-          </Animated.View>
+          {!dataReady && (
+            <Animated.View
+              pointerEvents="none"
+              accessible={busy}
+              accessibilityLabel="Chargement de la suite"
+              accessibilityLiveRegion="polite"
+              accessibilityState={{ busy }}
+              style={[
+                { position: 'absolute', left: 0, right: 0, bottom: 0, height: LOADER_HEIGHT, alignItems: 'center', justifyContent: 'center' },
+                loaderStyle,
+              ]}
+            >
+              <LoadMoreIndicator pull={pull} threshold={LOAD_MORE_THRESHOLD} loading={busy} />
+            </Animated.View>
+          )}
         </>
       </LoadMoreContext.Provider>
     )
@@ -428,16 +446,18 @@ export function DragToLoadMore({ enabled, loading = false, onLoadMore, style, ov
         <GestureDetector gesture={pan}>
           <Animated.View style={[{ flex: 1 }, style, listStyle]}>{children}</Animated.View>
         </GestureDetector>
-        <Animated.View
-          pointerEvents="none"
-          accessible={busy}
-          accessibilityLabel="Chargement de la suite"
-          accessibilityLiveRegion="polite"
-          accessibilityState={{ busy }}
-          style={[{ position: 'absolute', left: 0, right: 0, bottom: 0, height: LOADER_HEIGHT, alignItems: 'center', justifyContent: 'center' }, loaderStyle]}
-        >
-          <LoadMoreIndicator pull={pull} threshold={LOAD_MORE_THRESHOLD} loading={busy} />
-        </Animated.View>
+        {!dataReady && (
+          <Animated.View
+            pointerEvents="none"
+            accessible={busy}
+            accessibilityLabel="Chargement de la suite"
+            accessibilityLiveRegion="polite"
+            accessibilityState={{ busy }}
+            style={[{ position: 'absolute', left: 0, right: 0, bottom: 0, height: LOADER_HEIGHT, alignItems: 'center', justifyContent: 'center' }, loaderStyle]}
+          >
+            <LoadMoreIndicator pull={pull} threshold={LOAD_MORE_THRESHOLD} loading={busy} />
+          </Animated.View>
+        )}
       </View>
     </LoadMoreContext.Provider>
   )
