@@ -1,3 +1,9 @@
+## [1.20.1](https://github.com/joutio/joutio-mobile-expo/compare/v1.20.0...v1.20.1) (2026-11-07)
+
+### Bug Fixes
+
+* **mobile:** synchronize optimistic mutations and social interactions ([d49d403](https://github.com/joutio/joutio-mobile-expo/commit/d49d403a02d5ec4a70455b5c150842236a07449e))
+
 ## [1.20.0](https://github.com/joutio/joutio-mobile-expo/compare/v1.19.2...v1.20.0) (2026-11-07)
 
 ### Features
