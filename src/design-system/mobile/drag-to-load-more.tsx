@@ -335,9 +335,20 @@ export function DragToLoadMore({ enabled, loading = false, onLoadMore, style, ov
       const animate = !reduced
       scheduleOnUI(() => {
         'worklet'
+        // Le loader s'éteint **une frame avant** que la liste se pose : appliqués dans la même frame, l'opacité et le
+        // défilement natif n'arrivent pas ensemble et les nouveaux éléments apparaissaient avec le loader encore là
+        // (2026-11-07). Une frame plus tard, le défilement est déjà en place quand l'écran se redessine.
+        // Le loader s'éteint **une frame avant** que la liste se pose : écrits dans la même frame, l'opacité et le
+        // défilement natif n'arrivent pas ensemble, et les nouveaux éléments apparaissaient avec le loader encore là
+        // (2026-11-07). Le défilement part au rafraîchissement suivant, quand l'opacité est déjà appliquée.
         pull.value = 0
-        scrollTo(ref, 0, from, false)
-        if (to > from) scrollTo(ref, 0, to, animate)
+        const reveal = () => {
+          'worklet'
+          scrollTo(ref, 0, from, false)
+          if (to > from) scrollTo(ref, 0, to, animate)
+        }
+        if (typeof requestAnimationFrame === 'function') requestAnimationFrame(reveal)
+        else reveal()
       })
       phase.value = 0
       setBusy(false)
