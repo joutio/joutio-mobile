@@ -1,12 +1,11 @@
 import { useState } from 'react'
 import { Platform, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native'
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable'
-import { TrashIcon, type Icon } from '../icons'
+import { CaretRightIcon, TrashIcon, type Icon } from '../icons'
 import { HAIRLINE } from '../theme/hairline'
 import { useTheme } from '../theme/theme-provider'
 import { tokens, type TierCode } from '../tokens.generated'
 import { Avatar, type Presence } from './avatar'
-import { Button } from './button'
 import { PressableScale } from './pressable-scale'
 import { Text } from './text'
 
@@ -20,8 +19,6 @@ export interface NotificationRowProps {
   /** Joueur à l'origine de la notification. */
   player?: { name: string; src?: string; tier?: TierCode; presence?: Presence }
   unread?: boolean
-  /** Action directe : Jouer, Suivre. */
-  cta?: { label: string; variant?: 'filled' | 'tinted' | 'gray'; loading?: boolean; onPress?: () => void }
   onPress?: () => void
   /** Révélée en balayant vers la gauche ; aussi proposée aux lecteurs d'écran (action « Supprimer »). */
   onDelete?: () => void
@@ -29,19 +26,11 @@ export interface NotificationRowProps {
   style?: StyleProp<ViewStyle>
 }
 
-/** Ligne de la boîte de réception : toucher ouvre la cible, balayer révèle Supprimer. */
-export function NotificationRow({
-  title,
-  sub,
-  icon: IconComponent,
-  player,
-  unread = false,
-  cta,
-  onPress,
-  onDelete,
-  last = false,
-  style,
-}: NotificationRowProps) {
+/**
+ * Ligne de la boîte de réception : toucher ouvre l'écran qui propose l'action (défis, salon, fiche joueur), balayer
+ * révèle Supprimer. **Aucun bouton d'action dans la ligne** (2026-11-07) : la notification ne fait que rediriger.
+ */
+export function NotificationRow({ title, sub, icon: IconComponent, player, unread = false, onPress, onDelete, last = false, style }: NotificationRowProps) {
   const { colors, radius } = useTheme()
   const [pressed, setPressed] = useState(false)
   const dimmed = pressed && Platform.OS !== 'android'
@@ -90,19 +79,7 @@ export function NotificationRow({
           </View>
           {unread && <View style={{ width: 8, height: 8, borderRadius: radius.full, backgroundColor: colors.accent }} />}
         </View>
-        {cta && (
-          <Button
-            size="S"
-            variant={cta.variant ?? 'filled'}
-            tone={cta.variant === 'gray' ? 'neutral' : 'accent'}
-            loading={cta.loading}
-            onPress={cta.onPress}
-            accessibilityLabel={`${cta.label} : ${title}`}
-            style={{ alignSelf: 'center' }}
-          >
-            {cta.label}
-          </Button>
-        )}
+        <CaretRightIcon size={16} color={colors.muted} style={{ alignSelf: 'center' }} />
       </View>
       {!last && <View pointerEvents="none" style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: HAIRLINE, backgroundColor: colors.border }} />}
     </View>

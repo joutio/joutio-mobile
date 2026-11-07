@@ -13,8 +13,7 @@ import {
   type Icon,
 } from '@/design-system'
 import { duration } from '@/features/challenges/lib/challenges-service'
-import { useAcceptChallenge } from '@/features/challenges/hooks/use-challenges'
-import { useFollowPlayer, usePlayerProfile } from '@/features/social/hooks/use-social'
+import { usePlayerProfile } from '@/features/social/hooks/use-social'
 import type { NotificationView } from '@/lib/realtime/personal-notifications'
 import type { ChallengeView } from '@/shared/types/bff'
 import { avatarSvg } from '@/shared/utils/avatar'
@@ -22,7 +21,6 @@ import { tierOf } from '@/shared/utils/tier'
 import { topicName } from '@/shared/utils/topic-name'
 import { isExpired, isUnread, relativeTime } from '../lib/notifications-service'
 import { useMarkRead, useDeleteNotification } from '../hooks/use-notifications'
-import { confirmUnfollow } from '@/features/social/lib/confirm-unfollow'
 
 /** Pictogramme des notifications sans joueur (système). */
 const ICONS: Record<NotificationView['type'], Icon> = {
@@ -60,10 +58,15 @@ function titleOf(notification: NotificationView, name: string) {
   }
 }
 
-/** Cible au toucher, comme `notificationTargetPath` de `joutio-web`. */
+/**
+ * Cible au toucher, comme `notificationTargetPath` de `joutio-web` : l'écran **qui propose l'action** (2026-11-07, plus
+ * aucun bouton dans la ligne). Nouvel abonné ou défi refusé → fiche joueur (Suivre, Défier) ; défi reçu → Défis
+ * (Jouer, Refuser) ; défi accepté, relance → le salon.
+ */
 function open(notification: NotificationView) {
   switch (notification.type) {
     case 'FOLLOW':
+    case 'CHALLENGE_DECLINED':
       if (notification.actorId) router.push({ pathname: '/home/player/[id]', params: { id: notification.actorId } })
       return
     case 'CHALLENGE_RECEIVED':
@@ -84,15 +87,13 @@ function open(notification: NotificationView) {
 }
 
 /**
- * Une notification : joueur à l'origine (fiche en cache), titre et contexte ; Jouer sur un défi reçu encore ouvert,
- * Suivre sur un nouvel abonné. Toucher marque comme lue puis ouvre la cible ; balayer supprime.
+ * Une notification : joueur à l'origine (fiche en cache), titre et contexte. Toucher marque comme lue puis ouvre
+ * l'écran de l'action ; balayer supprime.
  */
 export function NotificationItem({ notification, challenge, last }: { notification: NotificationView; challenge: ChallengeView | undefined; last: boolean }) {
   const actor = usePlayerProfile(notification.actorId ?? '', Boolean(notification.actorId))
   const read = useMarkRead()
   const remove = useDeleteNotification()
-  const accept = useAcceptChallenge()
-  const follow = useFollowPlayer(notification.actorId ?? '')
   const profile = actor.data
   const name = profile?.pseudonym ?? 'Un joueur'
   const unread = isUnread(notification)
@@ -119,25 +120,6 @@ export function NotificationItem({ notification, challenge, last }: { notificati
           : undefined
       }
       unread={unread}
-      cta={
-        pending && challenge
-          ? {
-              label: 'Jouer',
-              loading: accept.isPending,
-              onPress: () => {
-                markRead()
-                accept.mutate(challenge)
-              },
-            }
-          : notification.type === 'FOLLOW' && profile && !profile.isMe
-            ? {
-                label: profile.following ? 'Suivi' : 'Suivre',
-                variant: profile.following ? 'gray' : 'tinted',
-                loading: follow.isPending,
-                onPress: () => (profile.following ? confirmUnfollow(profile.pseudonym, () => follow.mutate(false)) : follow.mutate(true)),
-              }
-            : undefined
-      }
       onPress={() => {
         markRead()
         open(notification)
