@@ -32,6 +32,7 @@ import { boardSub, MyBoardRow } from './board-tab'
 import { RankingsFiltersSheet } from './rankings-filters-sheet'
 import { userAvatar } from '@/shared/utils/avatar'
 import { feedFooterProps, pagedQuery } from '@/shared/utils/paging'
+import { useRefreshActive } from '@/shared/hooks/use-refresh-active'
 
 const GUTTER = tokens.space[5]
 const MONTH = new Intl.DateTimeFormat('fr-FR', { month: 'long' })
@@ -67,6 +68,7 @@ export function RankingsScreen() {
 
   const filters = useMemo(() => ({ ...filterState, month }), [filterState, month])
   const list = useTopicLeaderboardPage(topicId, filters, Boolean(topicId))
+  const pageRefresh = useRefreshActive()
   const active = filterState.period !== DEFAULT_RANKING_FILTERS.period || filterState.scope !== DEFAULT_RANKING_FILTERS.scope
   const hasCountry = Boolean(me.data?.country)
 
@@ -171,6 +173,8 @@ export function RankingsScreen() {
           onLoadMore={() => void list.fetchNextPage()}
         >
           <FlashList
+            refreshing={pageRefresh.refreshing}
+            onRefresh={pageRefresh.onRefresh}
             ref={listRef}
             renderScrollComponent={LoadMoreScrollView}
             maintainVisibleContentPosition={{ disabled: true }}

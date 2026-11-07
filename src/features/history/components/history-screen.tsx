@@ -30,6 +30,7 @@ import { useHistoryGames } from '../hooks/use-history'
 import { DEFAULT_HISTORY_FILTERS, type HistoryFilterState } from '../lib/history-service'
 import { HistoryFiltersSheet } from './history-filters-sheet'
 import { feedFooterProps, pagedQuery } from '@/shared/utils/paging'
+import { useRefreshActive } from '@/shared/hooks/use-refresh-active'
 
 const GUTTER = tokens.space[5]
 const OUTCOMES: Partial<Record<GameOutcome, MatchOutcome>> = { WIN: 'win', LOSS: 'loss', DRAW: 'draw' }
@@ -71,6 +72,7 @@ export function HistoryScreen() {
 
   const filters = useMemo(() => ({ ...filterState, topicId: params.topicId, opponentId: params.opponentId }), [filterState, params.topicId, params.opponentId])
   const list = useHistoryGames(userId, filters, Boolean(userId))
+  const pageRefresh = useRefreshActive()
   const active = filterState.opponentType !== undefined || filterState.outcome !== 'ALL' || filterState.sort !== 'RECENT'
 
   const games = useMemo(() => list.data?.pages.flatMap((page) => page.content).filter((game) => OUTCOMES[game.outcome]) ?? [], [list.data])
@@ -184,6 +186,8 @@ export function HistoryScreen() {
           onLoadMore={() => void list.fetchNextPage()}
         >
           <FlashList
+            refreshing={pageRefresh.refreshing}
+            onRefresh={pageRefresh.onRefresh}
             ref={listRef}
             renderScrollComponent={LoadMoreScrollView}
             maintainVisibleContentPosition={{ disabled: true }}

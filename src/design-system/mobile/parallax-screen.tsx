@@ -1,6 +1,7 @@
 import { Image } from 'expo-image'
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react'
-import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native'
+import { Platform, RefreshControl, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native'
+import { GestureDetector } from 'react-native-gesture-handler'
 import Animated, {
   interpolate,
   interpolateColor,
@@ -10,6 +11,7 @@ import Animated, {
   type AnimatedRef,
   type AnimatedStyle,
   type SharedValue,
+  useDerivedValue,
 } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { scheduleOnRN } from 'react-native-worklets'
@@ -24,6 +26,8 @@ import { TOP_BAR_HEIGHT } from './mobile-top-bar'
 import { HAIRLINE } from '../theme/hairline'
 import { Skeleton } from '../primitives/skeleton'
 import { useTransitionDone } from './use-transition-done'
+import { useOverscrollStretch } from './overscroll-stretch'
+import { PullIndicator } from './page-refresh'
 
 /** Hauteur de la zone image, safe area comprise (`fiche-sujet.md` § 1). */
 export const HERO_HEIGHT = 320
@@ -226,6 +230,8 @@ export interface ParallaxScreenProps {
   style?: StyleProp<ViewStyle>
   /** Accès au défilement (retour en haut, positionnement). */
   scrollRef?: AnimatedRef<Animated.ScrollView>
+  /** Tirer pour rafraîchir (2026-11-07) : l'indicateur reste affiché jusqu'à la fin de la promesse. */
+  onRefresh?: () => Promise<unknown> | void
   children: ReactNode
 }
 
@@ -249,6 +255,7 @@ export function ParallaxScreen({
   inTabs = false,
   style,
   scrollRef,
+  onRefresh,
   children,
 }: ParallaxScreenProps) {
   const { colors } = useTheme()
@@ -273,7 +280,19 @@ export function ParallaxScreen({
   })
   const rightContent = typeof right === 'function' ? right(docked) : right
 
-  const imageStyle = useAnimatedStyle(() => ({ transform: heroImageTransform(scroll.value, reduced) }))
+  // Android : le tiré en haut de page zoome l'image comme le rebond d'iOS.
+  const stretch = useOverscrollStretch(scroll)
+  const imageStyle = useAnimatedStyle(() => ({ transform: heroImageTransform(scroll.value - stretch.pull.value, reduced) }))
+  // iOS : le spinner natif passe sous l'image (qui déborde vers le haut) ; on dessine le nôtre par-dessus.
+  const [refreshing, setRefreshing] = useState(false)
+  const overPull = useDerivedValue(() => Math.max(0, -scroll.value))
+  const refresh = () => {
+    if (!onRefresh) return
+    setRefreshing(true)
+    Promise.resolve(onRefresh())
+      .catch(() => undefined)
+      .finally(() => setRefreshing(false))
+  }
   const titleStyle = useAnimatedStyle(() => ({ opacity: heroTitleOpacity(scroll.value, titleStart.value, titleLength.value) }))
   const barStyle = useAnimatedStyle(() => ({ opacity: progress.value }))
   const statusScrim = useAnimatedStyle(() => ({ opacity: 1 - progress.value }))
@@ -281,67 +300,83 @@ export function ParallaxScreen({
   return (
     <ParallaxProgressProvider progress={progress}>
       <View style={[{ flex: 1, backgroundColor: colors.bg }, style]} onLayout={(event) => setViewport(event.nativeEvent.layout.height)}>
-        <Animated.ScrollView
-          ref={scrollRef}
-          onScroll={onScroll}
-          scrollEventThrottle={16}
-          showsVerticalScrollIndicator={false}
-          contentInsetAdjustmentBehavior="never"
-          overScrollMode="never"
-        >
-          {/* Découpe qui déborde vers le haut (Reacticx) : au tiré, l'image zoomée couvre le haut de l'écran. */}
-          <View style={{ marginTop: -HERO_HEIGHT * 4, paddingTop: HERO_HEIGHT * 4, overflow: 'hidden' }}>
-            <View style={{ height: HERO_HEIGHT, backgroundColor: colors.surface }} accessible accessibilityRole="header" accessibilityLabel={title}>
-              {image !== undefined && (
-                <Animated.View style={[StyleSheet.absoluteFill, imageStyle]}>
-                  <Image source={image} contentFit="cover" style={StyleSheet.absoluteFill} />
+        <GestureDetector gesture={stretch.pan}>
+          <Animated.ScrollView
+            ref={scrollRef}
+            onScroll={onScroll}
+            scrollEventThrottle={16}
+            showsVerticalScrollIndicator={false}
+            contentInsetAdjustmentBehavior="never"
+            overScrollMode="never"
+            refreshControl={
+              onRefresh ? (
+                <RefreshControl
+                  refreshing={refreshing}
+                  onRefresh={refresh}
+                  tintColor={Platform.OS === 'ios' ? 'transparent' : colors.muted}
+                  colors={[colors.accentInk]}
+                  progressBackgroundColor={colors.surface}
+                  progressViewOffset={barHeight}
+                />
+              ) : undefined
+            }
+          >
+            {/* Découpe qui déborde vers le haut (Reacticx) : au tiré, l'image zoomée couvre le haut de l'écran. */}
+            <View style={{ marginTop: -HERO_HEIGHT * 4, paddingTop: HERO_HEIGHT * 4, overflow: 'hidden' }}>
+              <View style={{ height: HERO_HEIGHT, backgroundColor: colors.surface }} accessible accessibilityRole="header" accessibilityLabel={title}>
+                {image !== undefined && (
+                  <Animated.View style={[StyleSheet.absoluteFill, imageStyle]}>
+                    <Image source={image} contentFit="cover" style={StyleSheet.absoluteFill} />
+                  </Animated.View>
+                )}
+                {/* Fondu vers le fond en bas ; en haut, la barre d'état reste lisible sur n'importe quelle image. */}
+                <View
+                  style={[
+                    StyleSheet.absoluteFill,
+                    { experimental_backgroundImage: `linear-gradient(to top, ${colors.bg}, ${alpha(colors.bg, 0.4)}, transparent)` },
+                  ]}
+                />
+                <Animated.View
+                  onLayout={(event) => {
+                    const { y, height } = event.nativeEvent.layout
+                    titleStart.value = y - barHeight
+                    titleLength.value = height
+                  }}
+                  style={[
+                    {
+                      position: 'absolute',
+                      left: tokens.space[5],
+                      right: tokens.space[5],
+                      bottom: tokens.space[4],
+                      gap: tokens.space[2],
+                      alignItems: centered ? 'center' : 'flex-start',
+                    },
+                    titleStyle,
+                  ]}
+                >
+                  {eyebrow}
+                  <Text variant="title1" align={centered ? 'center' : 'left'}>
+                    {title}
+                  </Text>
                 </Animated.View>
-              )}
-              {/* Fondu vers le fond en bas ; en haut, la barre d'état reste lisible sur n'importe quelle image. */}
-              <View
-                style={[
-                  StyleSheet.absoluteFill,
-                  { experimental_backgroundImage: `linear-gradient(to top, ${colors.bg}, ${alpha(colors.bg, 0.4)}, transparent)` },
-                ]}
-              />
-              <Animated.View
-                onLayout={(event) => {
-                  const { y, height } = event.nativeEvent.layout
-                  titleStart.value = y - barHeight
-                  titleLength.value = height
-                }}
-                style={[
-                  {
-                    position: 'absolute',
-                    left: tokens.space[5],
-                    right: tokens.space[5],
-                    bottom: tokens.space[4],
-                    gap: tokens.space[2],
-                    alignItems: centered ? 'center' : 'flex-start',
-                  },
-                  titleStyle,
-                ]}
-              >
-                {eyebrow}
-                <Text variant="title1" align={centered ? 'center' : 'left'}>
-                  {title}
-                </Text>
-              </Animated.View>
-            </View>
-          </View>
-          {intro && <View style={{ paddingHorizontal: tokens.space[5], paddingTop: tokens.space[2], paddingBottom: tokens.space[3] }}>{intro}</View>}
-          {/* Le contenu remplit au moins l'espace sous la barre compacte : assez pour replier, sans défilement à vide. */}
-          <View style={{ minHeight: Math.max(0, viewport - barHeight), paddingBottom: bottomBar || inTabs ? 0 : insets.bottom }}>
-            {ready ? (
-              children
-            ) : (
-              <View style={{ gap: tokens.space[4], paddingHorizontal: tokens.space[5], paddingTop: tokens.space[2] }}>
-                <Skeleton shape="row" />
-                <Skeleton shape="card" />
               </View>
-            )}
-          </View>
-        </Animated.ScrollView>
+            </View>
+            {intro && <View style={{ paddingHorizontal: tokens.space[5], paddingTop: tokens.space[2], paddingBottom: tokens.space[3] }}>{intro}</View>}
+            {/* Le contenu remplit au moins l'espace sous la barre compacte : assez pour replier, sans défilement à vide. */}
+            <View style={{ minHeight: Math.max(0, viewport - barHeight), paddingBottom: bottomBar || inTabs ? 0 : insets.bottom }}>
+              {ready ? (
+                children
+              ) : (
+                <View style={{ gap: tokens.space[4], paddingHorizontal: tokens.space[5], paddingTop: tokens.space[2] }}>
+                  <Skeleton shape="row" />
+                  <Skeleton shape="card" />
+                </View>
+              )}
+            </View>
+          </Animated.ScrollView>
+        </GestureDetector>
+
+        {onRefresh && Platform.OS === 'ios' && <PullIndicator pull={overPull} refreshing={refreshing} top={barHeight} />}
 
         {floating && <View style={{ position: 'absolute', right: tokens.space[5], bottom: tokens.space[5] }}>{floating}</View>}
 

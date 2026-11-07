@@ -21,6 +21,7 @@ import { topicName } from '@/shared/utils/topic-name'
 import { MIN_QUESTIONS, questionsLabel } from '../domain/limits'
 import { useCreateTopic, useCreationLimits, useMyTopics } from '../hooks/use-authoring'
 import { CreateTopicSheet } from './topic-sheets'
+import { useRefreshActive } from '@/shared/hooks/use-refresh-active'
 
 const topicSub = (topic: TopicCardView) =>
   topic.status === 'DRAFT' ? `Brouillon · ${topic.questionsCount} / ${MIN_QUESTIONS} questions` : `Publié · ${questionsLabel(topic.questionsCount)}`
@@ -33,6 +34,7 @@ export function openMyTopic(topicId: string, name: string, category: string | nu
 /** Mes sujets (`creation.md` § 1) : brouillons et publiés, + pour créer. Entrée unique par Réglages. */
 export function MyTopicsScreen() {
   const topics = useMyTopics()
+  const pageRefresh = useRefreshActive()
   const create = useCreateTopic()
   const { limits, askPremium } = useCreationLimits()
   const [createOpen, setCreateOpen] = useState(false)
@@ -97,6 +99,7 @@ export function MyTopicsScreen() {
 
   return (
     <Screen
+      onRefresh={pageRefresh.refresh}
       inTabs
       header={
         <MobileTopBar

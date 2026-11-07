@@ -3,6 +3,8 @@ import * as WebBrowser from 'expo-web-browser'
 import { View } from 'react-native'
 import {
   ArrowCounterClockwiseIcon,
+  CaretRightIcon,
+  PressableScale,
   Avatar,
   Button,
   CheckCircleIcon,
@@ -105,7 +107,11 @@ export function SettingsScreen() {
       overlay={sheets}
       contentStyle={{ gap: tokens.space[6], paddingHorizontal: tokens.space[5], paddingTop: tokens.space[3], paddingBottom: tokens.space[7] }}
     >
-      <View
+      {/* Carte d'identité entièrement touchable (2026-11-07) : le crayon sur l'avatar dit qu'il se modifie. */}
+      <PressableScale
+        accessibilityRole="button"
+        accessibilityLabel="Modifier mon avatar"
+        onPress={() => router.push('/avatar')}
         style={{
           flexDirection: 'row',
           alignItems: 'center',
@@ -115,7 +121,26 @@ export function SettingsScreen() {
           padding: tokens.space[4],
         }}
       >
-        <Avatar name={data?.pseudonym ?? 'Moi'} src={avatar} tier={tier} size="lg" />
+        <View>
+          <Avatar name={data?.pseudonym ?? 'Moi'} src={avatar} tier={tier} size="lg" />
+          <View
+            style={{
+              position: 'absolute',
+              right: -2,
+              bottom: -2,
+              width: 24,
+              height: 24,
+              borderRadius: radius.full,
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: colors.accent,
+              borderWidth: 2,
+              borderColor: colors.surface,
+            }}
+          >
+            <PencilSimpleIcon size={12} weight="bold" color={colors.onAccent} />
+          </View>
+        </View>
         <View style={{ flex: 1, minWidth: 0 }}>
           <Text variant="headline" numberOfLines={1}>
             {data?.pseudonym ?? ''}
@@ -124,10 +149,8 @@ export function SettingsScreen() {
             {data?.email ?? ''}
           </Text>
         </View>
-        <Button size="S" variant="gray" tone="neutral" style={{ alignSelf: 'center' }} onPress={() => router.push('/avatar')}>
-          Avatar
-        </Button>
-      </View>
+        <CaretRightIcon size={16} color={colors.muted} />
+      </PressableScale>
 
       <Section title="Profil">{rows}</Section>
 

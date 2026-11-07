@@ -7,6 +7,7 @@ import { useAvatarPreview } from '@/features/avatar/lib/avatar-preview'
 import { useMe } from '@/features/me'
 import { usePremiumSheet } from '@/features/premium/premium-store'
 import { useMyBadges, useMyRewards } from '../hooks/use-profile'
+import { useRefreshActive } from '@/shared/hooks/use-refresh-active'
 
 /**
  * Récompenses (`profil.md` § 2) : lecture seule, une `RewardCard` par style d'avatar, sans action, puis « Découvrir
@@ -15,6 +16,7 @@ import { useMyBadges, useMyRewards } from '../hooks/use-profile'
 export function RewardsScreen() {
   const me = useMe(true)
   const rewards = useMyRewards()
+  const pageRefresh = useRefreshActive()
   const badges = useMyBadges()
   const showPremium = usePremiumSheet((state) => state.show)
   const preview = useAvatarPreview()
@@ -22,6 +24,7 @@ export function RewardsScreen() {
   const ready = Boolean(me.data && rewards.data)
   return (
     <Screen
+      onRefresh={pageRefresh.refresh}
       inTabs
       header={<MobileTopBar variant="inline" back="Profil" onBack={() => router.back()} title="Récompenses" />}
       contentStyle={{ gap: tokens.space[4], paddingHorizontal: tokens.space[5], paddingTop: tokens.space[2], paddingBottom: tokens.space[7] }}

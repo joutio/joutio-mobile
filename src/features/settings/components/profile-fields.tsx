@@ -1,6 +1,8 @@
+import { router } from 'expo-router'
 import { useState } from 'react'
 import { View } from 'react-native'
 import {
+  Avatar,
   Button,
   CategoryTile,
   EmptyState,
@@ -22,6 +24,7 @@ import {
   UserIcon,
   type CategoryCode,
 } from '@/design-system'
+import { useMyAvatar } from '@/features/avatar/lib/avatar-preview'
 import { pickImage, uploadImage } from '@/features/media/media-service'
 import { useUpdateMe } from '@/features/profile/hooks/use-profile'
 import type { MeView } from '@/shared/types/bff'
@@ -41,6 +44,7 @@ const BANNER_ASPECT: [number, number] = [5, 4]
  * Enregistrer. Les feuilles se rendent hors du défilement de l'écran.
  */
 export function useProfileFields(me: MeView | undefined) {
+  const avatar = useMyAvatar()
   const [field, setField] = useState<FieldId>()
   const [pseudonym, setPseudonym] = useState('')
   const [bio, setBio] = useState('')
@@ -89,6 +93,14 @@ export function useProfileFields(me: MeView | undefined) {
 
   const rows = (
     <ListGroup surface="surface">
+      {/* En tête de section (2026-11-07) : l'avatar se modifie comme les autres champs du profil. */}
+      <ListRow
+        leading={<Avatar name={me?.pseudonym ?? 'Moi'} src={avatar} size="sm" decorative />}
+        label="Avatar"
+        sub="Visage, coiffure, tenue et accessoires"
+        control="chevron"
+        onPress={() => router.push('/avatar')}
+      />
       <ListRow icon={UserIcon} label="Pseudonyme" control="chevron" value={me?.pseudonym} onPress={() => open('pseudonym')} />
       <ListRow icon={QuotesIcon} label="Bio" sub={me?.bio || 'Ajoute quelques mots sur toi'} control="chevron" onPress={() => open('bio')} />
       <ListRow

@@ -38,6 +38,7 @@ import {
   useUpdateTopicNames,
 } from '../hooks/use-authoring'
 import { LocalizedFieldSheet, UniverseSheet, universeLabel } from './topic-sheets'
+import { useRefreshActive } from '@/shared/hooks/use-refresh-active'
 
 /** Vignette d'un sujet : paysage, comme `TopicCard`. */
 const THUMBNAIL_ASPECT: [number, number] = [16, 9]
@@ -62,6 +63,7 @@ export function MyTopicScreen() {
   const topicId = params.id
   const { topic } = useMyTopic(topicId)
   const all = useMyTopics()
+  const pageRefresh = useRefreshActive()
   const questions = useTopicQuestions(topicId)
   const { premium, limits, askPremium } = useCreationLimits()
   const names = useUpdateTopicNames(topicId)
@@ -108,6 +110,7 @@ export function MyTopicScreen() {
   return (
     <View style={{ flex: 1 }}>
       <ParallaxScreen
+        onRefresh={pageRefresh.refresh}
         inTabs
         barTitleStart
         image={imageUrl}

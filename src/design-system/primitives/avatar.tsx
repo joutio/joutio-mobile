@@ -108,7 +108,9 @@ export function Avatar({ name, src, size = 'md', tier, provisional = false, lock
         <View
           style={[
             { flex: 1, borderRadius: radius.full },
-            provisional && { borderWidth: 2, borderStyle: 'dashed', borderColor: colors.border, padding: px * 0.06 },
+            // Anneau pointillé **à l'extérieur** (2026-11-07) : le visage garde toute sa taille, comme un avatar classé
+            // (Profil et Fiche joueur à la même grandeur).
+            provisional && { outlineWidth: 2, outlineStyle: 'dashed', outlineColor: colors.border, outlineOffset: 2 },
             tier && !provisional && { outlineWidth: 2, outlineStyle: 'solid', outlineColor: tokens.tier[tier].hex },
           ]}
         >

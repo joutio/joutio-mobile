@@ -22,6 +22,8 @@ import { useTheme } from '../theme/theme-provider'
 import { tokens } from '../tokens.generated'
 import { TOP_BAR_HEIGHT } from './mobile-top-bar'
 import { usePageRefresh } from './page-refresh'
+import { useOverscrollStretch } from './overscroll-stretch'
+import { GestureDetector } from 'react-native-gesture-handler'
 import { useTransitionDone } from './use-transition-done'
 import { ScrollToTopPill } from './scroll-to-top-pill'
 import { Skeleton } from '../primitives/skeleton'
@@ -102,6 +104,8 @@ interface HeroProps {
   intro?: ReactNode
   /** Défilement de la liste active (négatif au tiré), lu sur le thread UI. */
   scroll: SharedValue<number>
+  /** Android : traction en haut de page (`useOverscrollStretch`), lue comme un défilement négatif pour le zoom. */
+  pull: SharedValue<number>
   /** Début et durée du passage du titre sous la barre compacte, mesurés. */
   titleStart: SharedValue<number>
   titleLength: SharedValue<number>
@@ -109,10 +113,10 @@ interface HeroProps {
 }
 
 /** Image en parallaxe et titre qui s'efface : l'en-tête que le natif replie. */
-function Hero({ image, title, eyebrow, centered, intro, scroll, titleStart, titleLength, barHeight }: HeroProps) {
+function Hero({ image, title, eyebrow, centered, intro, scroll, pull, titleStart, titleLength, barHeight }: HeroProps) {
   const { colors } = useTheme()
   const reduced = useReducedMotion()
-  const imageStyle = useAnimatedStyle(() => ({ transform: heroImageTransform(scroll.value, reduced) }))
+  const imageStyle = useAnimatedStyle(() => ({ transform: heroImageTransform(scroll.value - pull.value, reduced) }))
   const titleStyle = useAnimatedStyle(() => ({ opacity: heroTitleOpacity(scroll.value, titleStart.value, titleLength.value) }))
 
   return (
@@ -213,6 +217,8 @@ export function CollapsibleTabsScreen<T extends string>({
 
   // Défilement de la liste active et position du pager, lus depuis le callback natif, sur le thread UI.
   const scroll = useSharedValue(0)
+  // Android : le tiré en haut de page zoome l'image (le natif borne le défilement à 0).
+  const stretch = useOverscrollStretch(scroll)
   const position = useSharedValue(index)
   const onScrollOffsetChange = useEvent<{ offset: number }>(
     (event) => {
@@ -280,26 +286,30 @@ export function CollapsibleTabsScreen<T extends string>({
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
-      <CollapsibleTabView
-        ref={inner}
-        navigationState={{ index, routes }}
-        onIndexChange={changeIndex}
-        renderScene={({ route }) => (
-          <TabPageActiveContext.Provider value={route.key === routes[index]?.key}>
-            {ready ? (tabs.find((tab) => tab.value === route.key)?.content ?? null) : <TabSkeleton />}
-          </TabPageActiveContext.Provider>
-        )}
-        renderHeader={() => <Hero {...hero} title={title} scroll={scroll} titleStart={titleStart} titleLength={titleLength} barHeight={barHeight} />}
-        renderTabBar={renderTabBar}
-        // Le bas de l'en-tête reste sous la barre compacte, qui le recouvre : les onglets se collent sous elle.
-        headerMinHeight={barHeight}
-        onScrollOffsetChange={onScrollOffsetChange}
-        onPageScroll={onPageScroll}
-        {...refresh.tabProps}
-        // Sous la barre compacte, au-dessus de l'image qui zoome.
-        refreshIndicatorOffset={barHeight + tokens.space[5]}
-        lazy
-      />
+      <GestureDetector gesture={stretch.pan}>
+        <CollapsibleTabView
+          ref={inner}
+          navigationState={{ index, routes }}
+          onIndexChange={changeIndex}
+          renderScene={({ route }) => (
+            <TabPageActiveContext.Provider value={route.key === routes[index]?.key}>
+              {ready ? (tabs.find((tab) => tab.value === route.key)?.content ?? null) : <TabSkeleton />}
+            </TabPageActiveContext.Provider>
+          )}
+          renderHeader={() => (
+            <Hero {...hero} title={title} scroll={scroll} pull={stretch.pull} titleStart={titleStart} titleLength={titleLength} barHeight={barHeight} />
+          )}
+          renderTabBar={renderTabBar}
+          // Le bas de l'en-tête reste sous la barre compacte, qui le recouvre : les onglets se collent sous elle.
+          headerMinHeight={barHeight}
+          onScrollOffsetChange={onScrollOffsetChange}
+          onPageScroll={onPageScroll}
+          {...refresh.tabProps}
+          // Sous la barre compacte, au-dessus de l'image qui zoome.
+          refreshIndicatorOffset={barHeight + tokens.space[5]}
+          lazy
+        />
+      </GestureDetector>
 
       {refresh.indicator(barHeight + tokens.space[4])}
 

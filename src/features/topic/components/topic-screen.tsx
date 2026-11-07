@@ -19,7 +19,9 @@ import {
   Stat,
   TabScrollView,
   useTransitionDone,
+  SectionHeader,
   Text,
+  useTheme,
   toCategoryCode,
   tokens,
   WarningCircleIcon,
@@ -214,12 +216,13 @@ export function TopicScreen({ stack = 'home' }: { stack?: TopicStack }) {
                 ? stats.map((stat) => <Stat key={stat.label} {...stat} compact />)
                 : stats.map((stat) => <Skeleton key={stat.label} shape="card" style={{ flex: 1, height: 76 }} />)}
             </View>
-            {/* Questions vues sur le total du sujet, sous les trois blocs (`fiche-sujet.md` § 1). */}
+            {/* Questions déjà jouées sur le total du sujet, en carte titrée comme les sections Bilan (`fiche-sujet.md`
+                § 1, 2026-11-07) : « Progression » seul ne disait pas ce qui progressait. */}
             {data && (
-              <ProgressBar
-                label={`Progression : ${data.myProgress?.completedQuestions ?? 0} / ${data.myProgress?.totalQuestions ?? data.topic.questionsCount}`}
-                value={data.myProgress?.completionPercent ?? 0}
-                showValue
+              <PlayedQuestions
+                done={data.myProgress?.completedQuestions ?? 0}
+                total={data.myProgress?.totalQuestions ?? data.topic.questionsCount}
+                percent={data.myProgress?.completionPercent ?? 0}
               />
             )}
           </View>
@@ -253,5 +256,24 @@ export function TopicScreen({ stack = 'home' }: { stack?: TopicStack }) {
       <PostSheet open={postOpen} onClose={() => setPostOpen(false)} topic={name} onPublish={wall.publish} />
       <CommentsSheet post={commented} me={pseudonym} onClose={() => setCommented(undefined)} />
     </>
+  )
+}
+
+const questionsLabel = (count: number) => `${formatNumber(count)} question${count > 1 ? 's' : ''}`
+
+/** Questions jouées : la part du sujet déjà vue en duel, et ce qui reste à découvrir. */
+function PlayedQuestions({ done, total, percent }: { done: number; total: number; percent: number }) {
+  const { colors, radius } = useTheme()
+  const left = Math.max(0, total - done)
+  return (
+    <View style={{ gap: tokens.space[3] }}>
+      <SectionHeader title="Questions jouées" />
+      <View style={{ gap: tokens.space[2], borderRadius: radius.lg, backgroundColor: colors.surface, padding: tokens.space[5] }}>
+        <ProgressBar label={`${formatNumber(done)} / ${questionsLabel(total)} jouées`} value={percent} showValue />
+        <Text variant="caption" color="muted">
+          {left === 0 ? 'Tu as joué toutes les questions de ce sujet.' : `Encore ${questionsLabel(left)} à découvrir en duel.`}
+        </Text>
+      </View>
+    </View>
   )
 }

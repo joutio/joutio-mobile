@@ -61,7 +61,7 @@ export function usePageRefresh(onRefresh?: () => Promise<unknown> | void) {
 }
 
 /** Pastille et spinner : apparaît et tourne avec la traction, puis tourne seule pendant le rechargement. */
-function PullIndicator({ pull, refreshing, top }: { pull: SharedValue<number>; refreshing: boolean; top: number }) {
+export function PullIndicator({ pull, refreshing, top }: { pull: SharedValue<number>; refreshing: boolean; top: number }) {
   const { colors, radius } = useTheme()
   const style = useAnimatedStyle(() => {
     const progress = Math.min(1, pull.value / THRESHOLD)

@@ -19,6 +19,7 @@ import {
 import { formatNumber } from '@/features/topic/lib/format'
 import { useMyActivity, useMyBadges } from '../hooks/use-profile'
 import { calendarOf, nextAssiduity, streakHint, weekOf } from '../lib/streak'
+import { useRefreshActive } from '@/shared/hooks/use-refresh-active'
 
 function Card({ children, row = false }: { children: React.ReactNode; row?: boolean }) {
   const { colors, radius } = useTheme()
@@ -40,11 +41,13 @@ function Card({ children, row = false }: { children: React.ReactNode; row?: bool
  */
 export function StreakScreen() {
   const activity = useMyActivity()
+  const pageRefresh = useRefreshActive()
   const badges = useMyBadges()
   const data = activity.data
   const next = nextAssiduity(badges.data)
   return (
     <Screen
+      onRefresh={pageRefresh.refresh}
       inTabs
       header={<MobileTopBar variant="inline" back="Profil" onBack={() => router.back()} title="Série" />}
       contentStyle={{ gap: tokens.space[5], paddingHorizontal: tokens.space[5], paddingTop: tokens.space[2], paddingBottom: tokens.space[7] }}

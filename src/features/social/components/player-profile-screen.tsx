@@ -1,3 +1,4 @@
+import { useQueryClient } from '@tanstack/react-query'
 import { router, useLocalSearchParams } from 'expo-router'
 import { useState } from 'react'
 import { View } from 'react-native'
@@ -80,6 +81,7 @@ export function PlayerProfileScreen() {
   const insets = useSafeAreaInsets()
   const { colors, radius } = useTheme()
   const profile = usePlayerProfile(id)
+  const client = useQueryClient()
   const follow = useFollowPlayer(id)
   const head = useHeadToHead(id)
   const [challenged, setChallenged] = useState(false)
@@ -176,6 +178,7 @@ export function PlayerProfileScreen() {
         centered
         barTitleStart
         onBack={() => router.back()}
+        onRefresh={() => client.refetchQueries({ type: 'active' })}
         dockAt={HERO_HEIGHT + actionsY - (insets.top + TOP_BAR_HEIGHT)}
         right={(docked) =>
           data && !data.isMe ? (

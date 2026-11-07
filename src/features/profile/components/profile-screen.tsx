@@ -27,7 +27,6 @@ import { DEFAULT_HISTORY_FILTERS } from '@/features/history/lib/history-service'
 import { useMe } from '@/features/me'
 import { useMyTitles } from '@/features/topic/hooks/use-topic'
 import { formatNumber, tierLabel } from '@/features/topic/lib/format'
-import { queryKeys } from '@/lib/query-keys'
 import { countryLabel } from '@/shared/utils/country'
 import { tierOf } from '@/shared/utils/tier'
 import { useMyActivity, useMyBadges, useMyRewards, useMyTopics } from '../hooks/use-profile'
@@ -207,13 +206,8 @@ export function ProfileScreen() {
             ),
           },
         ]}
-        onRefresh={() =>
-          Promise.all([
-            client.refetchQueries({ queryKey: queryKeys.me() }),
-            client.refetchQueries({ queryKey: ['profiles', userId] }),
-            client.refetchQueries({ queryKey: queryKeys.rewards() }),
-          ])
-        }
+        // Tout ce que la page affiche (profil, statistiques, badges, titres, historique), pas seulement l'en-tête.
+        onRefresh={() => client.refetchQueries({ type: 'active' })}
       />
       <RanksSheet open={ranksOpen} onClose={() => setRanksOpen(false)} name={name} avatar={avatar} tier={tier} />
       <BadgeFamilySheet open={familyOpen} family={family} onClose={() => setFamilyOpen(false)} />
