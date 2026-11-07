@@ -34,6 +34,7 @@ import {
 import { isTranslated, QUESTION_STATUS_LABEL, questionStatus, questionText, type QuestionStatus } from '../domain/authoring'
 import { MIN_QUESTIONS, questionsLabel } from '../domain/limits'
 import { useCreationLimits, useMyTopic, useTopicQuestions } from '../hooks/use-authoring'
+import { clientSource, feedFooterProps, loadMoreOptions } from '@/shared/utils/paging'
 
 const GUTTER = tokens.space[5]
 const PAGE_SIZE = 10
@@ -147,6 +148,7 @@ export function QuestionsScreen() {
     [all, search, status, translation],
   )
   const shown = filtered.slice(0, pages * PAGE_SIZE)
+  const source = clientSource(pages, setPages, shown.length < filtered.length)
   const filterActive = status !== 'all' || translation !== 'all'
   // Retour à la première page à chaque recherche ou filtre.
   const change = (next: () => void) => {
@@ -259,6 +261,8 @@ export function QuestionsScreen() {
     <Screen
       inTabs
       header={header}
+      loadMore={loadMoreOptions(source)}
+      onRefresh={() => questions.refetch()}
       contentStyle={{ gap: tokens.space[3], paddingHorizontal: GUTTER, paddingTop: tokens.space[1], paddingBottom: tokens.space[7] }}
       overlay={
         <MobileSheet
@@ -320,7 +324,7 @@ export function QuestionsScreen() {
               )
             })}
           </ListGroup>
-          <FeedFooter state={shown.length < filtered.length ? 'more' : 'end'} onLoadMore={() => setPages(pages + 1)} endLabel="Tu as vu toutes les questions" />
+          <FeedFooter {...feedFooterProps(source)} endLabel="Tu as vu toutes les questions" />
         </>
       )}
     </Screen>

@@ -25,6 +25,7 @@ import { useMyAvatar } from '@/features/avatar/lib/avatar-preview'
 import { useMe } from '@/features/me'
 import { tierOf } from '@/shared/utils/tier'
 import { CANDIDATES_MOCK, CANDIDATES_PAGE, TEAM_MOCK, type TeamMemberMock, type TeamRole } from '../lib/team-mocks'
+import { clientSource, feedFooterProps, loadMoreOptions } from '@/shared/utils/paging'
 
 /**
  * Équipe (`creation.md` § 1) : **maquettée**, le backend n'a pas de rôles. Administrateurs et Rédacteurs ; le
@@ -67,6 +68,7 @@ export function TeamScreen() {
     [team, search],
   )
   const shownCandidates = candidates.slice(0, pages * CANDIDATES_PAGE)
+  const candidateSource = clientSource(pages, setPages, shownCandidates.length < candidates.length)
 
   const admins = team.filter((member) => member.role === 'admin')
   const writers = team.filter((member) => member.role === 'writer')
@@ -141,6 +143,7 @@ export function TeamScreen() {
             title="Inviter un rédacteur"
             subtitle={topic}
             tall
+            loadMore={loadMoreOptions(candidateSource)}
             stickyHeader={
               <SearchField
                 value={query}
@@ -172,11 +175,7 @@ export function TeamScreen() {
                       />
                     ))}
                   </ListGroup>
-                  <FeedFooter
-                    state={shownCandidates.length < candidates.length ? 'more' : 'end'}
-                    onLoadMore={() => setPages(pages + 1)}
-                    endLabel="Tu as vu tous les joueurs"
-                  />
+                  <FeedFooter {...feedFooterProps(candidateSource)} endLabel="Tu as vu tous les joueurs" />
                 </>
               ) : (
                 <EmptyState icon={UserPlusIcon} title="Aucun joueur trouvé" description="Vérifie le pseudonyme ou essaie un autre mot." />

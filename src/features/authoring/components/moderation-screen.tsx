@@ -15,7 +15,8 @@ import {
   PencilSimpleIcon,
   Screen,
   Skeleton,
-  TabScrollView,
+  DragToLoadMore,
+  TabLoadMoreScrollView,
   TabsScrollView,
   Text,
   tokens,
@@ -34,6 +35,7 @@ import {
 import { MAX_REJECT } from '../domain/limits'
 import { useDismissReports, useModerateQuestion, useTopicQuestions, useTopicReports, type ReportedQuestion } from '../hooks/use-authoring'
 import { openQuestionEditor } from './questions-screen'
+import { clientSource, feedFooterProps, loadMoreOptions } from '@/shared/utils/paging'
 
 const PAGE_SIZE = 20
 const PAGE = { gap: tokens.space[3], paddingHorizontal: tokens.space[5], paddingTop: tokens.space[2], paddingBottom: tokens.space[7] }
@@ -72,6 +74,8 @@ export function ModerationScreen() {
   const reported = reports.data ?? []
   const shownPending = pending.slice(0, pendingPages * PAGE_SIZE)
   const shownReports = reported.slice(0, reportPages * PAGE_SIZE)
+  const pendingSource = clientSource(pendingPages, setPendingPages, shownPending.length < pending.length)
+  const reportSource = clientSource(reportPages, setReportPages, shownReports.length < reported.length)
   const numberOf = (question: QuestionEditorView) => all.indexOf(question) + 1
   const author = `${me.data?.pseudonym ?? ''} · Créateur`
 
@@ -83,74 +87,70 @@ export function ModerationScreen() {
   )
 
   const pendingPage = (
-    <TabScrollView contentContainerStyle={PAGE}>
-      {questions.isPending ? (
-        loading
-      ) : pending.length === 0 ? (
-        <EmptyState icon={CheckCircleIcon} title="Rien à valider" description="Les questions de tes rédacteurs arriveront ici." />
-      ) : (
-        <>
-          {shownPending.map((question) => (
-            <ModerationCard
-              key={question.questionId}
-              author={author}
-              question={questionText(question)}
-              answers={answersOf(question)}
-              correct={QUESTION_CHOICES.indexOf(question.correctAnswer)}
-              busy={
-                moderate.isPending && moderate.variables?.questionId === question.questionId
-                  ? moderate.variables.decision === 'approve'
-                    ? 'approve'
-                    : 'reject'
-                  : undefined
-              }
-              onApprove={() => moderate.mutate({ questionId: question.questionId, decision: 'approve' })}
-              onReject={() => {
-                setReason('')
-                setRejecting(question)
-              }}
-              onEdit={() => openQuestionEditor(topicId, numberOf(question), question.questionId)}
-            />
-          ))}
-          <FeedFooter
-            state={shownPending.length < pending.length ? 'more' : 'end'}
-            onLoadMore={() => setPendingPages(pendingPages + 1)}
-            endLabel="Tu as vu toutes les questions à valider"
-          />
-        </>
-      )}
-    </TabScrollView>
+    <DragToLoadMore {...loadMoreOptions(pendingSource)}>
+      <TabLoadMoreScrollView contentContainerStyle={PAGE}>
+        {questions.isPending ? (
+          loading
+        ) : pending.length === 0 ? (
+          <EmptyState icon={CheckCircleIcon} title="Rien à valider" description="Les questions de tes rédacteurs arriveront ici." />
+        ) : (
+          <>
+            {shownPending.map((question) => (
+              <ModerationCard
+                key={question.questionId}
+                author={author}
+                question={questionText(question)}
+                answers={answersOf(question)}
+                correct={QUESTION_CHOICES.indexOf(question.correctAnswer)}
+                busy={
+                  moderate.isPending && moderate.variables?.questionId === question.questionId
+                    ? moderate.variables.decision === 'approve'
+                      ? 'approve'
+                      : 'reject'
+                    : undefined
+                }
+                onApprove={() => moderate.mutate({ questionId: question.questionId, decision: 'approve' })}
+                onReject={() => {
+                  setReason('')
+                  setRejecting(question)
+                }}
+                onEdit={() => openQuestionEditor(topicId, numberOf(question), question.questionId)}
+              />
+            ))}
+            <FeedFooter {...feedFooterProps(pendingSource)} endLabel="Tu as vu toutes les questions à valider" />
+          </>
+        )}
+      </TabLoadMoreScrollView>
+    </DragToLoadMore>
   )
 
   const reportsPage = (
-    <TabScrollView contentContainerStyle={PAGE}>
-      {questions.isPending || reports.isPending ? (
-        loading
-      ) : reported.length === 0 ? (
-        <EmptyState icon={CheckCircleIcon} title="Aucun signalement" description="Les signalements des joueurs arriveront ici." />
-      ) : (
-        <>
-          <ListGroup surface="surface">
-            {shownReports.map((item, index) => (
-              <ListRow
-                key={item.question.questionId}
-                icon={WarningIcon}
-                label={questionText(item.question)}
-                sub={`${reasonsOf(item)} · ${item.reports.length} signaleur${item.reports.length > 1 ? 's' : ''}`}
-                control="chevron"
-                onPress={() => setReport(item)}
-                last={index === shownReports.length - 1}
-              />
-            ))}
-          </ListGroup>
-          <FeedFooter
-            state={shownReports.length < reported.length ? 'more' : 'end'}
-            onLoadMore={() => setReportPages(reportPages + 1)}
-            endLabel="Tu as vu tous les signalements"
-          />
-        </>
-      )}
-    </TabScrollView>
+    <DragToLoadMore {...loadMoreOptions(reportSource)}>
+      <TabLoadMoreScrollView contentContainerStyle={PAGE}>
+        {questions.isPending || reports.isPending ? (
+          loading
+        ) : reported.length === 0 ? (
+          <EmptyState icon={CheckCircleIcon} title="Aucun signalement" description="Les signalements des joueurs arriveront ici." />
+        ) : (
+          <>
+            <ListGroup surface="surface">
+              {shownReports.map((item, index) => (
+                <ListRow
+                  key={item.question.questionId}
+                  icon={WarningIcon}
+                  label={questionText(item.question)}
+                  sub={`${reasonsOf(item)} · ${item.reports.length} signaleur${item.reports.length > 1 ? 's' : ''}`}
+                  control="chevron"
+                  onPress={() => setReport(item)}
+                  last={index === shownReports.length - 1}
+                />
+              ))}
+            </ListGroup>
+            <FeedFooter {...feedFooterProps(reportSource)} endLabel="Tu as vu tous les signalements" />
+          </>
+        )}
+      </TabLoadMoreScrollView>
+    </DragToLoadMore>
   )
 
   const comments = report?.reports.map((item) => item.comment?.trim()).filter((comment): comment is string => Boolean(comment)) ?? []

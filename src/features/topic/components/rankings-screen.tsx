@@ -31,6 +31,7 @@ import { DEFAULT_RANKING_FILTERS, type RankingFilterState } from '../lib/topic-s
 import { boardSub, MyBoardRow } from './board-tab'
 import { RankingsFiltersSheet } from './rankings-filters-sheet'
 import { userAvatar } from '@/shared/utils/avatar'
+import { feedFooterProps, pagedQuery } from '@/shared/utils/paging'
 
 const GUTTER = tokens.space[5]
 const MONTH = new Intl.DateTimeFormat('fr-FR', { month: 'long' })
@@ -196,13 +197,7 @@ export function RankingsScreen() {
               </View>
             }
             ListFooterComponent={
-              <FeedFooter
-                style={{ marginHorizontal: GUTTER }}
-                state={list.isFetchNextPageError ? 'error' : list.isFetchingNextPage ? 'loading' : list.hasNextPage ? 'more' : 'end'}
-                onLoadMore={() => void list.fetchNextPage()}
-                onRetry={() => void list.fetchNextPage()}
-                endLabel="Tu as vu tout le classement"
-              />
+              <FeedFooter style={{ marginHorizontal: GUTTER }} {...feedFooterProps(pagedQuery(list))} endLabel="Tu as vu tout le classement" />
             }
             renderItem={({ item: entry, index }) => {
               const first = index === 0

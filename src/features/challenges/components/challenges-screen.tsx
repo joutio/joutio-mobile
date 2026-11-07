@@ -42,6 +42,7 @@ import {
   useMyRooms,
 } from '../hooks/use-challenges'
 import { CHALLENGE_LIMIT, duration } from '../lib/challenges-service'
+import { clientSource, feedFooterProps, loadMoreOptions } from '@/shared/utils/paging'
 
 type Filter = 'all' | 'received' | 'sent' | 'rooms'
 
@@ -90,6 +91,7 @@ export function ChallengesScreen() {
   const empty = !loading && !failed && received.length + sent.length + salons.length === 0
   const shows = (section: Filter) => filter === 'all' || filter === section
   const receivedRows = filter === 'all' ? received.slice(0, RECEIVED_PREVIEW) : received.slice(0, receivedPages * RECEIVED_PAGE)
+  const receivedSource = clientSource(receivedPages, setReceivedPages, filter === 'received' && receivedRows.length < received.length)
   const counts: Record<Filter, number | undefined> = { all: undefined, received: received.length, sent: sent.length, rooms: salons.length }
   const subtitle = `${sent.length} défi${sent.length > 1 ? 's' : ''} envoyé${sent.length > 1 ? 's' : ''} sur ${CHALLENGE_LIMIT} possibles`
 
@@ -188,6 +190,7 @@ export function ChallengesScreen() {
       inTabs
       header={header}
       scrollProps={{ refreshControl: <RefreshControl refreshing={refreshing} onRefresh={() => void refresh()} tintColor={colors.muted} /> }}
+      loadMore={loadMoreOptions(receivedSource)}
       contentStyle={{ flexGrow: 1, paddingBottom: tokens.space[7] }}
       overlay={
         <TopicPickerSheet
@@ -259,13 +262,7 @@ export function ChallengesScreen() {
                 }
               />
               <ListGroup surface="surface">{receivedRows.map((challenge, index) => row(challenge, 'received', index, receivedRows.length))}</ListGroup>
-              {filter === 'received' && (
-                <FeedFooter
-                  state={receivedRows.length < received.length ? 'more' : 'end'}
-                  onLoadMore={() => setReceivedPages(receivedPages + 1)}
-                  endLabel="Tu as vu tous les défis reçus"
-                />
-              )}
+              {filter === 'received' && <FeedFooter {...feedFooterProps(receivedSource)} endLabel="Tu as vu tous les défis reçus" />}
             </View>
           )}
           {shows('sent') && sent.length > 0 && (

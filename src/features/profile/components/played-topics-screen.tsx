@@ -1,5 +1,5 @@
 import { router } from 'expo-router'
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { View } from 'react-native'
 import {
   Button,
@@ -20,6 +20,7 @@ import {
 import { usePremiumSheet } from '@/features/premium/premium-store'
 import { openTopic } from '@/features/topic'
 import { formatNumber, tierLabel } from '@/features/topic/lib/format'
+import { feedFooterProps, loadMoreOptions, useClientPages } from '@/shared/utils/paging'
 import { topicName } from '@/shared/utils/topic-name'
 import { useMyTopics } from '../hooks/use-profile'
 import { masteryOf } from '../lib/format'
@@ -35,10 +36,9 @@ const gamesLabel = (games: number) => `${formatNumber(games)} partie${games > 1 
 export function PlayedTopicsScreen() {
   const topics = useMyTopics()
   const showPremium = usePremiumSheet((state) => state.show)
-  const [pages, setPages] = useState(1)
   // Le BFF renvoie aussi des sujets sans partie : seuls ceux joués au moins une fois comptent ici.
   const sorted = useMemo(() => (topics.data ?? []).filter((topic) => topic.games > 0).sort((a, b) => b.xp - a.xp || b.games - a.games), [topics.data])
-  const shown = sorted.slice(0, pages * PAGE_SIZE)
+  const { visible: shown, source } = useClientPages(sorted, PAGE_SIZE)
 
   const content = () => {
     if (topics.isPending)
@@ -82,7 +82,7 @@ export function PlayedTopicsScreen() {
             )
           })}
         </ListGroup>
-        <FeedFooter state={shown.length < sorted.length ? 'more' : 'end'} onLoadMore={() => setPages(pages + 1)} endLabel="Tu as vu tous tes sujets" />
+        <FeedFooter {...feedFooterProps(source)} endLabel="Tu as vu tous tes sujets" />
         <View style={{ gap: tokens.space[3] }}>
           <Text variant="caption" color="muted" align="center">
             Victoires et temps de réponse sujet par sujet avec Premium.
@@ -99,6 +99,8 @@ export function PlayedTopicsScreen() {
     <Screen
       inTabs
       header={<MobileTopBar variant="inline" back="Profil" onBack={() => router.back()} title="Sujets joués" />}
+      loadMore={loadMoreOptions(source)}
+      onRefresh={() => topics.refetch()}
       contentStyle={{ gap: tokens.space[4], paddingHorizontal: tokens.space[5], paddingTop: tokens.space[1], paddingBottom: tokens.space[7] }}
     >
       {content()}

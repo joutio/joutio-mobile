@@ -26,6 +26,7 @@ import type { NotificationView } from '@/lib/realtime/personal-notifications'
 import { DAY_LABELS, dayOf, isExpired, type NotificationDay } from '../lib/notifications-service'
 import { useDeleteAllNotifications, useMarkAllRead, useNotifications } from '../hooks/use-notifications'
 import { NotificationItem } from './notification-item'
+import { feedFooterProps, pagedQuery } from '@/shared/utils/paging'
 
 const GUTTER = tokens.space[5]
 const DAYS: NotificationDay[] = ['today', 'week', 'older']
@@ -143,12 +144,7 @@ export function NotificationsScreen() {
                   </ListGroup>
                 </View>
               ))}
-              <FeedFooter
-                state={list.isFetchNextPageError ? 'error' : list.isFetchingNextPage ? 'loading' : list.hasNextPage ? 'more' : 'end'}
-                onLoadMore={() => void list.fetchNextPage()}
-                onRetry={() => void list.fetchNextPage()}
-                endLabel="Tu as vu toutes tes notifications"
-              />
+              <FeedFooter {...feedFooterProps(pagedQuery(list))} endLabel="Tu as vu toutes tes notifications" />
             </View>
           )}
         </LoadMoreScrollView>

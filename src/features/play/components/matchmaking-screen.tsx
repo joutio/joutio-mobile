@@ -12,7 +12,6 @@ import {
   ForceDark,
   haptic,
   MatchmakingMap,
-  MobileSheet,
   ReconnectCountdown,
   RobotIcon,
   Text,
@@ -22,7 +21,7 @@ import {
   useToastSuppression,
   type MapPlayer,
 } from '@/design-system'
-import { PlayerPicker } from '@/features/topic/components/duel-sheet'
+import { PlayerPickerSheet } from '@/features/topic/components/duel-sheet'
 import { formatNumber } from '@/features/topic/lib/format'
 import { readServerNow, useServerClock } from '@/lib/realtime/server-clock'
 import { useConnectionStore } from '@/lib/ws'
@@ -312,15 +311,15 @@ function MatchmakingScreenContent() {
       )}
 
       {connection === 'reconnecting' && status === 'SEARCHING' && <ReconnectCountdown onLeave={() => router.back()} leaveLabel="Annuler la recherche" />}
-      <MobileSheet open={pickerOpen} onClose={() => setPickerOpen(false)} title="Qui veux-tu défier ?" subtitle={topic.name} tall>
-        <PlayerPicker
-          topic={topic}
-          onSent={() => {
-            setPickerOpen(false)
-            router.back()
-          }}
-        />
-      </MobileSheet>
+      <PlayerPickerSheet
+        open={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        topic={topic}
+        onSent={() => {
+          setPickerOpen(false)
+          router.back()
+        }}
+      />
     </View>
   )
 }

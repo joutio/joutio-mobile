@@ -62,7 +62,7 @@ export function FeedFooterDemo() {
     <>
       {states.map((state) => (
         <Specimen key={state} label={state}>
-          <FeedFooter state={state} onLoadMore={() => undefined} onRetry={() => undefined} />
+          <FeedFooter state={state} pages={2} onLoadMore={() => undefined} onRetry={() => undefined} />
         </Specimen>
       ))}
     </>

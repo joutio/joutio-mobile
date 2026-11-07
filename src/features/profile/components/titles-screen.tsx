@@ -2,6 +2,8 @@ import { router } from 'expo-router'
 import { useMemo, useState } from 'react'
 import { FlatList, View } from 'react-native'
 import {
+  DragToLoadMore,
+  LoadMoreScrollView,
   Button,
   CrownSimpleIcon,
   EmptyState,
@@ -26,6 +28,7 @@ import {
 import { useMyTitles, useWearTitle } from '@/features/topic/hooks/use-topic'
 import { tierLabel } from '@/features/topic/lib/format'
 import type { MasteryTier, TitleView } from '@/shared/types/bff'
+import { clientSource, feedFooterProps, loadMoreOptions } from '@/shared/utils/paging'
 import { topicName } from '@/shared/utils/topic-name'
 import { titleLabel } from '../lib/format'
 
@@ -81,6 +84,8 @@ export function TitlesScreen() {
   const groups = useMemo(() => groupsOf(all, tier, query, sort), [all, tier, query, sort])
   const count = groups.reduce((sum, group) => sum + group.titles.length, 0)
   const shown = groups.slice(0, pages * PAGE_SIZE)
+  const source = clientSource(pages, setPages, shown.length < groups.length)
+  const [refreshing, setRefreshing] = useState(false)
   const filtered = tier !== undefined || sort !== 'RECENT'
   const hasTitles = all.length > 0
   const change = (next: () => void) => {
@@ -237,49 +242,52 @@ export function TitlesScreen() {
         </MobileSheet>
       }
     >
-      <FlatList
-        data={shown}
-        keyExtractor={(group) => group.topicId}
-        contentContainerStyle={{ flexGrow: 1, gap: tokens.space[5], paddingHorizontal: GUTTER, paddingTop: tokens.space[2], paddingBottom: tokens.space[7] }}
-        ListHeaderComponent={
-          shown.length > 0 ? (
-            <Text variant="caption" color="muted">
-              {countLabel(count)}
-            </Text>
-          ) : undefined
-        }
-        ListEmptyComponent={empty()}
-        renderItem={({ item }) => (
-          <View style={{ gap: tokens.space[3] }}>
-            <Text variant="caption" weight="600" color="muted">
-              {item.topic}
-            </Text>
-            <ListGroup surface="surface">
-              {item.titles.map((title, index) => (
-                <TitleRow
-                  key={title.key}
-                  tier={title.tier}
-                  title={titleLabel(title)}
-                  worn={titles.data?.equippedKey === title.key}
-                  wearing={wear.isPending && wear.variables === title.key}
-                  onWear={() => wear.mutate(title.key)}
-                  last={index === item.titles.length - 1}
-                />
-              ))}
-            </ListGroup>
-          </View>
-        )}
-        ListFooterComponent={
-          shown.length > 0 ? (
-            <FeedFooter
-              state={shown.length < groups.length ? 'more' : 'end'}
-              onLoadMore={() => setPages(pages + 1)}
-              endLabel="Tu as vu tous tes titres"
-              remainingLabel={`${groups.length - shown.length} autres sujets`}
-            />
-          ) : undefined
-        }
-      />
+      <DragToLoadMore {...loadMoreOptions(source)}>
+        <FlatList
+          data={shown}
+          renderScrollComponent={(props) => <LoadMoreScrollView {...props} />}
+          refreshing={refreshing}
+          onRefresh={() => {
+            setRefreshing(true)
+            void titles.refetch().finally(() => setRefreshing(false))
+          }}
+          keyExtractor={(group) => group.topicId}
+          contentContainerStyle={{ flexGrow: 1, gap: tokens.space[5], paddingHorizontal: GUTTER, paddingTop: tokens.space[2], paddingBottom: tokens.space[7] }}
+          ListHeaderComponent={
+            shown.length > 0 ? (
+              <Text variant="caption" color="muted">
+                {countLabel(count)}
+              </Text>
+            ) : undefined
+          }
+          ListEmptyComponent={empty()}
+          renderItem={({ item }) => (
+            <View style={{ gap: tokens.space[3] }}>
+              <Text variant="caption" weight="600" color="muted">
+                {item.topic}
+              </Text>
+              <ListGroup surface="surface">
+                {item.titles.map((title, index) => (
+                  <TitleRow
+                    key={title.key}
+                    tier={title.tier}
+                    title={titleLabel(title)}
+                    worn={titles.data?.equippedKey === title.key}
+                    wearing={wear.isPending && wear.variables === title.key}
+                    onWear={() => wear.mutate(title.key)}
+                    last={index === item.titles.length - 1}
+                  />
+                ))}
+              </ListGroup>
+            </View>
+          )}
+          ListFooterComponent={
+            shown.length > 0 ? (
+              <FeedFooter {...feedFooterProps(source)} endLabel="Tu as vu tous tes titres" remainingLabel={`${groups.length - shown.length} autres sujets`} />
+            ) : undefined
+          }
+        />
+      </DragToLoadMore>
     </Screen>
   )
 }

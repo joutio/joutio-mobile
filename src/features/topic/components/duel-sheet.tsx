@@ -32,6 +32,7 @@ import {
 } from '@/features/play/hooks/use-play'
 import { tierOf } from '@/shared/utils/tier'
 import { userAvatar } from '@/shared/utils/avatar'
+import { feedFooterProps, loadMoreOptions, pagedQuery } from '@/shared/utils/paging'
 
 type Step = 'modes' | 'training' | 'player'
 type Mode = 'world' | 'training' | 'room' | 'player'
@@ -55,50 +56,51 @@ const CONTACTS = [
   { value: 'followers', label: 'Mes abonnés' },
 ] as const
 
-/** Choix de l'adversaire parmi les contacts, puis envoi du défi (aussi utilisé par le matchmaking). */
-export function PlayerPicker({ topic, onSent }: { topic: PlayTopic; onSent: () => void }) {
+/**
+ * « Qui veux-tu défier ? » : choix de l'adversaire parmi les contacts, puis envoi du défi (aussi utilisé par le
+ * matchmaking). Grande feuille paginée au geste (`loadMore`).
+ */
+export function PlayerPickerSheet({ open, onClose, topic, onSent }: { open: boolean; onClose: () => void; topic: PlayTopic; onSent: () => void }) {
   const [contacts, setContacts] = useState<Contacts>('following')
   const [query, setQuery] = useState('')
-  const list = useContacts(contacts, query.trim(), true)
+  const list = useContacts(contacts, query.trim(), open)
   const challenge = useChallengePlayer()
   const players = list.data?.pages.flatMap((page) => page.content) ?? []
+  const paged = pagedQuery(list)
 
   return (
-    <View style={{ gap: tokens.space[4] }}>
-      <SearchField value={query} onChange={setQuery} placeholder="Chercher un joueur" label="Chercher un joueur" />
-      <Segmented label="Contacts" options={CONTACTS} value={contacts} onChange={setContacts} />
-      {list.isPending ? null : players.length === 0 ? (
-        <EmptyState
-          icon={MagnifyingGlassIcon}
-          title={query ? 'Aucun joueur trouvé' : contacts === 'following' ? "Tu ne suis personne pour l'instant" : "Personne ne te suit pour l'instant"}
-          description={query ? 'Vérifie le pseudonyme ou essaie un autre mot.' : 'Seuls tes contacts apparaissent ici.'}
-        />
-      ) : (
-        <>
-          <ListGroup>
-            {players.map((player, index) => (
-              <PlayerRow
-                key={player.userId}
-                name={player.pseudonym}
-                src={userAvatar(player)}
-                tier={player.provisional ? undefined : tierOf(player.rating)}
-                presence={player.presence?.status === 'ONLINE' ? 'online' : 'offline'}
-                sub={player.presence?.status === 'ONLINE' ? 'En ligne' : undefined}
-                chevron
-                last={index === players.length - 1}
-                onPress={() => challenge.mutate({ topic, opponent: { userId: player.userId, pseudonym: player.pseudonym } }, { onSuccess: onSent })}
-              />
-            ))}
-          </ListGroup>
-          <FeedFooter
-            state={list.isFetchNextPageError ? 'error' : list.isFetchingNextPage ? 'loading' : list.hasNextPage ? 'more' : 'end'}
-            onLoadMore={() => void list.fetchNextPage()}
-            onRetry={() => void list.fetchNextPage()}
-            endLabel="Tu as vu tous les joueurs"
+    <MobileSheet open={open} onClose={onClose} title="Qui veux-tu défier ?" subtitle={topic.name} tall loadMore={loadMoreOptions(paged)}>
+      <View style={{ gap: tokens.space[4] }}>
+        <SearchField value={query} onChange={setQuery} placeholder="Chercher un joueur" label="Chercher un joueur" />
+        <Segmented label="Contacts" options={CONTACTS} value={contacts} onChange={setContacts} />
+        {list.isPending ? null : players.length === 0 ? (
+          <EmptyState
+            icon={MagnifyingGlassIcon}
+            title={query ? 'Aucun joueur trouvé' : contacts === 'following' ? "Tu ne suis personne pour l'instant" : "Personne ne te suit pour l'instant"}
+            description={query ? 'Vérifie le pseudonyme ou essaie un autre mot.' : 'Seuls tes contacts apparaissent ici.'}
           />
-        </>
-      )}
-    </View>
+        ) : (
+          <>
+            <ListGroup>
+              {players.map((player, index) => (
+                <PlayerRow
+                  key={player.userId}
+                  name={player.pseudonym}
+                  src={userAvatar(player)}
+                  tier={player.provisional ? undefined : tierOf(player.rating)}
+                  presence={player.presence?.status === 'ONLINE' ? 'online' : 'offline'}
+                  sub={player.presence?.status === 'ONLINE' ? 'En ligne' : undefined}
+                  chevron
+                  last={index === players.length - 1}
+                  onPress={() => challenge.mutate({ topic, opponent: { userId: player.userId, pseudonym: player.pseudonym } }, { onSuccess: onSent })}
+                />
+              ))}
+            </ListGroup>
+            <FeedFooter {...feedFooterProps(paged)} endLabel="Tu as vu tous les joueurs" />
+          </>
+        )}
+      </View>
+    </MobileSheet>
   )
 }
 
@@ -176,9 +178,7 @@ export function DuelSheet({ open, onClose, topic }: { open: boolean; onClose: ()
           </Text>
         </View>
       </MobileSheet>
-      <MobileSheet open={open && step === 'player'} onClose={() => setStep('modes')} title="Qui veux-tu défier ?" subtitle={topic.name} tall>
-        <PlayerPicker topic={topic} onSent={close} />
-      </MobileSheet>
+      <PlayerPickerSheet open={open && step === 'player'} onClose={() => setStep('modes')} topic={topic} onSent={close} />
     </>
   )
 }

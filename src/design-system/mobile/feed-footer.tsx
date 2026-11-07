@@ -14,6 +14,11 @@ export type FeedFooterState = 'more' | 'loading' | 'error' | 'end'
 
 export interface FeedFooterProps {
   state: FeedFooterState
+  /**
+   * Pages déjà affichées. La fin (« Tu as tout vu ») n'apparaît qu'après **au moins une page tirée en plus**
+   * (`pages > 1`, 2026-11-07) : une liste tenue en une page n'annonce rien.
+   */
+  pages: number
   onLoadMore?: () => void
   onRetry?: () => void
   /** Message de fin de liste. */
@@ -30,8 +35,15 @@ export interface FeedFooterProps {
  * pour le toucher et les lecteurs d'écran. Les éléments déjà chargés restent visibles quand la page suivante
  * échoue.
  */
-export function FeedFooter({ state, onLoadMore, onRetry, endLabel = 'Tu as tout vu', remainingLabel, style }: FeedFooterProps) {
+export function FeedFooter({ state, pages, onLoadMore, onRetry, endLabel = 'Tu as tout vu', remainingLabel, style }: FeedFooterProps) {
   const { colors, radius } = useTheme()
+  // Sous `DragToLoadMore`, le chargement se voit dans son loader, sous la liste : le pied garde sa place (l'annonce,
+  // effacée par la traction) au lieu de passer à une roue — un seul indicateur, une hauteur qui ne saute pas.
+  const pulling = useLoadMorePull() !== null
+
+  if (state === 'end' && pages <= 1) return null
+
+  if (state === 'loading' && pulling) return <PullHint onLoadMore={onLoadMore} remainingLabel={remainingLabel} style={style} />
 
   if (state === 'loading') {
     return (

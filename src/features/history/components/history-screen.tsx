@@ -29,6 +29,7 @@ import { topicName } from '@/shared/utils/topic-name'
 import { useHistoryGames } from '../hooks/use-history'
 import { DEFAULT_HISTORY_FILTERS, type HistoryFilterState } from '../lib/history-service'
 import { HistoryFiltersSheet } from './history-filters-sheet'
+import { feedFooterProps, pagedQuery } from '@/shared/utils/paging'
 
 const GUTTER = tokens.space[5]
 const OUTCOMES: Partial<Record<GameOutcome, MatchOutcome>> = { WIN: 'win', LOSS: 'loss', DRAW: 'draw' }
@@ -197,13 +198,7 @@ export function HistoryScreen() {
               </Text>
             }
             ListFooterComponent={
-              <FeedFooter
-                style={{ marginHorizontal: GUTTER }}
-                state={list.isFetchNextPageError ? 'error' : list.isFetchingNextPage ? 'loading' : list.hasNextPage ? 'more' : 'end'}
-                onLoadMore={() => void list.fetchNextPage()}
-                onRetry={() => void list.fetchNextPage()}
-                endLabel="Tu as vu toutes tes parties"
-              />
+              <FeedFooter style={{ marginHorizontal: GUTTER }} {...feedFooterProps(pagedQuery(list))} endLabel="Tu as vu toutes tes parties" />
             }
             renderItem={({ item: group }) => (
               <View style={{ gap: tokens.space[3], paddingHorizontal: GUTTER, paddingBottom: tokens.space[4] }}>

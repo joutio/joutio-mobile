@@ -1,9 +1,18 @@
-import { useContext, type ReactNode, type Ref } from 'react'
-import { ScrollView, View, type ScrollViewInstance, type ScrollViewProps, type StyleProp, type ViewStyle } from 'react-native'
+import { useContext, useState, type ReactNode, type Ref } from 'react'
+import { RefreshControl, ScrollView, View, type ScrollViewInstance, type ScrollViewProps, type StyleProp, type ViewStyle } from 'react-native'
 import { HeaderHeightContext } from 'expo-router/react-navigation'
 import { Platform } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useTheme } from '../theme/theme-provider'
+import { DragToLoadMore, LoadMoreScrollView } from './drag-to-load-more'
+
+/** Liste paginée de l'écran : la suite se charge en tirant en bas (`DragToLoadMore`, `contenu.md`). */
+export interface LoadMoreOptions {
+  /** Une page suivante existe (et la précédente n'a pas échoué). */
+  enabled: boolean
+  loading?: boolean
+  onLoadMore: () => void
+}
 
 export interface ScreenProps {
   header?: ReactNode
@@ -25,6 +34,10 @@ export interface ScreenProps {
   scroll?: boolean
   scrollProps?: Omit<ScrollViewProps, 'children'>
   scrollRef?: Ref<ScrollViewInstance>
+  /** Tirer pour rafraîchir : l'indicateur reste affiché jusqu'à la fin de la promesse. */
+  onRefresh?: () => Promise<unknown> | void
+  /** Pagination au geste sur le défilement de l'écran (hors en-tête natif). */
+  loadMore?: LoadMoreOptions
   contentStyle?: StyleProp<ViewStyle>
   children: ReactNode
 }
@@ -42,6 +55,8 @@ export function Screen({
   scroll = true,
   scrollProps,
   scrollRef,
+  loadMore,
+  onRefresh,
   contentStyle,
   children,
 }: ScreenProps) {
@@ -51,19 +66,44 @@ export function Screen({
   // iOS : l'en-tête natif est translucide et posé sur le contenu ; un contenu fixe doit le contourner.
   const underHeader = nativeHeader && Platform.OS === 'ios'
   const bottom = inTabs || bottomBar ? 0 : insets.bottom
+  const [refreshing, setRefreshing] = useState(false)
+  const refreshControl = onRefresh ? (
+    <RefreshControl
+      refreshing={refreshing}
+      tintColor={colors.muted}
+      colors={[colors.accentInk]}
+      progressBackgroundColor={colors.surface}
+      onRefresh={() => {
+        setRefreshing(true)
+        Promise.resolve(onRefresh())
+          .catch(() => undefined)
+          .finally(() => setRefreshing(false))
+      }}
+    />
+  ) : undefined
 
-  const scroller = (
-    <ScrollView
+  const Scroller = loadMore && !nativeHeader ? LoadMoreScrollView : ScrollView
+  const list = (
+    <Scroller
       ref={scrollRef}
       showsVerticalScrollIndicator={false}
       contentInsetAdjustmentBehavior={underHeader ? 'automatic' : 'never'}
+      refreshControl={refreshControl}
       {...scrollProps}
       style={{ flex: 1, backgroundColor: colors.bg }}
       contentContainerStyle={[{ paddingBottom: bottom }, contentStyle]}
     >
       {children}
-    </ScrollView>
+    </Scroller>
   )
+  const scroller =
+    loadMore && !nativeHeader ? (
+      <DragToLoadMore enabled={loadMore.enabled} loading={loadMore.loading} onLoadMore={loadMore.onLoadMore}>
+        {list}
+      </DragToLoadMore>
+    ) : (
+      list
+    )
   const extras = (
     <>
       {bottomBar && <View style={{ paddingBottom: inTabs ? 0 : insets.bottom, backgroundColor: colors.bg }}>{bottomBar}</View>}

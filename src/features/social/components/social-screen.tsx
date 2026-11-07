@@ -34,6 +34,7 @@ import { presenceOf, presenceSub } from '../lib/presence'
 import { ChallengePlayerSheet } from './challenge-player-sheet'
 import { SocialSortSheet } from './social-sort-sheet'
 import { userAvatar } from '@/shared/utils/avatar'
+import { feedFooterProps, pagedQuery } from '@/shared/utils/paging'
 
 const GUTTER = tokens.space[5]
 
@@ -125,9 +126,7 @@ function PeopleList({
             <FeedFooter
               // Espace au-dessus du filet du pied (et non sous lui) : il ne colle pas à la liste.
               style={{ marginTop: tokens.space[4] }}
-              state={list.isFetchNextPageError ? 'error' : list.isFetchingNextPage ? 'loading' : list.hasNextPage ? 'more' : 'end'}
-              onLoadMore={() => void list.fetchNextPage()}
-              onRetry={() => void list.fetchNextPage()}
+              {...feedFooterProps(pagedQuery(list))}
               endLabel="Tu as vu tous les joueurs"
             />
           </View>

@@ -1,11 +1,13 @@
 import { TrueSheet } from '@lodev09/react-native-true-sheet'
-import { useEffect, useRef, type ReactNode, type RefObject } from 'react'
+import { Fragment, useEffect, useRef, type ReactNode, type RefObject } from 'react'
 import { Platform, useWindowDimensions, View, type ScrollViewInstance } from 'react-native'
 import Animated, { useAnimatedScrollHandler, useSharedValue } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useModalFocus, type ViewRef } from '../a11y'
 import { useTheme } from '../theme/theme-provider'
 import { tokens } from '../tokens.generated'
+import { DragToLoadMore, LoadMoreScrollView } from './drag-to-load-more'
+import type { LoadMoreOptions } from './screen'
 import { ScrollToTopPill } from './scroll-to-top-pill'
 import { SheetHeader } from './sheet-header'
 
@@ -27,6 +29,11 @@ export interface MobileSheetProps {
   footer?: ReactNode
   /** Zone collée en haut du contenu (recherche d'une liste) : `stickyHeaderIndices`, fond `surface`. */
   stickyHeader?: ReactNode
+  /**
+   * Liste paginée (2026-11-07) : même geste qu'à l'écran — en bas de la liste, on continue de tirer vers le haut. La
+   * feuille se ferme vers le bas : les deux gestes ne se croisent pas.
+   */
+  loadMore?: LoadMoreOptions
   /** Rend le focus à l'élément qui a ouvert la feuille. */
   returnFocusTo?: RefObject<ViewRef | null>
   /** Feuille effectivement présentée : permet de monter son contenu lourd après l'ouverture native. */
@@ -62,6 +69,7 @@ export function MobileSheet({
   tall = false,
   footer,
   stickyHeader,
+  loadMore,
   returnFocusTo,
   onDidPresent,
   onDismissed,
@@ -91,6 +99,27 @@ export function MobileSheet({
   }, [open])
 
   useModalFocus(open, titleRef, returnFocusTo)
+
+  const scrollProps = {
+    style: { flexGrow: 0, flexShrink: 1 },
+    nestedScrollEnabled: true,
+    showsVerticalScrollIndicator: false,
+    stickyHeaderIndices: stickyHeader ? [0] : undefined,
+    contentContainerStyle: {
+      paddingHorizontal: tokens.space[5],
+      paddingBottom: footer ? tokens.space[3] : tokens.space[5] + (FLOATING ? 0 : insets.bottom),
+    },
+  }
+  // Tableau et non fragment : `stickyHeaderIndices` compte les enfants directs du défilement.
+  const content = [
+    stickyHeader ? (
+      // `sticky top-0 bg-jo-surface pb-1` du lab ; l'espace sous la zone reprend le `gap-3` du contenu.
+      <View key="sticky" style={{ backgroundColor: colors.surface, paddingBottom: tokens.space[4] }}>
+        {stickyHeader}
+      </View>
+    ) : null,
+    <Fragment key="content">{children}</Fragment>,
+  ]
 
   return (
     <TrueSheet
@@ -148,25 +177,28 @@ export function MobileSheet({
         onDismissed?.()
       }}
     >
-      <Animated.ScrollView
-        ref={scroller}
-        onScroll={onScroll}
-        scrollEventThrottle={16}
-        style={{ flexGrow: 0, flexShrink: 1 }}
-        nestedScrollEnabled
-        showsVerticalScrollIndicator={false}
-        stickyHeaderIndices={stickyHeader ? [0] : undefined}
-        contentContainerStyle={{
-          paddingHorizontal: tokens.space[5],
-          paddingBottom: footer ? tokens.space[3] : tokens.space[5] + (FLOATING ? 0 : insets.bottom),
-        }}
-      >
-        {stickyHeader ? (
-          // `sticky top-0 bg-jo-surface pb-1` du lab ; l'espace sous la zone reprend le `gap-3` du contenu.
-          <View style={{ backgroundColor: colors.surface, paddingBottom: tokens.space[4] }}>{stickyHeader}</View>
-        ) : null}
-        {children}
-      </Animated.ScrollView>
+      {loadMore ? (
+        <DragToLoadMore
+          enabled={loadMore.enabled}
+          loading={loadMore.loading}
+          onLoadMore={loadMore.onLoadMore}
+          style={{ flexGrow: 0, flexShrink: 1, flexBasis: 'auto' }}
+        >
+          <LoadMoreScrollView
+            ref={scroller}
+            onScroll={(event) => {
+              offset.value = event.nativeEvent.contentOffset.y
+            }}
+            {...scrollProps}
+          >
+            {content}
+          </LoadMoreScrollView>
+        </DragToLoadMore>
+      ) : (
+        <Animated.ScrollView ref={scroller} onScroll={onScroll} scrollEventThrottle={16} {...scrollProps}>
+          {content}
+        </Animated.ScrollView>
+      )}
       {/* Grande feuille = liste paginée (joueurs, commentaires) : « Haut de page » comme dans les écrans. */}
       {tall && <ScrollToTopPill scroll={offset} top={tokens.space[3]} onPress={() => scroller.current?.scrollTo({ y: 0, animated: true })} />}
     </TrueSheet>

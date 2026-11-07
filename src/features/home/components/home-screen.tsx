@@ -48,6 +48,7 @@ import { openTopic } from '@/features/topic'
 import { useTopicFacets, useTopics } from '@/features/topics/hooks/use-topics'
 import type { TopicFilters } from '@/features/topics/lib/topics-service'
 import { useHome, useUnreadCount } from '../hooks/use-home'
+import { feedFooterProps, pagedQuery } from '@/shared/utils/paging'
 
 const LANDSCAPE_WIDTH = 240
 const GUTTER = tokens.space[5]
@@ -182,9 +183,7 @@ function Followed({ list, selected, onSelect }: { list: ReturnType<typeof useTop
       {!list.isPending && (
         <FeedFooter
           style={{ marginHorizontal: GUTTER }}
-          state={list.isFetchNextPageError ? 'error' : list.isFetchingNextPage ? 'loading' : list.hasNextPage ? 'more' : 'end'}
-          onLoadMore={() => void list.fetchNextPage()}
-          onRetry={() => void list.fetchNextPage()}
+          {...feedFooterProps(pagedQuery(list))}
           endLabel="Tu as vu tous tes sujets suivis"
           remainingLabel={list.hasNextPage && total !== undefined ? remainingFollowed(Math.max(0, total - topics.length)) : undefined}
         />

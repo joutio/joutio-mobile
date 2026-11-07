@@ -26,6 +26,7 @@ import {
   type WallCommentMock,
   type WallPostMock,
 } from '../lib/wall-mocks'
+import { clientSource, feedFooterProps, loadMoreOptions } from '@/shared/utils/paging'
 
 const remainingPosts = (count: number) => `${count} ${count > 1 ? 'autres publications' : 'autre publication'}`
 
@@ -53,6 +54,7 @@ export function useWall(me: string) {
     visible: posts.slice(0, pages * WALL_PAGE_SIZE),
     hasMore: posts.length > pages * WALL_PAGE_SIZE,
     remaining: Math.max(0, posts.length - pages * WALL_PAGE_SIZE),
+    pages,
     liked,
     loadMore: () => setPages((value) => value + 1),
     toggleLike: (id: string) =>
@@ -96,6 +98,7 @@ export function WallTab({ wall, onComment }: { wall: Wall; onComment: (post: Wal
             ))}
             <FeedFooter
               state={wall.hasMore ? 'more' : 'end'}
+              pages={wall.pages}
               onLoadMore={wall.loadMore}
               onRetry={wall.loadMore}
               endLabel="Tu as vu tout le mur"
@@ -137,6 +140,7 @@ export function CommentsSheet({ post, me, onClose }: { post: WallPostMock | unde
   const all = [...WALL_COMMENTS_MOCK.slice(0, Math.max(post?.comments ?? 0, 3) + 20), ...mine]
   const visible = all.slice(0, pages * COMMENTS_PAGE_SIZE + mine.length)
   const hasMore = visible.length < all.length
+  const source = clientSource(pages, setPages, hasMore)
   const excerpt = post ? `${post.name} · ${post.text.length > 32 ? `${post.text.slice(0, 32).trimEnd()}…` : post.text}` : undefined
 
   return (
@@ -149,6 +153,7 @@ export function CommentsSheet({ post, me, onClose }: { post: WallPostMock | unde
       title={`Commentaires · ${all.length}`}
       subtitle={excerpt}
       tall
+      loadMore={loadMoreOptions(source)}
       footer={
         <Composer
           value={comment}
@@ -172,12 +177,7 @@ export function CommentsSheet({ post, me, onClose }: { post: WallPostMock | unde
             onLongPress={() => report('commentaire')}
           />
         ))}
-        <FeedFooter
-          state={hasMore ? 'more' : 'end'}
-          onLoadMore={() => setPages(pages + 1)}
-          onRetry={() => setPages(pages + 1)}
-          endLabel="Tu as vu tous les commentaires"
-        />
+        <FeedFooter {...feedFooterProps(source)} endLabel="Tu as vu tous les commentaires" />
       </View>
     </MobileSheet>
   )

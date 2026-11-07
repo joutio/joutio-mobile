@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode, type Ref } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode, type Ref } from 'react'
 import {
   Platform,
   ScrollView,
@@ -8,11 +8,23 @@ import {
   type NativeSyntheticEvent,
   type ScrollViewInstance,
   type ScrollViewProps,
+  type StyleProp,
+  type ViewStyle,
 } from 'react-native'
 import { createTabList } from 'react-native-collapsible-tabs-native'
 import { GestureDetector, GestureStateManager, usePanGesture, type PanGesture } from 'react-native-gesture-handler'
-import Animated, { interpolate, useAnimatedProps, useAnimatedStyle, useSharedValue, withSpring, type SharedValue } from 'react-native-reanimated'
-import { scheduleOnRN } from 'react-native-worklets'
+import Animated, {
+  interpolate,
+  scrollTo,
+  useAnimatedProps,
+  useAnimatedRef,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  type AnimatedRef,
+  type SharedValue,
+} from 'react-native-reanimated'
+import { scheduleOnRN, scheduleOnUI } from 'react-native-worklets'
 import { haptic } from '../haptics'
 import { useReducedMotion } from '../motion'
 import { useHorizontalGesture } from './horizontal-gesture'
@@ -30,6 +42,10 @@ const MIN_LOADING_MS = 600
  * pull-to-refresh) : coupé pile au bas, l'état arrivait après le geste et le ressort natif s'ajoutait au nôtre.
  */
 const NEAR_END = 120
+/** Part de la hauteur visible dévoilée après l'arrivée de la suite : on voit les nouveaux éléments en entier. */
+const REVEAL = 0.5
+/** Attente maximale (frames) de la mesure du nouveau contenu avant de refermer sans compenser. */
+const SETTLE_FRAMES = 30
 /** Ressort du retour et de la fermeture : sans rebond visible, comme un pull-to-refresh. */
 const SPRING = { damping: 26, stiffness: 260, mass: 1 }
 
@@ -59,6 +75,8 @@ interface LoadMoreContextValue {
   setContent: (height: number) => void
   /** Traction courante (pt), pour le pied qui s'efface quand elle commence. */
   pull: SharedValue<number>
+  /** Le défilement s'enregistre : à la fin du chargement, la liste défile jusqu'aux nouveaux éléments. */
+  register: (ref: AnimatedRef<Animated.ScrollView> | null) => void
 }
 
 const LoadMoreContext = createContext<LoadMoreContextValue | null>(null)
@@ -74,6 +92,8 @@ export interface DragToLoadMoreProps {
   /** Requête de la page suivante en cours : la liste reste ouverte sur le loader jusqu'à la fin. */
   loading?: boolean
   onLoadMore: () => void
+  /** Remplace `flex: 1` (feuille ajustée à son contenu : hauteur naturelle, plafonnée). */
+  style?: StyleProp<ViewStyle>
   /** La liste, dont le défilement est `LoadMoreScrollView` (`renderScrollComponent` d'une FlashList) ou `TabLoadMoreScrollView`. */
   children: ReactNode
 }
@@ -87,7 +107,7 @@ export interface DragToLoadMoreProps {
  *
  * Geste (Gesture Handler) et physique (Reanimated) tournent sur le thread UI.
  */
-export function DragToLoadMore({ enabled, loading = false, onLoadMore, children }: DragToLoadMoreProps) {
+export function DragToLoadMore({ enabled, loading = false, onLoadMore, style, children }: DragToLoadMoreProps) {
   const reduced = useReducedMotion()
   // Un rail horizontal (Top 10, puces…) possède le geste : le pan du pied de liste ne doit jamais l'intercepter.
   const horizontalOwned = useHorizontalGesture()?.owned
@@ -112,6 +132,8 @@ export function DragToLoadMore({ enabled, loading = false, onLoadMore, children 
   const viewportHeight = useRef(0)
   const offset = useRef(0)
   const startedAt = useRef(0)
+  const contentAtStart = useRef(0)
+  const scroller = useRef<AnimatedRef<Animated.ScrollView> | null>(null)
 
   const updateEnd = () => {
     const bottom = offset.current + viewportHeight.current
@@ -123,6 +145,7 @@ export function DragToLoadMore({ enabled, loading = false, onLoadMore, children 
 
   const start = () => {
     startedAt.current = Date.now()
+    contentAtStart.current = content.current
     setBusy(true)
     onLoadMore()
   }
@@ -206,19 +229,52 @@ export function DragToLoadMore({ enabled, loading = false, onLoadMore, children 
     },
   })
 
-  // Fin de la requête (au moins MIN_LOADING_MS) : la liste se referme sur les nouveaux éléments.
+  // Fin de la requête (au moins MIN_LOADING_MS) : la liste se referme **sur les nouveaux éléments** (2026-11-07).
+  // Refermer seulement (pull → 0) laissait le défilement en place : la suite arrivait au ras du bas de l'écran, rognée.
+  // Dès que le nouveau contenu est mesuré, dans la même frame sur le thread UI, la traction retombe et le défilement
+  // avance d'autant — rien ne bouge à l'écran, la zone du loader montre le début de la suite —, puis la liste défile
+  // en douceur pour la dévoiler.
   useEffect(() => {
     if (!busy || loading) return
-    const timer = setTimeout(
-      () => {
-        pull.value = withSpring(0, SPRING)
-        phase.value = 0
-        setBusy(false)
-      },
-      Math.max(0, MIN_LOADING_MS - (Date.now() - startedAt.current)),
-    )
-    return () => clearTimeout(timer)
-  }, [busy, loading, phase, pull])
+    let cancelled = false
+    let frame: number | null = null
+    const close = () => {
+      pull.value = withSpring(0, SPRING)
+      phase.value = 0
+      setBusy(false)
+    }
+    const settle = (frames: number) => {
+      if (cancelled) return
+      const grown = content.current - contentAtStart.current
+      const ref = scroller.current
+      if (grown < LOADER_HEIGHT && frames < SETTLE_FRAMES) {
+        frame = requestAnimationFrame(() => settle(frames + 1))
+        return
+      }
+      if (grown < LOADER_HEIGHT || !ref) {
+        close()
+        return
+      }
+      const from = offset.current + LOADER_HEIGHT
+      const max = Math.max(from, content.current - viewportHeight.current)
+      const to = Math.min(max, from + viewportHeight.current * REVEAL)
+      const animate = !reduced
+      scheduleOnUI(() => {
+        'worklet'
+        pull.value = 0
+        scrollTo(ref, 0, from, false)
+        if (to > from) scrollTo(ref, 0, to, animate)
+      })
+      phase.value = 0
+      setBusy(false)
+    }
+    const timer = setTimeout(() => settle(0), Math.max(0, MIN_LOADING_MS - (Date.now() - startedAt.current)))
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+      if (frame !== null) cancelAnimationFrame(frame)
+    }
+  }, [busy, loading, phase, pull, reduced])
 
   const listStyle = useAnimatedStyle(() => ({ transform: [{ translateY: -pull.value }] }))
   const loaderStyle = useAnimatedStyle(() => ({
@@ -236,6 +292,9 @@ export function DragToLoadMore({ enabled, loading = false, onLoadMore, children 
       locked,
       noBounce,
       pull,
+      register: (ref) => {
+        scroller.current = ref
+      },
       measure: (event) => {
         offset.current = event.contentOffset.y
         content.current = event.contentSize.height
@@ -258,9 +317,9 @@ export function DragToLoadMore({ enabled, loading = false, onLoadMore, children 
 
   return (
     <LoadMoreContext.Provider value={value}>
-      <View style={{ flex: 1, overflow: 'hidden' }}>
+      <View style={[{ flex: 1 }, style, { overflow: 'hidden' }]}>
         <GestureDetector gesture={pan}>
-          <Animated.View style={[{ flex: 1 }, listStyle]}>{children}</Animated.View>
+          <Animated.View style={[{ flex: 1 }, style, listStyle]}>{children}</Animated.View>
         </GestureDetector>
         <Animated.View
           pointerEvents="none"
@@ -291,13 +350,28 @@ export function LoadMoreScrollView({ onScroll, onLayout, onContentSizeChange, re
   const userScrollEnabled = props.scrollEnabled !== false
   // Posé depuis le thread UI par le geste : la liste native se fige sans attendre un rendu React.
   const animatedProps = useAnimatedProps(() => ({ scrollEnabled: userScrollEnabled && !locked.value }))
+  const animatedRef = useAnimatedRef<Animated.ScrollView>()
+  const register = context?.register
+  useEffect(() => {
+    register?.(animatedRef)
+    return () => register?.(null)
+  }, [register, animatedRef])
+  // Ref stable : une ref en ligne se détache et se rattache à chaque rendu.
+  const setRef = useCallback(
+    (node: Animated.ScrollView | null) => {
+      animatedRef(node)
+      if (typeof ref === 'function') ref(node as unknown as ScrollViewInstance)
+      else if (ref) (ref as { current: unknown }).current = node
+    },
+    [animatedRef, ref],
+  )
   if (!context) return <ScrollView ref={ref} onScroll={onScroll} onLayout={onLayout} onContentSizeChange={onContentSizeChange} {...props} />
   const { enabled, noBounce, measure, setViewport, setContent } = context
   return (
     <Animated.ScrollView
       scrollEventThrottle={16}
       {...props}
-      ref={ref as Ref<Animated.ScrollView>}
+      ref={setRef}
       animatedProps={animatedProps}
       bounces={Platform.OS === 'ios' && enabled && noBounce ? false : props.bounces}
       alwaysBounceVertical={props.alwaysBounceVertical ?? true}

@@ -44,6 +44,7 @@ import type { TopicCardView, TopicSort } from '@/shared/types/bff'
 import { topicName } from '@/shared/utils/topic-name'
 import { useTopicFacets, useTopics } from '../hooks/use-topics'
 import { useOnline } from '@/shared/hooks/use-online'
+import { feedFooterProps, pagedQuery } from '@/shared/utils/paging'
 
 const GUTTER = tokens.space[5]
 const GAP = tokens.space[4]
@@ -340,9 +341,7 @@ export function TopicsScreen() {
               items.length > 0 ? (
                 <FeedFooter
                   style={{ marginHorizontal: GUTTER }}
-                  state={topics.isFetchNextPageError ? 'error' : topics.hasNextPage ? 'more' : 'end'}
-                  onLoadMore={() => void topics.fetchNextPage()}
-                  onRetry={() => void topics.fetchNextPage()}
+                  {...feedFooterProps(pagedQuery(topics))}
                   endLabel="Tu as vu tous les sujets"
                   remainingLabel={remainingLabel}
                 />

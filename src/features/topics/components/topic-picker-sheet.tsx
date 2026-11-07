@@ -18,6 +18,7 @@ import { useDebounced } from '@/shared/hooks/use-debounced'
 import { topicName } from '@/shared/utils/topic-name'
 import { useTopics } from '../hooks/use-topics'
 import { DEFAULT_TOPIC_SORT } from '../lib/topics-service'
+import { feedFooterProps, loadMoreOptions, pagedQuery } from '@/shared/utils/paging'
 
 export interface PickedTopic {
   topicId: string
@@ -49,6 +50,7 @@ export function TopicPickerSheet({
   const search = useDebounced(query.trim())
   const topics = useTopics({ query: search, categories: [], sort: DEFAULT_TOPIC_SORT, hideFollowed: false }, open)
   const list = topics.data?.pages.flatMap((page) => page.topics) ?? []
+  const paged = pagedQuery(topics)
 
   // Vidée à l'ouverture, comme le lab.
   useEffect(() => {
@@ -62,6 +64,7 @@ export function TopicPickerSheet({
       title={title}
       subtitle={subtitle}
       tall
+      loadMore={loadMoreOptions(paged)}
       stickyHeader={<SearchField value={query} onChange={setQuery} placeholder="Chercher un sujet" label="Chercher un sujet" />}
     >
       {topics.isPending ? (
@@ -100,12 +103,7 @@ export function TopicPickerSheet({
               )
             })}
           </ListGroup>
-          <FeedFooter
-            state={topics.isFetchNextPageError ? 'error' : topics.isFetchingNextPage ? 'loading' : topics.hasNextPage ? 'more' : 'end'}
-            onLoadMore={() => void topics.fetchNextPage()}
-            onRetry={() => void topics.fetchNextPage()}
-            endLabel="Tu as vu tous les sujets"
-          />
+          <FeedFooter {...feedFooterProps(paged)} endLabel="Tu as vu tous les sujets" />
         </View>
       )}
     </MobileSheet>
