@@ -1,3 +1,9 @@
+## [1.21.0](https://github.com/joutio/joutio-mobile-expo/compare/v1.20.1...v1.21.0) (2026-11-07)
+
+### Features
+
+* **mobile:** streamline profile MVP and native interactions ([661b910](https://github.com/joutio/joutio-mobile-expo/commit/661b910a4c2ff9429c2504ef12bb08454ebbdb02))
+
 ## [1.20.1](https://github.com/joutio/joutio-mobile-expo/compare/v1.20.0...v1.20.1) (2026-11-07)
 
 ### Bug Fixes
