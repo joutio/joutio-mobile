@@ -1,6 +1,5 @@
 export * from './answer-card'
 export * from './duel-header'
-export * from './invite-card'
 export * from './matchmaking-map'
 export * from './preparation-steps'
 export * from './question-block'

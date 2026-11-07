@@ -1,3 +1,4 @@
+import { LoadMoreDemo } from './load-more'
 import type { ComponentType } from 'react'
 import { AvatarDemo, BadgeDemo, ButtonDemo, IconButtonDemo, PillDemo, PremiumBadgeDemo, SkeletonDemo } from './row1'
 import { BottomNavDemo, MobileTopBarDemo, StickyScreenDemo } from './row2'
@@ -51,6 +52,7 @@ export const CATALOG: CatalogEntry[] = [
   { id: 'banner', title: 'Banner', row: 4, spec: 'components/feedback.md', Demo: BannerDemo },
   { id: 'section-header', title: 'SectionHeader', row: 5, spec: 'components/primitives.md', Demo: SectionHeaderDemo },
   { id: 'empty-state', title: 'EmptyState', row: 5, spec: 'components/primitives.md', Demo: EmptyStateDemo },
+  { id: 'native-load-more', title: 'Suite native (écran et feuille)', row: 5, spec: 'components/contenu.md', Demo: LoadMoreDemo, fullscreen: true },
   { id: 'feed-footer', title: 'FeedFooter', row: 5, spec: 'components/contenu.md', Demo: FeedFooterDemo },
   { id: 'parallax-screen', title: 'ParallaxScreen', row: 5, spec: 'screens/fiche-sujet.md', Demo: ParallaxScreenDemo, fullscreen: true },
   { id: 'collapsible-tabs-screen', title: 'CollapsibleTabsScreen', row: 5, spec: 'screens/fiche-sujet.md', Demo: CollapsibleTabsScreenDemo, fullscreen: true },

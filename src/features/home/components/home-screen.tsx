@@ -224,7 +224,7 @@ function TabPage({ tab, home }: { tab: Tab; home: ReturnType<typeof useHome> }) 
     <DragToLoadMore
       enabled={followed && Boolean(list.hasNextPage) && !list.isFetchNextPageError}
       loading={list.isFetchingNextPage}
-      onLoadMore={() => void list.fetchNextPage()}
+      onLoadMore={() => list.fetchNextPage()}
     >
       <TabLoadMoreScrollView
         showsVerticalScrollIndicator={false}

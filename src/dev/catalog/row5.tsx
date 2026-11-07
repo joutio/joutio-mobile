@@ -166,6 +166,7 @@ export function ParallaxScreenDemo() {
   return (
     <ParallaxScreen
       scrollRef={scroller}
+      onRefresh={() => new Promise((resolve) => setTimeout(resolve, 1500))}
       image={SAMPLE_BANNER}
       title="Égypte antique"
       eyebrow={

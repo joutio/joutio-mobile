@@ -1,16 +1,6 @@
 import { router } from 'expo-router'
 import { useMemo, useRef, useState } from 'react'
-import {
-  PixelRatio,
-  Platform,
-  Pressable,
-  Share,
-  ScrollView,
-  View,
-  type NativeScrollEvent,
-  type NativeSyntheticEvent,
-  type ScrollViewInstance,
-} from 'react-native'
+import { Pressable, Share, ScrollView, View, type NativeScrollEvent, type NativeSyntheticEvent, type ScrollViewInstance } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import {
   Banner,
@@ -54,14 +44,8 @@ import { ReportPlayerSheet } from './report-sheets'
 import { useMyAvatar } from '@/features/avatar/lib/avatar-preview'
 import { usePlayerAvatar } from '@/features/social/hooks/use-player-avatar'
 
-/**
- * Résistance de la bascule vers Détails du duel (allégée le 2026-11-07) : un huitième de page tiré, ou un lancer passé
- * 3 %. La vitesse native est en pt/ms sur iOS, en px/ms sur Android : ramenée en pt.
- */
-const SWITCH_DISTANCE = 0.12
-const FLING_DISTANCE = 0.03
-const FLING_SPEED = 0.4
-const speedOf = (velocity: number) => Math.abs(velocity) / (Platform.OS === 'android' ? PixelRatio.get() : 1)
+/** Seuil minimal en points : distingue un glissement volontaire d'un toucher, sans condition de vitesse. */
+const SWITCH_DISTANCE = 8
 
 const ORDER = Object.keys(tokens.tier) as TierCode[]
 const masteryOf = (xp: number): MasteryTier => MASTERY_TIERS.reduce<MasteryTier>((best, tier) => (xp >= MASTERY_XP[tier] ? tier : best), 'FER')
@@ -154,6 +138,8 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
   // Deux pages verticales fixes (résultat, Détails du duel), hauteur mesurée sous la barre.
   const pagerRef = useRef<ScrollViewInstance>(null)
   const dragStart = useRef(0)
+  const targetPage = useRef(0)
+  const enforceTarget = useRef(false)
   const [pageHeight, setPageHeight] = useState(0)
   const [page, setPage] = useState(0)
   const hasReview = useMemo(() => !cancelled && reviewRoundsOf(game).length > 0, [cancelled, game])
@@ -271,9 +257,7 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
             <ScrollView
               ref={pagerRef}
               style={{ flex: 1 }}
-              // Deux pages avec une légère résistance (2026-11-07) : la bascule exige un huitième de page tiré, ou un
-              // lancer au-delà de 3 % ; sinon la page revient. Ni `pagingEnabled` (moitié de page) ni `snapToOffsets`
-              // (un effleurement suffisait).
+              // Deux pages alignées : un glissement de 8 points suffit dans les deux sens.
               decelerationRate="fast"
               bounces={false}
               onScrollBeginDrag={(event: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -282,10 +266,11 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
               onScrollEndDrag={(event: NativeSyntheticEvent<NativeScrollEvent>) => {
                 const offset = event.nativeEvent.contentOffset.y
                 const travelled = offset - dragStart.current
-                const speed = speedOf(event.nativeEvent.velocity?.y ?? 0)
                 const from = Math.round(dragStart.current / pageHeight)
-                const passed = Math.abs(travelled) > pageHeight * SWITCH_DISTANCE || (Math.abs(travelled) > pageHeight * FLING_DISTANCE && speed > FLING_SPEED)
+                const passed = Math.abs(travelled) >= SWITCH_DISTANCE
                 const target = passed ? Math.min(1, Math.max(0, from + Math.sign(travelled))) : from
+                targetPage.current = target
+                enforceTarget.current = true
                 setPage(target)
                 pagerRef.current?.scrollTo({ y: target * pageHeight, animated: true })
               }}
@@ -293,7 +278,18 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
               scrollEnabled={hasReview}
               scrollsToTop={false}
               showsVerticalScrollIndicator={false}
-              onMomentumScrollEnd={(event: NativeSyntheticEvent<NativeScrollEvent>) => setPage(Math.round(event.nativeEvent.contentOffset.y / pageHeight))}
+              onMomentumScrollBegin={() => {
+                // Android démarre parfois son fling après la commande émise au relâcher.
+                // Reprendre une seule fois la destination choisie, sans relancer chaque animation.
+                if (!enforceTarget.current) return
+                enforceTarget.current = false
+                pagerRef.current?.scrollTo({ y: targetPage.current * pageHeight, animated: true })
+              }}
+              onMomentumScrollEnd={(event: NativeSyntheticEvent<NativeScrollEvent>) => {
+                const target = targetPage.current * pageHeight
+                if (Math.abs(event.nativeEvent.contentOffset.y - target) > 1) pagerRef.current?.scrollTo({ y: target, animated: false })
+                setPage(targetPage.current)
+              }}
             >
               {/* Page 1 : le résultat. */}
               <View
@@ -395,6 +391,8 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
                     accessibilityLabel="Revoir les questions du duel"
                     accessibilityHint="Ouvre la page Détails du duel"
                     onPress={() => {
+                      targetPage.current = 1
+                      enforceTarget.current = false
                       setPage(1)
                       pagerRef.current?.scrollTo({ y: pageHeight, animated: true })
                     }}
@@ -427,6 +425,8 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
                     accessibilityLabel="Revenir au résultat"
                     hitSlop={8}
                     onPress={() => {
+                      targetPage.current = 0
+                      enforceTarget.current = false
                       setPage(0)
                       pagerRef.current?.scrollTo({ y: 0, animated: true })
                     }}

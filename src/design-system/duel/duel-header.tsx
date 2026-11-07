@@ -9,7 +9,7 @@ export interface DuelPlayer {
   score: number
   tier?: TierCode
   src?: string
-  /** Couleur du score à la révélation. */
+  /** Verdict de la dernière réponse confirmée par le serveur. */
   scoreState?: 'rest' | 'correct' | 'wrong'
 }
 
@@ -33,7 +33,11 @@ function Side({ player, end }: { player: DuelPlayer; end?: boolean }) {
         <Text variant="callout" weight="600" numberOfLines={1}>
           {player.name}
         </Text>
-        <Text variant="numericMedium" color={SCORE[player.scoreState ?? 'rest']} accessibilityLabel={`${player.score} points`}>
+        <Text
+          variant="numericMedium"
+          color={SCORE[player.scoreState ?? 'rest']}
+          accessibilityLabel={`${player.score} points${player.scoreState === 'correct' ? ', bonne réponse' : player.scoreState === 'wrong' ? ', mauvaise réponse' : ''}`}
+        >
           {player.score}
         </Text>
       </View>

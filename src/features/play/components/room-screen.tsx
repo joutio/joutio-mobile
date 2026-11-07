@@ -1,35 +1,27 @@
-import * as Clipboard from 'expo-clipboard'
-import { router, useLocalSearchParams, usePreventRemove } from 'expo-router'
+import { router, useLocalSearchParams, useIsFocused } from 'expo-router'
 import { useEffect, useRef, useState } from 'react'
-import { ScrollView, Share, View } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { Share, View } from 'react-native'
 import {
   Button,
   EmptyState,
-  ForceDark,
-  haptic,
-  IconButton,
-  InviteCard,
   LightningIcon,
   LinkIcon,
   Pill,
   PreparationSteps,
-  ReconnectCountdown,
   RobotIcon,
   RoomPlayers,
+  Screen,
   ShareNetworkIcon,
   SwordIcon,
   Text,
   tokens,
   useTheme,
   WarningCircleIcon,
-  XIcon,
   type RoomPlayer,
 } from '@/design-system'
 import { useMe } from '@/features/me'
 import { config } from '@/lib/config'
 import { readServerNow, useServerClock } from '@/lib/realtime/server-clock'
-import { useConnectionStore } from '@/lib/ws'
 import { tierOf } from '@/shared/utils/tier'
 import { topicName } from '@/shared/utils/topic-name'
 import { PREPARATION_STEPS, preparationComplete, preparationStep, waitingStatusLabel, wizzState } from '../domain/room'
@@ -37,6 +29,7 @@ import { useRoom, useRoomPresence, useWizzRoom } from '../hooks/use-play'
 import { playService } from '../lib/play-service'
 import { usePlayerProfile } from '@/features/social/hooks/use-social'
 import { userAvatar } from '@/shared/utils/avatar'
+import { usePlaySession } from '../hooks/play-session'
 import { useMyAvatar } from '@/features/avatar/lib/avatar-preview'
 
 export interface RoomRouteParams {
@@ -77,9 +70,9 @@ function countdownOf(expiresAt: string | null, now: number) {
 /**
  * Salon de préparation (`defis.md` § 2, `lancer-partie.md`, 2026-11-07 à l'image de joutio-web) : **un seul écran pour
  * toute salle** — salon partagé, défi nominatif, bot ou appariement. Face-à-face avec la présence de chacun, étapes de
- * préparation, décompte d'expiration ; lien et QR code pour un salon partagé ; relance (« wizz ») de l'adversaire
- * nommé absent ; annulation par l'initiateur. Tant que les joueurs ne sont pas là, la croix quitte le salon sans le
- * fermer ; une préparation engagée ne peut plus être quittée (seule l'annulation reste). Sombre, comme le duel qui suit.
+ * préparation, décompte d'expiration ; partage du lien pour un salon partagé ; relance (« wizz ») de l'adversaire
+ * nommé absent ; annulation par l'initiateur. Tant que les joueurs ne sont pas là, le retour quitte le salon sans le
+ * fermer ; la préparation continue après le retour, suivie par le bandeau global.
  */
 export function RoomScreen() {
   const params = useLocalSearchParams<RoomRouteParams>()
@@ -89,11 +82,12 @@ export function RoomScreen() {
   const myAvatar = useMyAvatar()
   const userId = me.data?.userId ?? ''
   const { view, room, status } = useRoom(roomId)
-  const connection = useConnectionStore((state) => state.status)
   const presence = useRoomPresence(roomId, true)
   const wizz = useWizzRoom(roomId)
   const now = useServerNow()
-  const [copied, setCopied] = useState(false)
+  const focused = useIsFocused()
+  const { trackRoom } = usePlaySession()
+  useEffect(() => trackRoom(roomId), [roomId, trackRoom])
 
   const topic = view.data ? topicName(view.data.topic.names) : (params.topicName ?? '')
   const category = view.data?.topic.category ?? params.category
@@ -123,10 +117,10 @@ export function RoomScreen() {
   // La partie est créée : le duel remplace la salle (le retour ramène à l'écran d'avant).
   const done = useRef(false)
   useEffect(() => {
-    if (!gameId || done.current) return
+    if (!focused || !gameId || done.current) return
     done.current = true
     router.replace({ pathname: '/duel/[gameId]', params: { gameId, topicName: topic, category: category ?? '', topicId: topicId ?? '' } })
-  }, [gameId, topic, category, topicId])
+  }, [focused, gameId, topic, category, topicId])
 
   // Quitter l'écran pendant l'attente : on quitte le salon sans le fermer (joutio-web) ; l'annulation est explicite.
   const leftRef = useRef(false)
@@ -139,14 +133,7 @@ export function RoomScreen() {
     },
     [roomId],
   )
-  // Préparation engagée : le retour (geste, bouton Android) ne quitte plus le salon.
-  usePreventRemove(engaged && !gameId, () => haptic('warning'))
 
-  const leave = () => {
-    leftRef.current = true
-    playService.leaveRoom(roomId).catch(() => undefined)
-    router.back()
-  }
   const cancel = () => {
     leftRef.current = true
     playService.cancelRoom(roomId).catch(() => undefined)
@@ -160,9 +147,9 @@ export function RoomScreen() {
         ? { title: 'Salon introuvable', description: 'Il a peut-être expiré.' }
         : TERMINAL[roomStatus as keyof typeof TERMINAL]
     return (
-      <ForceDark>
+      <Screen nativeHeader scroll={false}>
         <Terminal title={copy.title} description={copy.description} onBack={close} />
-      </ForceDark>
+      </Screen>
     )
   }
 
@@ -188,9 +175,8 @@ export function RoomScreen() {
   const link = roomLink(roomId)
 
   return (
-    <ForceDark>
+    <>
       <Salon
-        top={waiting ? <IconButton icon={XIcon} label={isInitiator ? 'Quitter sans fermer le salon' : 'Quitter le salon'} onPress={leave} /> : null}
         footer={
           <>
             {presence.failed && (
@@ -243,16 +229,6 @@ export function RoomScreen() {
         <PreparationSteps steps={PREPARATION_STEPS} current={step} detail={detail} engaged={engaged} complete={preparationComplete(roomStatus)} />
         {shared && waiting && (
           <>
-            <InviteCard
-              url={link}
-              copied={copied}
-              onCopy={() => {
-                void Clipboard.setStringAsync(link)
-                haptic('success')
-                setCopied(true)
-                setTimeout(() => setCopied(false), 2000)
-              }}
-            />
             <Button
               full
               icon={ShareNetworkIcon}
@@ -264,26 +240,20 @@ export function RoomScreen() {
           </>
         )}
       </Salon>
-      {connection === 'reconnecting' && <ReconnectCountdown onLeave={waiting ? leave : cancel} leaveLabel={waiting ? 'Quitter le salon' : cancelLabel} />}
-    </ForceDark>
+    </>
   )
 }
 
-/** Gabarit du salon : croix en haut à droite, contenu qui défile, actions collées en bas. */
-function Salon({ top, footer, children }: { top: React.ReactNode; footer: React.ReactNode; children: React.ReactNode }) {
-  const { colors } = useTheme()
-  const insets = useSafeAreaInsets()
+/** Page standard : en-tête natif, contenu défilant et actions fixes. */
+function Salon({ footer, children }: { footer: React.ReactNode; children: React.ReactNode }) {
   return (
-    <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top, paddingBottom: insets.bottom + tokens.space[3] }}>
-      <View style={{ height: 52, flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', paddingHorizontal: tokens.space[3] }}>{top}</View>
-      <ScrollView
-        contentContainerStyle={{ gap: tokens.space[6], paddingHorizontal: tokens.space[5], paddingBottom: tokens.space[5] }}
-        showsVerticalScrollIndicator={false}
-      >
-        {children}
-      </ScrollView>
-      <View style={{ gap: tokens.space[3], paddingHorizontal: tokens.space[5], paddingTop: tokens.space[3] }}>{footer}</View>
-    </View>
+    <Screen
+      nativeHeader
+      contentStyle={{ gap: tokens.space[6], padding: tokens.space[5] }}
+      bottomBar={<View style={{ gap: tokens.space[3], padding: tokens.space[5] }}>{footer}</View>}
+    >
+      {children}
+    </Screen>
   )
 }
 

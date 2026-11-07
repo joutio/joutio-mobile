@@ -68,7 +68,7 @@ function PeopleList({
     <DragToLoadMore
       enabled={Boolean(list.hasNextPage) && !list.isFetchNextPageError}
       loading={list.isFetchingNextPage}
-      onLoadMore={() => void list.fetchNextPage()}
+      onLoadMore={() => list.fetchNextPage()}
     >
       <TabLoadMoreScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingTop: tokens.space[2], paddingBottom: tokens.space[7] }}>
         {list.isPending ? (

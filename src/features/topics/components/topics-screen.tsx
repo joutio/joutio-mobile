@@ -291,7 +291,7 @@ export function TopicsScreen() {
         <DragToLoadMore
           enabled={Boolean(topics.hasNextPage) && !topics.isFetchNextPageError}
           loading={topics.isFetchingNextPage}
-          onLoadMore={() => void topics.fetchNextPage()}
+          onLoadMore={() => topics.fetchNextPage()}
         >
           <FlashList
             ref={list}

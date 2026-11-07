@@ -15,7 +15,8 @@ export interface LoadMoreOptions {
   /** Une page suivante existe (et la précédente n'a pas échoué). */
   enabled: boolean
   loading?: boolean
-  onLoadMore: () => void
+  resetKey?: unknown
+  onLoadMore: () => unknown
 }
 
 export interface ScreenProps {
@@ -108,7 +109,7 @@ export function Screen({
   )
   const scroller =
     loadMore && !nativeHeader ? (
-      <DragToLoadMore enabled={loadMore.enabled} loading={loadMore.loading} onLoadMore={loadMore.onLoadMore}>
+      <DragToLoadMore resetKey={loadMore.resetKey} enabled={loadMore.enabled} loading={loadMore.loading} onLoadMore={loadMore.onLoadMore}>
         {list}
       </DragToLoadMore>
     ) : (

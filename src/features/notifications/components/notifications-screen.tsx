@@ -96,7 +96,7 @@ export function NotificationsScreen() {
       <DragToLoadMore
         enabled={Boolean(list.hasNextPage) && !list.isFetchNextPageError}
         loading={list.isFetchingNextPage}
-        onLoadMore={() => void list.fetchNextPage()}
+        onLoadMore={() => list.fetchNextPage()}
       >
         <LoadMoreScrollView
           contentContainerStyle={{ flexGrow: 1, paddingBottom: tokens.space[7] }}

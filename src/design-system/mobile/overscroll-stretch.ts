@@ -1,5 +1,5 @@
 import { Platform } from 'react-native'
-import { usePanGesture, type PanGesture } from 'react-native-gesture-handler'
+import { usePanGesture, useNativeGesture, useSimultaneousGestures } from 'react-native-gesture-handler'
 import { useSharedValue, withSpring, type SharedValue } from 'react-native-reanimated'
 
 /** Ressort du retour de l'image, comme le rebond d'iOS. */
@@ -14,12 +14,12 @@ function rubberBand(distance: number, dimension: number) {
 
 /**
  * Tiré en haut de page sur **Android** (2026-11-07) : un `ScrollView` Android ne descend jamais sous 0, l'image de
- * l'en-tête ne pouvait donc pas zoomer comme au rebond d'iOS. Ce pan **ne s'active jamais** : il lit seulement les
- * touches, laissant le défilement natif et le pull-to-refresh (SwipeRefreshLayout) intacts, et renvoie une traction
+ * l'en-tête ne pouvait donc pas zoomer comme au rebond d'iOS. Ce pan observe les touches
+ * en simultané avec le geste natif, laissant le défilement et le pull-to-refresh intacts, et renvoie une traction
  * (`pull`, pt après résistance) tant que la page est en haut et que le doigt descend. L'appelant lit
  * `scroll - pull` à la place du défilement. Sur iOS, rien : le rebond natif donne déjà un défilement négatif.
  */
-export function useOverscrollStretch(scroll: SharedValue<number>, dimension = 600): { pan: PanGesture; pull: SharedValue<number> } {
+export function useOverscrollStretch(scroll: SharedValue<number>, dimension = 600) {
   const pull = useSharedValue(0)
   const startY = useSharedValue(Number.NaN)
   const startX = useSharedValue(0)
@@ -30,7 +30,8 @@ export function useOverscrollStretch(scroll: SharedValue<number>, dimension = 60
   }
   const pan = usePanGesture({
     enabled: Platform.OS === 'android',
-    manualActivation: true,
+    activeOffsetY: [-4, 4],
+    failOffsetX: [-12, 12],
     onTouchesDown: (event) => {
       'worklet'
       startY.value = Number.NaN
@@ -61,5 +62,9 @@ export function useOverscrollStretch(scroll: SharedValue<number>, dimension = 60
     onTouchesUp: release,
     onTouchesCancel: release,
   })
-  return { pan, pull }
+  // The native scroll/refresh may activate while this observer is still BEGAN.
+  // Keep both simultaneous so Android does not cancel the touch observation.
+  const native = useNativeGesture({ enabled: Platform.OS === 'android', disallowInterruption: false })
+  const gesture = useSimultaneousGestures(pan, native)
+  return { pan: gesture, pull }
 }

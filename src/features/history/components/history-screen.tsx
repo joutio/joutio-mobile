@@ -183,7 +183,7 @@ export function HistoryScreen() {
         <DragToLoadMore
           enabled={Boolean(list.hasNextPage) && !list.isFetchNextPageError}
           loading={list.isFetchingNextPage}
-          onLoadMore={() => void list.fetchNextPage()}
+          onLoadMore={() => list.fetchNextPage()}
         >
           <FlashList
             refreshing={pageRefresh.refreshing}

@@ -181,6 +181,7 @@ export function MobileSheet({
     >
       {loadMore ? (
         <DragToLoadMore
+          resetKey={loadMore.resetKey}
           enabled={loadMore.enabled}
           loading={loadMore.loading}
           onLoadMore={loadMore.onLoadMore}

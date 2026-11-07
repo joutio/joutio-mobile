@@ -9,6 +9,7 @@ export interface PagedSource {
   fetchNextPage: () => unknown
   /** Pages affichées (`data.pages.length`). */
   pages: number
+  resetKey?: unknown
 }
 
 /** Une `useInfiniteQuery` vue comme `PagedSource`. */
@@ -25,6 +26,7 @@ export function pagedQuery(query: {
     isFetchNextPageError: query.isFetchNextPageError,
     fetchNextPage: query.fetchNextPage,
     pages: query.data?.pages.length ?? 0,
+    resetKey: query.data?.pages[0],
   }
 }
 
@@ -38,8 +40,8 @@ export function feedFooterProps(source: PagedSource) {
   return {
     state: feedState(source),
     pages: source.pages,
-    onLoadMore: () => void source.fetchNextPage(),
-    onRetry: () => void source.fetchNextPage(),
+    onLoadMore: () => source.fetchNextPage(),
+    onRetry: () => source.fetchNextPage(),
   }
 }
 
@@ -47,8 +49,9 @@ export function feedFooterProps(source: PagedSource) {
 export function loadMoreOptions(source: PagedSource): LoadMoreOptions {
   return {
     enabled: source.hasNextPage && !source.isFetchNextPageError,
+    resetKey: source.resetKey,
     loading: source.isFetchingNextPage,
-    onLoadMore: () => void source.fetchNextPage(),
+    onLoadMore: () => source.fetchNextPage(),
   }
 }
 

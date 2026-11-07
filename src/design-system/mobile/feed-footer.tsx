@@ -40,6 +40,7 @@ export function FeedFooter({ state, pages, onLoadMore, onRetry, endLabel = 'Tu a
   // Sous `DragToLoadMore`, le chargement se voit dans son loader, sous la liste : le pied garde sa place (l'annonce,
   // effacée par la traction) au lieu de passer à une roue — un seul indicateur, une hauteur qui ne saute pas.
   const pulling = useLoadMorePull() !== null
+  const requestLoad = useLoadMoreAction()
 
   if (state === 'end' && pages <= 1) return null
 
@@ -72,7 +73,7 @@ export function FeedFooter({ state, pages, onLoadMore, onRetry, endLabel = 'Tu a
         <Text variant="caption" color="muted" align="center">
           La suite n'a pas pu se charger.
         </Text>
-        <Button variant="plain" tone="accent" size="S" icon={ArrowClockwiseIcon} onPress={onRetry}>
+        <Button variant="plain" tone="accent" size="S" icon={ArrowClockwiseIcon} onPress={requestLoad ?? onRetry} style={{ alignSelf: 'center' }}>
           Réessayer
         </Button>
       </View>
@@ -141,8 +142,7 @@ function PullHintBody({
   style?: StyleProp<ViewStyle>
 }) {
   const { colors } = useTheme()
-  // Le pied touché charge par le même chemin que la traction (`DragToLoadMore`) : loader sous la liste, puis dévoilement
-  // des nouveaux éléments. Appeler la requête directement les laissait sous le bas de l'écran, rognés (2026-11-07).
+  // Le pied touché charge par le même chemin que la traction (`DragToLoadMore`) : indicateur natif et conservation de la position de lecture.
   const load = useLoadMoreAction()
   const fade = useAnimatedStyle(() => ({ opacity: interpolate(pull.value, [0, LOAD_MORE_THRESHOLD * 0.35], [1, 0], 'clamp') }))
   return (

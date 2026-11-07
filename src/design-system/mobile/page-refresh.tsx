@@ -36,10 +36,11 @@ export function usePageRefresh(onRefresh?: () => Promise<unknown> | void) {
     ['topHeaderOffsetChange', 'onHeaderOffsetChange'],
   )
 
-  if (!onRefresh) return { refreshing: false, tabProps: {}, indicator: () => null }
+  if (!onRefresh) return { refreshing: false, pull, tabProps: { onHeaderOffsetChange }, indicator: () => null }
 
   return {
     refreshing,
+    pull,
     tabProps: {
       refreshing,
       onRefresh: () => {
@@ -53,7 +54,7 @@ export function usePageRefresh(onRefresh?: () => Promise<unknown> | void) {
       refreshTintColor: colors.muted,
       refreshBackgroundColor: colors.surface,
       refreshIndicatorHidden: CUSTOM_INDICATOR,
-      ...(CUSTOM_INDICATOR ? { onHeaderOffsetChange } : {}),
+      onHeaderOffsetChange,
     },
     /** À poser en `position: absolute` au-dessus de la page, `top` sous la barre de l'écran. */
     indicator: (top: number) => (CUSTOM_INDICATOR ? <PullIndicator pull={pull} refreshing={refreshing} top={top} /> : null),

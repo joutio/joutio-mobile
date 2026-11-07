@@ -215,18 +215,15 @@ function DuelScreenContent() {
     const theirs = revealed && arena.theirPick === choice
     let state: AnswerCardProps['state'] = 'rest'
     if (revealed) state = choice === arena.correctAnswer ? 'correct' : mine || theirs ? 'wrong' : 'unchosen'
-    else if (mine) state = 'pending'
+    else if (mine) state = arena.yourCorrect === true ? 'correct' : arena.yourCorrect === false ? 'wrong' : 'pending'
     else if (!arena.isAnswerable) state = 'unchosen'
     const notch = mine && theirs ? 'both' : mine ? 'me' : theirs ? 'opp' : 'none'
     return { key: choice, label, state, notch, onPress: () => arena.handleAnswer(choice) }
   })
 
   const seconds = Math.max(0, Math.ceil(arena.timeLeftDisplay))
-  // Les points d'une manche ne se montrent qu'à la révélation : le repli les ajoute dès la réponse (`PLAYER_ANSWERED`),
-  // on les retire tant que la question est ouverte (sinon la jauge monterait en jaune avant le verdict).
-  const hidden = scene.kind === 'question' && arena.gain ? arena.gain : { you: 0, them: 0 }
-  const myShown = arena.myScore - hidden.you
-  const theirShown = arena.theirScore - hidden.them
+  // Scores et verdicts sont autoritaires dès PLAYER_ANSWERED, comme sur le web.
+  // Le choix adverse et le verdict des autres cartes attendent la révélation finale.
   const timerState = revealed || (scene.kind === 'question' && scene.locked) ? 'frozen' : 'running'
 
   return (
@@ -244,15 +241,15 @@ function DuelScreenContent() {
               me={{
                 name: myName,
                 src: myAvatar,
-                score: myShown,
+                score: arena.myScore,
                 tier: myTier,
-                scoreState: revealed ? (arena.gauge.you === 'idle' ? 'rest' : arena.gauge.you) : 'rest',
+                scoreState: arena.gauge.you === 'idle' ? 'rest' : arena.gauge.you,
               }}
               opponent={{
                 name: opponentName,
                 src: opponentAvatar,
-                score: theirShown,
-                scoreState: revealed ? (arena.gauge.them === 'idle' ? 'rest' : arena.gauge.them) : 'rest',
+                score: arena.theirScore,
+                scoreState: arena.gauge.them === 'idle' ? 'rest' : arena.gauge.them,
               }}
               seconds={seconds}
               timerState={timerState}
@@ -261,17 +258,17 @@ function DuelScreenContent() {
             <View style={{ flex: 1, minHeight: 0 }}>
               <ScoreGauge
                 style={{ position: 'absolute', top: 0, bottom: 0, left: 0 }}
-                value={myShown}
+                value={arena.myScore}
                 max={MAX_SCORE}
                 label={`Score de ${myName}`}
-                state={revealed && arena.gauge.you !== 'idle' ? arena.gauge.you : 'rest'}
+                state={arena.gauge.you !== 'idle' ? arena.gauge.you : 'rest'}
               />
               <ScoreGauge
                 style={{ position: 'absolute', top: 0, bottom: 0, right: 0 }}
-                value={theirShown}
+                value={arena.theirScore}
                 max={MAX_SCORE}
                 label={`Score de ${opponentName}`}
-                state={revealed && arena.gauge.them !== 'idle' ? arena.gauge.them : 'rest'}
+                state={arena.gauge.them !== 'idle' ? arena.gauge.them : 'rest'}
               />
               <View style={{ flex: 1, paddingHorizontal: tokens.space[5], paddingTop: tokens.space[3], paddingBottom: insets.bottom + tokens.space[5] }}>
                 <QuestionBlock

@@ -1,18 +1,64 @@
 diff --git a/node_modules/react-native-collapsible-tabs-native/android/src/main/java/com/collapsibletabs/ui/CollapsibleTabsHostView.kt b/node_modules/react-native-collapsible-tabs-native/android/src/main/java/com/collapsibletabs/ui/CollapsibleTabsHostView.kt
-index 84f3869..58b4572 100644
+index 84f3869..8438622 100644
 --- a/node_modules/react-native-collapsible-tabs-native/android/src/main/java/com/collapsibletabs/ui/CollapsibleTabsHostView.kt
 +++ b/node_modules/react-native-collapsible-tabs-native/android/src/main/java/com/collapsibletabs/ui/CollapsibleTabsHostView.kt
-@@ -157,6 +157,9 @@ class CollapsibleTabsHostView(context: Context) : ViewGroup(context) {
+@@ -157,7 +157,55 @@ class CollapsibleTabsHostView(context: Context) : ViewGroup(context) {
       *  event, and a pager drag begins inside ViewPager2 where we have none. */
      private var lastTouch: MotionEvent? = null
  
 +    /** A horizontal list inside a page owns the current gesture (see the refresh callback). */
 +    private var horizontalChildDrag = false
 +
++    // Observe before SwipeRefreshLayout intercepts: JS gesture observers receive
++    // CANCEL as soon as the native refresh starts consuming the drag.
++    private var stretchStartY = Float.NaN
++    private var stretchStartX = 0f
++    private var stretchPull = 0f
++    private var stretchAnimator: ValueAnimator? = null
++
++    private fun observeStretch(ev: MotionEvent) {
++        if (!headerOffsetEnabled) return
++        when (ev.actionMasked) {
++            MotionEvent.ACTION_DOWN -> {
++                stretchAnimator?.cancel()
++                stretchStartX = ev.x
++                stretchStartY = if (headerOffset == 0 && (activeScrollView()?.scrollY ?: 0) == 0) ev.y else Float.NaN
++            }
++            MotionEvent.ACTION_MOVE -> {
++                if (headerOffset > 0 || (activeScrollView()?.scrollY ?: 0) > 0 || horizontalChildDrag) {
++                    stretchStartY = Float.NaN
++                    stretchPull = 0f
++                } else {
++                    if (stretchStartY.isNaN()) stretchStartY = ev.y
++                    val distance = (ev.y - stretchStartY).coerceAtLeast(0f)
++                    val horizontal = kotlin.math.abs(ev.x - stretchStartX)
++                    val dimension = 600f * density
++                    stretchPull = if (horizontal > kotlin.math.max(24f * density, distance)) 0f
++                        else (1f - 1f / (distance * 0.55f / dimension + 1f)) * dimension
++                }
++                emitHeaderOffset(force = true)
++            }
++            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL, MotionEvent.ACTION_POINTER_DOWN -> {
++                stretchStartY = Float.NaN
++                stretchAnimator = ValueAnimator.ofFloat(stretchPull, 0f).apply {
++                    duration = 220
++                    interpolator = DecelerateInterpolator()
++                    addUpdateListener {
++                        stretchPull = it.animatedValue as Float
++                        emitHeaderOffset(force = true)
++                    }
++                    start()
++                }
++            }
++        }
++    }
++
      override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
++        observeStretch(ev)
          lastTouch?.recycle()
          lastTouch = MotionEvent.obtain(ev)
-@@ -683,7 +686,11 @@ class CollapsibleTabsHostView(context: Context) : ViewGroup(context) {
+         // Fabric re-applies a view's padding on every layout update
+@@ -683,7 +731,11 @@ class CollapsibleTabsHostView(context: Context) : ViewGroup(context) {
          // A pull only starts from the very top: header expanded AND the
          // active page at scroll 0. Otherwise the gesture is a scroll.
          refreshLayout.setOnChildScrollUpCallback { _, _ ->
@@ -25,7 +71,24 @@ index 84f3869..58b4572 100644
          }
          addView(refreshLayout)
      }
-@@ -1251,23 +1258,30 @@ class CollapsibleTabsHostView(context: Context) : ViewGroup(context) {
+@@ -1045,14 +1097,12 @@ class CollapsibleTabsHostView(context: Context) : ViewGroup(context) {
+ 
+     private var lastEmittedOffset = -1
+ 
+-    /** One event per CHANGE of the band position, never per frame at rest.
+-     *  Android has no band pull (SwipeRefreshLayout owns the over-drag), so
+-     *  `pull` is always 0 here. */
++    /** Band position and observed over-drag; forced while the finger moves or releases. */
+     private fun emitHeaderOffset(force: Boolean = false) {
+         if (!headerOffsetEnabled) return
+         if (!force && headerOffset == lastEmittedOffset) return
+         lastEmittedOffset = headerOffset
+-        onHeaderOffsetChange?.invoke(headerOffset / density, collapsibleHeightPx / density, 0f)
++        onHeaderOffsetChange?.invoke(headerOffset / density, collapsibleHeightPx / density, stretchPull / density)
+     }
+ 
+     private fun updateCollapsed() {
+@@ -1251,23 +1301,30 @@ class CollapsibleTabsHostView(context: Context) : ViewGroup(context) {
           */
          private fun disallowPagerInterceptForNestedHorizontal(ev: MotionEvent): Boolean {
              val dx = ev.x - downX
@@ -58,7 +121,7 @@ index 84f3869..58b4572 100644
              return true
          }
  
-@@ -1308,6 +1322,7 @@ class CollapsibleTabsHostView(context: Context) : ViewGroup(context) {
+@@ -1308,6 +1365,7 @@ class CollapsibleTabsHostView(context: Context) : ViewGroup(context) {
                      forwarding = false
                      forwardTarget = null
                      nestedDecided = false
@@ -66,6 +129,14 @@ index 84f3869..58b4572 100644
                  }
                  MotionEvent.ACTION_MOVE -> {
                      if (!downOnBand) {
+@@ -1419,6 +1477,7 @@ class CollapsibleTabsHostView(context: Context) : ViewGroup(context) {
+         lastTouch = null
+         layoutPassScheduled = false
+         reconcileAnimator?.cancel()
++        stretchAnimator?.cancel()
+         super.onDetachedFromWindow()
+     }
+ 
 diff --git a/node_modules/react-native-collapsible-tabs-native/src/TabBar.tsx b/node_modules/react-native-collapsible-tabs-native/src/TabBar.tsx
 index a6a300e..4921804 100644
 --- a/node_modules/react-native-collapsible-tabs-native/src/TabBar.tsx

@@ -79,6 +79,7 @@ export const ENDPOINTS = {
     question: (questionId: string) => `/api/questions/${questionId}/reports`,
   },
   games: {
+    active: '/api/games',
     answer: (gameId: string) => `/api/games/${gameId}/answer`,
     abandon: (gameId: string) => `/api/games/${gameId}/abandon`,
     result: (gameId: string) => `/api/games/${gameId}/result`,

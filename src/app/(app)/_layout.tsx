@@ -1,3 +1,6 @@
+import { useMe } from '@/features/me'
+import { PlaySessionProvider } from '@/features/play/hooks/play-session'
+import { ActiveGameBanner, useBannerGame } from '@/features/play/components/active-game-banner'
 import { Stack, useSegments } from 'expo-router'
 import { View } from 'react-native'
 import { SafeAreaInsetsContext, useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -10,24 +13,36 @@ import { useConnectionBanner } from '@/shared/hooks/use-connection-banner'
 export const unstable_settings = { anchor: '(tabs)' }
 
 /** Parcours de jeu : la coupure y est déjà signalée en plein écran (`ReconnectCountdown`), pas de bannière en plus. */
-const GAME_ROUTES = new Set(['room', 'matchmaking', 'duel'])
+const GAME_ROUTES = new Set(['matchmaking', 'duel'])
 
 /** Écrans du joueur connecté : les 5 onglets, puis les écrans poussés par-dessus. */
 export default function AppLayout() {
+  const me = useMe(true)
+  const userId = me.data?.userId ?? ''
+  return (
+    <PlaySessionProvider key={userId} userId={userId}>
+      <AppNavigation />
+    </PlaySessionProvider>
+  )
+}
+
+function AppNavigation() {
   const theme = useTheme()
   const insets = useSafeAreaInsets()
   const segments = useSegments() as string[]
   const connection = useConnectionBanner()
+  const bannerGame = useBannerGame()
   const banner = connection.state !== 'hidden' && !GAME_ROUTES.has(segments[1] ?? '')
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.bg }}>
       {banner && <ConnectionBanner state={connection.state} onRetry={() => void connection.retry()} />}
+      <ActiveGameBanner belowConnection={banner} />
       {/* La bannière prend la safe area haute : les barres des écrans dessous ne la réservent plus. */}
-      <SafeAreaInsetsContext.Provider value={banner ? { ...insets, top: 0 } : insets}>
+      <SafeAreaInsetsContext.Provider value={banner || bannerGame ? { ...insets, top: 0 } : insets}>
         <Stack screenOptions={nativeHeaderOptions(theme)}>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          {/* Parcours de jeu : plein écran, sans en-tête ; le retour d'un duel passe par la confirmation d'abandon. */}
-          <Stack.Screen name="room/[roomId]" options={{ headerShown: false }} />
+          {/* Salon : page classique avec retour. Matchmaking et duel gardent leur présentation immersive. */}
+          <Stack.Screen name="room/[roomId]" options={{ title: 'Salon', presentation: 'card' }} />
           <Stack.Screen name="matchmaking/[ticketId]" options={{ headerShown: false, animation: 'fade', gestureEnabled: false }} />
           <Stack.Screen name="duel/[gameId]" options={{ headerShown: false, animation: 'fade', gestureEnabled: false }} />
           {/* Résultat d'une partie passée, ouvert depuis l'historique : le retour ramène à la liste. */}
