@@ -1,5 +1,6 @@
 import { onlineManager } from '@tanstack/react-query'
 import { useEffect, useSyncExternalStore } from 'react'
+import { AppState } from 'react-native'
 
 type NetworkModule = typeof import('expo-network')
 
@@ -22,6 +23,21 @@ const network = loadNetwork()
 const onlineOf = (state: { isConnected?: boolean; isInternetReachable?: boolean }) => state.isConnected !== false && state.isInternetReachable !== false
 
 /**
+ * Relit l'état du réseau et le pousse dans `onlineManager`. Renvoie l'état lu (vrai sans module natif). Sert au retour au
+ * premier plan — un changement survenu pendant que l'app dormait n'est pas toujours émis — et au « Réessayer ».
+ */
+export async function refreshNetworkState(): Promise<boolean> {
+  if (!network) return true
+  try {
+    const online = onlineOf(await network.getNetworkStateAsync())
+    onlineManager.setOnline(online)
+    return online
+  } catch {
+    return onlineManager.isOnline()
+  }
+}
+
+/**
  * Relie React Query au réseau (`onlineManager`) : hors connexion, les requêtes se mettent en pause au lieu d'échouer,
  * puis reprennent seules au retour du réseau. À appeler une fois, dans le layout racine.
  */
@@ -39,7 +55,14 @@ export function useNetworkBridge() {
       } catch {
         // Module natif absent malgré l'import : on reste en ligne.
       }
-      return () => subscription?.remove()
+      // Retour au premier plan : l'état gardé peut dater d'avant la mise en veille (fausse coupure après inactivité).
+      const appState = AppState.addEventListener('change', (state) => {
+        if (state === 'active') void refreshNetworkState()
+      })
+      return () => {
+        subscription?.remove()
+        appState.remove()
+      }
     })
   }, [])
 }

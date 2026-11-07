@@ -43,7 +43,6 @@ import { useDebounced } from '@/shared/hooks/use-debounced'
 import type { TopicCardView, TopicSort } from '@/shared/types/bff'
 import { topicName } from '@/shared/utils/topic-name'
 import { useTopicFacets, useTopics } from '../hooks/use-topics'
-import { OfflineBanner } from '@/shared/components/offline-banner'
 import { useOnline } from '@/shared/hooks/use-online'
 
 const GUTTER = tokens.space[5]
@@ -162,18 +161,14 @@ export function TopicsScreen() {
         ))}
       </ScrollView>
       {/* Hors connexion (`etats-systeme.md`) : la bannière remplace le compteur et le tri, squelettes fixes dessous. */}
-      {online ? (
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: tokens.space[3], paddingHorizontal: GUTTER }}>
-          <Text variant="callout" color="muted">
-            {countLabel(topics.isError ? 0 : count)}
-          </Text>
-          <Chip icon={ArrowsDownUpIcon} onPress={() => setSheetOpen(true)}>
-            {sortLabel}
-          </Chip>
-        </View>
-      ) : (
-        <OfflineBanner onRetry={() => void topics.refetch()} style={{ marginHorizontal: GUTTER }} />
-      )}
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: tokens.space[3], paddingHorizontal: GUTTER }}>
+        <Text variant="callout" color="muted">
+          {online ? countLabel(topics.isError ? 0 : count) : ' '}
+        </Text>
+        <Chip icon={ArrowsDownUpIcon} onPress={() => setSheetOpen(true)}>
+          {sortLabel}
+        </Chip>
+      </View>
     </View>
   )
 

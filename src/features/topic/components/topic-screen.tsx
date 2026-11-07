@@ -35,7 +35,6 @@ import { DuelSheet } from './duel-sheet'
 import { GamesTab } from './games-tab'
 import { ProgressTab } from './progress-tab'
 import { CommentsSheet, PostSheet, useWall, WallTab } from './wall-tab'
-import { OfflineBanner } from '@/shared/components/offline-banner'
 
 const TABS = [
   { value: 'wall', label: 'Mur' },
@@ -188,7 +187,6 @@ export function TopicScreen({ stack = 'home' }: { stack?: TopicStack }) {
         )}
         intro={
           <View style={{ gap: tokens.space[4] }}>
-            <OfflineBanner message="Le sujet se charge dès ton retour en ligne." onRetry={() => void overview.refetch()} />
             <View
               onLayout={(event) => setActionsHeight(event.nativeEvent.layout.y + event.nativeEvent.layout.height)}
               style={{ flexDirection: 'row', gap: tokens.space[3] }}

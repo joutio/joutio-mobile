@@ -1,27 +1,29 @@
 import { View, type StyleProp, type ViewStyle } from 'react-native'
-import { InfoIcon, RobotIcon, SwordIcon, WifiSlashIcon, type Icon } from '../icons'
+import { CheckCircleIcon, InfoIcon, RobotIcon, SwordIcon, WifiSlashIcon, type Icon } from '../icons'
 import { useTheme } from '../theme/theme-provider'
 import { tokens } from '../tokens.generated'
 import { Button } from './button'
 import { Text } from './text'
 import { hairlineRing } from '../theme/hairline'
 
-export type BannerTone = 'error' | 'info' | 'live' | 'training'
+export type BannerTone = 'error' | 'success' | 'info' | 'live' | 'training'
 
 export interface BannerProps {
   tone?: BannerTone
   title: string
   message?: string
   icon?: Icon
-  action?: { label: string; onPress?: () => void }
+  /** `loading` : nouvelle tentative en cours (roue à la place de l'icône, bouton inactif). */
+  action?: { label: string; onPress?: () => void; loading?: boolean }
   style?: StyleProp<ViewStyle>
 }
 
-/** Message dans la page : hors connexion, information, partie en cours, entraînement. */
+/** Message : hors connexion (et connexion rétablie), information, partie en cours, entraînement. */
 export function Banner({ tone = 'error', title, message, icon, action, style }: BannerProps) {
   const { colors, radius } = useTheme()
   const tones = {
     error: { icon: WifiSlashIcon, iconColor: colors.wrong, background: colors.surface, ring: colors.border, filledAction: false, fill: false },
+    success: { icon: CheckCircleIcon, iconColor: colors.correct, background: colors.surface, ring: colors.border, filledAction: false, fill: true },
     info: { icon: InfoIcon, iconColor: colors.muted, background: colors.surface, ring: colors.border, filledAction: false, fill: false },
     live: { icon: SwordIcon, iconColor: colors.accentInk, background: colors.warm, ring: colors.border, filledAction: true, fill: true },
     training: { icon: RobotIcon, iconColor: colors.accentInk, background: colors.warm, ring: colors.accent, filledAction: false, fill: false },
@@ -65,6 +67,7 @@ export function Banner({ tone = 'error', title, message, icon, action, style }: 
           variant={tones.filledAction ? 'filled' : 'gray'}
           tone={tones.filledAction ? 'accent' : 'neutral'}
           style={{ alignSelf: 'center' }}
+          loading={action.loading}
           onPress={action.onPress}
         >
           {action.label}

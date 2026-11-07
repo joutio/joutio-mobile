@@ -133,6 +133,17 @@ AppState.addEventListener('change', (state) => {
 })
 
 /**
+ * Reconnexion demandée par le joueur (« Réessayer ») : coupe la tentative en cours et repart tout de suite, sans attendre
+ * le délai exponentiel. Sans abonnement actif, il n'y a rien à reconnecter.
+ */
+export async function reconnectStomp(): Promise<void> {
+  if (!active || suspended) return
+  if (client.connected) return
+  await (deactivating ?? client.deactivate())
+  if (active && !suspended && !client.active) client.activate()
+}
+
+/**
  * Abonne `handler` à une destination ; `onConnect` est rappelé à chaque (re)connexion, et tout de suite si la connexion
  * est déjà établie. Renvoie la fonction de désabonnement.
  */

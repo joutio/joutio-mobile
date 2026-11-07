@@ -113,7 +113,11 @@ export function MobileSheet({
       // un pied `relative` reste derrière le clavier, le bouton d'enregistrement disparaissait pendant la saisie ; en
       // `absolute`, il remonte au-dessus du clavier, et le défilement réserve sa hauteur (`contentInsetAdjustment`
       // automatique) : le contenu ne passe jamais sous le bouton.
-      footerOptions={footer ? { position: 'absolute' } : undefined}
+      // Android : la safe area basse ajoutée par TrueSheet passe derrière le clavier quand il s'ouvre.
+      footerOptions={footer ? { position: 'absolute', keyboardOffset: FLOATING ? 0 : -insets.bottom } : undefined}
+      // Le conteneur natif du pied porte la safe area basse en padding (Android) : il prend le fond `surface`, sinon le
+      // contenu défile en transparence entre le bouton et le bas de l'écran (2026-11-07).
+      footerStyle={footer ? { backgroundColor: colors.surface } : undefined}
       // Android : fermeture au balayage court, comme la feuille Material 3 (sur iOS, le geste reste celui du système).
       dismissThreshold="short"
       // iOS 26 : la feuille flotte au-dessus du bas de l'écran (coins arrondis, marges), la zone de l'indicateur
