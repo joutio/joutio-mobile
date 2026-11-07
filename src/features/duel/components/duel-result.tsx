@@ -1,10 +1,21 @@
 import { router } from 'expo-router'
 import { useMemo, useRef, useState } from 'react'
-import { Pressable, Share, ScrollView, View, type NativeScrollEvent, type NativeSyntheticEvent, type ScrollViewInstance } from 'react-native'
+import {
+  PixelRatio,
+  Platform,
+  Pressable,
+  Share,
+  ScrollView,
+  View,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+  type ScrollViewInstance,
+} from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import {
   Banner,
   Button,
+  CaretDownIcon,
   CaretUpIcon,
   ChatCircleIcon,
   EloSummary,
@@ -43,10 +54,14 @@ import { ReportPlayerSheet } from './report-sheets'
 import { useMyAvatar } from '@/features/avatar/lib/avatar-preview'
 import { usePlayerAvatar } from '@/features/social/hooks/use-player-avatar'
 
-/** Résistance de la bascule vers Détails du duel : part de page à tirer, ou lancer franc (vitesse native) passé 8 %. */
-const SWITCH_DISTANCE = 0.25
-const FLING_DISTANCE = 0.08
-const FLING_SPEED = 1.2
+/**
+ * Résistance de la bascule vers Détails du duel (allégée le 2026-11-07) : un huitième de page tiré, ou un lancer passé
+ * 3 %. La vitesse native est en pt/ms sur iOS, en px/ms sur Android : ramenée en pt.
+ */
+const SWITCH_DISTANCE = 0.12
+const FLING_DISTANCE = 0.03
+const FLING_SPEED = 0.4
+const speedOf = (velocity: number) => Math.abs(velocity) / (Platform.OS === 'android' ? PixelRatio.get() : 1)
 
 const ORDER = Object.keys(tokens.tier) as TierCode[]
 const masteryOf = (xp: number): MasteryTier => MASTERY_TIERS.reduce<MasteryTier>((best, tier) => (xp >= MASTERY_XP[tier] ? tier : best), 'FER')
@@ -256,8 +271,8 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
             <ScrollView
               ref={pagerRef}
               style={{ flex: 1 }}
-              // Deux pages avec un peu de résistance (2026-11-06) : la bascule exige un quart de page tiré, ou un lancer
-              // franc au-delà de 8 % ; sinon la page revient. Ni `pagingEnabled` (moitié de page) ni `snapToOffsets`
+              // Deux pages avec une légère résistance (2026-11-07) : la bascule exige un huitième de page tiré, ou un
+              // lancer au-delà de 3 % ; sinon la page revient. Ni `pagingEnabled` (moitié de page) ni `snapToOffsets`
               // (un effleurement suffisait).
               decelerationRate="fast"
               bounces={false}
@@ -267,7 +282,7 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
               onScrollEndDrag={(event: NativeSyntheticEvent<NativeScrollEvent>) => {
                 const offset = event.nativeEvent.contentOffset.y
                 const travelled = offset - dragStart.current
-                const speed = Math.abs(event.nativeEvent.velocity?.y ?? 0)
+                const speed = speedOf(event.nativeEvent.velocity?.y ?? 0)
                 const from = Math.round(dragStart.current / pageHeight)
                 const passed = Math.abs(travelled) > pageHeight * SWITCH_DISTANCE || (Math.abs(travelled) > pageHeight * FLING_DISTANCE && speed > FLING_SPEED)
                 const target = passed ? Math.min(1, Math.max(0, from + Math.sign(travelled))) : from
@@ -406,6 +421,22 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
                   accessibilityElementsHidden={page !== 1}
                   importantForAccessibility={page !== 1 ? 'no-hide-descendants' : 'auto'}
                 >
+                  {/* Miroir de l'affordance du bas : on revient au résultat d'un toucher ou d'un glissé vers le bas. */}
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Revenir au résultat"
+                    hitSlop={8}
+                    onPress={() => {
+                      setPage(0)
+                      pagerRef.current?.scrollTo({ y: 0, animated: true })
+                    }}
+                    style={{ alignItems: 'center', gap: tokens.space[1], paddingBottom: tokens.space[3], paddingHorizontal: tokens.space[5] }}
+                  >
+                    <CaretDownIcon size={20} color={colors.muted} />
+                    <Text variant="caption" color="muted" numberOfLines={1}>
+                      Glisse vers le bas pour revenir au résultat
+                    </Text>
+                  </Pressable>
                   <DuelReview game={game} me={userId} myName={myName} opponentName={opponentName} canReport />
                 </View>
               )}

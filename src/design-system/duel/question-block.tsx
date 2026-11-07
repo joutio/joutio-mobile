@@ -148,19 +148,26 @@ export function QuestionBlock({
               entering={play ? FADE : undefined}
               style={fitImage ? { height: '100%', maxWidth: '100%', aspectRatio: 5 / 4 } : { width: '100%', maxWidth: 370 }}
             >
-              <Image
-                source={{ uri: image }}
-                contentFit="cover"
-                // Préchargée à la création de la partie (`usePrefetchQuestionImages`) : lue depuis le cache.
-                cachePolicy="memory-disk"
-                transition={0}
-                accessibilityIgnoresInvertColors
-                style={
-                  fitImage
-                    ? [StyleSheet.absoluteFill, { borderRadius: radius.xl, borderWidth: HAIRLINE, borderColor: colors.border }]
-                    : { width: '100%', aspectRatio: 5 / 4, borderRadius: radius.xl, borderWidth: HAIRLINE, borderColor: colors.border }
-                }
-              />
+              {/* Image ajustée (revue du duel) : rendue seulement une fois le bloc mesuré. Au premier layout, sa boîte est
+                  encore provisoire ; Android (Glide) décodait l'image à cette petite taille, gardée en cache par taille,
+                  et la première page de la revue restait floue (2026-11-07). Pas de sous-échantillonnage non plus. */}
+              {(!fitImage || height > 0) && (
+                <Image
+                  source={{ uri: image }}
+                  recyclingKey={image}
+                  allowDownscaling={!fitImage}
+                  contentFit="cover"
+                  // Préchargée à la création de la partie (`usePrefetchQuestionImages`) : lue depuis le cache.
+                  cachePolicy="memory-disk"
+                  transition={0}
+                  accessibilityIgnoresInvertColors
+                  style={
+                    fitImage
+                      ? [StyleSheet.absoluteFill, { borderRadius: radius.xl, borderWidth: HAIRLINE, borderColor: colors.border }]
+                      : { width: '100%', aspectRatio: 5 / 4, borderRadius: radius.xl, borderWidth: HAIRLINE, borderColor: colors.border }
+                  }
+                />
+              )}
             </Animated.View>
           </View>
         )}
