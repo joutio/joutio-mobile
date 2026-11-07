@@ -1,0 +1,33 @@
+diff --git a/node_modules/react-native/Libraries/Components/ScrollView/ScrollView.js b/node_modules/react-native/Libraries/Components/ScrollView/ScrollView.js
+index 5c7974f..2627b36 100644
+--- a/node_modules/react-native/Libraries/Components/ScrollView/ScrollView.js
++++ b/node_modules/react-native/Libraries/Components/ScrollView/ScrollView.js
+@@ -795,6 +795,13 @@ type ScrollViewState = {
+ };
+ 
+ const IS_ANIMATING_TOUCH_START_THRESHOLD_MS = 16;
++// Joutio : une inertie de rail dure quelques centaines de millisecondes. Passé ce
++// délai, une inertie « en cours » est une fin d'inertie que la plateforme n'a pas
++// émise (arrêter un défilement au toucher n'émet pas `onMomentumScrollEnd` sur iOS) :
++// sans cette borne, `_isAnimating()` reste vrai et le ScrollView vole chaque toucher
++// (`_handleStartShouldSetResponderCapture`), donc les cartes du rail deviennent
++// insensibles au clic. Voir AGENTS.md § 4, Rails horizontaux (2026-11-07).
++const MOMENTUM_SCROLL_MAX_DURATION_MS = 1000;
+ 
+ export type ScrollViewComponentStatics = Readonly<{
+   Context: typeof ScrollViewContext,
+@@ -1419,9 +1426,13 @@ class ScrollView extends React.Component<ScrollViewProps, ScrollViewState> {
+     const now = global.performance.now();
+     const timeSinceLastMomentumScrollEnd =
+       now - this._lastMomentumScrollEndTime;
++    const momentumRunning =
++      this._lastMomentumScrollEndTime < this._lastMomentumScrollBeginTime &&
++      now - this._lastMomentumScrollBeginTime <
++        MOMENTUM_SCROLL_MAX_DURATION_MS;
+     const isAnimating =
+       timeSinceLastMomentumScrollEnd < IS_ANIMATING_TOUCH_START_THRESHOLD_MS ||
+-      this._lastMomentumScrollEndTime < this._lastMomentumScrollBeginTime;
++      momentumRunning;
+     return isAnimating;
+   };
+ 

@@ -227,7 +227,13 @@ sans ligne de co-auteur.
   liste (patch `react-native-collapsible-tabs-native` : direction opposée essayée avant le pager). `DragToLoadMore`
   lit le même contexte (`useHorizontalGesture`) et échoue immédiatement s'il voit un rail propriétaire. Ne pas
   revenir à un `swipeEnabled` piloté par un état React : un changement de prop en cours de geste peut figer le
-  pager à mi-page.
+  pager à mi-page. **Touches perdues après une inertie** (2026-11-07, rail Top 10 de l'Accueil) :
+  `patches/react-native+0.88.1.patch` borne à 1 s l'inertie retenue par `ScrollView._isAnimating()`. Sans lui, une
+  inertie commencée sans `onMomentumScrollEnd` (un défilement arrêté au toucher, iOS) laissait le `ScrollView`
+  « animé » pour de bon : `_handleStartShouldSetResponderCapture` capturait alors **chaque** toucher et les cartes
+  ne recevaient plus le clic. Le chiffre du rang porte `pointerEvents="none"`. Le patch est réappliqué au
+  `postinstall` : le revérifier (contexte du hunk et `MOMENTUM_SCROLL_MAX_DURATION_MS`) à chaque montée de version
+  de React Native.
 - **Listes** : toute liste non bornée finit par `FeedFooter` et se pose dans `DragToLoadMore` (traction en bas de
   liste, ressort Reanimated + geste Gesture Handler, loader Lottie `assets/lottie/load-more.json` scrubbé puis en
   boucle ; `contenu.md` § Listes paginées). Son défilement est `LoadMoreScrollView` (`renderScrollComponent` d'une
