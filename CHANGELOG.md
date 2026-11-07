@@ -1,3 +1,10 @@
+## [1.19.1](https://github.com/joutio/joutio-mobile-expo/compare/v1.19.0...v1.19.1) (2026-11-07)
+
+### Bug Fixes
+
+* **lists:** the load-more settles on the new page instead of leaving it below the fold ([4024bee](https://github.com/joutio/joutio-mobile-expo/commit/4024beed0c16b83f5711626b2eaeaf1772507049))
+* **sheet:** a paginated sheet keeps its scroll view as a direct child ([e7ed345](https://github.com/joutio/joutio-mobile-expo/commit/e7ed345d2702d5eef30aa15fae5e924a909e4a72))
+
 ## [1.19.0](https://github.com/joutio/joutio-mobile-expo/compare/v1.18.1...v1.19.0) (2026-11-07)
 
 ### Features
