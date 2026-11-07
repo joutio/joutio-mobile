@@ -19,7 +19,6 @@ import {
   Stat,
   TabScrollView,
   useTransitionDone,
-  SectionHeader,
   Text,
   useTheme,
   toCategoryCode,
@@ -216,7 +215,7 @@ export function TopicScreen({ stack = 'home' }: { stack?: TopicStack }) {
                 ? stats.map((stat) => <Stat key={stat.label} {...stat} compact />)
                 : stats.map((stat) => <Skeleton key={stat.label} shape="card" style={{ flex: 1, height: 76 }} />)}
             </View>
-            {/* Questions déjà jouées sur le total du sujet, en carte titrée comme les sections Bilan (`fiche-sujet.md`
+            {/* Questions déjà jouées sur le total du sujet, en carte comme les sections Bilan, sans titre (`fiche-sujet.md`
                 § 1, 2026-11-07) : « Progression » seul ne disait pas ce qui progressait. */}
             {data && (
               <PlayedQuestions
@@ -266,14 +265,11 @@ function PlayedQuestions({ done, total, percent }: { done: number; total: number
   const { colors, radius } = useTheme()
   const left = Math.max(0, total - done)
   return (
-    <View style={{ gap: tokens.space[3] }}>
-      <SectionHeader title="Questions jouées" />
-      <View style={{ gap: tokens.space[2], borderRadius: radius.lg, backgroundColor: colors.surface, padding: tokens.space[5] }}>
-        <ProgressBar label={`${formatNumber(done)} / ${questionsLabel(total)} jouées`} value={percent} showValue />
-        <Text variant="caption" color="muted">
-          {left === 0 ? 'Tu as joué toutes les questions de ce sujet.' : `Encore ${questionsLabel(left)} à découvrir en duel.`}
-        </Text>
-      </View>
+    <View style={{ gap: tokens.space[2], borderRadius: radius.lg, backgroundColor: colors.surface, padding: tokens.space[5] }}>
+      <ProgressBar label={`${formatNumber(done)} / ${questionsLabel(total)} jouées`} value={percent} showValue />
+      <Text variant="caption" color="muted">
+        {left === 0 ? 'Tu as joué toutes les questions de ce sujet.' : `Encore ${questionsLabel(left)} à découvrir en duel.`}
+      </Text>
     </View>
   )
 }
