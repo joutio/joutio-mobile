@@ -90,6 +90,8 @@ function RankNumeral({ rank }: { rank: number }) {
     <Svg
       width={width}
       height={NUMERAL_HEIGHT}
+      // Décor : jamais cible d'un toucher (le chiffre déborde sous la carte).
+      pointerEvents="none"
       style={{ position: 'absolute', top: NUMERAL_TOP, left: 0, overflow: 'visible' }}
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
