@@ -1,8 +1,8 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { router } from 'expo-router'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { create } from 'zustand'
-import { toast } from '@/design-system'
+import { haptic, toast } from '@/design-system'
 import { showQuotaDialog } from '@/features/challenges/lib/quota'
 import { useMe } from '@/features/me'
 import { ENDPOINTS } from '@/lib/endpoints'
@@ -171,10 +171,41 @@ export function useTicket(ticketId: string) {
   )
 }
 
-/** Présence dans la salle tant que l'écran est monté (idempotent côté serveur). */
+/** Reprises de l'apparition avant d'afficher l'échec (comme joutio-web). */
+const JOIN_ATTEMPTS = 3
+
+/**
+ * Présence dans la salle tant que l'écran est monté (idempotent côté serveur). Sans elle la salle ne démarre pas : après
+ * quelques reprises, `failed` passe à vrai et `retry` relance (2026-11-07, l'échec était muet).
+ */
 export function useRoomPresence(roomId: string, enabled: boolean) {
+  const [failed, setFailed] = useState(false)
+  const [attempt, setAttempt] = useState(0)
   useEffect(() => {
     if (!enabled) return
-    playService.joinRoom(roomId).catch(() => undefined)
-  }, [roomId, enabled])
+    let cancelled = false
+    const run = async () => {
+      for (let tries = 0; tries < JOIN_ATTEMPTS; tries += 1) {
+        try {
+          await playService.joinRoom(roomId)
+          if (!cancelled) setFailed(false)
+          return
+        } catch {
+          await new Promise((resolve) => setTimeout(resolve, 800 * (tries + 1)))
+          if (cancelled) return
+        }
+      }
+      if (!cancelled) setFailed(true)
+    }
+    void run()
+    return () => {
+      cancelled = true
+    }
+  }, [roomId, enabled, attempt])
+  return { failed, retry: () => setAttempt((value) => value + 1) }
+}
+
+/** Relance de l'adversaire absent. */
+export function useWizzRoom(roomId: string) {
+  return useMutation({ mutationFn: () => playService.wizzRoom(roomId), onSuccess: () => haptic('light') })
 }

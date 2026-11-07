@@ -22,6 +22,8 @@ export const playService = {
   joinRoom: (roomId: string) => api.post<void>(ENDPOINTS.rooms.join(roomId)),
   leaveRoom: (roomId: string) => api.post<void>(ENDPOINTS.rooms.leave(roomId)),
   cancelRoom: (roomId: string) => api.post<void>(ENDPOINTS.rooms.cancel(roomId)),
+  /** Relance (« wizz ») de l'adversaire nommé absent : pur temps réel, cadence 10 s par joueur côté serveur. */
+  wizzRoom: (roomId: string) => api.post<void>(ENDPOINTS.rooms.wizz(roomId)),
   roomNotifications: (roomId: string) => api.get<EventEnvelopeResponse<RoomNotification>[]>(ENDPOINTS.rooms.notifications(roomId)),
 
   enqueue: (topicId: string) => api.post<MatchmakingTicket>(ENDPOINTS.matchmaking.tickets, { topicId }),
