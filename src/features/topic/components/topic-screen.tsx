@@ -54,13 +54,13 @@ export interface TopicRouteParams {
   [key: string]: string | undefined
 }
 
-export type TopicStack = 'home' | 'topics' | 'profile'
+export type TopicStack = 'home' | 'topics' | 'profile' | 'social'
 
-const TOPIC_PATH = { home: '/home/topic/[id]', topics: '/topics/[id]', profile: '/profile/topic/[id]' } as const
-const RANKINGS_PATH = { home: '/home/rankings', topics: '/topics/rankings', profile: '/profile/rankings' } as const
-const HISTORY_PATH = { home: '/home/history', topics: '/topics/history', profile: '/profile/history' } as const
+const TOPIC_PATH = { home: '/home/topic/[id]', topics: '/topics/[id]', profile: '/profile/topic/[id]', social: '/social/topic/[id]' } as const
+const RANKINGS_PATH = { home: '/home/rankings', topics: '/topics/rankings', profile: '/profile/rankings', social: '/social/rankings' } as const
+const HISTORY_PATH = { home: '/home/history', topics: '/topics/history', profile: '/profile/history', social: '/social/history' } as const
 
-/** Ouvre la Fiche sujet depuis un onglet (Accueil, Sujets ou Profil), dans la pile de cet onglet. */
+/** Ouvre la Fiche sujet depuis un onglet (Accueil, Sujets, Profil ou Social), dans la pile de cet onglet. */
 export function openTopic(
   tab: TopicStack,
   topic: { topicId: string; names: Record<string, string>; bannerUrl: string | null; imageUrl: string | null; category: string | null },

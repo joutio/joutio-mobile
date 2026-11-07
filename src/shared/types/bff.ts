@@ -360,3 +360,18 @@ export interface NotificationPreferenceView {
   category: NotificationCategory
   enabled: boolean
 }
+
+/** `GET /api/suggestions?q=&limit=` : résultat de la recherche globale (sujets et joueurs). */
+export interface SuggestionView {
+  type: 'TOPIC' | 'PLAYER'
+  id: string
+  label: string
+  subtitle: string | null
+  category: string | null
+  emoji: string | null
+  color: string | null
+  imageUrl: string | null
+  avatarOptions: string | null
+  names: TopicNames | null
+  suspended: boolean
+}

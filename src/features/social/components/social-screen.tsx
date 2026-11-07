@@ -170,14 +170,23 @@ export function SocialScreen() {
           <MobileTopBar
             title="Social"
             right={
-              <IconButton
-                icon={BellIcon}
-                label="Notifications"
-                variant="plain"
-                tone="neutral"
-                badge={unread.data?.count ? 'dot' : undefined}
-                onPress={() => router.push('/home/notifications')}
-              />
+              <>
+                <IconButton
+                  icon={MagnifyingGlassIcon}
+                  label="Rechercher un sujet ou un joueur"
+                  variant="plain"
+                  tone="neutral"
+                  onPress={() => router.push('/social/search')}
+                />
+                <IconButton
+                  icon={BellIcon}
+                  label="Notifications"
+                  variant="plain"
+                  tone="neutral"
+                  badge={unread.data?.count ? 'dot' : undefined}
+                  onPress={() => router.push('/home/notifications')}
+                />
+              </>
             }
           />
           {/* Lab : `pt-1`, puis `gap-3` jusqu'au `Segmented` (qui porte déjà 9 pt au-dessus de lui). */}

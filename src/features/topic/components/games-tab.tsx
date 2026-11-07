@@ -36,7 +36,7 @@ export function GamesTab({
 }: {
   topicId: string
   topicName: string
-  historyPath: '/home/history' | '/topics/history' | '/profile/history'
+  historyPath: '/home/history' | '/topics/history' | '/profile/history' | '/social/history'
 }) {
   const games = useTopicGames(topicId)
   // Parties terminées seulement : une partie en attente ou annulée n'a pas d'issue à montrer.

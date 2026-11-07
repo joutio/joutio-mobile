@@ -14,6 +14,8 @@ export const ENDPOINTS = {
     token: `${config.identityUrl}/oauth2/token`,
   },
   me: '/api/me',
+  /** Recherche globale : sujets et joueurs. */
+  suggestions: '/api/suggestions',
   meRewards: '/api/me/rewards',
   media: '/api/media',
   meInterests: '/api/me/interests',

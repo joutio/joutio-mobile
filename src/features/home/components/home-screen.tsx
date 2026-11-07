@@ -332,7 +332,13 @@ export function HomeScreen() {
         </Animated.View>
       </View>
       <View style={{ flexDirection: 'row', gap: tokens.space[3] }}>
-        <IconButton icon={MagnifyingGlassIcon} label="Rechercher" variant="plain" tone="neutral" />
+        <IconButton
+          icon={MagnifyingGlassIcon}
+          label="Rechercher un sujet ou un joueur"
+          variant="plain"
+          tone="neutral"
+          onPress={() => router.push('/home/search')}
+        />
         <IconButton
           icon={BellIcon}
           label="Notifications"
