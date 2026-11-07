@@ -2,11 +2,15 @@ import { useContext, useState, type ReactNode, type Ref } from 'react'
 import { RefreshControl, ScrollView, View, type ScrollViewInstance, type ScrollViewProps, type StyleProp, type ViewStyle } from 'react-native'
 import { HeaderHeightContext } from 'expo-router/react-navigation'
 import { Platform } from 'react-native'
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useTheme } from '../theme/theme-provider'
 import { DragToLoadMore, LoadMoreScrollView } from './drag-to-load-more'
 
 /** Liste paginée de l'écran : la suite se charge en tirant en bas (`DragToLoadMore`, `contenu.md`). */
+/** Marge entre le champ actif et le haut du clavier. */
+const KEYBOARD_GAP = 24
+
 export interface LoadMoreOptions {
   /** Une page suivante existe (et la précédente n'a pas échoué). */
   enabled: boolean
@@ -82,10 +86,16 @@ export function Screen({
     />
   ) : undefined
 
-  const Scroller = loadMore && !nativeHeader ? LoadMoreScrollView : ScrollView
+  // Champ touché toujours visible au-dessus du clavier (2026-11-07) : le défilement d'un écran suit le clavier
+  // (keyboard-controller). Une liste paginée garde son défilement (`LoadMoreScrollView`) : ses champs sont en tête.
+  // En-tête natif iOS : un ScrollView simple, premier enfant de l'écran (repli du grand titre).
+  const Scroller = nativeHeader ? ScrollView : loadMore ? LoadMoreScrollView : KeyboardAwareScrollView
+  const keyboardProps = Scroller === KeyboardAwareScrollView ? { bottomOffset: KEYBOARD_GAP, keyboardShouldPersistTaps: 'handled' as const } : {}
   const list = (
     <Scroller
-      ref={scrollRef}
+      // Le ref de keyboard-controller étend celui d'un ScrollView (scrollTo, scrollToEnd…).
+      ref={scrollRef as Ref<never>}
+      {...keyboardProps}
       showsVerticalScrollIndicator={false}
       contentInsetAdjustmentBehavior={underHeader ? 'automatic' : 'never'}
       refreshControl={refreshControl}

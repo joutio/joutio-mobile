@@ -134,6 +134,8 @@ export function MobileSheet({
       grabberOptions={{ color: colors.border }}
       accessibilityOptions={{ paneTitle: title }}
       scrollableRef={scroller}
+      // Champ actif : un peu d'air au-dessus du clavier (et du pied qui remonte avec lui), 2026-11-07.
+      scrollableOptions={{ keyboardScrollOffset: tokens.space[5] }}
       // Contenu plus haut que la feuille (grand texte, petit écran) : la vue de contenu et le défilement rétrécissent à
       // la hauteur plafonnée, sinon ils gardent leur hauteur naturelle, ne défilent pas et poussent le pied hors écran.
       style={{ flexShrink: 1, minHeight: 0 }}

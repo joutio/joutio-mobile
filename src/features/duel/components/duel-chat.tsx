@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
-import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native'
+import { ScrollView, View } from 'react-native'
+// keyboard-controller : même comportement sur iOS et Android bord à bord (le KeyboardAvoidingView de RN ne bougeait pas sur Android).
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { CaretLeftIcon, Composer, HAIRLINE, IconButton, Message, Pill, Text, tokens, useTheme, TOP_BAR_HEIGHT } from '@/design-system'
 
@@ -38,7 +40,7 @@ export function DuelChat({ gameId, opponentName, recap, onBack }: { gameId: stri
     setDraft('')
   }
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: colors.bg }}>
+    <KeyboardAvoidingView behavior="padding" style={{ flex: 1, backgroundColor: colors.bg }}>
       <View
         style={{
           paddingTop: insets.top,

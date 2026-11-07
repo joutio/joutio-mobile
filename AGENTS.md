@@ -215,6 +215,10 @@ sans ligne de co-auteur.
   huitième de page tiré, ou un lancer passé 3 %, vitesse ramenée en pt sur Android), sinon retour ; affordance miroir en
   haut de la page 2. Pager **horizontal** : `@expo/ui/community/pager-view`
   (natif, SwiftUI / Compose), jamais un `ScrollView` piloté par `contentOffset`.
+- **Clavier** (2026-11-07) : `Screen` défile dans un `KeyboardAwareScrollView` (keyboard-controller, `bottomOffset` 24,
+  `keyboardShouldPersistTaps="handled"`) sauf en-tête natif ou liste paginée ; feuilles : `keyboardScrollOffset` et pied
+  qui remonte avec `keyboardOffset` ; chat : `KeyboardAvoidingView` de keyboard-controller ; Android
+  `softwareKeyboardLayoutMode: 'resize'` (**nouveau dev build**).
 - **Défilement collé** : `StickyBar` + `stickyHeaderIndices` et `useStickyBar()` ; sous une barre compacte
   (`ParallaxScreen`), collage par Reanimated.
 - **Rails horizontaux** (2026-11-05) : sur un écran à onglets, un rail (`Rail`, puces) **possède le geste horizontal

@@ -65,6 +65,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       monochromeImage: './assets/android-icon-monochrome.png',
     },
     predictiveBackGestureEnabled: true,
+    // La fenêtre se redimensionne sous le clavier (keyboard-controller gère ensuite les écrans bord à bord).
+    softwareKeyboardLayoutMode: 'resize',
   },
   plugins: [
     'expo-router',
