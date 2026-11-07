@@ -1,3 +1,10 @@
+## [1.19.2](https://github.com/joutio/joutio-mobile-expo/compare/v1.19.1...v1.19.2) (2026-11-07)
+
+### Bug Fixes
+
+* **lists:** the loader goes out one frame before the list lands on the new page ([25e9eb9](https://github.com/joutio/joutio-mobile-expo/commit/25e9eb93aad1018ef6e91a2464cf91a43b8db1ed))
+* **lists:** the loader is gone in the same frame as the new page ([b471917](https://github.com/joutio/joutio-mobile-expo/commit/b471917b793bf310e6f8d50699899bbd2998c071))
+
 ## [1.19.1](https://github.com/joutio/joutio-mobile-expo/compare/v1.19.0...v1.19.1) (2026-11-07)
 
 ### Bug Fixes
