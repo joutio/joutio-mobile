@@ -5,11 +5,15 @@ import { Platform } from 'react-native'
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useTheme } from '../theme/theme-provider'
+import { tokens } from '../tokens.generated'
 import { DragToLoadMore, LoadMoreScrollView } from './drag-to-load-more'
+import { ScrollRefreshHost, withScrollRefreshFeedback } from './scroll-refresh'
 
 /** Liste paginée de l'écran : la suite se charge en tirant en bas (`DragToLoadMore`, `contenu.md`). */
 /** Marge entre le champ actif et le haut du clavier. */
 const KEYBOARD_GAP = 24
+const RefreshScrollView = withScrollRefreshFeedback(ScrollView)
+const RefreshKeyboardAwareScrollView = withScrollRefreshFeedback(KeyboardAwareScrollView)
 
 export interface LoadMoreOptions {
   /** Une page suivante existe (et la précédente n'a pas échoué). */
@@ -72,6 +76,7 @@ export function Screen({
   const underHeader = nativeHeader && Platform.OS === 'ios'
   const bottom = inTabs || bottomBar ? 0 : insets.bottom
   const [refreshing, setRefreshing] = useState(false)
+  const [ownHeaderHeight, setOwnHeaderHeight] = useState(0)
   const refreshControl = onRefresh ? (
     <RefreshControl
       refreshing={refreshing}
@@ -80,7 +85,8 @@ export function Screen({
       progressBackgroundColor={colors.surface}
       onRefresh={() => {
         setRefreshing(true)
-        Promise.resolve(onRefresh())
+        Promise.resolve()
+          .then(onRefresh)
           .catch(() => undefined)
           .finally(() => setRefreshing(false))
       }}
@@ -90,8 +96,8 @@ export function Screen({
   // Champ touché toujours visible au-dessus du clavier (2026-11-07) : le défilement d'un écran suit le clavier
   // (keyboard-controller). Une liste paginée garde son défilement (`LoadMoreScrollView`) : ses champs sont en tête.
   // En-tête natif iOS : un ScrollView simple, premier enfant de l'écran (repli du grand titre).
-  const Scroller = nativeHeader ? ScrollView : loadMore ? LoadMoreScrollView : KeyboardAwareScrollView
-  const keyboardProps = Scroller === KeyboardAwareScrollView ? { bottomOffset: KEYBOARD_GAP, keyboardShouldPersistTaps: 'handled' as const } : {}
+  const Scroller = nativeHeader ? RefreshScrollView : loadMore ? LoadMoreScrollView : RefreshKeyboardAwareScrollView
+  const keyboardProps = Scroller === RefreshKeyboardAwareScrollView ? { bottomOffset: KEYBOARD_GAP, keyboardShouldPersistTaps: 'handled' as const } : {}
   const list = (
     <Scroller
       // Le ref de keyboard-controller étend celui d'un ScrollView (scrollTo, scrollToEnd…).
@@ -126,18 +132,24 @@ export function Screen({
   // (grand titre qui ne se replie pas, pas d'effet de bord de défilement).
   if (nativeHeader && scroll) {
     return (
-      <>
+      <ScrollRefreshHost top={headerHeight + tokens.space[4]}>
         {scroller}
         {extras}
-      </>
+      </ScrollRefreshHost>
     )
   }
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
-      {!nativeHeader && <View style={{ paddingTop: insets.top }}>{header}</View>}
-      {scroll ? scroller : <View style={[{ flex: 1, paddingTop: underHeader ? headerHeight : 0, paddingBottom: bottom }, contentStyle]}>{children}</View>}
-      {extras}
+      <ScrollRefreshHost top={ownHeaderHeight + tokens.space[4]}>
+        {!nativeHeader && (
+          <View onLayout={(event) => setOwnHeaderHeight(event.nativeEvent.layout.height)} style={{ paddingTop: insets.top }}>
+            {header}
+          </View>
+        )}
+        {scroll ? scroller : <View style={[{ flex: 1, paddingTop: underHeader ? headerHeight : 0, paddingBottom: bottom }, contentStyle]}>{children}</View>}
+        {extras}
+      </ScrollRefreshHost>
     </View>
   )
 }

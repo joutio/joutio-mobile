@@ -28,6 +28,7 @@ import { useMyAvatar } from '@/features/avatar/lib/avatar-preview'
 import { pickImage, uploadImage } from '@/features/media/media-service'
 import { useUpdateMe } from '@/features/profile/hooks/use-profile'
 import type { MeView } from '@/shared/types/bff'
+import type { ApiError } from '@/shared/types/api'
 import { COUNTRY_CODES, countryFlag, countryLabel } from '@/shared/utils/country'
 
 type FieldId = 'pseudonym' | 'bio' | 'country' | 'interests' | 'banner'
@@ -69,14 +70,19 @@ export function useProfileFields(me: MeView | undefined) {
   const close = () => setField(undefined)
 
   const pickBanner = async () => {
-    const asset = await pickImage(BANNER_ASPECT)
-    if (!asset) return
+    if (uploading) return
     setUploading(true)
     try {
+      const asset = await pickImage(BANNER_ASPECT)
+      if (!asset) return
       const media = await uploadImage(asset)
       setBanner(media.url)
-    } catch {
-      toast.error("L'image n'a pas pu être envoyée", { description: 'JPG ou PNG, 5 Mo au plus. Réessaie.' })
+    } catch (error) {
+      const problem = error as Partial<ApiError> | undefined
+      toast.error("L'image n'a pas pu être envoyée", {
+        description: problem?.detail || problem?.message || 'JPG ou PNG, 5 Mo au plus. Réessaie.',
+      })
+      if (__DEV__) console.warn('[banner upload]', problem?.statusCode ?? 'network', problem?.type ?? '', problem?.detail ?? problem?.message ?? '')
     } finally {
       setUploading(false)
     }

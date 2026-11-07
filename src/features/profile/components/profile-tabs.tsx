@@ -7,7 +7,6 @@ import {
   CrownSimpleIcon,
   EmptyState,
   ListGroup,
-  ListRow,
   MatchRow,
   MedalIcon,
   OutcomeBar,
@@ -22,7 +21,6 @@ import {
   toCategoryCode,
   tokens,
   TopicsDonut,
-  UserCircleIcon,
   useTheme,
   WarningCircleIcon,
   BadgeFamilyRow,
@@ -76,7 +74,6 @@ function Failed({ title, onRetry, retrying }: { title: string; onRetry: () => vo
 
 export interface StatsTabProps {
   streak: { count: number; hint: string; week: import('@/design-system').StreakDay[] } | undefined
-  rewards: string | undefined
   tier: TierCode | undefined
   rating: number
   provisional: boolean
@@ -87,27 +84,11 @@ export interface StatsTabProps {
   /** Onglet affiché : le donut se dessine à son arrivée. */
   active: boolean
   onStreak: () => void
-  onRewards: () => void
   onRanks: () => void
   onPlayed: () => void
 }
 
-export function StatsTab({
-  streak,
-  rewards,
-  tier,
-  rating,
-  provisional,
-  wins,
-  draws,
-  losses,
-  topics,
-  active,
-  onStreak,
-  onRewards,
-  onRanks,
-  onPlayed,
-}: StatsTabProps) {
+export function StatsTab({ streak, tier, rating, provisional, wins, draws, losses, topics, active, onStreak, onRanks, onPlayed }: StatsTabProps) {
   const played = wins + draws + losses
   const rank = tier && !provisional ? rankProgress(tier, rating) : undefined
   const donut = (topics ?? [])
@@ -126,9 +107,6 @@ export function StatsTab({
         />
         <Card>{streak ? <Streak count={streak.count} hint={streak.hint} week={streak.week} /> : <Skeleton shape="row" />}</Card>
       </View>
-      <ListGroup surface="surface">
-        <ListRow icon={UserCircleIcon} label="Récompenses" control="chevron" value={rewards} onPress={onRewards} last />
-      </ListGroup>
       {played === 0 ? (
         <EmptyState icon={ChartLineUpIcon} title="Pas encore de statistiques" description="Joue tes premiers duels pour voir ton bilan." />
       ) : (
@@ -282,7 +260,8 @@ export function TitlesTab({ titles, equippedKey, loading, error, retrying, onRet
             topic={topicName(title.topic.names)}
             worn={equippedKey === title.key}
             wearing={wear.isPending && wear.variables === title.key}
-            onWear={() => wear.mutate(title.key)}
+            disabled={wear.isPending}
+            onWear={() => wear.mutate(equippedKey === title.key ? null : title.key)}
             last={index === shown.length - 1}
           />
         ))}

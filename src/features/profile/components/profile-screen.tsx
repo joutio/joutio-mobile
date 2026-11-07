@@ -1,9 +1,11 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { router } from 'expo-router'
 import { useMemo, useState } from 'react'
-import { Share, View } from 'react-native'
+import { ScrollView, Share, View } from 'react-native'
 import {
   Avatar,
+  AVATAR_SIZES,
+  HERO_HEIGHT,
   Badge,
   Button,
   CollapsibleTabsScreen,
@@ -21,7 +23,6 @@ import {
   WarningCircleIcon,
 } from '@/design-system'
 import { useMyAvatar } from '@/features/avatar/lib/avatar-preview'
-import { avatarStylesFor } from '@/features/avatar/lib/avatar-styles'
 import { useHistoryGames } from '@/features/history/hooks/use-history'
 import { DEFAULT_HISTORY_FILTERS } from '@/features/history/lib/history-service'
 import { useMe } from '@/features/me'
@@ -29,7 +30,7 @@ import { useMyTitles } from '@/features/topic/hooks/use-topic'
 import { formatNumber, tierLabel } from '@/features/topic/lib/format'
 import { countryLabel } from '@/shared/utils/country'
 import { tierOf } from '@/shared/utils/tier'
-import { useMyActivity, useMyBadges, useMyRewards, useMyTopics } from '../hooks/use-profile'
+import { useMyActivity, useMyBadges, useMyTopics } from '../hooks/use-profile'
 import { badgesSummary, familiesOf, type BadgeFamilySummary } from '../lib/badges'
 import { titleLabel } from '../lib/format'
 import { streakHint, weekOf } from '../lib/streak'
@@ -50,7 +51,6 @@ export function ProfileScreen() {
   const badges = useMyBadges()
   const activity = useMyActivity()
   const topics = useMyTopics()
-  const rewards = useMyRewards()
   const titles = useMyTitles()
   const games = useHistoryGames(userId, DEFAULT_HISTORY_FILTERS)
   const avatar = useMyAvatar()
@@ -65,7 +65,6 @@ export function ProfileScreen() {
   const tier = progression && !progression.provisional ? tierOf(progression.rating) : undefined
   const worn = titles.data?.titles.find((title) => title.key === (titles.data?.equippedKey ?? data?.equippedTitle))
   const stats = data?.stats
-  const styles = useMemo(() => avatarStylesFor(data, rewards.data, badges.data), [data, rewards.data, badges.data])
   const name = data?.pseudonym ?? 'Profil'
 
   if (me.isError && !data) {
@@ -94,11 +93,12 @@ export function ProfileScreen() {
   return (
     <>
       <CollapsibleTabsScreen<Tab>
+        heroHeight={HERO_HEIGHT + AVATAR_SIZES.xxl - AVATAR_SIZES.xl}
         back={false}
         centered
         image={data?.bannerUrl ?? undefined}
         title={name}
-        eyebrow={data ? <Avatar name={name} src={avatar} tier={tier} provisional={progression?.provisional} size="xl" /> : undefined}
+        eyebrow={data ? <Avatar name={name} src={avatar} tier={tier} provisional={progression?.provisional} size="xxl" /> : undefined}
         right={
           <>
             <ParallaxIconButton
@@ -112,7 +112,18 @@ export function ProfileScreen() {
         intro={
           <View style={{ gap: tokens.space[5] }}>
             <View style={{ alignItems: 'center', gap: tokens.space[3] }}>
-              {worn && <TitleRibbon tier={worn.tier} text={titleLabel(worn)} width={200} />}
+              {worn && (
+                <ScrollView
+                  horizontal
+                  nestedScrollEnabled
+                  directionalLockEnabled
+                  scrollsToTop={false}
+                  style={{ alignSelf: 'stretch', flexGrow: 0 }}
+                  contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', alignItems: 'center' }}
+                >
+                  <TitleRibbon tier={worn.tier} text={titleLabel(worn)} width="auto" />
+                </ScrollView>
+              )}
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: tokens.space[3] }}>
                 {!data ? (
                   <Skeleton shape="row" style={{ width: 160 }} />
@@ -141,7 +152,6 @@ export function ProfileScreen() {
             content: data ? (
               <StatsTab
                 streak={activity.data ? { count: activity.data.currentStreak, hint: streakHint(activity.data), week: weekOf(activity.data) } : undefined}
-                rewards={`${styles.filter((style) => style.usable).length} / ${styles.length}`}
                 tier={tier}
                 rating={rating}
                 provisional={progression?.provisional ?? true}
@@ -151,7 +161,6 @@ export function ProfileScreen() {
                 topics={topics.data}
                 active={tab === 'stats'}
                 onStreak={() => router.push('/profile/streak')}
-                onRewards={() => router.push('/profile/rewards')}
                 onRanks={() => setRanksOpen(true)}
                 onPlayed={() => router.push('/profile/played')}
               />

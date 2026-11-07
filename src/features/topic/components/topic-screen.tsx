@@ -37,10 +37,13 @@ import { GamesTab } from './games-tab'
 import { ProgressTab } from './progress-tab'
 import { CommentsSheet, PostSheet, useWall, WallTab } from './wall-tab'
 
+// MVP : conserver le Mur et ses maquettes pour sa réactivation.
+const WALL_ENABLED: boolean = false
+
 const TABS = [
-  { value: 'wall', label: 'Mur' },
-  { value: 'board', label: 'Classement' },
   { value: 'games', label: 'Parties' },
+  { value: 'board', label: 'Classement' },
+  ...(WALL_ENABLED ? [{ value: 'wall' as const, label: 'Mur' }] : []),
   { value: 'progress', label: 'Progression' },
 ] as const
 type Tab = (typeof TABS)[number]['value']
@@ -83,7 +86,7 @@ function Loading() {
 
 /**
  * Fiche sujet (`design/specs/screens/fiche-sujet.md`) : image en parallaxe, actions et chiffres du sujet, onglets
- * Mur (mock), Classement, Parties et Progression. Tirer recharge toute la page.
+ * Parties, Classement et Progression (Mur conservé, désactivé pour le MVP). Tirer recharge toute la page.
  */
 export function TopicScreen({ stack = 'home' }: { stack?: TopicStack }) {
   const params = useLocalSearchParams<TopicRouteParams>()
@@ -99,7 +102,7 @@ export function TopicScreen({ stack = 'home' }: { stack?: TopicStack }) {
   const follow = useFollowTopic(topicId)
   const wall = useWall(pseudonym)
 
-  const [tab, setTab] = useState<Tab>('wall')
+  const [tab, setTab] = useState<Tab>('games')
   const [duelOpen, setDuelOpen] = useState(false)
   const [postOpen, setPostOpen] = useState(false)
   const [commented, setCommented] = useState<WallPostMock>()
@@ -227,24 +230,24 @@ export function TopicScreen({ stack = 'home' }: { stack?: TopicStack }) {
           </View>
         }
         tabsLabel="Contenu du sujet"
-        initialTab="wall"
+        initialTab="games"
         onTabChange={setTab}
         tabs={[
-          { value: 'wall', label: 'Mur', content: <WallTab wall={wall} onComment={setCommented} /> },
-          {
-            value: 'board',
-            label: 'Classement',
-            content: <BoardTab topicId={topicId} topicName={name} rankingsPath={RANKINGS_PATH[stack]} bottomInset={showMyRow ? 64 : 0} />,
-          },
           {
             value: 'games',
             label: 'Parties',
             content: <GamesTab topicId={topicId} topicName={name} historyPath={HISTORY_PATH[stack]} />,
           },
+          {
+            value: 'board',
+            label: 'Classement',
+            content: <BoardTab topicId={topicId} topicName={name} rankingsPath={RANKINGS_PATH[stack]} bottomInset={showMyRow ? 64 : 0} />,
+          },
+          ...(WALL_ENABLED ? [{ value: 'wall' as const, label: 'Mur', content: <WallTab wall={wall} onComment={setCommented} /> }] : []),
           { value: 'progress', label: 'Progression', content: data ? <ProgressTab overview={data} /> : <Loading /> },
         ]}
         floating={
-          tab === 'wall' ? (
+          WALL_ENABLED && tab === 'wall' ? (
             <IconButton icon={PencilSimpleIcon} label="Partager une anecdote" variant="filled" tone="accent" size="L" onPress={() => setPostOpen(true)} />
           ) : undefined
         }

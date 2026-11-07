@@ -1,3 +1,4 @@
+import { TitleRowDemo } from './titles'
 import { SearchHeaderDemo } from './search-header'
 import { LoadMoreDemo } from './load-more'
 import type { ComponentType } from 'react'
@@ -25,6 +26,7 @@ export interface CatalogEntry {
 }
 
 export const CATALOG: CatalogEntry[] = [
+  { id: 'title-row', title: 'TitleRow · Rubans extensibles', row: 8, spec: 'components/contenu.md', Demo: TitleRowDemo },
   { id: 'search-header', title: 'Recherche animée Joutio', row: 2, spec: 'Social / Sujets — composants du lab', Demo: SearchHeaderDemo, fullscreen: true },
   { id: 'button', title: 'Button', row: 1, spec: 'components/button.md', Demo: ButtonDemo },
   { id: 'icon-button', title: 'IconButton', row: 1, spec: 'components/button.md', Demo: IconButtonDemo },

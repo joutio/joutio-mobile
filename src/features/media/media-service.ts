@@ -25,7 +25,8 @@ export async function pickImage(aspect: [number, number]): Promise<ImagePicker.I
 export async function uploadImage(asset: ImagePicker.ImagePickerAsset): Promise<MediaView> {
   const form = new FormData()
   const type = asset.mimeType ?? 'image/jpeg'
-  // React Native lit un fichier local par `{ uri, name, type }` dans un FormData.
+  // Le transport multipart XHR de notre client lit les fichiers locaux RN.
+  // expo/fetch refuse ce descripteur URI : ne pas repasser cet upload au fetch global.
   form.append('file', { uri: asset.uri, name: asset.fileName ?? `image.${type === 'image/png' ? 'png' : 'jpg'}`, type } as unknown as Blob)
   return api.post<MediaView>(ENDPOINTS.media, form)
 }

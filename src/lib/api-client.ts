@@ -1,5 +1,10 @@
 import type { ApiError } from '@/shared/types/api'
 
+// Expo SDK 58 installe expo/fetch globalement. Son encodeur multipart refuse
+// les pièces RN { uri, name, type }. Le transport XHR de whatwg-fetch garde
+// ces fichiers locaux et laisse le réseau natif construire le multipart.
+const { fetch: multipartFetch } = require('whatwg-fetch') as { fetch: typeof globalThis.fetch }
+
 interface ApiClientConfig {
   baseUrl: string
   defaultHeaders?: Record<string, string>
@@ -50,7 +55,8 @@ export function createApiClient(clientConfig: ApiClientConfig) {
     const token = getAuthToken?.()
     if (token) headers['Authorization'] = `Bearer ${token}`
 
-    const response = await fetch(url, {
+    const transport = multipart ? multipartFetch : fetch
+    const response = await transport(url, {
       method,
       headers,
       body: multipart ? body : body !== undefined ? JSON.stringify(body) : undefined,

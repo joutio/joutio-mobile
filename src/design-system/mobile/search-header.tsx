@@ -45,16 +45,38 @@ export function SearchHeader({
   const active = useRef(false)
   const input = useRef<TextInputInstance>(null)
   const keyboardVisible = useRef(false)
+  const blurFrame = useRef<ReturnType<typeof requestAnimationFrame> | null>(null)
+  const restore = useCallback(() => {
+    active.current = false
+    setSearching(false)
+  }, [])
   const begin = useCallback(() => {
+    if (blurFrame.current !== null) cancelAnimationFrame(blurFrame.current)
+    blurFrame.current = null
+    // Un ancien keyboardDidHide peut arriver pendant la prise de focus suivante.
+    // Seul un clavier montré pour CE focus peut ensuite fermer cette recherche.
+    keyboardVisible.current = false
     active.current = true
     setSearching(true)
   }, [])
+  const blur = useCallback(() => {
+    if (!active.current) return
+    if (blurFrame.current !== null) cancelAnimationFrame(blurFrame.current)
+    // Laisser RN actualiser le focus : une perte transitoire pendant le layout,
+    // suivie d'un nouveau focus, ne doit pas annuler la remontée du champ.
+    blurFrame.current = requestAnimationFrame(() => {
+      blurFrame.current = null
+      if (!input.current?.isFocused()) restore()
+    })
+  }, [restore])
   const end = useCallback(() => {
-    active.current = false
+    if (blurFrame.current !== null) cancelAnimationFrame(blurFrame.current)
+    blurFrame.current = null
+    keyboardVisible.current = false
+    restore()
     input.current?.blur()
     Keyboard.dismiss()
-    setSearching(false)
-  }, [])
+  }, [restore])
   const cancel = useCallback(() => {
     onChange('')
     end()
@@ -63,10 +85,12 @@ export function SearchHeader({
   useFocusEffect(useCallback(() => end, [end]))
   useEffect(() => {
     const show = Keyboard.addListener('keyboardDidShow', () => {
-      keyboardVisible.current = true
+      keyboardVisible.current = active.current && Boolean(input.current?.isFocused())
     })
     const hide = Keyboard.addListener('keyboardDidHide', () => {
+      const shownForThisFocus = keyboardVisible.current
       keyboardVisible.current = false
+      if (active.current && shownForThisFocus) end()
     })
     const back =
       Platform.OS === 'android'
@@ -81,8 +105,9 @@ export function SearchHeader({
       show.remove()
       hide.remove()
       back?.remove()
+      if (blurFrame.current !== null) cancelAnimationFrame(blurFrame.current)
     }
-  }, [cancel])
+  }, [cancel, end])
 
   return (
     <Animated.View layout={reduced ? undefined : LAYOUT}>
@@ -115,6 +140,7 @@ export function SearchHeader({
           label={placeholder}
           inputRef={input}
           onFocus={begin}
+          onBlur={blur}
           onCancel={cancel}
           active={searching}
           cancelVisible={searching}

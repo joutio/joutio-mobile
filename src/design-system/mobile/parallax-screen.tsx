@@ -1,6 +1,6 @@
 import { Image } from 'expo-image'
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react'
-import { Platform, RefreshControl, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native'
+import { RefreshControl, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native'
 import { GestureDetector } from 'react-native-gesture-handler'
 import Animated, {
   interpolate,
@@ -38,10 +38,10 @@ export const HERO_HEIGHT = 320
  */
 
 /** Image : zoom jusqu'à ×2,5 au tiré, parallaxe à mi-vitesse au défilement. Immobile sous mouvement réduit. */
-export function heroImageTransform(y: number, reduced: boolean) {
+export function heroImageTransform(y: number, reduced: boolean, height = HERO_HEIGHT) {
   'worklet'
   if (reduced) return [{ translateY: 0 }, { scale: 1 }]
-  const h = HERO_HEIGHT
+  const h = height
   const down = interpolate(y, [-h, 0, h], [-h * 0.6, 0, h * 0.5], 'clamp')
   const up = interpolate(y, [-h, 0, h], [h * 0.3, 0, 0], 'clamp')
   const scale = interpolate(y, [-h, 0, h], [2.5, 1, 1], 'clamp')
@@ -200,6 +200,8 @@ export function CompactBarRow({ title, back = true, onBack, right, titleStart = 
 }
 
 export interface ParallaxScreenProps {
+  /** Hauteur de la bannière ; permet d’agrandir une identité sans remonter son avatar. */
+  heroHeight?: number
   /** Absente : fond uni, pour une bannière facultative. */
   image?: string | number
   title: string
@@ -240,6 +242,7 @@ export interface ParallaxScreenProps {
  * compacte. Avec des onglets, utiliser `CollapsibleTabsScreen` (une liste virtualisée par onglet).
  */
 export function ParallaxScreen({
+  heroHeight = HERO_HEIGHT,
   image,
   title,
   eyebrow,
@@ -270,26 +273,27 @@ export function ParallaxScreen({
 
   const barHeight = insets.top + TOP_BAR_HEIGHT
   // Position du titre dans l'image, mesurée : la barre prend le relais au moment exact où il passe dessous.
-  const titleStart = useSharedValue(HERO_HEIGHT - barHeight)
+  const titleStart = useSharedValue(heroHeight - barHeight)
   const titleLength = useSharedValue(56)
 
   const onScroll = useAnimatedScrollHandler((event) => {
     scroll.value = event.contentOffset.y
     progress.value = compactBarProgress(event.contentOffset.y, titleStart.value, titleLength.value)
-    scheduleOnRN(setDocked, event.contentOffset.y > (dockAt ?? HERO_HEIGHT - barHeight))
+    scheduleOnRN(setDocked, event.contentOffset.y > (dockAt ?? heroHeight - barHeight))
   })
   const rightContent = typeof right === 'function' ? right(docked) : right
 
   // Android : le tiré en haut de page zoome l'image comme le rebond d'iOS.
   const stretch = useOverscrollStretch(scroll)
-  const imageStyle = useAnimatedStyle(() => ({ transform: heroImageTransform(scroll.value - stretch.pull.value, reduced) }))
+  const imageStyle = useAnimatedStyle(() => ({ transform: heroImageTransform(scroll.value - stretch.pull.value, reduced, heroHeight) }))
   // iOS : le spinner natif passe sous l'image (qui déborde vers le haut) ; on dessine le nôtre par-dessus.
   const [refreshing, setRefreshing] = useState(false)
-  const overPull = useDerivedValue(() => Math.max(0, -scroll.value))
+  const overPull = useDerivedValue(() => Math.max(0, -scroll.value, stretch.pull.value))
   const refresh = () => {
     if (!onRefresh) return
     setRefreshing(true)
-    Promise.resolve(onRefresh())
+    Promise.resolve()
+      .then(onRefresh)
       .catch(() => undefined)
       .finally(() => setRefreshing(false))
   }
@@ -313,17 +317,17 @@ export function ParallaxScreen({
                 <RefreshControl
                   refreshing={refreshing}
                   onRefresh={refresh}
-                  tintColor={Platform.OS === 'ios' ? 'transparent' : colors.muted}
-                  colors={[colors.accentInk]}
-                  progressBackgroundColor={colors.surface}
+                  tintColor="transparent"
+                  colors={['transparent']}
+                  progressBackgroundColor="transparent"
                   progressViewOffset={barHeight}
                 />
               ) : undefined
             }
           >
             {/* Découpe qui déborde vers le haut (Reacticx) : au tiré, l'image zoomée couvre le haut de l'écran. */}
-            <View style={{ marginTop: -HERO_HEIGHT * 4, paddingTop: HERO_HEIGHT * 4, overflow: 'hidden' }}>
-              <View style={{ height: HERO_HEIGHT, backgroundColor: colors.surface }} accessible accessibilityRole="header" accessibilityLabel={title}>
+            <View style={{ marginTop: -heroHeight * 4, paddingTop: heroHeight * 4, overflow: 'hidden' }}>
+              <View style={{ height: heroHeight, backgroundColor: colors.surface }} accessible accessibilityRole="header" accessibilityLabel={title}>
                 {image !== undefined && (
                   <Animated.View style={[StyleSheet.absoluteFill, imageStyle]}>
                     <Image source={image} contentFit="cover" style={StyleSheet.absoluteFill} />
@@ -376,7 +380,7 @@ export function ParallaxScreen({
           </Animated.ScrollView>
         </GestureDetector>
 
-        {onRefresh && Platform.OS === 'ios' && <PullIndicator pull={overPull} refreshing={refreshing} top={barHeight} />}
+        {onRefresh && <PullIndicator pull={overPull} refreshing={refreshing} top={barHeight} />}
 
         {floating && <View style={{ position: 'absolute', right: tokens.space[5], bottom: tokens.space[5] }}>{floating}</View>}
 

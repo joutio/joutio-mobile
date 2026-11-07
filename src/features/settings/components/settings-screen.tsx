@@ -1,12 +1,9 @@
 import { router } from 'expo-router'
 import * as WebBrowser from 'expo-web-browser'
+import { useState } from 'react'
 import { View } from 'react-native'
 import {
   ArrowCounterClockwiseIcon,
-  CaretRightIcon,
-  PressableScale,
-  Avatar,
-  Button,
   CheckCircleIcon,
   CrownSimpleIcon,
   FileTextIcon,
@@ -15,33 +12,31 @@ import {
   ListRow,
   MedalIcon,
   MobileTopBar,
+  MobileSheet,
+  RadioGroup,
+  GlobeHemisphereWestIcon,
+  PaletteIcon,
+  SquaresFourIcon,
   PencilSimpleIcon,
   RobotIcon,
   Screen,
   SectionHeader,
-  Segmented,
   ShieldCheckIcon,
   showDialog,
   SignOutIcon,
   SpeakerHighIcon,
-  Text,
   tokens,
   TrashIcon,
   useDeviceSettings,
-  useTheme,
   useThemeStore,
   VibrateIcon,
-  type ThemePreference,
 } from '@/design-system'
 import { useLogout } from '@/features/auth'
-import { useMyAvatar } from '@/features/avatar/lib/avatar-preview'
 import { useMe } from '@/features/me'
 import { useAutoTrain } from '@/features/play/hooks/use-play'
 import { usePremiumSheet } from '@/features/premium/premium-store'
 import { useNotificationPreferences, useSetNotificationPreference, useUpdateMe } from '@/features/profile/hooks/use-profile'
 import { config } from '@/lib/config'
-import type { Language } from '@/shared/types/bff'
-import { tierOf } from '@/shared/utils/tier'
 import { useProfileFields } from './profile-fields'
 
 const LANGUAGES = [
@@ -67,14 +62,12 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 /**
- * Réglages (`reglages.md`) : identité et avatar, champs du profil, langue, apparence, duel, notifications et compte.
+ * Réglages (`reglages.md`) : champs du profil, langue, apparence, duel, notifications et compte.
  * Sons, vibrations, détails des réponses, Revanches et Rangs et badges sont des réglages de l'appareil (§ 5).
  */
 export function SettingsScreen() {
-  const { colors, radius } = useTheme()
   const me = useMe(true)
   const data = me.data
-  const avatar = useMyAvatar()
   const logout = useLogout()
   const autoTrain = useAutoTrain()
   const device = useDeviceSettings()
@@ -86,7 +79,7 @@ export function SettingsScreen() {
   const showPremium = usePremiumSheet((state) => state.show)
   const { rows, sheets } = useProfileFields(data)
   const rooms = preferences.data?.find((item) => item.category === 'ROOM')?.enabled ?? true
-  const tier = data?.progression && !data.progression.provisional ? tierOf(data.progression.rating) : undefined
+  const [preferenceSheet, setPreferenceSheet] = useState<'language' | 'appearance'>()
 
   const confirmLogout = () =>
     showDialog({
@@ -104,67 +97,78 @@ export function SettingsScreen() {
     <Screen
       inTabs
       header={<MobileTopBar variant="inline" back="Profil" onBack={() => router.back()} title="Réglages" />}
-      overlay={sheets}
+      overlay={
+        <>
+          {sheets}
+          <MobileSheet open={preferenceSheet === 'language'} onClose={() => setPreferenceSheet(undefined)} title="Langue">
+            <ListGroup surface="surface">
+              <RadioGroup label="Langue">
+                {LANGUAGES.map((option, index) => (
+                  <ListRow
+                    key={option.value}
+                    label={option.label}
+                    control="radio"
+                    on={(data?.language ?? 'fr') === option.value}
+                    disabled={language.isPending}
+                    last={index === LANGUAGES.length - 1}
+                    onToggle={() => {
+                      if (option.value === (data?.language ?? 'fr')) setPreferenceSheet(undefined)
+                      else language.mutate(option.value, { onSuccess: () => setPreferenceSheet(undefined) })
+                    }}
+                  />
+                ))}
+              </RadioGroup>
+            </ListGroup>
+          </MobileSheet>
+          <MobileSheet open={preferenceSheet === 'appearance'} onClose={() => setPreferenceSheet(undefined)} title="Apparence">
+            <ListGroup surface="surface">
+              <RadioGroup label="Apparence">
+                {APPEARANCE.map((option, index) => (
+                  <ListRow
+                    key={option.value}
+                    label={option.label}
+                    control="radio"
+                    on={appearance === option.value}
+                    last={index === APPEARANCE.length - 1}
+                    onToggle={() => {
+                      setAppearance(option.value)
+                      setPreferenceSheet(undefined)
+                    }}
+                  />
+                ))}
+              </RadioGroup>
+            </ListGroup>
+          </MobileSheet>
+        </>
+      }
       contentStyle={{ gap: tokens.space[6], paddingHorizontal: tokens.space[5], paddingTop: tokens.space[3], paddingBottom: tokens.space[7] }}
     >
-      {/* Carte d'identité entièrement touchable (2026-11-07) : le crayon sur l'avatar dit qu'il se modifie. */}
-      <PressableScale
-        accessibilityRole="button"
-        accessibilityLabel="Modifier mon avatar"
-        onPress={() => router.push('/avatar')}
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: tokens.space[4],
-          borderRadius: radius.lg,
-          backgroundColor: colors.surface,
-          padding: tokens.space[4],
-        }}
-      >
-        <View>
-          <Avatar name={data?.pseudonym ?? 'Moi'} src={avatar} tier={tier} size="lg" />
-          <View
-            style={{
-              position: 'absolute',
-              right: -2,
-              bottom: -2,
-              width: 24,
-              height: 24,
-              borderRadius: radius.full,
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: colors.accent,
-              borderWidth: 2,
-              borderColor: colors.surface,
-            }}
-          >
-            <PencilSimpleIcon size={12} weight="bold" color={colors.onAccent} />
-          </View>
-        </View>
-        <View style={{ flex: 1, minWidth: 0 }}>
-          <Text variant="headline" numberOfLines={1}>
-            {data?.pseudonym ?? ''}
-          </Text>
-          <Text variant="caption" color="muted" numberOfLines={1}>
-            {data?.email ?? ''}
-          </Text>
-        </View>
-        <CaretRightIcon size={16} color={colors.muted} />
-      </PressableScale>
-
       <Section title="Profil">{rows}</Section>
 
       <Section title="Langue">
-        <Segmented<Language>
-          label="Langue"
-          options={LANGUAGES}
-          value={data?.language ?? 'fr'}
-          onChange={(next) => !language.isPending && language.mutate(next)}
-        />
+        <ListGroup surface="surface">
+          <ListRow
+            icon={GlobeHemisphereWestIcon}
+            label="Langue"
+            value={LANGUAGES.find((option) => option.value === (data?.language ?? 'fr'))?.label}
+            control="chevron"
+            onPress={() => setPreferenceSheet('language')}
+            last
+          />
+        </ListGroup>
       </Section>
 
       <Section title="Apparence">
-        <Segmented<ThemePreference> label="Apparence" options={APPEARANCE} value={appearance} onChange={setAppearance} />
+        <ListGroup surface="surface">
+          <ListRow
+            icon={PaletteIcon}
+            label="Apparence"
+            value={APPEARANCE.find((option) => option.value === appearance)?.label}
+            control="chevron"
+            onPress={() => setPreferenceSheet('appearance')}
+            last
+          />
+        </ListGroup>
       </Section>
 
       <Section title="Duel">
@@ -231,12 +235,14 @@ export function SettingsScreen() {
         <ListGroup surface="surface">
           <ListRow icon={TrashIcon} label="Supprimer mon compte" control="none" destructive onPress={() => router.push('/profile/settings/delete')} last />
         </ListGroup>
-        {config.catalogEnabled && (
-          <Button full variant="tinted" onPress={() => router.push('/catalog')}>
-            Catalogue des composants
-          </Button>
-        )}
       </Section>
+      {__DEV__ && config.catalogEnabled && (
+        <Section title="Dev">
+          <ListGroup surface="surface">
+            <ListRow icon={SquaresFourIcon} label="Catalogue des composants" control="chevron" onPress={() => router.push('/catalog')} last />
+          </ListGroup>
+        </Section>
+      )}
     </Screen>
   )
 }

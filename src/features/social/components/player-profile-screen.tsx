@@ -1,10 +1,11 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { router, useLocalSearchParams } from 'expo-router'
 import { useState } from 'react'
-import { View } from 'react-native'
+import { ScrollView, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import {
   Avatar,
+  AVATAR_SIZES,
   Badge,
   Button,
   CheckIcon,
@@ -84,7 +85,6 @@ export function PlayerProfileScreen() {
   const client = useQueryClient()
   const follow = useFollowPlayer(id)
   const head = useHeadToHead(id)
-  const [challenged, setChallenged] = useState(false)
   const [challengeOpen, setChallengeOpen] = useState(false)
   const [reportOpen, setReportOpen] = useState(false)
   const [blockOpen, setBlockOpen] = useState(false)
@@ -172,25 +172,21 @@ export function PlayerProfileScreen() {
   return (
     <>
       <ParallaxScreen
+        heroHeight={HERO_HEIGHT + AVATAR_SIZES.xxl - AVATAR_SIZES.xl}
         image={data?.bannerUrl ?? undefined}
         title={data?.pseudonym ?? 'Joueur'}
-        eyebrow={data ? <Avatar name={data.pseudonym} src={userAvatar(data)} tier={tier} size="xl" /> : undefined}
+        eyebrow={data ? <Avatar name={data.pseudonym} src={userAvatar(data)} tier={tier} size="xxl" /> : undefined}
         centered
         barTitleStart
         onBack={() => router.back()}
         onRefresh={() => client.refetchQueries({ type: 'active' })}
-        dockAt={HERO_HEIGHT + actionsY - (insets.top + TOP_BAR_HEIGHT)}
+        dockAt={HERO_HEIGHT + AVATAR_SIZES.xxl - AVATAR_SIZES.xl + actionsY - (insets.top + TOP_BAR_HEIGHT)}
         right={(docked) =>
           data && !data.isMe ? (
             <>
               {canAct && docked && (
                 <>
-                  <ParallaxIconButton
-                    icon={challenged ? CheckIcon : LightningIcon}
-                    label={challenged ? 'Défi envoyé' : `Défier ${data.pseudonym}`}
-                    disabled={challenged}
-                    onPress={() => setChallengeOpen(true)}
-                  />
+                  <ParallaxIconButton icon={LightningIcon} label={`Défier ${data.pseudonym}`} onPress={() => setChallengeOpen(true)} />
                   <ParallaxIconButton icon={HeartIcon} label={data.following ? 'Ne plus suivre' : 'Suivre'} filled={data.following} onPress={toggleFollow} />
                 </>
               )}
@@ -209,7 +205,18 @@ export function PlayerProfileScreen() {
           data ? (
             <View style={{ gap: tokens.space[4] }}>
               <View style={{ alignItems: 'center', gap: tokens.space[2] }}>
-                {titleText && titleTier && <TitleRibbon tier={titleTier} text={titleText} width={200} />}
+                {titleText && titleTier && (
+                  <ScrollView
+                    horizontal
+                    nestedScrollEnabled
+                    directionalLockEnabled
+                    scrollsToTop={false}
+                    style={{ alignSelf: 'stretch', flexGrow: 0 }}
+                    contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', alignItems: 'center' }}
+                  >
+                    <TitleRibbon tier={titleTier} text={titleText} width="auto" />
+                  </ScrollView>
+                )}
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: tokens.space[2] }}>
                   {tier ? <Badge variant="tier" tier={tier}>{`${tierLabel(tier)} · ${formatNumber(rating ?? 0)}`}</Badge> : <Pill>Non classé</Pill>}
                   {data.country && <Pill icon={MapPinIcon}>{countryLabel(data.country)}</Pill>}
@@ -230,16 +237,8 @@ export function PlayerProfileScreen() {
               {canAct && (
                 // 65 / 35 : le défi est l'action principale, comme « Lancer un duel » sur la Fiche sujet.
                 <View onLayout={(event) => setActionsY(event.nativeEvent.layout.y)} style={{ flexDirection: 'row', gap: tokens.space[2] }}>
-                  <Button
-                    full
-                    style={{ flex: 65 }}
-                    icon={challenged ? CheckIcon : LightningIcon}
-                    variant={challenged ? 'gray' : 'filled'}
-                    tone={challenged ? 'neutral' : 'accent'}
-                    disabled={challenged}
-                    onPress={() => setChallengeOpen(true)}
-                  >
-                    {challenged ? 'Défi envoyé' : 'Défier'}
+                  <Button full style={{ flex: 65 }} icon={LightningIcon} variant="filled" tone="accent" onPress={() => setChallengeOpen(true)}>
+                    Défier
                   </Button>
                   <Button
                     full
@@ -340,7 +339,7 @@ export function PlayerProfileScreen() {
           </View>
         )}
       </ParallaxScreen>
-      <ChallengePlayerSheet player={challengeOpen ? challengePlayer : null} onClose={() => setChallengeOpen(false)} onSent={() => setChallenged(true)} />
+      <ChallengePlayerSheet player={challengeOpen ? challengePlayer : null} onClose={() => setChallengeOpen(false)} />
       {data && !data.isMe && (
         <ReportPlayerSheet
           open={reportOpen}

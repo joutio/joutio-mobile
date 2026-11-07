@@ -6,6 +6,7 @@ import { createTabList } from 'react-native-collapsible-tabs-native'
 import { useSharedValue, type SharedValue } from 'react-native-reanimated'
 import { useTheme } from '../theme/theme-provider'
 import { withActivePageScrollsToTop } from './tab-page'
+import { useScrollRefreshFeedback } from './scroll-refresh'
 
 export const LOAD_MORE_THRESHOLD = 64
 interface NativeProps extends ViewProps {
@@ -131,6 +132,7 @@ export function DragToLoadMore({ enabled, loading = false, onLoadMore, style, ov
 /** The same native scroll node is shared with FlashList, tabs and TrueSheet. */
 export function LoadMoreScrollView({ ref, ...props }: ScrollViewProps & { ref?: Ref<ScrollViewInstance | null> }) {
   const register = useContext(Context)?.register
+  const refreshProps = useScrollRefreshFeedback(props)
   const setRef = useCallback(
     (node: ScrollViewInstance | null) => {
       register?.(node ? (findNodeHandle(node) ?? 0) : 0)
@@ -139,6 +141,6 @@ export function LoadMoreScrollView({ ref, ...props }: ScrollViewProps & { ref?: 
     },
     [ref, register],
   )
-  return <ScrollView {...props} ref={setRef} scrollEventThrottle={props.scrollEventThrottle ?? 16} />
+  return <ScrollView {...refreshProps} ref={setRef} scrollEventThrottle={props.scrollEventThrottle ?? 16} />
 }
 export const TabLoadMoreScrollView = withActivePageScrollsToTop(createTabList(LoadMoreScrollView))

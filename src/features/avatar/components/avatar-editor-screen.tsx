@@ -3,16 +3,13 @@ import { useMemo, useState, type ReactNode } from 'react'
 import { View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import {
-  ArrowCounterClockwiseIcon,
   Avatar,
-  Button,
   ColorSwatch,
   MobileTopBar,
   OptionTile,
   RadioGroup,
   RewardCard,
   SectionHeader,
-  ShuffleIcon,
   TabScrollView,
   TabsScrollView,
   tokens,
@@ -23,7 +20,6 @@ import { useMe } from '@/features/me'
 import { usePremiumSheet } from '@/features/premium/premium-store'
 import { useMyBadges, useMyRewards, useUpdateMe } from '@/features/profile/hooks/use-profile'
 import { t } from '@/shared/avatar/i18n'
-import { randomAvatarOptions } from '@/shared/avatar/render'
 import { defaultOptionsFor, getAvatarStyle, humanizeVariant, NONE_LABEL_KEY, type AvatarStyleSection } from '@/shared/avatar/styles'
 import { avatarSvg, BACKGROUND_COLORS, parseAvatarConfig, type AvatarConfig } from '@/shared/utils/avatar'
 import { tierOf } from '@/shared/utils/tier'
@@ -54,7 +50,7 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 /**
  * Éditeur d'avatar (`avatar.md`), aligné sur `joutio-web` : onglet Style, puis les groupes du style choisi (Micah :
  * Visage, Cheveux, Accessoires, Vêtements, Couleurs ; Lorelei et Notionists : les leurs), chaque section avec ses
- * variantes (« Aucun » si l'élément est facultatif) et sa palette. Aléatoire et Réinitialiser comme sur le web.
+ * variantes (« Aucun » si l'élément est facultatif) et sa palette.
  * L'avatar de base n'a qu'un fond. Aperçu fixe avec le cadre du rang ; Enregistrer s'active au premier changement.
  */
 export function AvatarEditorScreen() {
@@ -203,16 +199,6 @@ export function AvatarEditorScreen() {
       />
       <View style={{ alignItems: 'center', gap: tokens.space[3], paddingVertical: tokens.space[4] }}>
         <Avatar name={data?.pseudonym ?? 'Moi'} src={render(choice)} tier={tier} size="preview" />
-        {dicebear && (
-          <View style={{ flexDirection: 'row', gap: tokens.space[3] }}>
-            <Button variant="gray" tone="neutral" size="S" icon={ShuffleIcon} onPress={() => setChoice({ ...randomAvatarOptions(style), style })}>
-              {t('avatar.editor.random')}
-            </Button>
-            <Button variant="gray" tone="neutral" size="S" icon={ArrowCounterClockwiseIcon} onPress={() => setChoice(defaultOptionsFor(style))}>
-              {t('avatar.editor.reset')}
-            </Button>
-          </View>
-        )}
       </View>
       <View style={{ flex: 1 }}>
         <TabsScrollView<string>

@@ -57,6 +57,8 @@ export interface CollapsibleTab<T extends string> {
 }
 
 export interface CollapsibleTabsScreenProps<T extends string> {
+  /** Hauteur de bannière (320 par défaut). */
+  heroHeight?: number
   /** Absente : fond uni, pour une bannière facultative. */
   image?: string | number
   title: string
@@ -95,6 +97,7 @@ export interface CollapsibleTabsScreenProps<T extends string> {
 const INTRO_PADDING_TOP = tokens.space[2]
 
 interface HeroProps {
+  heroHeight: number
   image?: string | number
   title: string
   eyebrow?: ReactNode
@@ -111,18 +114,18 @@ interface HeroProps {
 }
 
 /** Image en parallaxe et titre qui s'efface : l'en-tête que le natif replie. */
-function Hero({ image, title, eyebrow, centered, intro, scroll, pull, titleStart, titleLength, barHeight }: HeroProps) {
+function Hero({ heroHeight, image, title, eyebrow, centered, intro, scroll, pull, titleStart, titleLength, barHeight }: HeroProps) {
   const { colors } = useTheme()
   const reduced = useReducedMotion()
-  const imageStyle = useAnimatedStyle(() => ({ transform: heroImageTransform(scroll.value - pull.value, reduced) }))
+  const imageStyle = useAnimatedStyle(() => ({ transform: heroImageTransform(scroll.value - pull.value, reduced, heroHeight) }))
   const titleStyle = useAnimatedStyle(() => ({ opacity: heroTitleOpacity(scroll.value, titleStart.value, titleLength.value) }))
 
   return (
     <View style={{ backgroundColor: colors.bg }}>
       {/* Découpe qui déborde vers le haut (comme ParallaxScreen) : au tiré, le natif descend l'en-tête et l'image
           zoomée couvre l'espace libéré au-dessus, au lieu d'être coupée au bord de la bannière. */}
-      <View style={{ marginTop: -HERO_HEIGHT * 4, paddingTop: HERO_HEIGHT * 4, overflow: 'hidden' }}>
-        <View style={{ height: HERO_HEIGHT, backgroundColor: colors.surface }} accessible accessibilityRole="header" accessibilityLabel={title}>
+      <View style={{ marginTop: -heroHeight * 4, paddingTop: heroHeight * 4, overflow: 'hidden' }}>
+        <View style={{ height: heroHeight, backgroundColor: colors.surface }} accessible accessibilityRole="header" accessibilityLabel={title}>
           {image !== undefined && (
             <Animated.View style={[StyleSheet.absoluteFill, imageStyle]}>
               <Image source={image} contentFit="cover" style={StyleSheet.absoluteFill} />
@@ -179,6 +182,7 @@ export function CollapsibleTabsScreen<T extends string>({
   tabsRef,
   onRefresh,
   title,
+  heroHeight = HERO_HEIGHT,
   back = true,
   onBack,
   right,
@@ -234,7 +238,7 @@ export function CollapsibleTabsScreen<T extends string>({
 
   // Courbes partagées avec ParallaxScreen (Parallax Header de Reacticx). Position du titre dans l'image, mesurée :
   // la barre prend le relais au moment exact où il passe dessous.
-  const titleStart = useSharedValue(HERO_HEIGHT - barHeight)
+  const titleStart = useSharedValue(heroHeight - barHeight)
   const titleLength = useSharedValue(56)
   const progress = useDerivedValue(() => compactBarProgress(scroll.value, titleStart.value, titleLength.value))
   const opaque = useAnimatedStyle(() => ({ opacity: progress.value }))
@@ -242,7 +246,7 @@ export function CollapsibleTabsScreen<T extends string>({
   // Actions principales passées sous la barre : ses icônes prennent le relais (`right(docked)`).
   const [docked, setDocked] = useState(false)
   const [bottomBarHeight, setBottomBarHeight] = useState(0)
-  const dockLine = dockAt === undefined ? Infinity : HERO_HEIGHT + INTRO_PADDING_TOP + dockAt - barHeight
+  const dockLine = dockAt === undefined ? Infinity : heroHeight + INTRO_PADDING_TOP + dockAt - barHeight
   useAnimatedReaction(
     () => scroll.value > dockLine,
     (next, previous) => {
@@ -293,7 +297,16 @@ export function CollapsibleTabsScreen<T extends string>({
           </TabPageActiveContext.Provider>
         )}
         renderHeader={() => (
-          <Hero {...hero} title={title} scroll={scroll} pull={refresh.pull} titleStart={titleStart} titleLength={titleLength} barHeight={barHeight} />
+          <Hero
+            {...hero}
+            heroHeight={heroHeight}
+            title={title}
+            scroll={scroll}
+            pull={refresh.pull}
+            titleStart={titleStart}
+            titleLength={titleLength}
+            barHeight={barHeight}
+          />
         )}
         renderTabBar={renderTabBar}
         // Le bas de l'en-tête reste sous la barre compacte, qui le recouvre : les onglets se collent sous elle.

@@ -136,8 +136,8 @@ export function useWearTitle() {
   const userId = me.data?.userId ?? ''
   const key = queryKeys.profiles.titles(userId)
   return useMutation({
-    mutationFn: (titleKey: string) => topicService.wearTitle(userId, titleKey),
-    onMutate: (titleKey: string) =>
+    mutationFn: (titleKey: string | null) => topicService.wearTitle(userId, titleKey),
+    onMutate: (titleKey: string | null) =>
       optimisticUpdate(client, [key, queryKeys.me(), queryKeys.profiles.profile(userId)], () => {
         client.setQueryData<TitlesView>(key, (titles) => (titles ? { ...titles, equippedKey: titleKey } : titles))
         client.setQueryData<MeView>(queryKeys.me(), (me) => (me ? { ...me, equippedTitle: titleKey } : me))
@@ -145,7 +145,7 @@ export function useWearTitle() {
       }),
     onError: (_error, _key, context) => {
       context?.rollback()
-      toast.error("Le titre n'a pas pu être porté")
+      toast.error(_key === null ? 'Le titre n’a pas pu être enlevé' : 'Le titre n’a pas pu être porté')
     },
   })
 }

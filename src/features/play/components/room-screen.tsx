@@ -11,6 +11,7 @@ import {
   RobotIcon,
   RoomPlayers,
   Screen,
+  MobileTopBar,
   ShareNetworkIcon,
   SwordIcon,
   Text,
@@ -158,7 +159,7 @@ export function RoomScreen() {
         ? { title: 'Salon introuvable', description: 'Il a peut-être expiré.' }
         : TERMINAL[roomStatus as keyof typeof TERMINAL]
     return (
-      <Screen nativeHeader scroll={false}>
+      <Screen header={<MobileTopBar variant="inline" back="Retour" title="Salon" onBack={close} />} scroll={false}>
         <Terminal title={copy.title} description={copy.description} onBack={close} />
       </Screen>
     )
@@ -255,11 +256,11 @@ export function RoomScreen() {
   )
 }
 
-/** Page standard : en-tête natif, contenu défilant et actions fixes. */
+/** Page standard : top bar Joutio, contenu défilant et actions fixes. */
 function Salon({ footer, children }: { footer: React.ReactNode; children: React.ReactNode }) {
   return (
     <Screen
-      nativeHeader
+      header={<MobileTopBar variant="inline" back="Retour" title="Salon" onBack={() => router.back()} />}
       contentStyle={{ gap: tokens.space[6], padding: tokens.space[5] }}
       bottomBar={<View style={{ gap: tokens.space[3], padding: tokens.space[5] }}>{footer}</View>}
     >

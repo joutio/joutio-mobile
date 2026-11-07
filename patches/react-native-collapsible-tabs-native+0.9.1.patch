@@ -171,3 +171,36 @@ index a6a300e..4921804 100644
    const itemX = useRef<number[]>([]);
  
    // One continuous value drives every tab: the pager's live position when the
+diff --git a/node_modules/react-native-collapsible-tabs-native/ios/NativeCollapsibleTabsContent.swift b/node_modules/react-native-collapsible-tabs-native/ios/NativeCollapsibleTabsContent.swift
+--- a/node_modules/react-native-collapsible-tabs-native/ios/NativeCollapsibleTabsContent.swift
++++ b/node_modules/react-native-collapsible-tabs-native/ios/NativeCollapsibleTabsContent.swift
+@@ -150,6 +150,10 @@
+   /// view, the record follows the inset wherever the view goes (this is what
+   /// Android does with its WeakHashMap).
+   private let collapseSlack = NSMapTable<UIScrollView, NSNumber>.weakToStrongObjects()
++  // RN can restore its contentInset on a prop/layout update. Remember the base
++  // as well as our addition, or removing an already-erased addition makes the
++  // bottom inset negative and cuts off late-loaded content.
++  private let collapseSlackBase = NSMapTable<UIScrollView, NSNumber>.weakToStrongObjects()
+-
++
+   private func appliedSlack(_ sv: UIScrollView) -> CGFloat {
+     CGFloat(collapseSlack.object(forKey: sv)?.doubleValue ?? 0)
+@@ -876,7 +880,16 @@
+   /// applying this is invisible until the user scrolls.
+   private func applyCollapseSlack(to sv: UIScrollView, page: Int) {
+     guard !applyingSlack else { return }
+-    let applied = appliedSlack(sv)
++    var applied = appliedSlack(sv)
++    let currentBottom = sv.contentInset.bottom
++    let base = collapseSlackBase.object(forKey: sv).map { CGFloat($0.doubleValue) } ?? (currentBottom - applied)
++    if abs(currentBottom - (base + applied)) > 0.5 {
++      // An external write replaced the inset: our recorded slack is no longer
++      // present in this scroll view, so there is nothing left to subtract.
++      applied = 0
++      setAppliedSlack(sv, 0)
++    }
++    collapseSlackBase.setObject(NSNumber(value: Double(currentBottom - applied)), forKey: sv)
+     guard allowFullCollapse else {
+       if applied != 0 {
+         applyingSlack = true

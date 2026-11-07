@@ -40,6 +40,14 @@ for (const [folder, width] of Object.entries(RASTER_WIDTH)) {
   }
 }
 
+// Rasterize each slice at 3x its fixed display size. The center is tiled, never stretched.
+mkdirSync(join(OUT, 'brand/ruban/parts'), { recursive: true })
+for (const file of readdirSync(join(LAB, 'brand/ruban/parts')).filter((name) => name.endsWith('.svg'))) {
+  const svg = readFileSync(join(LAB, 'brand/ruban/parts', file), 'utf8')
+  const png = new Resvg(svg, { fitTo: { mode: 'height', value: 168 } }).render().asPng()
+  writeFileSync(join(OUT, 'brand/ruban/parts', file.replace(/\.svg$/, '.png')), png)
+}
+
 for (const file of readdirSync(join(LAB, 'topics'))) copy(join(LAB, 'topics', file), join(OUT, 'topics', file))
 
 console.log('Actifs synchronisés dans assets/.')

@@ -42,7 +42,7 @@ function AppNavigation() {
         <Stack screenOptions={nativeHeaderOptions(theme)}>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           {/* Salon : page classique avec retour. Matchmaking et duel gardent leur présentation immersive. */}
-          <Stack.Screen name="room/[roomId]" options={{ title: 'Salon', presentation: 'card' }} />
+          <Stack.Screen name="room/[roomId]" options={{ headerShown: false, presentation: 'card' }} />
           <Stack.Screen name="matchmaking/[ticketId]" options={{ headerShown: false, animation: 'fade', gestureEnabled: false }} />
           <Stack.Screen name="duel/[gameId]" options={{ headerShown: false, animation: 'fade', gestureEnabled: false }} />
           {/* Résultat d'une partie passée, ouvert depuis l'historique : le retour ramène à la liste. */}
@@ -57,7 +57,7 @@ function AppNavigation() {
       </SafeAreaInsetsContext.Provider>
       {/* Demandes de revanche reçues, au-dessus de tout écran (sauf pendant un duel). */}
       <RematchHost />
-      {/* Feuille Premium, ouverte depuis Réglages, Récompenses, Maîtrise ou l'éditeur d'avatar. */}
+      {/* Feuille Premium, ouverte depuis Réglages, Maîtrise ou l'éditeur d'avatar. */}
       <PremiumHost />
     </View>
   )

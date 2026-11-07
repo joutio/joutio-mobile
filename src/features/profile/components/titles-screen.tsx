@@ -274,7 +274,8 @@ export function TitlesScreen() {
                     title={titleLabel(title)}
                     worn={titles.data?.equippedKey === title.key}
                     wearing={wear.isPending && wear.variables === title.key}
-                    onWear={() => wear.mutate(title.key)}
+                    disabled={wear.isPending}
+                    onWear={() => wear.mutate(titles.data?.equippedKey === title.key ? null : title.key)}
                     last={index === item.titles.length - 1}
                   />
                 ))}

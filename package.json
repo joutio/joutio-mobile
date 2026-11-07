@@ -49,6 +49,7 @@
     "react-native-screens": "~4.30.1",
     "react-native-svg": "15.16.0",
     "react-native-worklets": "0.13.0",
+    "whatwg-fetch": "3.6.20",
     "zod": "^4.6.7",
     "zustand": "^5.0.16"
   },
@@ -67,6 +68,10 @@
     "ios": "expo run:ios",
     "typecheck": "tsc --noEmit",
     "test:mutations": "node tests/mutations.test.cjs",
+    "test:search-header": "node tests/search-header.test.cjs",
+    "test:api-client": "node tests/api-client.test.cjs",
+    "test:refresh": "node tests/scroll-refresh.test.cjs",
+    "test:collapse-slack": "node tests/collapse-slack.test.cjs",
     "doctor": "npx expo-doctor",
     "tokens:sync": "node scripts/sync-tokens.mjs",
     "tokens:check": "node scripts/sync-tokens.mjs --check",

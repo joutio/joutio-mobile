@@ -202,6 +202,24 @@ test('wearing a title updates me and public profile before the response', async 
   assert.equal(h.client.getQueryData(h.keys.me()).equippedTitle, 'old')
 })
 
+test('removing a title clears all three caches and restores them when rejected', async () => {
+  const h = harness()
+  const keys = [h.keys.me(), h.keys.profiles.profile('me'), h.keys.profiles.titles('me')]
+  h.client.setQueryData(keys[0], { ...h.me, equippedTitle: 'old' })
+  h.client.setQueryData(keys[1], { equippedTitle: 'old' })
+  h.client.setQueryData(keys[2], { equippedKey: 'old', titles: [{ key: 'old' }] })
+  const mutation = h.load('@/features/topic/hooks/use-topic').useWearTitle()
+  const context = await mutation.onMutate(null)
+  for (const [index, key] of keys.entries()) {
+    assert.equal(h.client.getQueryData(key)[index === 2 ? 'equippedKey' : 'equippedTitle'], null)
+  }
+  assert.equal(h.client.getQueryData(keys[2]).titles.length, 1)
+  mutation.onError(Error(), null, context)
+  for (const [index, key] of keys.entries()) {
+    assert.equal(h.client.getQueryData(key)[index === 2 ? 'equippedKey' : 'equippedTitle'], 'old')
+  }
+})
+
 test('following a player updates own counters and following list optimistically, then restores them', async () => {
   const h = harness()
   const profile = { userId: 'p', pseudonym: 'Player', following: false, followersCount: 2, progression: null, presence: null }
@@ -327,6 +345,7 @@ test('load-more haptic occurs once when a request is accepted, never during a du
     [path.join(root, 'design-system/haptics')]: { haptic: () => vibrations++ },
     [path.join(root, 'design-system/theme/theme-provider')]: { useTheme: () => ({ colors: {} }) },
     [path.join(root, 'design-system/mobile/tab-page')]: { withActivePageScrollsToTop: (view) => view },
+    [path.join(root, 'design-system/mobile/scroll-refresh')]: { useScrollRefreshFeedback: (props) => props },
   })
   const { DragToLoadMore } = h.load('@/design-system/mobile/drag-to-load-more')
   const element = DragToLoadMore({

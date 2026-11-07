@@ -10,7 +10,7 @@ interface PremiumState {
   hide: () => void
 }
 
-/** Feuille Premium unique (`premium.md`), ouverte depuis Réglages, Récompenses, Maîtrise, l'éditeur d'avatar ou un quota. */
+/** Feuille Premium unique (`premium.md`), ouverte depuis Réglages, Maîtrise, l'éditeur d'avatar ou un quota. */
 export const usePremiumSheet = create<PremiumState>((set) => ({
   open: false,
   context: 'offer',
