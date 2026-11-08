@@ -1,9 +1,12 @@
+import { getUserId } from '@/lib/auth'
 import { router, useLocalSearchParams } from 'expo-router'
 import { useEffect, useState } from 'react'
 import { View } from 'react-native'
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import {
+  Button,
+  showDialog,
   AnswerEditorRow,
   Field,
   ImagePicker,
@@ -31,7 +34,7 @@ import {
   translationStatus,
   type QuestionDraft,
 } from '../domain/question-draft'
-import { useSaveQuestion, useTopicQuestions } from '../hooks/use-authoring'
+import { useArchiveQuestion, useDeleteQuestion, useMyTopic, useSaveQuestion, useTopicQuestions } from '../hooks/use-authoring'
 import { LANGUAGES } from './topic-sheets'
 
 /** Image de question : 5:4, comme `QuestionBlock`. */
@@ -62,6 +65,9 @@ export function QuestionEditorScreen() {
   const questions = useTopicQuestions(topicId)
   const original = questionId ? questions.data?.find((question) => question.questionId === questionId) : undefined
   const save = useSaveQuestion(topicId)
+  const archive = useDeleteQuestion(topicId)
+  const lifecycle = useArchiveQuestion(topicId)
+  const { permissions } = useMyTopic(topicId)
   const [draft, setDraft] = useState<QuestionDraft>(() => (original ? draftFromQuestion(original) : emptyDraft()))
   const [loaded, setLoaded] = useState(!questionId || original !== undefined)
   const [language, setLanguage] = useState<Language>('fr')
@@ -78,7 +84,13 @@ export function QuestionEditorScreen() {
   const english = translationStatus(draft)
   const filled = frenchFilled(draft)
   const altMissing = missingAlt(draft, imageChanged)
-  const ready = loaded && isReady(draft, imageChanged) && !uploading
+  const mayEdit =
+    !questionId ||
+    Boolean(
+      (permissions?.canManage && original?.status !== 'ARCHIVED') ||
+      (original?.creatorId === getUserId() && (original?.status === 'PENDING' || original?.status === 'REJECTED')),
+    )
+  const ready = loaded && isReady(draft, imageChanged) && !uploading && mayEdit
   const missingCorrect = filled && draft.correct === undefined
   const text = draft.texts[language]
   const answers = draft.answers[language]
@@ -103,6 +115,15 @@ export function QuestionEditorScreen() {
     if (operations.length === 0) return router.back()
     save.mutate({ questionId, operations, resolveReports: params.resolveReports === '1' }, { onSuccess: () => router.back() })
   }
+
+  if (questionId && (questions.isError || (!questions.isPending && !original)))
+    return (
+      <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top }}>
+        <MobileTopBar variant="modal" title="Question indisponible" cancel="Fermer" onCancel={() => router.back()} />
+        <Text>La question est indisponible ou tu n’as plus accès à son édition.</Text>
+        <Button onPress={() => void questions.refetch()}>Réessayer</Button>
+      </View>
+    )
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top }}>
@@ -195,6 +216,34 @@ export function QuestionEditorScreen() {
             </Text>
           )}
         </View>
+        {questionId && (permissions?.canManage || mayEdit) && (
+          <Button
+            variant="gray"
+            onPress={() => lifecycle.mutate({ id: questionId, restore: original?.status === 'ARCHIVED' }, { onSuccess: () => router.back() })}
+          >
+            {original?.status === 'ARCHIVED' ? 'Restaurer en attente de validation' : 'Archiver la question'}
+          </Button>
+        )}
+        {original?.rejectionReason && <Text color="muted">{original.rejectionReason}</Text>}
+        {questionId &&
+          (permissions?.canManage || (original?.creatorId === getUserId() && (original?.status === 'PENDING' || original?.status === 'REJECTED'))) && (
+            <Button
+              variant="tinted"
+              tone="destructive"
+              onPress={() =>
+                showDialog({
+                  title: 'Supprimer cette question ?',
+                  message: 'Elle ne sera plus proposée dans les prochaines parties. Sous 7 questions jouables, le sujet repassera en brouillon.',
+                  actions: [
+                    { label: 'Supprimer', onPress: () => archive.mutate(questionId, { onSuccess: () => router.back() }) },
+                    { label: 'Annuler', variant: 'plain' },
+                  ],
+                })
+              }
+            >
+              Supprimer la question
+            </Button>
+          )}
       </KeyboardAwareScrollView>
     </View>
   )

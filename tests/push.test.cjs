@@ -195,7 +195,7 @@ test('every inbox type resolves to its action screen', () => {
     ['CHALLENGE_RECEIVED', { kind: 'challenges' }],
     ['ROOM_ACCEPTED', { kind: 'room', id: 's' }],
     ['WIZZ', { kind: 'room', id: 's' }],
-    ['QUESTION_REPORTED', { kind: 'moderation', id: 'topic' }],
+    ['QUESTION_REPORTED', { kind: 'moderation', id: 'topic', reportId: 's' }],
     ['TOPIC_DRAFTED', { kind: 'edit-topic', id: 'topic' }],
     ['ACCOUNT_SUSPENDED', { kind: 'suspended' }],
   ])
@@ -446,7 +446,7 @@ test('opening a notification marks read, routes correctly, and falls back for un
   await open({ ...notice, type: 'WIZZ' })
   assert.deepEqual(routes.at(-1), { pathname: '/room/[roomId]', params: { roomId: 's', fromPush: '1' } })
   await open({ ...notice, type: 'QUESTION_REPORTED', topicId: 't' })
-  assert.deepEqual(routes.at(-1), { pathname: '/profile/topics/[id]/moderation', params: { id: 't', tab: 'reports' } })
+  assert.deepEqual(routes.at(-1), { pathname: '/profile/topics/[id]/reports/[reportId]', params: { id: 't', reportId: 's' } })
   check = async () => {
     throw { statusCode: 404 }
   }

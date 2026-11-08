@@ -12,7 +12,8 @@ export const notificationsService = {
   /** Lecture initiale de la cible ; les salles gèrent leur expiration dans RoomScreen. */
   checkTarget: async (target: NotificationTarget) => {
     if (target.kind === 'player') await api.get(ENDPOINTS.profiles.profile(target.id))
-    if (target.kind === 'moderation' || target.kind === 'edit-topic') await api.get(ENDPOINTS.topics.questions(target.id), { params: { page: 0, size: 1 } })
+    if (target.kind === 'moderation' && target.reportId) await api.get(`/api/question-reports/${target.reportId}`)
+    else if (target.kind === 'moderation' || target.kind === 'edit-topic') await api.get(`/api/topics/${target.id}/workshop`)
   },
   read: (notificationId: string) => api.post<void>(ENDPOINTS.notifications.read(notificationId)),
   readAll: () => api.post<void>(ENDPOINTS.notifications.readAll),

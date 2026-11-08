@@ -6,7 +6,7 @@ export type NotificationTarget =
   | { kind: 'player'; id: string }
   | { kind: 'challenges' }
   | { kind: 'room'; id: string }
-  | { kind: 'moderation'; id: string }
+  | { kind: 'moderation'; id: string; reportId?: string }
   | { kind: 'edit-topic'; id: string }
   | { kind: 'suspended' }
   | { kind: 'fallback'; challenges: boolean; expired: boolean }
@@ -31,7 +31,7 @@ export function notificationTarget(notice: NotificationLink, now = Date.now()): 
     case 'WIZZ':
       return notice.sourceId ? { kind: 'room', id: notice.sourceId } : fallback
     case 'QUESTION_REPORTED':
-      return notice.topicId ? { kind: 'moderation', id: notice.topicId } : fallback
+      return notice.topicId ? { kind: 'moderation', id: notice.topicId, ...(notice.sourceId ? { reportId: notice.sourceId } : {}) } : fallback
     case 'TOPIC_DRAFTED':
       return notice.topicId ? { kind: 'edit-topic', id: notice.topicId } : fallback
     case 'ACCOUNT_SUSPENDED':

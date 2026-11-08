@@ -14,6 +14,7 @@ import {
   ParallaxIconButton,
   PencilSimpleIcon,
   ShareNetworkIcon,
+  ShieldCheckIcon,
   Skeleton,
   ProgressBar,
   Stat,
@@ -182,9 +183,16 @@ export function TopicScreen({ stack = 'home' }: { stack?: TopicStack }) {
           <>
             {docked && (
               <>
-                <ParallaxIconButton icon={LightningIcon} label="Lancer un duel" onPress={() => setDuelOpen(true)} />
+                <ParallaxIconButton icon={LightningIcon} label="Lancer un duel" disabled={topic?.status !== 'PUBLISHED'} onPress={() => setDuelOpen(true)} />
                 <ParallaxIconButton icon={HeartIcon} label={followed ? 'Ne plus suivre' : 'Suivre'} filled={followed} onPress={toggleFollow} />
               </>
+            )}
+            {overview.data?.permissions?.canContribute && (
+              <ParallaxIconButton
+                icon={ShieldCheckIcon}
+                label="Modération"
+                onPress={() => router.push({ pathname: '/profile/topics/[id]/moderation', params: { id: topicId } })}
+              />
             )}
             <ParallaxIconButton icon={ShareNetworkIcon} label="Partager" onPress={share} />
           </>
@@ -196,7 +204,7 @@ export function TopicScreen({ stack = 'home' }: { stack?: TopicStack }) {
               style={{ flexDirection: 'row', gap: tokens.space[3] }}
             >
               {/* 65 / 35 : le duel est l'action principale. */}
-              <Button full icon={LightningIcon} style={{ flex: 65 }} onPress={() => setDuelOpen(true)}>
+              <Button full icon={LightningIcon} style={{ flex: 65 }} disabled={topic?.status !== 'PUBLISHED'} onPress={() => setDuelOpen(true)}>
                 Lancer un duel
               </Button>
               <Button
@@ -213,6 +221,7 @@ export function TopicScreen({ stack = 'home' }: { stack?: TopicStack }) {
                 {followed ? 'Suivi' : 'Suivre'}
               </Button>
             </View>
+            {topic?.status === 'DRAFT' && <Text color="muted">Ce sujet est en brouillon. Les nouveaux départs de partie sont désactivés.</Text>}
             <View style={{ flexDirection: 'row', gap: tokens.space[3] }}>
               {data
                 ? stats.map((stat) => <Stat key={stat.label} {...stat} compact />)

@@ -23,8 +23,8 @@ export function useMyTopics() {
 
 /** Un de mes sujets, lu dans la liste Mes sujets (le BFF n'a pas de vue auteur d'un sujet seul). */
 export function useMyTopic(topicId: string) {
-  const topics = useMyTopics()
-  return { ...topics, topic: topics.data?.content.find((topic) => topic.topicId === topicId) }
+  const workshop = useQuery({ queryKey: ['authoring', topicId, 'workshop'], queryFn: () => authoringService.workshop(topicId), enabled: Boolean(topicId) })
+  return { ...workshop, topic: workshop.data?.topic, permissions: workshop.data?.permissions }
 }
 
 /** Plafonds Gratuit / Premium (appliqués par l'app) et ouverture de la feuille Premium avec l'accroche dédiée. */
@@ -39,6 +39,9 @@ export function useCreationLimits() {
 function patchTopic(client: QueryClient, topicId: string, patch: (topic: TopicCardView) => TopicCardView) {
   client.setQueryData<PageResponse<TopicCardView>>(queryKeys.authoring.topics(), (page) =>
     page ? { ...page, content: page.content.map((topic) => (topic.topicId === topicId ? patch(topic) : topic)) } : page,
+  )
+  client.setQueryData<import('../domain/authoring').TopicWorkshop>(['authoring', topicId, 'workshop'], (view) =>
+    view ? { ...view, topic: patch(view.topic) } : view,
   )
   client.setQueryData<TopicOverviewView>(queryKeys.topic.overview(topicId), (view) => (view ? { ...view, topic: patch(view.topic) } : view))
   const apply = (topic: TopicCardView) => (topic.topicId === topicId ? patch(topic) : topic)
@@ -192,7 +195,7 @@ function patchQuestion(client: QueryClient, topicId: string, questionId: string,
 function syncApprovedCount(client: QueryClient, topicId: string) {
   const questions = client.getQueryData<QuestionEditorView[]>(queryKeys.authoring.questions(topicId))
   if (!questions) return
-  const approved = questions.filter((question) => question.status === 'APPROVED' && !question.suspended).length
+  const approved = questions.filter((question) => question.status === 'APPROVED').length
   patchTopic(client, topicId, (topic) => ({ ...topic, questionsCount: approved }))
 }
 
@@ -234,6 +237,8 @@ export function useSaveQuestion(topicId: string) {
               : [next, ...(list ?? [])]
             : list
         })
+        if (questionId && operations.length > 0)
+          patchQuestion(client, topicId, questionId, (q) => (q.status === 'REJECTED' ? { ...q, status: 'PENDING', rejectionReason: null } : q))
         syncApprovedCount(client, topicId)
       })
       const reportTransaction = resolveReports
@@ -286,7 +291,12 @@ export function useModerateQuestion(topicId: string) {
       decision === 'approve' ? authoringService.approve(questionId) : authoringService.reject(questionId, reason ?? ''),
     onMutate: ({ questionId, decision }) =>
       optimisticUpdate(client, [['authoring'], ['topic', topicId], ['topics'], queryKeys.home()], () => {
-        patchQuestion(client, topicId, questionId, (question) => ({ ...question, status: decision === 'approve' ? 'APPROVED' : 'REJECTED' }))
+        patchQuestion(client, topicId, questionId, (question) => ({
+          ...question,
+          status: decision === 'approve' ? 'APPROVED' : 'REJECTED',
+          suspended: false,
+          archived: false,
+        }))
         syncApprovedCount(client, topicId)
       }),
     onSuccess: (_result, { decision }) => toast.success(decision === 'approve' ? 'Question approuvée' : 'Question rejetée'),
@@ -334,6 +344,83 @@ export function useDismissReports(topicId: string) {
     onError: (_error, _variables, context) => {
       context?.rollback()
       toast.error("Le signalement n'a pas pu être clos", retryHint)
+    },
+  })
+}
+
+export function useTeam(topicId: string) {
+  return useQuery({ queryKey: ['authoring', topicId, 'team'], queryFn: () => authoringService.team(topicId), enabled: Boolean(topicId) })
+}
+export function useTeamChange(topicId: string) {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ member, remove }: { member: import('../domain/authoring').TeamMember; remove?: boolean }) =>
+      remove ? authoringService.removeMember(topicId, member.userId) : authoringService.setMember(topicId, member.userId, member.role),
+    onMutate: ({ member, remove }) =>
+      optimisticUpdate(client, [['authoring', topicId, 'team']], () => {
+        client.setQueryData<import('../domain/authoring').TeamMember[]>(['authoring', topicId, 'team'], (items) =>
+          remove ? items?.filter((m) => m.userId !== member.userId) : [...(items ?? []).filter((m) => m.userId !== member.userId), member],
+        )
+      }),
+    onSuccess: (member) => {
+      if (member)
+        client.setQueryData<import('../domain/authoring').TeamMember[]>(['authoring', topicId, 'team'], (items) =>
+          items?.map((item) => (item.userId === member.userId ? member : item)),
+        )
+    },
+    onError: (_error, _variables, context) => {
+      context?.rollback()
+      toast.error("L'équipe n'a pas pu être modifiée", { description: 'Les administrateurs doivent être Premium.' })
+    },
+  })
+}
+export function useDraftTopic(topicId: string) {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: () => authoringService.draft(topicId),
+    onMutate: () =>
+      optimisticUpdate(client, [['authoring'], ['topic', topicId], ['topics'], queryKeys.home()], () =>
+        patchTopic(client, topicId, (t) => ({ ...t, status: 'DRAFT' })),
+      ),
+    onError: (_e, _v, context) => {
+      context?.rollback()
+      toast.error('Le sujet n’a pas pu repasser en brouillon')
+    },
+  })
+}
+export function useDeleteQuestion(topicId: string) {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => authoringService.deleteQuestion(id),
+    onMutate: (id: string) =>
+      optimisticUpdate(client, [['authoring'], ['topic', topicId], ['topics'], queryKeys.home()], () => {
+        client.setQueryData<QuestionEditorView[]>(queryKeys.authoring.questions(topicId), (items) => items?.filter((q) => q.questionId !== id))
+        syncApprovedCount(client, topicId)
+        const questions = client.getQueryData<QuestionEditorView[]>(queryKeys.authoring.questions(topicId))
+        if (questions && questions.filter((q) => q.status === 'APPROVED').length < 7) patchTopic(client, topicId, (t) => ({ ...t, status: 'DRAFT' }))
+      }),
+    onError: (_e, _v, context) => {
+      context?.rollback()
+      toast.error('La question n’a pas pu être supprimée')
+    },
+  })
+}
+
+export function useArchiveQuestion(topicId: string) {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, restore }: { id: string; restore?: boolean }) => (restore ? authoringService.restore(id) : authoringService.archive(id)),
+    onMutate: ({ id, restore }) =>
+      optimisticUpdate(client, [['authoring'], ['topic', topicId], ['topics'], queryKeys.home()], () => {
+        patchQuestion(client, topicId, id, (q) => ({ ...q, status: restore ? 'PENDING' : 'ARCHIVED', archived: !restore, suspended: false }))
+        syncApprovedCount(client, topicId)
+        const questions = client.getQueryData<QuestionEditorView[]>(queryKeys.authoring.questions(topicId))
+        if (!restore && questions && questions.filter((q) => q.status === 'APPROVED').length < 7)
+          patchTopic(client, topicId, (t) => ({ ...t, status: 'DRAFT' }))
+      }),
+    onError: (_e, _v, context) => {
+      context?.rollback()
+      toast.error('La question n’a pas pu être mise à jour')
     },
   })
 }

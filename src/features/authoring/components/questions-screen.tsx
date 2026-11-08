@@ -47,6 +47,7 @@ const STATUS_FILTERS: readonly { value: StatusFilter; label: string }[] = [
   { value: 'approved', label: QUESTION_STATUS_LABEL.approved },
   { value: 'pending', label: QUESTION_STATUS_LABEL.pending },
   { value: 'suspended', label: QUESTION_STATUS_LABEL.suspended },
+  { value: 'archived', label: QUESTION_STATUS_LABEL.archived },
   { value: 'rejected', label: QUESTION_STATUS_LABEL.rejected },
 ]
 const TRANSLATION_FILTERS: readonly { value: TranslationFilter; label: string }[] = [
@@ -57,6 +58,7 @@ const TRANSLATION_FILTERS: readonly { value: TranslationFilter; label: string }[
 
 /** Statut à gauche de la ligne, en icône pleine ; le sous-titre le dit aussi en toutes lettres. */
 const STATUS_ICON: Record<QuestionStatus, { icon: Icon; color: 'correct' | 'accentInk' | 'wrong' | 'muted' }> = {
+  archived: { icon: ProhibitIcon, color: 'muted' },
   approved: { icon: CheckCircleIcon, color: 'correct' },
   pending: { icon: HourglassMediumIcon, color: 'accentInk' },
   suspended: { icon: ProhibitIcon, color: 'wrong' },

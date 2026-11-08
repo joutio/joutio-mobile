@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { View } from 'react-native'
 import {
   Button,
@@ -33,7 +33,7 @@ import {
   type QuestionReportReason,
 } from '../domain/authoring'
 import { MAX_REJECT } from '../domain/limits'
-import { useDismissReports, useModerateQuestion, useTopicQuestions, useTopicReports, type ReportedQuestion } from '../hooks/use-authoring'
+import { useMyTopic, useDismissReports, useModerateQuestion, useTopicQuestions, useTopicReports, type ReportedQuestion } from '../hooks/use-authoring'
 import { openQuestionEditor } from './questions-screen'
 import { clientSource, feedFooterProps, loadMoreOptions } from '@/shared/utils/paging'
 
@@ -58,11 +58,15 @@ export function ModerationScreen() {
   const params = useLocalSearchParams<{ id: string; name?: string; tab?: string }>()
   const topicId = params.id
   const me = useMe(true)
+  const workshop = useMyTopic(topicId)
   const questions = useTopicQuestions(topicId)
-  const reports = useTopicReports(topicId, questions.data)
+  const reports = useTopicReports(topicId, workshop.permissions?.canManage ? questions.data : undefined)
   const moderate = useModerateQuestion(topicId)
   const dismiss = useDismissReports(topicId)
   const [tab, setTab] = useState<Tab>(params.tab === 'reports' ? 'reports' : 'pending')
+  useEffect(() => {
+    if (params.tab === 'reports') setTab('reports')
+  }, [params.tab])
   const [rejecting, setRejecting] = useState<QuestionEditorView>()
   const [reason, setReason] = useState('')
   const [report, setReport] = useState<ReportedQuestion>()
@@ -70,14 +74,14 @@ export function ModerationScreen() {
   const [reportPages, setReportPages] = useState(1)
 
   const all = questions.data ?? []
-  const pending = all.filter((question) => questionStatus(question) === 'pending')
+  const pending = all.filter((question) => ['pending', 'suspended'].includes(questionStatus(question)))
   const reported = reports.data ?? []
   const shownPending = pending.slice(0, pendingPages * PAGE_SIZE)
   const shownReports = reported.slice(0, reportPages * PAGE_SIZE)
   const pendingSource = clientSource(pendingPages, setPendingPages, shownPending.length < pending.length)
   const reportSource = clientSource(reportPages, setReportPages, shownReports.length < reported.length)
   const numberOf = (question: QuestionEditorView) => all.indexOf(question) + 1
-  const author = `${me.data?.pseudonym ?? ''} · Créateur`
+  const author = (question: QuestionEditorView) => (question.creatorId === me.data?.userId ? (me.data?.pseudonym ?? 'Moi') : 'Rédacteur')
 
   const loading = (
     <View style={{ gap: tokens.space[3] }}>
@@ -98,7 +102,7 @@ export function ModerationScreen() {
             {shownPending.map((question) => (
               <ModerationCard
                 key={question.questionId}
-                author={author}
+                author={author(question)}
                 question={questionText(question)}
                 answers={answersOf(question)}
                 correct={QUESTION_CHOICES.indexOf(question.correctAnswer)}
@@ -129,6 +133,11 @@ export function ModerationScreen() {
       <TabLoadMoreScrollView contentContainerStyle={PAGE}>
         {questions.isPending || reports.isPending ? (
           loading
+        ) : reports.isError ? (
+          <View>
+            <Text>Les signalements n’ont pas pu être chargés.</Text>
+            <Button onPress={() => void reports.refetch()}>Réessayer</Button>
+          </View>
         ) : reported.length === 0 ? (
           <EmptyState icon={CheckCircleIcon} title="Aucun signalement" description="Les signalements des joueurs arriveront ici." />
         ) : (
@@ -155,11 +164,69 @@ export function ModerationScreen() {
 
   const comments = report?.reports.map((item) => item.comment?.trim()).filter((comment): comment is string => Boolean(comment)) ?? []
 
+  if (workshop.isError || questions.isError)
+    return (
+      <Screen
+        inTabs
+        header={
+          <MobileTopBar
+            variant="inline"
+            title="Modération"
+            back="Sujet"
+            onBack={() => router.replace({ pathname: '/profile/topics/[id]', params: { id: topicId } })}
+          />
+        }
+      >
+        <Text>La modération n’est pas disponible.</Text>
+        <Button
+          onPress={() => {
+            void workshop.refetch()
+            void questions.refetch()
+          }}
+        >
+          Réessayer
+        </Button>
+      </Screen>
+    )
+  if (workshop.isPending) return <Screen>{loading}</Screen>
+  if (!workshop.permissions?.canManage)
+    return (
+      <Screen
+        inTabs
+        header={
+          <MobileTopBar
+            variant="inline"
+            title="Mes propositions"
+            back="Sujet"
+            onBack={() => router.replace({ pathname: '/profile/topics/[id]', params: { id: topicId } })}
+          />
+        }
+      >
+        {all.length === 0 && <Text>Aucune proposition</Text>}
+        {all.map((question) => (
+          <ListRow
+            key={question.questionId}
+            label={questionText(question)}
+            sub={question.rejectionReason ?? questionStatus(question)}
+            control="chevron"
+            onPress={() => openQuestionEditor(topicId, numberOf(question), question.questionId)}
+          />
+        ))}
+      </Screen>
+    )
+
   return (
     <Screen
       inTabs
       scroll={false}
-      header={<MobileTopBar variant="inline" back="Sujet" onBack={() => router.back()} title="Modération" />}
+      header={
+        <MobileTopBar
+          variant="inline"
+          back="Sujet"
+          onBack={() => router.replace({ pathname: '/profile/topics/[id]', params: { id: topicId } })}
+          title="Modération"
+        />
+      }
       overlay={
         <>
           <MobileSheet

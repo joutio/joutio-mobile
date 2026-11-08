@@ -3,6 +3,9 @@ import { useState } from 'react'
 import { View } from 'react-native'
 import {
   Button,
+  Screen,
+  MobileTopBar,
+  showDialog,
   ImageIcon,
   ImagePicker,
   ListChecksIcon,
@@ -26,8 +29,10 @@ import { toast } from '@/design-system'
 import { topicName } from '@/shared/utils/topic-name'
 import { questionStatus } from '../domain/authoring'
 import { MAX_NAME, MIN_QUESTIONS } from '../domain/limits'
-import { TEAM_MOCK } from '../lib/team-mocks'
+
 import {
+  useDraftTopic,
+  useTeam,
   useCreationLimits,
   useMyTopic,
   useMyTopics,
@@ -61,7 +66,9 @@ export interface MyTopicRouteParams {
 export function MyTopicScreen() {
   const params = useLocalSearchParams<MyTopicRouteParams>()
   const topicId = params.id
-  const { topic } = useMyTopic(topicId)
+  const { topic, permissions, isError, refetch } = useMyTopic(topicId)
+  const draftTopic = useDraftTopic(topicId)
+  const team = useTeam(topicId)
   const all = useMyTopics()
   const pageRefresh = useRefreshActive()
   const questions = useTopicQuestions(topicId)
@@ -107,6 +114,13 @@ export function MyTopicScreen() {
     publish.mutate()
   }
 
+  if (isError)
+    return (
+      <Screen inTabs header={<MobileTopBar variant="inline" title="Sujet" back="Retour" onBack={() => router.back()} />}>
+        <Text>Le sujet est indisponible ou tu ne fais plus partie de son équipe.</Text>
+        <Button onPress={() => void refetch()}>Réessayer</Button>
+      </Screen>
+    )
   return (
     <View style={{ flex: 1 }}>
       <ParallaxScreen
@@ -123,7 +137,7 @@ export function MyTopicScreen() {
           </View>
         }
         bottomBar={
-          draft ? (
+          draft && permissions?.canManage ? (
             <View style={{ gap: tokens.space[1] }}>
               <Button full size="L" disabled={!ready} loading={publish.isPending} onPress={onPublish}>
                 Publier
@@ -147,10 +161,23 @@ export function MyTopicScreen() {
                 control="chevron"
                 value={name}
                 sub={englishName ? `English : ${englishName}` : 'English : facultatif'}
-                onPress={() => setSheet('name')}
+                onPress={permissions?.canManage ? () => setSheet('name') : undefined}
               />
-              <ListRow icon={SquaresFourIcon} label="Univers" control="chevron" value={universeLabel(code)} onPress={() => setSheet('universe')} />
-              <ListRow icon={ImageIcon} label="Vignette" control="chevron" value={imageUrl ? 'Modifier' : 'Ajouter'} onPress={() => setSheet('image')} last />
+              <ListRow
+                icon={SquaresFourIcon}
+                label="Univers"
+                control="chevron"
+                value={universeLabel(code)}
+                onPress={permissions?.canManage ? () => setSheet('universe') : undefined}
+              />
+              <ListRow
+                icon={ImageIcon}
+                label="Vignette"
+                control="chevron"
+                value={imageUrl ? 'Modifier' : 'Ajouter'}
+                onPress={permissions?.canManage ? () => setSheet('image') : undefined}
+                last
+              />
             </ListGroup>
           </View>
           <View style={{ gap: tokens.space[3] }}>
@@ -167,8 +194,8 @@ export function MyTopicScreen() {
                 icon={UsersThreeIcon}
                 label="Équipe"
                 control="chevron"
-                value={premium ? String(TEAM_MOCK.length + 1) : 'Premium'}
-                onPress={premium ? () => router.push({ pathname: '/profile/topics/[id]/team', params: { id: topicId, name } }) : () => askPremium('team')}
+                value={String(team.data?.length ?? 1)}
+                onPress={() => router.push({ pathname: '/profile/topics/[id]/team', params: { id: topicId, name } })}
               />
               <ListRow
                 icon={ShieldCheckIcon}
@@ -180,6 +207,24 @@ export function MyTopicScreen() {
               />
             </ListGroup>
           </View>
+          {!draft && permissions?.canManage && (
+            <Button
+              variant="gray"
+              tone="neutral"
+              onPress={() =>
+                showDialog({
+                  title: 'Repasser en brouillon ?',
+                  message: 'Les nouveaux départs de partie seront bloqués.',
+                  actions: [
+                    { label: 'Confirmer', onPress: () => draftTopic.mutate() },
+                    { label: 'Annuler', variant: 'plain' },
+                  ],
+                })
+              }
+            >
+              Repasser en brouillon
+            </Button>
+          )}
         </View>
       </ParallaxScreen>
 

@@ -45,7 +45,8 @@ export function useOpenNotification() {
           router.push({ pathname: '/room/[roomId]', params: { roomId: target.id, fromPush: '1' } })
           break
         case 'moderation':
-          router.push({ pathname: '/profile/topics/[id]/moderation', params: { id: target.id, tab: 'reports' } })
+          if (target.reportId) router.push({ pathname: '/profile/topics/[id]/reports/[reportId]', params: { id: target.id, reportId: target.reportId } })
+          else router.push({ pathname: '/profile/topics/[id]/moderation', params: { id: target.id, tab: 'reports' } })
           break
         case 'edit-topic':
           router.push({ pathname: '/profile/topics/[id]', params: { id: target.id } })

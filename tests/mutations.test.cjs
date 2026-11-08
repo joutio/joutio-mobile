@@ -392,3 +392,55 @@ test('haptic respects the app vibration setting', () => {
   haptic('light')
   assert.equal(vibrations, 1)
 })
+
+test('archiving is reversible but deletion removes the question; both restore state on failure', async () => {
+  const h = harness()
+  const key = h.keys.authoring.questions('t')
+  const questions = Array.from({ length: 7 }, (_, i) => ({ questionId: `q${i}`, status: 'APPROVED', suspended: false, archived: false }))
+  h.client.setQueryData(key, questions)
+  h.client.setQueryData(h.keys.authoring.topics(), { content: [topic('t')], totalElements: 1 })
+  const hooks = h.load('@/features/authoring/hooks/use-authoring')
+  const archive = hooks.useArchiveQuestion('t')
+  const ctx = await archive.onMutate({ id: 'q0' })
+  assert.equal(h.client.getQueryData(key)[0].status, 'ARCHIVED')
+  assert.equal(h.client.getQueryData(h.keys.authoring.topics()).content[0].status, 'DRAFT')
+  archive.onError(Error(), {}, ctx)
+  assert.equal(h.client.getQueryData(key)[0].status, 'APPROVED')
+  const remove = hooks.useDeleteQuestion('t')
+  const deletion = await remove.onMutate('q0')
+  assert.equal(h.client.getQueryData(key).length, 6)
+  remove.onError(Error(), 'q0', deletion)
+  assert.equal(h.client.getQueryData(key).length, 7)
+  await archive.onMutate({ id: 'q0', restore: true })
+  assert.equal(h.client.getQueryData(key)[0].status, 'PENDING')
+})
+
+test('editing rejected questions resubmits them, while suspended questions remain suspended', async () => {
+  for (const status of ['REJECTED', 'SUSPENDED']) {
+    const h = harness()
+    const key = h.keys.authoring.questions('t')
+    h.client.setQueryData(key, [{ questionId: 'q', status, contents: [{ language: 'fr', text: 'Before', answers: [] }] }])
+    const save = h.load('@/features/authoring/hooks/use-authoring').useSaveQuestion('t')
+    const vars = { questionId: 'q', operations: [{ kind: 'text', language: 'fr', text: 'After' }] }
+    const ctx = await save.onMutate(vars)
+    assert.equal(h.client.getQueryData(key)[0].status, status === 'REJECTED' ? 'PENDING' : 'SUSPENDED')
+    save.onError(Error(), vars, ctx)
+    assert.equal(h.client.getQueryData(key)[0].status, status)
+  }
+})
+
+test('accepted challenge rooms remain reachable for both players, terminal rooms are excluded', () => {
+  const h = harness()
+  const { resumableRooms } = h.load('@/features/challenges/hooks/use-challenges')
+  const rooms = ['WAITING_PLAYERS', 'FETCHING_QUESTIONS', 'CANCELLED', 'EXPIRED', 'FAILED', 'COMPLETED'].map((status, i) => ({
+    roomId: String(i),
+    status,
+    vsBot: false,
+    canCancel: false,
+    opponent: { userId: 'other' },
+  }))
+  assert.deepEqual(
+    resumableRooms(rooms).map((r) => r.roomId),
+    ['0', '1'],
+  )
+})

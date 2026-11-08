@@ -42,9 +42,9 @@ export function splitChallenges(challenges: readonly ChallengeView[] | undefined
   return { received, sent }
 }
 
-/** Salons privés en attente d'un joueur : partagés par lien, ni robot ni défi nominatif. */
-export const privateRooms = (rooms: readonly RoomView[] | undefined) =>
-  (rooms ?? []).filter((room) => !room.vsBot && room.status === 'WAITING_PLAYERS' && room.canCancel && !room.opponent)
+/** Salons humains accessibles : privés, défis acceptés et préparation en cours. */
+export const resumableRooms = (rooms: readonly RoomView[] | undefined) =>
+  (rooms ?? []).filter((room) => !room.vsBot && !['COMPLETED', 'CANCELLED', 'EXPIRED', 'FAILED'].includes(room.status))
 
 /**
  * Flux personnel STOMP : un défi reçu, refusé ou accepté rafraîchit les défis et les salons (aucun polling). Monté
@@ -99,9 +99,31 @@ export function useAcceptChallenge() {
   const client = useQueryClient()
   return useMutation({
     onMutate: (challenge: ChallengeView) =>
-      optimisticUpdate(client, [queryKeys.challenges()], () => settleChallenge(client, challenge.challengeId, 'ACCEPTED')),
+      optimisticUpdate(client, [queryKeys.challenges(), queryKeys.rooms()], () => settleChallenge(client, challenge.challengeId, 'ACCEPTED')),
     mutationFn: (challenge: ChallengeView) => challengesService.accept(challenge.challengeId),
     onSuccess: (_result, challenge) => {
+      const roomId = challenge.roomId ?? roomOfChallenge(challenge.challengeId)
+      client.setQueryData<RoomView[]>(queryKeys.rooms(), (items) =>
+        items?.some((room) => room.roomId === roomId)
+          ? items
+          : [
+              {
+                roomId,
+                topic: challenge.topic,
+                status: 'WAITING_PLAYERS',
+                vsBot: false,
+                canCancel: false,
+                opponent: null,
+                initiatorPresent: false,
+                participantPresent: false,
+                gameId: null,
+                createdAt: new Date().toISOString(),
+                expiresAt: challenge.expiresAt,
+                updatedAt: new Date().toISOString(),
+              },
+              ...(items ?? []),
+            ],
+      )
       router.push({
         pathname: '/room/[roomId]',
         params: {

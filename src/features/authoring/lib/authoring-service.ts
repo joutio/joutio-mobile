@@ -2,7 +2,7 @@ import { api } from '@/lib/api'
 import { ENDPOINTS } from '@/lib/endpoints'
 import type { IdResponse, Language, PageResponse, TopicCardView } from '@/shared/types/bff'
 import type { CategoryCode } from '@/design-system'
-import type { OwnerQuestionReport, QuestionEditorView } from '../domain/authoring'
+import type { TopicWorkshop, TeamMember, TeamRole, ReportDetail, OwnerQuestionReport, QuestionEditorView } from '../domain/authoring'
 import type { QuestionOperation } from '../domain/question-draft'
 
 /** Taille de page de `GET /api/topics/{id}/questions` (plafond BFF : 100). */
@@ -10,8 +10,17 @@ const QUESTIONS_PAGE = 100
 
 /** Écritures d'auteur (`creation.md` § 5) : sujets champ par champ, questions et modération. */
 export const authoringService = {
+  workshop: (id: string) => api.get<TopicWorkshop>(`/api/topics/${id}/workshop`),
+  team: (id: string) => api.get<TeamMember[]>(`/api/topics/${id}/team`),
+  setMember: (id: string, userId: string, role: TeamRole) => api.put<TeamMember>(`/api/topics/${id}/team/${userId}`, { role }),
+  removeMember: (id: string, userId: string) => api.delete<void>(`/api/topics/${id}/team/${userId}`),
+  draft: (id: string) => api.post<void>(`/api/topics/${id}/draft`),
+  deleteQuestion: (id: string) => api.delete<void>(`/api/questions/${id}`),
+  archive: (id: string) => api.post<void>(`/api/questions/${id}/archive`),
+  restore: (id: string) => api.post<void>(`/api/questions/${id}/restore`),
+  reportDetail: (id: string) => api.get<ReportDetail>(`/api/question-reports/${id}`),
   /** Mes sujets, brouillons et publiés (`mine=true`, exclusif des autres filtres). */
-  myTopics: () => api.get<PageResponse<TopicCardView>>(ENDPOINTS.topics.list, { params: { mine: true, page: 0, size: 100 } }),
+  myTopics: () => api.get<PageResponse<TopicCardView>>('/api/topics/contributed', { params: { page: 0, size: 100 } }),
 
   createTopic: (name: string, category: CategoryCode) => api.post<IdResponse>(ENDPOINTS.topics.list, { names: { fr: name }, category }),
 
@@ -29,7 +38,7 @@ export const authoringService = {
     for (let page = 0; ; page += 1) {
       const result = await api.get<PageResponse<QuestionEditorView>>(ENDPOINTS.topics.questions(topicId), { params: { page, size: QUESTIONS_PAGE } })
       all.push(...result.content)
-      if (result.last || result.content.length === 0) return all.filter((question) => !question.archived)
+      if (result.last || result.content.length === 0) return all
     }
   },
 
@@ -61,6 +70,7 @@ export const authoringService = {
         }
         completed.push(operation)
       }
+      if (questionId && operations.length > 0) await api.post<void>(`/api/questions/${questionId}/resubmit`)
     } catch (cause) {
       throw Object.assign(new Error('partial question save', { cause }), { questionId: id, completedOperations: completed })
     }

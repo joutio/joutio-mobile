@@ -5,7 +5,7 @@ export type QuestionChoice = 'A' | 'B' | 'C' | 'D'
 export const QUESTION_CHOICES: readonly QuestionChoice[] = ['A', 'B', 'C', 'D']
 
 /** Statut de modération (enum backend `QuestionStatus`). */
-export type QuestionModeration = 'PENDING' | 'APPROVED' | 'REJECTED'
+export type QuestionModeration = 'PENDING' | 'APPROVED' | 'REJECTED' | 'SUSPENDED' | 'ARCHIVED'
 
 /** Motif d'un signalement (enum backend `QuestionReportReason`). */
 export type QuestionReportReason = 'QUESTION' | 'IMAGE' | 'ANSWERS'
@@ -25,6 +25,8 @@ export interface QuestionContent {
 /** Question vue par l'auteur du sujet (`QuestionEditorView`), champs lus par l'app. */
 export interface QuestionEditorView {
   questionId: string
+  creatorId?: string
+  rejectionReason?: string | null
   contents: QuestionContent[]
   correctAnswer: QuestionChoice
   imageUrl: string | null
@@ -55,9 +57,10 @@ export interface CreateQuestionInput {
 }
 
 /** Statut affiché d'une question (`creation.md` § 1, Questions). */
-export type QuestionStatus = 'approved' | 'pending' | 'suspended' | 'rejected'
+export type QuestionStatus = 'approved' | 'pending' | 'suspended' | 'rejected' | 'archived'
 
 export const QUESTION_STATUS_LABEL: Record<QuestionStatus, string> = {
+  archived: 'Archivée',
   approved: 'Approuvée',
   pending: 'En attente de validation',
   suspended: 'Suspendue après signalements',
@@ -65,7 +68,8 @@ export const QUESTION_STATUS_LABEL: Record<QuestionStatus, string> = {
 }
 
 export function questionStatus(question: QuestionEditorView): QuestionStatus {
-  if (question.suspended) return 'suspended'
+  if (question.status === 'ARCHIVED') return 'archived'
+  if (question.status === 'SUSPENDED') return 'suspended'
   if (question.status === 'APPROVED') return 'approved'
   if (question.status === 'REJECTED') return 'rejected'
   return 'pending'
@@ -90,3 +94,28 @@ export const REPORT_REASON_LABEL: Record<QuestionReportReason, string> = {
 
 /** « L'énoncé, Les réponses ». */
 export const reasonsLabel = (reasons: readonly QuestionReportReason[]) => reasons.map((reason) => REPORT_REASON_LABEL[reason]).join(', ')
+
+export type TeamRole = 'CREATOR' | 'ADMIN' | 'WRITER'
+export interface TopicPermissions {
+  role: TeamRole | null
+  canContribute: boolean
+  canManage: boolean
+  canManageTeam: boolean
+  canAddMembers: boolean
+}
+export interface TeamMember {
+  userId: string
+  pseudonym: string
+  avatarOptions: string | null
+  role: TeamRole
+  premium: boolean
+}
+export interface TopicWorkshop {
+  topic: import('@/shared/types/bff').TopicCardView
+  permissions: TopicPermissions
+}
+export interface ReportDetail {
+  topicId: string
+  questionId: string
+  report: OwnerQuestionReport
+}

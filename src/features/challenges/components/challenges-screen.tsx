@@ -32,7 +32,7 @@ import type { ChallengeView } from '@/shared/types/bff'
 import { avatarSvg } from '@/shared/utils/avatar'
 import { topicName } from '@/shared/utils/topic-name'
 import {
-  privateRooms,
+  resumableRooms,
   splitChallenges,
   useAcceptChallenge,
   useCancelChallenge,
@@ -83,7 +83,7 @@ export function ChallengesScreen() {
   const [refreshing, setRefreshing] = useState(false)
 
   const { received, sent } = splitChallenges(challenges.data, userId)
-  const salons = privateRooms(rooms.data)
+  const salons = resumableRooms(rooms.data)
   const now = readServerNow()
   const loading = challenges.isPending || rooms.isPending
   const failed = (challenges.isError && !challenges.data) || (rooms.isError && !rooms.data)
@@ -285,14 +285,14 @@ export function ChallengesScreen() {
           )}
           {shows('rooms') && salons.length > 0 && (
             <View style={{ gap: tokens.space[4] }}>
-              <SectionHeader title="Salons privés" />
+              <SectionHeader title="Salons ouverts" />
               <ListGroup surface="surface">
                 {salons.map((room, index) => (
                   <ListRow
                     key={room.roomId}
                     icon={DoorOpenIcon}
                     label={topicName(room.topic.names)}
-                    sub={`En attente d'un joueur${room.expiresAt ? ` · expire dans ${duration(Date.parse(room.expiresAt) - now)}` : ''}`}
+                    sub={`${room.opponent ? `Avec ${room.opponent.pseudonym}` : 'En attente d’un joueur'}${room.expiresAt ? ` · expire dans ${duration(Date.parse(room.expiresAt) - now)}` : ''}`}
                     control="chevron"
                     disabled={room.roomId.startsWith('pending-')}
                     onPress={() =>

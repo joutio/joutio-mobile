@@ -114,6 +114,7 @@ export interface TopicOverviewView {
   titles: Record<string, Record<string, string>> | null
   myRank: number | null
   myProgress: TopicProgressView | null
+  permissions?: import('@/features/authoring/domain/authoring').TopicPermissions
   canManage: boolean
 }
 
