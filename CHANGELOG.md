@@ -1,3 +1,9 @@
+## [1.24.0](https://github.com/joutio/joutio-mobile/compare/v1.23.0...v1.24.0) (2026-11-08)
+
+### Features
+
+* **authoring:** connect topic teams and complete question moderation ([7d90dbf](https://github.com/joutio/joutio-mobile/commit/7d90dbf645fc39dc6d3f711b1f8d74bcdec63810))
+
 ## [1.23.0](https://github.com/joutio/joutio-mobile/compare/v1.22.0...v1.23.0) (2026-11-08)
 
 ### Features
