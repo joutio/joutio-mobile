@@ -34,6 +34,7 @@ import {
   VibrateIcon,
 } from '@/design-system'
 import { useLogout } from '@/features/auth'
+import { useCatalogAccess } from '@/features/auth/hooks/use-catalog-access'
 import { useMe } from '@/features/me'
 import { useAutoTrain } from '@/features/play/hooks/use-play'
 import { usePremiumSheet } from '@/features/premium/premium-store'
@@ -68,6 +69,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
  * Sons, vibrations, détails des réponses, Revanches et Rangs et badges sont des réglages de l'appareil (§ 5).
  */
 export function SettingsScreen() {
+  const catalogAccess = useCatalogAccess()
   const me = useMe(true)
   const data = me.data
   const logout = useLogout()
@@ -241,7 +243,7 @@ export function SettingsScreen() {
           <ListRow icon={TrashIcon} label="Supprimer mon compte" control="none" destructive onPress={() => router.push('/profile/settings/delete')} last />
         </ListGroup>
       </Section>
-      {__DEV__ && config.catalogEnabled && (
+      {catalogAccess && (
         <Section title="Dev">
           <ListGroup surface="surface">
             <ListRow icon={SquaresFourIcon} label="Catalogue des composants" control="chevron" onPress={() => router.push('/catalog')} last />

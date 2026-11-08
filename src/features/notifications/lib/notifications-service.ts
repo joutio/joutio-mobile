@@ -1,6 +1,7 @@
 import { api } from '@/lib/api'
 import { ENDPOINTS } from '@/lib/endpoints'
 import type { NotificationView } from '@/lib/realtime/personal-notifications'
+import type { NotificationTarget } from './notification-target'
 import type { PageResponse } from '@/shared/types/bff'
 
 export const NOTIFICATIONS_PAGE_SIZE = 10
@@ -8,6 +9,11 @@ export const NOTIFICATIONS_PAGE_SIZE = 10
 /** Boîte de réception (`/api/notifications`). */
 export const notificationsService = {
   page: (page: number) => api.get<PageResponse<NotificationView>>(ENDPOINTS.notifications.list, { params: { page, size: NOTIFICATIONS_PAGE_SIZE } }),
+  /** Lecture initiale de la cible ; les salles gèrent leur expiration dans RoomScreen. */
+  checkTarget: async (target: NotificationTarget) => {
+    if (target.kind === 'player') await api.get(ENDPOINTS.profiles.profile(target.id))
+    if (target.kind === 'moderation' || target.kind === 'edit-topic') await api.get(ENDPOINTS.topics.questions(target.id), { params: { page: 0, size: 1 } })
+  },
   read: (notificationId: string) => api.post<void>(ENDPOINTS.notifications.read(notificationId)),
   readAll: () => api.post<void>(ENDPOINTS.notifications.readAll),
   remove: (notificationId: string) => api.delete<void>(ENDPOINTS.notifications.remove(notificationId)),

@@ -12,16 +12,13 @@ import { Banner, Button, DialogHost, ThemeProvider, ToastHost, tokens, useJoutio
 import { LaunchScreen, SessionRuntime, useLogout, useSessionStore } from '@/features/auth'
 import { useMe } from '@/features/me'
 import { ExpoPushRuntime } from '@/features/notifications/components/expo-push-runtime'
-import { registerDevMenu } from '@/dev/dev-menu'
-import { config } from '@/lib/config'
-import { useEntryStore } from '@/shared/stores/entry-store'
+import { useCatalogAccess } from '@/features/auth/hooks/use-catalog-access'
 import { createQueryClient } from '@/lib/query-client'
 import { useNetworkBridge } from '@/shared/hooks/use-online'
 
 SplashScreen.preventAutoHideAsync().catch(() => undefined)
 // Le splash natif s'efface sur `LaunchScreen` (même logo, même fond) au lieu de couper net.
 SplashScreen.setOptions({ fade: true, duration: 250 })
-registerDevMenu()
 
 /** `GET /api/me` a échoué au démarrage : réessayer, ou se déconnecter. */
 function BootError({ onRetry }: { onRetry: () => void }) {
@@ -45,12 +42,10 @@ function Navigation() {
   const ready = useSessionStore((state) => state.ready)
   const authenticated = useSessionStore((state) => state.authenticated)
   const me = useMe(ready && authenticated)
-  // Catalogue en première page : il s'ouvre sans attendre `me` (une session cassée ne le bloque pas).
-  const entered = useEntryStore((state) => state.entered)
-  const catalogFirst = config.catalogEnabled && !entered
+  const catalogAccess = useCatalogAccess()
 
-  if (!ready || (authenticated && me.isPending && !catalogFirst)) return <LaunchScreen />
-  if (authenticated && me.isError && !me.data && !catalogFirst) return <BootError onRetry={() => void me.refetch()} />
+  if (!ready || (authenticated && me.isPending)) return <LaunchScreen />
+  if (authenticated && me.isError && !me.data) return <BootError onRetry={() => void me.refetch()} />
 
   const onboarded = me.data?.onboardingCompleted ?? false
   return (
@@ -67,7 +62,7 @@ function Navigation() {
       </Stack.Protected>
       {/* Lien de salon partagé : ouvert avec ou sans session. */}
       <Stack.Screen name="join/[roomId]" />
-      <Stack.Protected guard={config.catalogEnabled}>
+      <Stack.Protected guard={authenticated && onboarded && catalogAccess}>
         <Stack.Screen name="(dev)" />
       </Stack.Protected>
     </Stack>

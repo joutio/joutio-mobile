@@ -24,6 +24,31 @@ export function onBeforeSessionClear(listener: (reason?: SessionEndReason) => Pr
 }
 
 const sessionEndedListeners = new Set<SessionEndedListener>()
+const accessTokenListeners = new Set<() => void>()
+
+export function onAccessTokenChanged(listener: () => void): () => void {
+  accessTokenListeners.add(listener)
+  return () => {
+    accessTokenListeners.delete(listener)
+  }
+}
+
+function emitAccessTokenChanged() {
+  for (const listener of accessTokenListeners) listener()
+}
+
+/** Claim d'affichage seulement : les autorisations serveur restent vérifiées par le BFF. */
+export function decodeRoles(token: string | null): string[] {
+  try {
+    const payload = token?.split('.')[1]
+    if (!payload) return []
+    const { roles } = JSON.parse(decodeBase64Url(payload)) as { roles?: unknown }
+    if (!Array.isArray(roles)) return []
+    return roles.filter((role): role is string => typeof role === 'string').map((role) => (role.startsWith('ROLE_') ? role : `ROLE_${role}`))
+  } catch {
+    return []
+  }
+}
 
 export interface SessionRestoreResult {
   authenticated: boolean
@@ -159,6 +184,7 @@ export async function persistSession(tokens: SessionTokens): Promise<void> {
   accessToken = tokens.accessToken
   refreshToken = tokens.refreshToken ?? null
   userId = tokens.userId ?? decodeUserId(accessToken) ?? userId
+  emitAccessTokenChanged()
 
   const issuedAt = tokens.issuedAt ?? Math.floor(Date.now() / 1000)
   const expiresAt = tokens.expiresIn ? issuedAt + tokens.expiresIn : null
@@ -274,6 +300,7 @@ async function doRestoreSession(): Promise<SessionRestoreResult> {
   accessToken = storedAccess
   refreshToken = storedRefresh
   userId = storedUser ?? (accessToken ? decodeUserId(accessToken) : null)
+  emitAccessTokenChanged()
 
   if (!accessToken) {
     if (refreshToken || userId) {
@@ -327,6 +354,7 @@ export async function clearSession(reason?: SessionEndReason): Promise<void> {
   await Promise.allSettled([...beforeSessionClear].map((listener) => listener(reason)))
 
   accessToken = null
+  emitAccessTokenChanged()
   refreshToken = null
   userId = null
   await deleteItem(ACCESS_TOKEN_KEY)

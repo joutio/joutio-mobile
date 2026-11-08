@@ -1,7 +1,7 @@
 # Push Expo — activation et validation
 
 Le lot envoie les invitations (`CHALLENGE_RECEIVED`, dont les revanches) et les relances
-(`WIZZ`). Au premier plan, Joutio conserve son interface STOMP, sans bannière ni son système.
+(`WIZZ`). Au premier plan, Joutio affiche des toasts cliquables depuis STOMP (secours Expo), sans bannière ni son système. Les toasts sont dédupliqués et exclus pendant le duel ; les revanches conservent leur modale.
 Les préférences serveur `ROOM` et la préférence Revanches de chaque installation sont respectées.
 Rangs/badges restent hors de ce lot ; leur réglage actuel ne déclenche aucun push.
 
@@ -114,3 +114,36 @@ BFF : `mvn -pl joutio-bff-infrastructure -Dtest='ExpoPush*Test,WebPushDispatcher
 Les tests PostgreSQL utilisent exclusivement une base jetable, activés par
 `JOUTIO_EXPO_TEST_DB_URL=jdbc:postgresql://127.0.0.1:55439/postgres`, utilisateur `postgres`,
 mot de passe de test `expo-test-only`. Ils créent puis suppriment leur propre schéma.
+
+
+## Navigation et recette du catalogue admin
+
+Le catalogue ne s’ouvre plus au lancement. Sur un APK CI, Réglages › Dev est visible seulement pour les
+administrateurs (`ROLE_ADMIN` dans le JWT). `EXPO_PUBLIC_CATALOG=false` peut désactiver cette surface.
+Vérifier une connexion admin, une connexion joueur, un lancement sans session et un lien direct `joutio://catalog`.
+Un changement de rôle prend effet au renouvellement du JWT ; un rôle n’est jamais déduit de l’adresse email.
+
+Les entrées de la boîte de réception, les toasts et les push utilisent la même navigation :
+
+| Type | Écran |
+| --- | --- |
+| FOLLOW, CHALLENGE_DECLINED | Fiche du joueur |
+| CHALLENGE_RECEIVED (dont revanche) | Défis |
+| ROOM_ACCEPTED, WIZZ | Salle ; elle décide ensuite du passage vers le duel |
+| QUESTION_REPORTED | Modération du sujet, onglet Signalements |
+| TOPIC_DRAFTED | Édition du sujet |
+| ACCOUNT_SUSPENDED | Session suspendue |
+
+Les push restent limités à CHALLENGE_RECEIVED et WIZZ. Aucun contrat REST ni schéma de base ne change.
+Une cible absente ou expirée affiche une explication puis Défis pour une invitation, ou l’inbox sinon.
+Une lecture initiale vérifie les cibles joueur/auteur ; un échec réseau propose de réessayer via l’inbox.
+
+Recette complémentaire avec deux comptes sur l’APK CI :
+
+- Vérifier un toast pour un follow, un défi normal, un refus, une acceptation et un wizz, puis toucher chaque toast.
+- Vérifier une seule présentation si Expo et STOMP reçoivent la même notification ; aucune sur une suppression.
+- Pendant un duel, aucune interruption par toast ; une revanche conserve son traitement existant.
+- Toucher un push avec app arrêtée, en arrière-plan, sur le catalogue admin et avant connexion/onboarding.
+  La destination doit survivre au démarrage et ne s’ouvrir qu’une fois.
+- Tester un push expiré, une salle supprimée et un push adressé au compte précédemment connecté.
+- Tester le marquage lu au toucher et son rollback hors ligne ; la navigation ne dépend pas du succès de la commande.

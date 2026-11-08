@@ -1,7 +1,7 @@
 import { Stack } from 'expo-router'
 import { largeTitleOptions, nativeHeaderOptions, useTheme } from '@/design-system'
 
-/** Catalogue et aperçus : protégés par `config.catalogEnabled` dans le layout racine. */
+/** Catalogue et aperçus : réservés aux administrateurs connectés dans le layout racine. */
 export default function DevLayout() {
   const theme = useTheme()
   return (

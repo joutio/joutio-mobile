@@ -13,18 +13,22 @@ export function parsePushNotice(value: unknown): PushNotice | null {
   const data = value as Record<string, unknown>
   if (
     typeof data.notificationId !== 'string' ||
+    !data.notificationId ||
     typeof data.userId !== 'string' ||
+    !data.userId ||
     (data.type !== 'CHALLENGE_RECEIVED' && data.type !== 'WIZZ') ||
     typeof data.expiresAt !== 'string' ||
     !Number.isFinite(Date.parse(data.expiresAt)) ||
-    (data.sourceId !== null && typeof data.sourceId !== 'string') ||
-    (data.gameId !== null && typeof data.gameId !== 'string')
+    (data.sourceId != null && typeof data.sourceId !== 'string') ||
+    (data.gameId != null && typeof data.gameId !== 'string')
   )
     return null
-  return data as unknown as PushNotice
-}
-
-export function pushTarget(notice: PushNotice, now = Date.now()): 'challenges' | 'room' | 'expired' {
-  if (Date.parse(notice.expiresAt) <= now) return 'expired'
-  return notice.type === 'WIZZ' && notice.sourceId ? 'room' : 'challenges'
+  return {
+    notificationId: data.notificationId,
+    userId: data.userId,
+    type: data.type,
+    sourceId: typeof data.sourceId === 'string' && data.sourceId ? data.sourceId : null,
+    gameId: typeof data.gameId === 'string' && data.gameId ? data.gameId : null,
+    expiresAt: data.expiresAt,
+  }
 }

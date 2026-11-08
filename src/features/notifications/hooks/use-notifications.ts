@@ -23,13 +23,14 @@ export function useNotifications() {
 
 /**
  * Flux personnel STOMP : une notification créée ou supprimée rafraîchit la boîte et le compteur de la cloche (aucun
- * polling). Monté une fois, dans le layout des onglets.
+ * polling). Monté une fois, dans le runtime des écrans connectés.
  */
-export function useNotificationsRealtime() {
+export function useNotificationsRealtime(onCreated?: (notification: NotificationView) => void) {
   const client = useQueryClient()
   const userId = useMe(true).data?.userId
   usePersonalNotifications(userId, (notification, deleted) => {
     if (!deleted) {
+      onCreated?.(notification)
       void client.invalidateQueries({ queryKey: queryKeys.notifications.all() })
       return
     }

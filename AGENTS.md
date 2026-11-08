@@ -27,7 +27,7 @@
 | 2.12 États système | fait, à valider sur appareil (2026-11-06) : **Hors connexion et reconnexion** (`expo-network`, `useNetworkBridge` → `onlineManager` de React Query, état relu au premier plan ; **`ConnectionBanner` globale** (2026-11-07) dans le layout `(app)`, au-dessus de la barre du haut — la safe area haute est retirée aux écrans dessous —, réseau + STOMP, grâce 2,5 s, Réessayer avec tentative, échec et « Connexion rétablie », absente des parcours de jeu ; squelettes fixes) — module natif chargé sans planter : **nouveau dev build requis** pour l'activer ; **Adversaire absent / Partie expirée** (`DuelCancelled` sur `GAME_CANCELLED` `GAME_EXPIRED`, selon `firstRoundAt`) ; `AdSlot` au catalogue seulement (pas de régie ni d'alerte de suivi en V1) ; Compte suspendu, Session expirée et Reconnexion déjà faits — `etats-systeme.md` |
 | 2.13 Recherche globale | fait, à valider sur appareil (2026-11-07) : `(tabs)/home/search` et `(tabs)/social/search`, ouvertes par la loupe de l'Accueil et de l'en-tête Social, même écran dans chaque pile (`features/search`, `SearchScreen` `stack`) — `SearchField` autofocus « Sujets et joueurs » et « Annuler », **récentes** sur l'appareil (5 au plus, `joutio.search.recents` en SecureStore, « Effacer »), sections Sujets (`TopicRow`) et Joueurs (`PlayerRow`, « Compte suspendu ») sur `GET /api/suggestions?q&limit=10` (attente 250 ms, 2 caractères, `staleTime` 60 s), squelettes, « Aucun résultat pour « … » » et hors connexion ; un résultat entre dans les récentes et ouvre sa fiche dans la pile de l'onglet — piles Social complétées (`social/topic/[id]`, `social/rankings`, `social/history`) — `recherche.md` |
 
-Le **catalogue** (`/catalog`, `joutio://catalog`) est réservé au dev (`__DEV__`) et absent des builds de release.
+Le **catalogue** est accessible depuis **Réglages › Dev**, uniquement après connexion et onboarding d’un administrateur (`roles` du JWT, `ROLE_ADMIN`). Disponible dans les APK CI si `EXPO_PUBLIC_CATALOG` n’est pas `false` ; routes `(dev)` protégées, aucune ouverture au lancement ni entrée dans le menu Expo.
 
 Onboarding, écarts assumés :
 
@@ -48,7 +48,7 @@ Décisions :
 - **Refresh / scroll iOS / médias / salon (2026-11-08)** : contrôles de refresh système, sans indicateur React superposé (détails en fin de fichier). Le patch Swift `collapseSlackBase` réconcilie l’inset après une remise à zéro RN pour éviter de couper Sujets joués après chargement. Nouveau dev build requis : Android compilé et installé ; iOS à valider sur macOS. Le client API utilise `whatwg-fetch` uniquement pour les FormData de fichiers locaux ; expo/fetch reste utilisé pour le JSON. Cela corrige `Unsupported FormDataPart implementation`. Salon : MobileTopBar Joutio, retour conservé, en-tête natif masqué.
 
 
-- **Réglages et avatars (2026-11-08)** : carte d’identité redondante supprimée de Réglages ; Langue et Apparence deviennent des ListRow avec valeur actuelle et feuilles radio. Section Dev avec accès au catalogue en ListRow (`__DEV__ && config.catalogEnabled`). Avatars Profil et Fiche joueur à 88 pt ; bannière augmentée de 16 pt pour conserver la distance sous la barre du haut. Upload de bannière : transport multipart corrigé et détail réel du refus affiché.
+- **Réglages et avatars (2026-11-08)** : carte d’identité redondante supprimée de Réglages ; Langue et Apparence deviennent des ListRow avec valeur actuelle et feuilles radio. Section Dev avec accès au catalogue en ListRow (administrateur connecté, `config.catalogEnabled`). Avatars Profil et Fiche joueur à 88 pt ; bannière augmentée de 16 pt pour conserver la distance sous la barre du haut. Upload de bannière : transport multipart corrigé et détail réel du refus affiché.
 
 
 - **Calendrier et Micah (2026-11-08)** : page Récompenses supprimée (route, écran et ligne dans Profil). Série / Calendrier remplace la progression Assiduité par la seule carte Micah (aperçu, condition, état et avancement réels via les récompenses et les badges). Les droits et le choix des styles restent dans l’éditeur d’avatar.
@@ -116,8 +116,8 @@ src/
     (auth)/                 # login (ou session coupée), code
     (onboarding)/           # universes, notifications, first-topic
     (app)/                  # écrans du joueur connecté et onboardé
-    (dev)/catalog/          # catalogue des composants (__DEV__)
-    (dev)/tabs/             # aperçu Tabs + JoTabBar (__DEV__)
+    (dev)/catalog/          # catalogue des composants (administrateur)
+    (dev)/tabs/             # aperçu Tabs + JoTabBar (administrateur)
   design-system/            # traduction native du lab, sans import de app/ ni dev/
     tokens.generated.ts     # copie de design/tokens/tokens.native.ts — ne pas modifier
     tokens.generated.json   # même contenu, pour app.config.ts
@@ -197,7 +197,7 @@ l'APK release arm64 (API de production, clé `joutio-preview` : secrets `ANDROID
 `plugins/withAndroidReleaseSigning.js`), nommée `joutio-X.Y.Z.apk`. **Ne jamais changer la version à la main.**
 Jeton : `JOUTIO_GITHUB_TOKEN` s'il existe, sinon le `GITHUB_TOKEN` du workflow (`main` non protégée). Le `versionCode`
 vaut 10 000 000 + `major * 1e6 + minor * 1e3 + patch` (`app.config.ts`), au-dessus de l’ancienne app (1.1.2) : l'APK
-s'installe par-dessus. Le catalogue est la première page tant que `EXPO_PUBLIC_CATALOG` n'est pas `false`. Commits
+s'installe par-dessus. Le catalogue est réservé aux admins dans Réglages › Dev si `EXPO_PUBLIC_CATALOG` n'est pas `false`. Commits
 sans ligne de co-auteur.
 
 ---
@@ -345,3 +345,21 @@ Expo change à chaque SDK. Avant de toucher une API Expo, EAS ou React Native : 
 ## Remplacement du dépôt (2026-11-08)
 
 Décision utilisateur : supprimer l’ancien dépôt GitHub `joutio/joutio-mobile` et renommer `joutio/joutio-mobile-expo` en `joutio/joutio-mobile`. Le checkout devient `mobile-applications/joutio-mobile`. Le package npm et le slug Expo suivent ce nom ; `com.joutio.app`, le schéma `joutio`, la version et la clé de signature sont conservés. L’historique de la nouvelle app et les changements push en cours sont conservés. Les anciennes notes de configuration sont dans `docs/legacy-mobile.md`. Une sauvegarde locale de l’ancien dépôt est conservée dans `.run/mobile-replacement-2026-11-08/` à la racine du workspace.
+
+
+### Catalogue admin, toasts et navigation — 2026-11-08
+
+- Lancement normal vers connexion, onboarding ou Accueil. Accès au catalogue uniquement depuis Réglages › Dev,
+  conditionné au rôle admin, y compris en release. Le rôle est relu au login, à la restauration, au refresh et au logout.
+- Runtime des notifications monté dans `(app)` : inbox actualisée sur tous les écrans ; toast cliquable au premier
+  plan hors duel, sans doublon Expo/STOMP ni toast supplémentaire pour la modale de revanche. Pas de rattrapage
+  des toasts reçus pendant un duel ou en arrière-plan ; ils restent dans l’inbox.
+- Résolution commune inbox/toast/push : abonné ou défi refusé → joueur ; défi reçu → Défis ; acceptation ou wizz →
+  salle (jamais directement l’arène) ; signalement → modération, onglet Signalements ; sujet brouillon → édition.
+  Cible expirée/absente : explication et repli vers Défis ou inbox. Ouverture = marquage lu optimiste, sans lecture
+  de confirmation. La salle reste l’arbitre de son état et de la redirection vers le duel.
+- Le clic push attend le montage réel du parcours connecté après auth/onboarding, vérifie le compte et est
+  consommé une fois. Les champs optionnels `sourceId`/`gameId` absents sont normalisés à `null`. Un clic plus
+  récent remplace la réponse native initiale ; le logout invalide les réponses en attente.
+- Tests `npm run test:push` : contrat, destinations, expiration, comptes, démarrage, doublons, toasts et rôles.
+  Les tests JS simulent le bridge natif ; les ouvertures sur un APK CI doivent être validées sur appareil.

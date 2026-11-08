@@ -5,6 +5,7 @@ import { Stack, useSegments } from 'expo-router'
 import { View } from 'react-native'
 import { SafeAreaInsetsContext, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { nativeHeaderOptions, useTheme } from '@/design-system'
+import { NotificationsRuntime } from '@/features/notifications/components/notifications-runtime'
 import { RematchHost } from '@/features/play/components/rematch-host'
 import { PremiumHost } from '@/features/premium/premium-host'
 import { ConnectionBanner } from '@/shared/components/connection-banner'
@@ -56,6 +57,7 @@ function AppNavigation() {
         </Stack>
       </SafeAreaInsetsContext.Provider>
       {/* Demandes de revanche reçues, au-dessus de tout écran (sauf pendant un duel). */}
+      <NotificationsRuntime />
       <RematchHost />
       {/* Feuille Premium, ouverte depuis Réglages, Maîtrise ou l'éditeur d'avatar. */}
       <PremiumHost />

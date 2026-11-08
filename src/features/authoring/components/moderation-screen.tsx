@@ -55,14 +55,14 @@ const reasonsOf = (item: ReportedQuestion) => reasonsLabel([...new Set(item.repo
  * valider contient les questions du créateur lui-même (toute question naît en attente).
  */
 export function ModerationScreen() {
-  const params = useLocalSearchParams<{ id: string; name?: string }>()
+  const params = useLocalSearchParams<{ id: string; name?: string; tab?: string }>()
   const topicId = params.id
   const me = useMe(true)
   const questions = useTopicQuestions(topicId)
   const reports = useTopicReports(topicId, questions.data)
   const moderate = useModerateQuestion(topicId)
   const dismiss = useDismissReports(topicId)
-  const [tab, setTab] = useState<Tab>('pending')
+  const [tab, setTab] = useState<Tab>(params.tab === 'reports' ? 'reports' : 'pending')
   const [rejecting, setRejecting] = useState<QuestionEditorView>()
   const [reason, setReason] = useState('')
   const [report, setReport] = useState<ReportedQuestion>()
