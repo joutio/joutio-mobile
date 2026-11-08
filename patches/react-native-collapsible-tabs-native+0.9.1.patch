@@ -1,5 +1,5 @@
 diff --git a/node_modules/react-native-collapsible-tabs-native/android/src/main/java/com/collapsibletabs/ui/CollapsibleTabsHostView.kt b/node_modules/react-native-collapsible-tabs-native/android/src/main/java/com/collapsibletabs/ui/CollapsibleTabsHostView.kt
-index 84f3869..18d023c 100644
+index 84f3869..b69e215 100644
 --- a/node_modules/react-native-collapsible-tabs-native/android/src/main/java/com/collapsibletabs/ui/CollapsibleTabsHostView.kt
 +++ b/node_modules/react-native-collapsible-tabs-native/android/src/main/java/com/collapsibletabs/ui/CollapsibleTabsHostView.kt
 @@ -157,7 +157,76 @@ class CollapsibleTabsHostView(context: Context) : ViewGroup(context) {
@@ -79,20 +79,24 @@ index 84f3869..18d023c 100644
          lastTouch?.recycle()
          lastTouch = MotionEvent.obtain(ev)
          // Fabric re-applies a view's padding on every layout update
-@@ -683,7 +752,11 @@ class CollapsibleTabsHostView(context: Context) : ViewGroup(context) {
+@@ -682,8 +751,15 @@ class CollapsibleTabsHostView(context: Context) : ViewGroup(context) {
+         refreshLayout.setOnRefreshListener { onRefresh?.invoke() }
          // A pull only starts from the very top: header expanded AND the
          // active page at scroll 0. Otherwise the gesture is a scroll.
++        // ACTION_DOWN must reach SwipeRefreshLayout while direction is undecided:
++        // it records the active pointer there. Blocking it prevents every subsequent
++        // vertical pull. Direction is resolved before MOVE reaches the control.
          refreshLayout.setOnChildScrollUpCallback { _, _ ->
 -            headerOffset > 0 || (activeScrollView()?.scrollY ?: 0) > 0
 +            // A sideways drag owned by a horizontal list must not arm the pull:
 +            // SwipeRefreshLayout ignores requestDisallowInterceptTouchEvent when
 +            // its child is not a nested-scrolling view, so a carousel drag that
 +            // drifts downward at the top would otherwise be stolen by the refresh.
-+            gestureDirection != 2 || horizontalChildDrag || headerOffset > 0 || (activeScrollView()?.scrollY ?: 0) > 0
++            gestureDirection == 1 || horizontalChildDrag || headerOffset > 0 || (activeScrollView()?.scrollY ?: 0) > 0
          }
          addView(refreshLayout)
      }
-@@ -1045,14 +1118,12 @@ class CollapsibleTabsHostView(context: Context) : ViewGroup(context) {
+@@ -1045,14 +1121,12 @@ class CollapsibleTabsHostView(context: Context) : ViewGroup(context) {
  
      private var lastEmittedOffset = -1
  
@@ -109,7 +113,7 @@ index 84f3869..18d023c 100644
      }
  
      private fun updateCollapsed() {
-@@ -1251,23 +1322,30 @@ class CollapsibleTabsHostView(context: Context) : ViewGroup(context) {
+@@ -1251,23 +1325,30 @@ class CollapsibleTabsHostView(context: Context) : ViewGroup(context) {
           */
          private fun disallowPagerInterceptForNestedHorizontal(ev: MotionEvent): Boolean {
              val dx = ev.x - downX
@@ -142,7 +146,7 @@ index 84f3869..18d023c 100644
              return true
          }
  
-@@ -1308,6 +1386,7 @@ class CollapsibleTabsHostView(context: Context) : ViewGroup(context) {
+@@ -1308,6 +1389,7 @@ class CollapsibleTabsHostView(context: Context) : ViewGroup(context) {
                      forwarding = false
                      forwardTarget = null
                      nestedDecided = false
@@ -150,7 +154,7 @@ index 84f3869..18d023c 100644
                  }
                  MotionEvent.ACTION_MOVE -> {
                      if (!downOnBand) {
-@@ -1419,6 +1498,7 @@ class CollapsibleTabsHostView(context: Context) : ViewGroup(context) {
+@@ -1419,6 +1501,7 @@ class CollapsibleTabsHostView(context: Context) : ViewGroup(context) {
          lastTouch = null
          layoutPassScheduled = false
          reconcileAnimator?.cancel()
@@ -158,6 +162,249 @@ index 84f3869..18d023c 100644
          super.onDetachedFromWindow()
      }
  
+diff --git a/node_modules/react-native-collapsible-tabs-native/ios/NativeCollapsibleTabsContent.swift b/node_modules/react-native-collapsible-tabs-native/ios/NativeCollapsibleTabsContent.swift
+index b94fd9c..93ce67d 100644
+--- a/node_modules/react-native-collapsible-tabs-native/ios/NativeCollapsibleTabsContent.swift
++++ b/node_modules/react-native-collapsible-tabs-native/ios/NativeCollapsibleTabsContent.swift
+@@ -64,10 +64,10 @@ public final class NativeCollapsibleTabsContent: UIView, UIScrollViewDelegate, U
+   private let bandsSlot = UIView()
+   /// The RN ScrollView holding header and tab bar (see the header comment).
+   private weak var bandsScrollView: UIScrollView?
+-  private let spinner = UIActivityIndicatorView(style: .medium)
+-  /// The disc behind the spinner; this is what the engine positions/fades.
+-  private let spinnerDisc = UIView()
+-  private var spinnerHidden = false
++  private let refreshControls = NSMapTable<UIScrollView, UIRefreshControl>.weakToStrongObjects()
++  private let refreshBaseInsets = NSMapTable<UIScrollView, NSNumber>.weakToStrongObjects()
++  private var refreshTint: UIColor?
++  private var refreshHidden = false
+   private var pageSlots: [UIView] = []
+ 
+   // MARK: - RN children
+@@ -179,7 +179,6 @@ public final class NativeCollapsibleTabsContent: UIView, UIScrollViewDelegate, U
+   private var refreshEnabled = true
+   private var refreshing = false
+   private weak var refreshHost: UIScrollView?
+-  private var refreshHostOriginalInset: CGFloat = 0
+ 
+   // Header drag
+   private var dragStartOffset: CGFloat = 0
+@@ -227,13 +226,6 @@ public final class NativeCollapsibleTabsContent: UIView, UIScrollViewDelegate, U
+     pager.delaysContentTouches = false
+     addSubview(pager)
+ 
+-    spinner.hidesWhenStopped = false
+-    spinnerDisc.alpha = 0
+-    spinnerDisc.backgroundColor = .clear
+-    spinnerDisc.addSubview(spinner)
+-    addSubview(spinnerDisc)
+-    layoutSpinnerDisc()
+-
+     bandsSlot.clipsToBounds = true
+     addSubview(bandsSlot)
+ 
+@@ -367,6 +359,9 @@ public final class NativeCollapsibleTabsContent: UIView, UIScrollViewDelegate, U
+   @objc public func setRefreshEnabled(_ value: Bool) {
+     refreshEnabled = value
+     if !value { endRefresh() }
++    for control in refreshControls.objectEnumerator()?.allObjects as? [UIRefreshControl] ?? [] {
++      control.isEnabled = value
++    }
+   }
+ 
+   @objc public func setRefreshing(_ value: Bool) {
+@@ -478,6 +473,12 @@ public final class NativeCollapsibleTabsContent: UIView, UIScrollViewDelegate, U
+     bandsChild = nil
+     bandsScrollView = nil
+     pageChildren.removeAll()
++    for sv in refreshControls.keyEnumerator().allObjects as? [UIScrollView] ?? [] {
++      sv.refreshControl?.endRefreshing()
++      sv.refreshControl = nil
++    }
++    refreshControls.removeAllObjects()
++    refreshBaseInsets.removeAllObjects()
+     pageScrollViews.removeAll()
+     contentSizeObservers.removeAll()
+     pendingSync.removeAll()
+@@ -609,43 +610,44 @@ public final class NativeCollapsibleTabsContent: UIView, UIScrollViewDelegate, U
+     if h > 0 { applyCollapseSlackToAll() }
+   }
+ 
+-  private func layoutSpinnerDisc() {
+-    let side: CGFloat = spinner.style == .large ? 56 : 40
+-    spinnerDisc.bounds = CGRect(x: 0, y: 0, width: side, height: side)
+-    spinnerDisc.layer.cornerRadius = side / 2
+-    spinner.center = CGPoint(x: side / 2, y: side / 2)
+-  }
+-
+   // MARK: Refresh customisation
+ 
+-  @objc public func setRefreshThreshold(_ value: CGFloat) {
+-    refreshThreshold = max(1, value)
+-    applyBandTransform()
+-  }
+-
+-  @objc public func setRefreshIndicatorOffset(_ value: CGFloat) {
+-    // Changing the band mid-refresh would desync the inset we already added;
+-    // it takes effect from the next refresh.
+-    refreshBand = max(0, value)
+-  }
+-
++  @objc public func setRefreshThreshold(_ value: CGFloat) { refreshThreshold = max(1, value) }
++  @objc public func setRefreshIndicatorOffset(_ value: CGFloat) { refreshBand = max(0, value) }
+   @objc public func setRefreshTintColor(_ color: UIColor?) {
+-    spinner.color = color
+-  }
+-
+-  @objc public func setRefreshBackgroundColor(_ color: UIColor?) {
+-    spinnerDisc.backgroundColor = color ?? .clear
+-  }
+-
+-  @objc public func setRefreshIndicatorSize(_ size: String) {
+-    spinner.style = size == "large" ? .large : .medium
+-    layoutSpinnerDisc()
+-    applyBandTransform()
++    refreshTint = color
++    for control in refreshControls.objectEnumerator()?.allObjects as? [UIRefreshControl] ?? [] {
++      control.tintColor = refreshHidden ? .clear : color
++    }
+   }
+-
++  @objc public func setRefreshBackgroundColor(_ color: UIColor?) {}
++  @objc public func setRefreshIndicatorSize(_ size: String) {}
+   @objc public func setRefreshIndicatorHidden(_ hidden: Bool) {
+-    spinnerHidden = hidden
+-    spinnerDisc.isHidden = hidden
++    refreshHidden = hidden
++    setRefreshTintColor(refreshTint)
++  }
++
++  private func installRefreshControl(on sv: UIScrollView) {
++    guard refreshControls.object(forKey: sv) == nil else { return }
++    let control = UIRefreshControl()
++    control.isEnabled = refreshEnabled
++    control.tintColor = refreshHidden ? .clear : refreshTint
++    control.addTarget(self, action: #selector(nativeRefreshChanged(_:)), for: .valueChanged)
++    refreshBaseInsets.setObject(NSNumber(value: Double(sv.contentInset.top)), forKey: sv)
++    refreshControls.setObject(control, forKey: sv)
++    sv.alwaysBounceVertical = true
++    sv.refreshControl = control
++  }
++
++  @objc private func nativeRefreshChanged(_ control: UIRefreshControl) {
++    guard let sv = activeScrollView(), sv.refreshControl === control,
++          refreshEnabled, !refreshing else {
++      control.endRefreshing()
++      return
++    }
++    refreshHost = sv
++    refreshing = true
++    onRefresh?()
+   }
+ 
+   /// Puts the bands where the offset says. The RN scroll view is scrolled by
+@@ -671,13 +673,6 @@ public final class NativeCollapsibleTabsContent: UIView, UIScrollViewDelegate, U
+       let target = CGPoint(x: 0, y: headerOffset - pull)
+       if sv.contentOffset != target { sv.contentOffset = target }
+     }
+-    // A momentum bounce moves the bands but must not show the spinner.
+-    let visiblePull = pullFromDrag ? max(pull, 0) : 0
+-    spinnerDisc.center = CGPoint(x: bounds.width / 2, y: visiblePull / 2)
+-    if !refreshing {
+-      spinnerDisc.alpha = refreshEnabled ? min(1, visiblePull / refreshThreshold) : 0
+-      spinnerDisc.transform = CGAffineTransform(rotationAngle: visiblePull / refreshThreshold * .pi)
+-    }
+     emitHeaderOffset()
+   }
+ 
+@@ -800,14 +795,15 @@ public final class NativeCollapsibleTabsContent: UIView, UIScrollViewDelegate, U
+   /// screen's touches from here.
+   @objc public func handleScrollViewWillBeginDragging(_ scrollView: UIScrollView) {
+     guard scrollView.isDescendant(of: self) else { return }
++    if scrollView.refreshControl?.isRefreshing != true {
++      refreshBaseInsets.setObject(NSNumber(value: Double(scrollView.contentInset.top)), forKey: scrollView)
++    }
+     cancelReactTouches?()
+   }
+ 
+   @objc public func handleScrollViewDidEndDragging(_ scrollView: UIScrollView, willDecelerate: Bool) {
+     guard scrollView === activeScrollView() else { return }
+-    if refreshEnabled, !refreshing, pullFromDrag, pull >= refreshThreshold {
+-      beginRefresh(emit: true)
+-    }
++    // UIRefreshControl owns the threshold and release for page drags.
+   }
+ 
+   private func setHeaderOffsetNow(_ offset: CGFloat) {
+@@ -845,6 +841,7 @@ public final class NativeCollapsibleTabsContent: UIView, UIScrollViewDelegate, U
+     contentSizeObservers[page] = nil
+     guard let root = pageChildren[page], let found = scrollViewResolver?(root) else { return nil }
+     pageScrollViews[page] = WeakBox(found)
++    installRefreshControl(on: found)
+     // Lock a page's list to one axis per drag. A page lives inside a
+     // horizontal pager, and every real horizontal swipe carries some vertical
+     // drift; without this the list scrolls along with the page turn. It
+@@ -1191,49 +1188,28 @@ public final class NativeCollapsibleTabsContent: UIView, UIScrollViewDelegate, U
+   // MARK: - Pull to refresh
+ 
+   private func refreshInsetApplied(to scrollView: UIScrollView) -> CGFloat {
+-    refreshing && refreshHost === scrollView ? refreshBand : 0
++    guard scrollView.refreshControl?.isRefreshing == true,
++          let base = refreshBaseInsets.object(forKey: scrollView) else { return 0 }
++    return max(0, scrollView.contentInset.top - CGFloat(base.doubleValue))
+   }
+ 
+   private func beginRefresh(emit: Bool) {
+-    guard refreshEnabled, !refreshing else { return }
++    guard refreshEnabled, !refreshing, let sv = activeScrollView() else { return }
+     refreshing = true
+-    spinnerDisc.alpha = 1
+-    spinnerDisc.transform = .identity
+-    spinnerDisc.center = CGPoint(x: bounds.width / 2, y: refreshBand / 2)
+-    spinner.startAnimating()
+-    if let sv = activeScrollView() {
+-      refreshHost = sv
+-      refreshHostOriginalInset = sv.contentInset.top
+-      sv.contentInset.top = refreshHostOriginalInset + refreshBand
+-      // Hold the list open by the spinner band; the bands follow via `pull`.
+-      if sv.contentOffset.y > -refreshBand, !sv.isDragging {
+-        sv.setContentOffset(CGPoint(x: sv.contentOffset.x, y: -refreshBand), animated: true)
+-      }
+-    }
++    refreshHost = sv
++    sv.refreshControl?.beginRefreshing()
++    // Header drags are forwarded to the page; UIKit owns the refresh inset.
++    let band = max(60, sv.refreshControl?.bounds.height ?? 0)
++    sv.setContentOffset(CGPoint(x: sv.contentOffset.x, y: -sv.adjustedContentInset.top - band), animated: true)
+     if emit { onRefresh?() }
+   }
+ 
+   private func endRefresh() {
+     guard refreshing else { return }
+     refreshing = false
+-    spinner.stopAnimating()
+-    guard let sv = refreshHost else {
+-      pull = 0
+-      applyBandTransform()
+-      return
+-    }
++    refreshHost?.refreshControl?.endRefreshing()
+     refreshHost = nil
+-    let original = refreshHostOriginalInset
+-    // The host's own scroll events settle the bands while it is the active
+-    // page; if the user has switched tabs meanwhile, nothing else would.
+-    if sv !== pageScrollViews[activeIndex]?.value { syncPullToActive() }
+-    UIView.animate(withDuration: 0.25, delay: 0, options: [.curveEaseOut]) {
+-      sv.contentInset.top = original
+-      if sv.contentOffset.y < 0, !sv.isDragging {
+-        sv.contentOffset = CGPoint(x: sv.contentOffset.x, y: 0)
+-      }
+-      self.spinnerDisc.alpha = 0
+-    }
++    syncPullToActive()
+   }
+ 
+   /// `pull` as the active page sees it right now (0 with no page or at rest).
 diff --git a/node_modules/react-native-collapsible-tabs-native/src/TabBar.tsx b/node_modules/react-native-collapsible-tabs-native/src/TabBar.tsx
 index a6a300e..4921804 100644
 --- a/node_modules/react-native-collapsible-tabs-native/src/TabBar.tsx
@@ -171,36 +418,3 @@ index a6a300e..4921804 100644
    const itemX = useRef<number[]>([]);
  
    // One continuous value drives every tab: the pager's live position when the
-diff --git a/node_modules/react-native-collapsible-tabs-native/ios/NativeCollapsibleTabsContent.swift b/node_modules/react-native-collapsible-tabs-native/ios/NativeCollapsibleTabsContent.swift
---- a/node_modules/react-native-collapsible-tabs-native/ios/NativeCollapsibleTabsContent.swift
-+++ b/node_modules/react-native-collapsible-tabs-native/ios/NativeCollapsibleTabsContent.swift
-@@ -150,6 +150,10 @@
-   /// view, the record follows the inset wherever the view goes (this is what
-   /// Android does with its WeakHashMap).
-   private let collapseSlack = NSMapTable<UIScrollView, NSNumber>.weakToStrongObjects()
-+  // RN can restore its contentInset on a prop/layout update. Remember the base
-+  // as well as our addition, or removing an already-erased addition makes the
-+  // bottom inset negative and cuts off late-loaded content.
-+  private let collapseSlackBase = NSMapTable<UIScrollView, NSNumber>.weakToStrongObjects()
--
-+
-   private func appliedSlack(_ sv: UIScrollView) -> CGFloat {
-     CGFloat(collapseSlack.object(forKey: sv)?.doubleValue ?? 0)
-@@ -876,7 +880,16 @@
-   /// applying this is invisible until the user scrolls.
-   private func applyCollapseSlack(to sv: UIScrollView, page: Int) {
-     guard !applyingSlack else { return }
--    let applied = appliedSlack(sv)
-+    var applied = appliedSlack(sv)
-+    let currentBottom = sv.contentInset.bottom
-+    let base = collapseSlackBase.object(forKey: sv).map { CGFloat($0.doubleValue) } ?? (currentBottom - applied)
-+    if abs(currentBottom - (base + applied)) > 0.5 {
-+      // An external write replaced the inset: our recorded slack is no longer
-+      // present in this scroll view, so there is nothing left to subtract.
-+      applied = 0
-+      setAppliedSlack(sv, 0)
-+    }
-+    collapseSlackBase.setObject(NSNumber(value: Double(currentBottom - applied)), forKey: sv)
-     guard allowFullCollapse else {
-       if applied != 0 {
-         applyingSlack = true

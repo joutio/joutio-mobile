@@ -1,6 +1,6 @@
 import { Image } from 'expo-image'
 import { useId, useState } from 'react'
-import { View, type StyleProp, type ViewStyle } from 'react-native'
+import { PixelRatio, View, type StyleProp, type ViewStyle } from 'react-native'
 import Svg, { Defs, Image as SvgImage, Pattern, Rect } from 'react-native-svg'
 import { Text } from '../primitives/text'
 import { tokens, type TierCode } from '../tokens.generated'
@@ -23,6 +23,7 @@ const RIGHT = 300 * SCALE
 const TILE = 100 * SCALE
 const BASE = 940 * SCALE
 const PADDING = 52
+const SEAM = 1 / PixelRatio.get()
 
 /** Extrémités fixes, centre répété : ni le motif ni le texte ne sont étirés. */
 export function TitleRibbon({ tier, text, width = 220, state = 'earned', style }: TitleRibbonProps) {
@@ -56,8 +57,8 @@ export function TitleRibbon({ tier, text, width = 220, state = 'earned', style }
                 <SvgImage href={parts.center} x={0} y={0} width={TILE} height={height} preserveAspectRatio="none" />
               </Pattern>
             </Defs>
+            <Rect x={LEFT - SEAM} y={0} width={Math.max(0, drawnWidth - LEFT - RIGHT) + SEAM * 2} height={height} fill={`url(#${patternId})`} />
             <SvgImage href={parts.left} x={0} y={0} width={LEFT} height={height} preserveAspectRatio="none" />
-            <Rect x={LEFT} y={0} width={Math.max(0, drawnWidth - LEFT - RIGHT)} height={height} fill={`url(#${patternId})`} />
             <SvgImage href={parts.right} x={drawnWidth - RIGHT} y={0} width={RIGHT} height={height} preserveAspectRatio="none" />
           </Svg>
         ) : (

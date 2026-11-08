@@ -5,7 +5,7 @@ import { HAIRLINE } from '../theme/hairline'
 import { useTheme } from '../theme/theme-provider'
 import { tokens, type TierCode } from '../tokens.generated'
 import { PressableScale } from './pressable-scale'
-import { Pill } from './pill'
+import { Text } from './text'
 import { ProgressBar } from './progress-bar'
 
 export interface TitleRowProps {
@@ -51,6 +51,7 @@ export function TitleRow({
       style={({ pressed }) => [
         {
           minHeight: 64,
+          overflow: 'hidden',
           flexDirection: 'row',
           alignItems: 'center',
           gap: tokens.space[3],
@@ -66,11 +67,25 @@ export function TitleRow({
         {locked && progress && <ProgressBar value={progress.value} label={progress.label} tone={tier} />}
       </View>
       {wearing ? (
-        <ActivityIndicator color={colors.muted} />
+        <ActivityIndicator color={colors.muted} style={{ position: 'absolute', right: tokens.space[3], top: tokens.space[2] }} />
       ) : worn ? (
-        <Pill tone="online" style={{ alignSelf: 'center' }}>
-          Porté
-        </Pill>
+        <View
+          pointerEvents="none"
+          accessible={false}
+          style={{
+            position: 'absolute',
+            right: -tokens.space[5],
+            top: tokens.space[4],
+            width: tokens.space[5] * 5,
+            backgroundColor: colors.correct,
+            transform: [{ rotate: '45deg' }],
+            alignItems: 'center',
+          }}
+        >
+          <Text variant="caption" weight="600" color={colors.bg} maxFontSizeMultiplier={1}>
+            Porté
+          </Text>
+        </View>
       ) : null}
       {!last && <View pointerEvents="none" style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: HAIRLINE, backgroundColor: colors.border }} />}
     </PressableScale>

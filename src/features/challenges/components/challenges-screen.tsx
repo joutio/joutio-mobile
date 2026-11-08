@@ -1,7 +1,7 @@
 import { NotificationButton } from '@/features/notifications/components/notification-button'
 import { useQueryClient } from '@tanstack/react-query'
 import { router } from 'expo-router'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { RefreshControl, ScrollView, View } from 'react-native'
 import {
   Button,
@@ -79,6 +79,7 @@ export function ChallengesScreen() {
   const [filter, setFilter] = useState<Filter>('all')
   const [receivedPages, setReceivedPages] = useState(1)
   const [pickerOpen, setPickerOpen] = useState(false)
+  const refreshBusy = useRef(false)
   const [refreshing, setRefreshing] = useState(false)
 
   const { received, sent } = splitChallenges(challenges.data, userId)
@@ -94,9 +95,17 @@ export function ChallengesScreen() {
   const subtitle = `${sent.length} défi${sent.length > 1 ? 's' : ''} envoyé${sent.length > 1 ? 's' : ''} sur ${CHALLENGE_LIMIT} possibles`
 
   const refresh = async () => {
+    if (refreshBusy.current) return
+    refreshBusy.current = true
     setRefreshing(true)
-    await Promise.all([client.refetchQueries({ queryKey: queryKeys.challenges() }), client.refetchQueries({ queryKey: queryKeys.rooms() })])
-    setRefreshing(false)
+    try {
+      await Promise.all([client.refetchQueries({ queryKey: queryKeys.challenges() }), client.refetchQueries({ queryKey: queryKeys.rooms() })])
+    } catch {
+      // Les états d’erreur des requêtes restent affichés dans les sections.
+    } finally {
+      refreshBusy.current = false
+      setRefreshing(false)
+    }
   }
 
   const refuseAll = () =>

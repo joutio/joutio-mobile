@@ -104,3 +104,5 @@ export * from './device-settings'
 export { SearchHeader, type SearchHeaderProps } from './mobile/search-header'
 
 export { NotificationBell, type NotificationBellProps } from './primitives/notification-bell'
+
+export * from './primitives/joutio-tabs'

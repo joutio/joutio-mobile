@@ -11,6 +11,7 @@ import {
   RadioGroup,
   SearchField,
   Segmented,
+  JoutioTabs,
   StarIcon,
   Switch,
   SwordIcon,
@@ -87,7 +88,6 @@ const TABS = [
 ] as const
 
 export function SegmentedDemo() {
-  const [value, setValue] = useState<(typeof TABS)[number]['value']>('wall')
   const [period, setPeriod] = useState<'month' | 'all'>('month')
   return (
     <>
@@ -102,8 +102,22 @@ export function SegmentedDemo() {
           onChange={setPeriod}
         />
       </Specimen>
-      <Specimen label="scrollable">
-        <Segmented label="Onglets du sujet" options={TABS} value={value} onChange={setValue} scrollable />
+    </>
+  )
+}
+
+export function JoutioTabsDemo() {
+  const [value, setValue] = useState<(typeof TABS)[number]['value']>('wall')
+  return (
+    <>
+      <Specimen label="Dimensions Accueil">
+        <JoutioTabs label="Accueil" options={TABS.slice(0, 2)} value={value} onChange={setValue} />
+      </Specimen>
+      <Specimen label="Deux onglets · même largeur dans un conteneur défilant">
+        <JoutioTabs label="Deux défilants" options={TABS.slice(0, 2)} value={value} onChange={setValue} scrollable />
+      </Specimen>
+      <Specimen label="Même hauteur · défilement horizontal">
+        <JoutioTabs label="Sujet" options={TABS} value={value} onChange={setValue} scrollable />
       </Specimen>
     </>
   )

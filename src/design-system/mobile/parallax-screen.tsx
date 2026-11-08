@@ -1,5 +1,7 @@
+import { compactHeaderEdge } from './header-geometry'
+import { HeaderSeparator } from './header-separator'
 import { Image } from 'expo-image'
-import { createContext, useContext, useMemo, useState, type ReactNode } from 'react'
+import { createContext, useContext, useMemo, useRef, useState, type ReactNode } from 'react'
 import { RefreshControl, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native'
 import { GestureDetector } from 'react-native-gesture-handler'
 import Animated, {
@@ -27,7 +29,6 @@ import { HAIRLINE } from '../theme/hairline'
 import { Skeleton } from '../primitives/skeleton'
 import { useTransitionDone } from './use-transition-done'
 import { useOverscrollStretch } from './overscroll-stretch'
-import { PullIndicator } from './page-refresh'
 
 /** Hauteur de la zone image, safe area comprise (`fiche-sujet.md` § 1). */
 export const HERO_HEIGHT = 320
@@ -286,18 +287,23 @@ export function ParallaxScreen({
   // Android : le tiré en haut de page zoome l'image comme le rebond d'iOS.
   const stretch = useOverscrollStretch(scroll)
   const imageStyle = useAnimatedStyle(() => ({ transform: heroImageTransform(scroll.value - stretch.pull.value, reduced, heroHeight) }))
-  // iOS : le spinner natif passe sous l'image (qui déborde vers le haut) ; on dessine le nôtre par-dessus.
+  // Le contrôle système possède le geste et l’indicateur de rafraîchissement.
+  const refreshBusy = useRef(false)
   const [refreshing, setRefreshing] = useState(false)
-  const overPull = useDerivedValue(() => Math.max(0, -scroll.value, stretch.pull.value))
   const refresh = () => {
-    if (!onRefresh) return
+    if (!onRefresh || refreshBusy.current) return
+    refreshBusy.current = true
     setRefreshing(true)
     Promise.resolve()
       .then(onRefresh)
       .catch(() => undefined)
-      .finally(() => setRefreshing(false))
+      .finally(() => {
+        refreshBusy.current = false
+        setRefreshing(false)
+      })
   }
   const titleStyle = useAnimatedStyle(() => ({ opacity: heroTitleOpacity(scroll.value, titleStart.value, titleLength.value) }))
+  const separator = useDerivedValue(() => compactHeaderEdge(progress.value))
   const barStyle = useAnimatedStyle(() => ({ opacity: progress.value }))
   const statusScrim = useAnimatedStyle(() => ({ opacity: 1 - progress.value }))
 
@@ -317,16 +323,16 @@ export function ParallaxScreen({
                 <RefreshControl
                   refreshing={refreshing}
                   onRefresh={refresh}
-                  tintColor="transparent"
-                  colors={['transparent']}
-                  progressBackgroundColor="transparent"
+                  tintColor={colors.muted}
+                  colors={[colors.accentInk]}
+                  progressBackgroundColor={colors.surface}
                   progressViewOffset={barHeight}
                 />
               ) : undefined
             }
           >
-            {/* Découpe qui déborde vers le haut (Reacticx) : au tiré, l'image zoomée couvre le haut de l'écran. */}
-            <View style={{ marginTop: -heroHeight * 4, paddingTop: heroHeight * 4, overflow: 'hidden' }}>
+            {/* Le zoom reste dans le contenu pour laisser visible le contrôle système au-dessus. */}
+            <View style={{ overflow: 'hidden' }}>
               <View style={{ height: heroHeight, backgroundColor: colors.surface }} accessible accessibilityRole="header" accessibilityLabel={title}>
                 {image !== undefined && (
                   <Animated.View style={[StyleSheet.absoluteFill, imageStyle]}>
@@ -380,8 +386,6 @@ export function ParallaxScreen({
           </Animated.ScrollView>
         </GestureDetector>
 
-        {onRefresh && <PullIndicator pull={overPull} refreshing={refreshing} top={barHeight} />}
-
         {floating && <View style={{ position: 'absolute', right: tokens.space[5], bottom: tokens.space[5] }}>{floating}</View>}
 
         {/* Lisibilité de la barre d'état : épinglé à l'écran (pas dans le contenu), il reste en place au rebond et
@@ -403,10 +407,8 @@ export function ParallaxScreen({
         />
 
         <View pointerEvents="box-none" style={{ position: 'absolute', left: 0, right: 0, top: 0, height: barHeight, zIndex: 20 }}>
-          <Animated.View
-            pointerEvents="none"
-            style={[StyleSheet.absoluteFill, { backgroundColor: colors.bg, borderBottomWidth: HAIRLINE, borderBottomColor: colors.border }, barStyle]}
-          />
+          <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: colors.bg }, barStyle]} />
+          <HeaderSeparator progress={separator} />
           <CompactBarRow title={title} back={back} onBack={onBack} right={rightContent} titleStart={barTitleStart} titleStyle={barStyle} />
         </View>
 

@@ -1,19 +1,22 @@
-import { useContext, useState, type ReactNode, type Ref } from 'react'
+import { ScrollEdgeContext } from './scroll-edge'
+import { scrollEdgeProgress } from './header-geometry'
+import { useContext, useMemo, useRef, useState, type ReactNode, type Ref } from 'react'
 import { RefreshControl, ScrollView, View, type ScrollViewInstance, type ScrollViewProps, type StyleProp, type ViewStyle } from 'react-native'
 import { HeaderHeightContext } from 'expo-router/react-navigation'
 import { Platform } from 'react-native'
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { StickyHeaderContext } from './sticky-header'
+import { useDerivedValue, useSharedValue, type SharedValue } from 'react-native-reanimated'
+import { HeaderSeparator } from './header-separator'
 import { useTheme } from '../theme/theme-provider'
-import { tokens } from '../tokens.generated'
 import { DragToLoadMore, LoadMoreScrollView } from './drag-to-load-more'
-import { ScrollRefreshHost, withScrollRefreshFeedback } from './scroll-refresh'
 
 /** Liste paginée de l'écran : la suite se charge en tirant en bas (`DragToLoadMore`, `contenu.md`). */
 /** Marge entre le champ actif et le haut du clavier. */
 const KEYBOARD_GAP = 24
-const RefreshScrollView = withScrollRefreshFeedback(ScrollView)
-const RefreshKeyboardAwareScrollView = withScrollRefreshFeedback(KeyboardAwareScrollView)
+const RefreshScrollView = ScrollView
+const RefreshKeyboardAwareScrollView = KeyboardAwareScrollView
 
 export interface LoadMoreOptions {
   /** Une page suivante existe (et la précédente n'a pas échoué). */
@@ -43,6 +46,8 @@ export interface ScreenProps {
   scroll?: boolean
   scrollProps?: Omit<ScrollViewProps, 'children'>
   scrollRef?: Ref<ScrollViewInstance>
+  /** Position du défilement fourni par une liste externe (`scroll=false`). */
+  scrollOffset?: SharedValue<number>
   /** Tirer pour rafraîchir : l'indicateur reste affiché jusqu'à la fin de la promesse. */
   onRefresh?: () => Promise<unknown> | void
   /** Pagination au geste sur le défilement de l'écran (hors en-tête natif). */
@@ -64,6 +69,7 @@ export function Screen({
   scroll = true,
   scrollProps,
   scrollRef,
+  scrollOffset,
   loadMore,
   onRefresh,
   contentStyle,
@@ -75,8 +81,13 @@ export function Screen({
   // iOS : l'en-tête natif est translucide et posé sur le contenu ; un contenu fixe doit le contourner.
   const underHeader = nativeHeader && Platform.OS === 'ios'
   const bottom = inTabs || bottomBar ? 0 : insets.bottom
+  const stickyTabs = useSharedValue(0)
+  const ownOffset = useSharedValue(0)
+  const headerOffset = scrollOffset ?? ownOffset
+  const headerContext = useMemo(() => ({ docking: stickyTabs, offset: headerOffset }), [stickyTabs, headerOffset])
+  const separator = useDerivedValue(() => scrollEdgeProgress(headerOffset.value) * (1 - stickyTabs.value))
+  const refreshBusy = useRef(false)
   const [refreshing, setRefreshing] = useState(false)
-  const [ownHeaderHeight, setOwnHeaderHeight] = useState(0)
   const refreshControl = onRefresh ? (
     <RefreshControl
       refreshing={refreshing}
@@ -84,11 +95,16 @@ export function Screen({
       colors={[colors.accentInk]}
       progressBackgroundColor={colors.surface}
       onRefresh={() => {
+        if (refreshBusy.current) return
+        refreshBusy.current = true
         setRefreshing(true)
         Promise.resolve()
           .then(onRefresh)
           .catch(() => undefined)
-          .finally(() => setRefreshing(false))
+          .finally(() => {
+            refreshBusy.current = false
+            setRefreshing(false)
+          })
       }}
     />
   ) : undefined
@@ -107,6 +123,11 @@ export function Screen({
       contentInsetAdjustmentBehavior={underHeader ? 'automatic' : 'never'}
       refreshControl={refreshControl}
       {...scrollProps}
+      scrollEventThrottle={scrollProps?.scrollEventThrottle ?? 16}
+      onScroll={(event) => {
+        headerOffset.value = event.nativeEvent.contentOffset.y + event.nativeEvent.contentInset.top
+        scrollProps?.onScroll?.(event)
+      }}
       style={{ flex: 1, backgroundColor: colors.bg }}
       contentContainerStyle={[{ paddingBottom: bottom }, contentStyle]}
     >
@@ -132,24 +153,27 @@ export function Screen({
   // (grand titre qui ne se replie pas, pas d'effet de bord de défilement).
   if (nativeHeader && scroll) {
     return (
-      <ScrollRefreshHost top={headerHeight + tokens.space[4]}>
+      <>
         {scroller}
         {extras}
-      </ScrollRefreshHost>
+      </>
     )
   }
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
-      <ScrollRefreshHost top={ownHeaderHeight + tokens.space[4]}>
-        {!nativeHeader && (
-          <View onLayout={(event) => setOwnHeaderHeight(event.nativeEvent.layout.height)} style={{ paddingTop: insets.top }}>
-            {header}
-          </View>
-        )}
-        {scroll ? scroller : <View style={[{ flex: 1, paddingTop: underHeader ? headerHeight : 0, paddingBottom: bottom }, contentStyle]}>{children}</View>}
-        {extras}
-      </ScrollRefreshHost>
+      <StickyHeaderContext.Provider value={headerContext}>
+        <ScrollEdgeContext.Provider value={headerOffset}>
+          {!nativeHeader && (
+            <View collapsable={false} style={{ paddingTop: insets.top, zIndex: 30, elevation: 1, shadowColor: 'transparent' }}>
+              {header}
+              {header && <HeaderSeparator progress={separator} />}
+            </View>
+          )}
+          {scroll ? scroller : <View style={[{ flex: 1, paddingTop: underHeader ? headerHeight : 0, paddingBottom: bottom }, contentStyle]}>{children}</View>}
+          {extras}
+        </ScrollEdgeContext.Provider>
+      </StickyHeaderContext.Provider>
     </View>
   )
 }

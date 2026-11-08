@@ -14,13 +14,15 @@ import Animated, { useAnimatedReaction, useAnimatedStyle, useDerivedValue, useEv
 import { scheduleOnRN } from 'react-native-worklets'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useReducedMotion } from '../motion'
-import { Segmented } from '../primitives/segmented'
+import { JoutioTabs } from '../primitives/joutio-tabs'
 import { Text } from '../primitives/text'
 import { alpha } from '../theme/color'
 import { HAIRLINE } from '../theme/hairline'
 import { useTheme } from '../theme/theme-provider'
 import { tokens } from '../tokens.generated'
 import { TOP_BAR_HEIGHT } from './mobile-top-bar'
+import { compactHeaderEdge, headerSeparators } from './header-geometry'
+import { HeaderSeparator } from './header-separator'
 import { usePageRefresh } from './page-refresh'
 import { useTransitionDone } from './use-transition-done'
 import { ScrollToTopPill } from './scroll-to-top-pill'
@@ -159,7 +161,7 @@ function Hero({ heroHeight, image, title, eyebrow, centered, intro, scroll, pull
           </Animated.View>
         </View>
       </View>
-      {intro && <View style={{ paddingHorizontal: tokens.space[5], paddingTop: INTRO_PADDING_TOP, paddingBottom: tokens.space[3] }}>{intro}</View>}
+      {intro && <View style={{ paddingHorizontal: tokens.space[5], paddingTop: INTRO_PADDING_TOP, paddingBottom: tokens.space[4] }}>{intro}</View>}
     </View>
   )
 }
@@ -198,6 +200,7 @@ export function CollapsibleTabsScreen<T extends string>({
   const bottomInset = inTabs ? 0 : insets.bottom
   const barHeight = insets.top + TOP_BAR_HEIGHT
   const refresh = usePageRefresh(onRefresh)
+  const headerGeometry = refresh.header
   // L'écran s'ouvre tout de suite : en-tête et onglets d'abord, contenu des pages après l'animation d'entrée.
   const ready = useTransitionDone()
   const [tabBarHeight, setTabBarHeight] = useState(0)
@@ -241,6 +244,9 @@ export function CollapsibleTabsScreen<T extends string>({
   const titleStart = useSharedValue(heroHeight - barHeight)
   const titleLength = useSharedValue(56)
   const progress = useDerivedValue(() => compactBarProgress(scroll.value, titleStart.value, titleLength.value))
+  const separators = useDerivedValue(() => headerSeparators(headerGeometry.value, scroll.value))
+  const topSeparator = useDerivedValue(() => compactHeaderEdge(progress.value) * separators.value.top)
+  const bottomSeparator = useDerivedValue(() => compactHeaderEdge(progress.value) * separators.value.bottom)
   const opaque = useAnimatedStyle(() => ({ opacity: progress.value }))
 
   // Actions principales passées sous la barre : ses icônes prennent le relais (`right(docked)`).
@@ -267,9 +273,15 @@ export function CollapsibleTabsScreen<T extends string>({
     // Déborde d'1 pt sur l'en-tête : couvre la rangée de pixels qu'un en-tête de hauteur fractionnaire laisse transparente.
     <View
       onLayout={(event) => setTabBarHeight(event.nativeEvent.layout.height)}
-      style={{ backgroundColor: colors.bg, marginTop: -1, paddingHorizontal: tokens.space[5], paddingTop: tokens.space[3] + 1, paddingBottom: tokens.space[4] }}
+      style={{
+        backgroundColor: colors.bg,
+        marginTop: -1,
+        paddingHorizontal: tokens.space[5],
+        paddingTop: tokens.space[3] + 1,
+        paddingBottom: tokens.space[3],
+      }}
     >
-      <Segmented
+      <JoutioTabs
         scrollable
         label={tabsLabel}
         options={tabs}
@@ -282,6 +294,7 @@ export function CollapsibleTabsScreen<T extends string>({
           else changeIndex(next)
         }}
       />
+      <HeaderSeparator progress={bottomSeparator} />
     </View>
   )
 
@@ -319,8 +332,6 @@ export function CollapsibleTabsScreen<T extends string>({
         lazy
       />
 
-      {refresh.indicator(barHeight + tokens.space[4])}
-
       {/* « Haut de page » sous les onglets collés, comme sur l'Accueil : toute page longue (Mur, Parties…) en profite. */}
       <ScrollToTopPill scroll={scroll} top={barHeight + tabBarHeight + tokens.space[2]} onPress={() => inner.current?.scrollToTop({ animated: true })} />
 
@@ -343,11 +354,13 @@ export function CollapsibleTabsScreen<T extends string>({
 
       {/* Barre compacte, hors de l'en-tête : fixe en haut de l'écran, elle s'opacifie quand le titre passe dessous. */}
       <ParallaxProgressProvider progress={progress}>
-        <View pointerEvents="box-none" style={{ position: 'absolute', left: 0, right: 0, top: 0, height: barHeight }}>
-          <Animated.View
-            pointerEvents="none"
-            style={[StyleSheet.absoluteFill, { backgroundColor: colors.bg, borderBottomWidth: HAIRLINE, borderBottomColor: colors.border }, opaque]}
-          />
+        <View
+          collapsable={false}
+          pointerEvents="box-none"
+          style={{ position: 'absolute', left: 0, right: 0, top: 0, height: barHeight, zIndex: 30, elevation: 1, shadowColor: 'transparent' }}
+        >
+          <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: colors.bg }, opaque]} />
+          <HeaderSeparator progress={topSeparator} />
           <CompactBarRow title={title} back={back} onBack={onBack} right={rightContent} titleStart={barTitleStart} titleStyle={opaque} />
         </View>
       </ParallaxProgressProvider>

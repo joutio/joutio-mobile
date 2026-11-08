@@ -65,7 +65,7 @@ function Body({ pages, step, onStepChange, onDone, onShare }: UnlockSequenceProp
           gap: tokens.space[3],
           paddingHorizontal: tokens.space[6],
           paddingTop: tokens.space[4],
-          paddingBottom: insets.bottom + tokens.space[3],
+          paddingBottom: insets.bottom + tokens.space[7],
         }}
       >
         <IconButton icon={ShareNetworkIcon} label="Partager" variant="gray" size="L" onPress={onShare} style={{ width: 52, borderRadius: radius.sm }} />

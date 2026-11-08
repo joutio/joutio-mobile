@@ -71,6 +71,7 @@
     "test:search-header": "node tests/search-header.test.cjs",
     "test:api-client": "node tests/api-client.test.cjs",
     "test:refresh": "node tests/scroll-refresh.test.cjs",
+    "test:headers": "node tests/header-separators.test.cjs",
     "test:collapse-slack": "node tests/collapse-slack.test.cjs",
     "doctor": "npx expo-doctor",
     "tokens:sync": "node scripts/sync-tokens.mjs",

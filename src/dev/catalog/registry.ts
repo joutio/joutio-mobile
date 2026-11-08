@@ -4,7 +4,18 @@ import { LoadMoreDemo } from './load-more'
 import type { ComponentType } from 'react'
 import { AvatarDemo, BadgeDemo, ButtonDemo, IconButtonDemo, PillDemo, PremiumBadgeDemo, SkeletonDemo } from './row1'
 import { BottomNavDemo, MobileTopBarDemo, StickyScreenDemo } from './row2'
-import { ChipDemo, FieldDemo, ListRowDemo, MatchRowDemo, PlayerRowDemo, RadioGroupDemo, SearchFieldDemo, SegmentedDemo, SwitchDemo } from './row3'
+import {
+  ChipDemo,
+  FieldDemo,
+  ListRowDemo,
+  MatchRowDemo,
+  PlayerRowDemo,
+  RadioGroupDemo,
+  SearchFieldDemo,
+  JoutioTabsDemo,
+  SegmentedDemo,
+  SwitchDemo,
+} from './row3'
 import { BannerDemo, DialogDemo, MenuDemo, MobileSheetDemo, MobileSheetInputDemo, SheetHeaderDemo, ToastDemo } from './row4'
 import { CategoryTileDemo, CodeInputDemo, LogoDemo, PageDotsDemo, SocialButtonDemo, SplashLogoDemo, TopicCardDemo, TopicRowDemo } from './onboarding'
 import { BadgeFamilyRowDemo, RankLadderDemo, RewardCardDemo, StreakCalendarDemo, StreakDemo, TopicsDonutDemo } from './profile'
@@ -43,6 +54,7 @@ export const CATALOG: CatalogEntry[] = [
   { id: 'match-row', title: 'MatchRow', row: 3, spec: 'components/listes.md', Demo: MatchRowDemo },
   { id: 'radio-group', title: 'RadioGroup', row: 3, spec: 'components/formulaires.md', Demo: RadioGroupDemo },
   { id: 'switch', title: 'Switch', row: 3, spec: 'components/formulaires.md', Demo: SwitchDemo },
+  { id: 'joutio-tabs', title: 'JoutioTabs', row: 3, spec: 'components/navigation.md', Demo: JoutioTabsDemo },
   { id: 'segmented', title: 'Segmented', row: 3, spec: 'components/formulaires.md', Demo: SegmentedDemo },
   { id: 'field', title: 'Field', row: 3, spec: 'components/formulaires.md', Demo: FieldDemo },
   { id: 'search-field', title: 'SearchField', row: 3, spec: 'components/formulaires.md', Demo: SearchFieldDemo },

@@ -1,3 +1,4 @@
+import { ScrollEdgeContext } from './scroll-edge'
 import { haptic } from '../haptics'
 import { requireNativeViewManager } from 'expo-modules-core'
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode, type Ref } from 'react'
@@ -6,7 +7,6 @@ import { createTabList } from 'react-native-collapsible-tabs-native'
 import { useSharedValue, type SharedValue } from 'react-native-reanimated'
 import { useTheme } from '../theme/theme-provider'
 import { withActivePageScrollsToTop } from './tab-page'
-import { useScrollRefreshFeedback } from './scroll-refresh'
 
 export const LOAD_MORE_THRESHOLD = 64
 interface NativeProps extends ViewProps {
@@ -132,7 +132,7 @@ export function DragToLoadMore({ enabled, loading = false, onLoadMore, style, ov
 /** The same native scroll node is shared with FlashList, tabs and TrueSheet. */
 export function LoadMoreScrollView({ ref, ...props }: ScrollViewProps & { ref?: Ref<ScrollViewInstance | null> }) {
   const register = useContext(Context)?.register
-  const refreshProps = useScrollRefreshFeedback(props)
+  const edge = useContext(ScrollEdgeContext)
   const setRef = useCallback(
     (node: ScrollViewInstance | null) => {
       register?.(node ? (findNodeHandle(node) ?? 0) : 0)
@@ -141,6 +141,20 @@ export function LoadMoreScrollView({ ref, ...props }: ScrollViewProps & { ref?: 
     },
     [ref, register],
   )
-  return <ScrollView {...refreshProps} ref={setRef} scrollEventThrottle={props.scrollEventThrottle ?? 16} />
+  return (
+    <ScrollView
+      {...props}
+      ref={setRef}
+      scrollEventThrottle={props.scrollEventThrottle ?? 16}
+      onScroll={
+        edge
+          ? (event) => {
+              edge.value = event.nativeEvent.contentOffset.y + event.nativeEvent.contentInset.top
+              props.onScroll?.(event)
+            }
+          : props.onScroll
+      }
+    />
+  )
 }
 export const TabLoadMoreScrollView = withActivePageScrollsToTop(createTabList(LoadMoreScrollView))
