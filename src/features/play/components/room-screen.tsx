@@ -1,3 +1,4 @@
+import { toast } from '@/design-system'
 import { router, useLocalSearchParams, useIsFocused } from 'expo-router'
 import { useEffect, useRef, useState } from 'react'
 import { Share, View } from 'react-native'
@@ -151,6 +152,12 @@ export function RoomScreen() {
       },
     })
   }
+  useEffect(() => {
+    if (params.fromPush === '1' && (roomStatus in TERMINAL || status?.terminalError)) {
+      toast.info('Ce salon n’est plus disponible')
+      router.replace('/challenges')
+    }
+  }, [params.fromPush, roomStatus, status?.terminalError])
   const close = () => router.back()
 
   if (roomStatus in TERMINAL || status?.terminalError) {

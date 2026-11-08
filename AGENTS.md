@@ -1,7 +1,7 @@
-# AGENTS.md — joutio-mobile-expo
+# AGENTS.md — joutio-mobile
 
 > Réécriture de l'app mobile Joutio **à partir d'une feuille blanche**, cibles **iOS et Android**.
-> La seule référence de design est le lab **`design/`** (workspace) ; l'ancienne app `joutio-mobile`, à archiver,
+> La seule référence de design est le lab **`design/`** (workspace) ; l'ancienne app (retirée le 2026-11-08),
 > n'en est pas une. Le démarrage et la traduction lab → natif suivent **`design/specs/mobile-kit.md`**.
 > Conventions de code : `best-practices/.frontend/`.
 
@@ -32,7 +32,7 @@ Le **catalogue** (`/catalog`, `joutio://catalog`) est réservé au dev (`__DEV__
 Onboarding, écarts assumés :
 
 - **Google et Facebook** (2026-11-04) : SDK natifs `@react-native-google-signin/google-signin` et
-  `react-native-fbsdk-next`, portés de `joutio-mobile` (son `AGENTS.md` § 4 : clients Google Cloud, App Meta,
+  `react-native-fbsdk-next`, portés de l’ancienne app (`docs/legacy-mobile.md` § 4 : clients Google Cloud, App Meta,
   SHA-1 et key hash de la clé `joutio-preview`). Identifiants **publics** par défaut dans `src/lib/config.ts` et
   `app.config.ts` (plugins ajoutés seulement si la connexion est active) ; `EXPO_PUBLIC_*_SIGN_IN_ENABLED=false` les
   masque. Google → `login-with-google` (ID token, audience = client Web) ; Facebook → `login-with-facebook` (iOS :
@@ -187,7 +187,7 @@ Pour itérer sans passer par l'APK de la CI : un dev build installé une fois, p
 - Ensuite `npm start` suffit tant qu'aucun module natif, plugin ou `app.config.ts` ne change ; sinon relancer
   `npm run android:dev` (après `npx expo prebuild --platform android --clean` si un plugin a changé).
 
-**Release (GitHub Actions)** : dépôt public `joutio/joutio-mobile-expo`, workflow `.github/workflows/release.yml`,
+**Release (GitHub Actions)** : dépôt public `joutio/joutio-mobile`, workflow `.github/workflows/release.yml`,
 calqué sur les services : chaque push sur `main` (hors `*.md`) passe le typecheck puis **semantic-release**
 (action partagée `joutio-reusable-workflows/actions/semantic-release`, profil `npm`). Les **commits conventionnels**
 fixent la version : `feat` → mineure, `fix`/`perf` → correctif, `!` ou `BREAKING CHANGE` → majeure ; `docs`, `chore`,
@@ -196,7 +196,7 @@ fixent la version : `feat` → mineure, `fix`/`perf` → correctif, `!` ou `BREA
 l'APK release arm64 (API de production, clé `joutio-preview` : secrets `ANDROID_KEYSTORE_*`, plugin
 `plugins/withAndroidReleaseSigning.js`), nommée `joutio-X.Y.Z.apk`. **Ne jamais changer la version à la main.**
 Jeton : `JOUTIO_GITHUB_TOKEN` s'il existe, sinon le `GITHUB_TOKEN` du workflow (`main` non protégée). Le `versionCode`
-vaut 10 000 000 + `major * 1e6 + minor * 1e3 + patch` (`app.config.ts`), au-dessus de joutio-mobile (1.1.2) : l'APK
+vaut 10 000 000 + `major * 1e6 + minor * 1e3 + patch` (`app.config.ts`), au-dessus de l’ancienne app (1.1.2) : l'APK
 s'installe par-dessus. Le catalogue est la première page tant que `EXPO_PUBLIC_CATALOG` n'est pas `false`. Commits
 sans ligne de co-auteur.
 
@@ -324,3 +324,24 @@ Expo change à chaque SDK. Avant de toucher une API Expo, EAS ou React Native : 
 - Refresh système : SwipeRefreshLayout Android et UIRefreshControl iOS. Android doit recevoir ACTION_DOWN avant la décision de direction ; les gestes horizontaux restent réservés au pager. Les listes externes publient leur scroll via LoadMoreScrollView ; les conteneurs à onglets utilisent leurs événements natifs.
 - Lab aligné pour ces composants, les Toasts (icône/spinner 32 px, deux lignes au plus, pas d’action séparée) et l’en-tête fixe de Sujets. Cet alignement ne vaut pas audit complet de toutes les maquettes.
 - Vérifications : build Android installé sur joutio-pixel ; typage, tests de refresh/en-têtes/mutations/recherche/API et Expo Doctor validés. Lab construit et vérifié sous Chromium, Firefox et WebKit. iOS reste à compiler et valider sur macOS ; nouveau dev build natif requis.
+
+### Push Expo — 2026-11-08
+
+- Canal natif ajouté pour `CHALLENGE_RECEIVED` (dont revanches) et `WIZZ`, Android puis iOS.
+  Runtime racine : synchronisation du token à la connexion, au premier plan et à son renouvellement ;
+  demande de permission uniquement sur action explicite ; aucune bannière/son système au premier plan.
+- `EXPO_PUBLIC_EAS_PROJECT_ID` (ou `extra.eas.projectId`) et `GOOGLE_SERVICES_JSON` configurent le build.
+  Sans projet, aucune inscription distante. En CI : variable `EXPO_PUBLIC_EAS_PROJECT_ID`, secret
+  `GOOGLE_SERVICES_JSON_BASE64`. Nouveau build natif après configuration Firebase.
+- Réglages : état de permission système et accès aux réglages OS ; Revanches est persisté par installation
+  dans le BFF avec rollback en erreur. Rangs/badges reste local et sans livraison push.
+- Déconnexion : révocation bornée avant purge de session, sérialisation des inscriptions ; hors ligne,
+  révocation best-effort. Une réinscription réaffecte le token au nouveau compte.
+- Toucher un push attend l'auth/onboarding, vérifie le destinataire puis ouvre Défis ou Salon.
+  Une invitation expirée ou un salon indisponible renvoie vers Défis. Pas d'URL arbitraire dans le payload.
+- Tests : `npm run test:push`. Activation, identifiants, matrice appareil, limites et iOS :
+  [`docs/push-notifications.md`](docs/push-notifications.md). Livraison réelle non validée sans comptes configurés.
+
+## Remplacement du dépôt (2026-11-08)
+
+Décision utilisateur : supprimer l’ancien dépôt GitHub `joutio/joutio-mobile` et renommer `joutio/joutio-mobile-expo` en `joutio/joutio-mobile`. Le checkout devient `mobile-applications/joutio-mobile`. Le package npm et le slug Expo suivent ce nom ; `com.joutio.app`, le schéma `joutio`, la version et la clé de signature sont conservés. L’historique de la nouvelle app et les changements push en cours sont conservés. Les anciennes notes de configuration sont dans `docs/legacy-mobile.md`. Une sauvegarde locale de l’ancien dépôt est conservée dans `.run/mobile-replacement-2026-11-08/` à la racine du workspace.

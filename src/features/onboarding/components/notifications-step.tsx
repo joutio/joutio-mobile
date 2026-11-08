@@ -1,4 +1,4 @@
-import * as Notifications from 'expo-notifications'
+import { requestPushPermission } from '@/features/notifications/lib/expo-push'
 import { router } from 'expo-router'
 import { useState } from 'react'
 import { View } from 'react-native'
@@ -23,7 +23,7 @@ export function NotificationsStep() {
   const enable = async () => {
     setAsking(true)
     try {
-      await Notifications.requestPermissionsAsync()
+      await requestPushPermission()
     } catch {
       // Refus ou indisponible : le réglage reste modifiable plus tard.
     } finally {

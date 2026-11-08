@@ -11,7 +11,7 @@ export const config = {
   /** Site public : conditions d'utilisation et confidentialité. */
   siteUrl: trim(process.env.EXPO_PUBLIC_SITE_URL ?? 'https://joutio.com'),
   /**
-   * Connexions sociales (identifiants **publics**, repris de joutio-mobile `AGENTS.md` § 4). `*_SIGN_IN_ENABLED=false`
+   * Connexions sociales (identifiants **publics**, repris de l’ancienne app, `docs/legacy-mobile.md` § 4). `*_SIGN_IN_ENABLED=false`
    * les masque ; un identifiant vide aussi. Les secrets restent côté identity.
    */
   googleSignInEnabled: process.env.EXPO_PUBLIC_GOOGLE_SIGN_IN_ENABLED !== 'false',

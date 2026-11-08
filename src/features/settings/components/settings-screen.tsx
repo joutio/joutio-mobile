@@ -1,4 +1,6 @@
 import { router } from 'expo-router'
+import { PushPermissionRow } from '@/features/notifications/components/push-permission-row'
+import { usePushRematches } from '@/features/notifications/hooks/use-push-preferences'
 import * as WebBrowser from 'expo-web-browser'
 import { useState } from 'react'
 import { View } from 'react-native'
@@ -71,6 +73,7 @@ export function SettingsScreen() {
   const logout = useLogout()
   const autoTrain = useAutoTrain()
   const device = useDeviceSettings()
+  const rematches = usePushRematches()
   const appearance = useThemeStore((state) => state.preference)
   const setAppearance = useThemeStore((state) => state.setPreference)
   const language = useUpdateMe('language')
@@ -198,6 +201,7 @@ export function SettingsScreen() {
 
       <Section title="Notifications">
         <ListGroup surface="surface">
+          <PushPermissionRow />
           <ListRow
             icon={LightningIcon}
             label="Défis et salons"
@@ -211,7 +215,8 @@ export function SettingsScreen() {
             label="Revanches"
             control="toggle"
             on={device.notifyRematches}
-            onToggle={(notifyRematches) => device.set({ notifyRematches })}
+            disabled={rematches.isPending}
+            onToggle={(enabled) => rematches.mutate(enabled)}
           />
           <ListRow
             icon={MedalIcon}

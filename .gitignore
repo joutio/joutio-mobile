@@ -51,3 +51,6 @@ yarn-error.*
 
 # Réglages locaux de l’agent
 .claude/
+
+# Firebase Android (fourni au build)
+google-services.json

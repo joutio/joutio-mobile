@@ -11,6 +11,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { Banner, Button, DialogHost, ThemeProvider, ToastHost, tokens, useJoutioFonts, useTheme } from '@/design-system'
 import { LaunchScreen, SessionRuntime, useLogout, useSessionStore } from '@/features/auth'
 import { useMe } from '@/features/me'
+import { ExpoPushRuntime } from '@/features/notifications/components/expo-push-runtime'
 import { registerDevMenu } from '@/dev/dev-menu'
 import { config } from '@/lib/config'
 import { useEntryStore } from '@/shared/stores/entry-store'
@@ -87,6 +88,7 @@ function Root() {
       <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
       <SessionRuntime />
       <Navigation />
+      <ExpoPushRuntime />
       <ToastHost />
       <DialogHost />
     </>

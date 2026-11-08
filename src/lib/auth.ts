@@ -15,6 +15,14 @@ let refreshPromise: Promise<void> | null = null
 let restorePromise: Promise<SessionRestoreResult> | null = null
 
 type SessionEndedListener = (reason: SessionEndReason) => void
+const beforeSessionClear = new Set<(reason?: SessionEndReason) => Promise<void>>()
+export function onBeforeSessionClear(listener: (reason?: SessionEndReason) => Promise<void>): () => void {
+  beforeSessionClear.add(listener)
+  return () => {
+    beforeSessionClear.delete(listener)
+  }
+}
+
 const sessionEndedListeners = new Set<SessionEndedListener>()
 
 export interface SessionRestoreResult {
@@ -314,6 +322,9 @@ export function restoreSession(): Promise<SessionRestoreResult> {
  */
 export async function clearSession(reason?: SessionEndReason): Promise<void> {
   const hadSession = Boolean(accessToken || refreshToken || userId)
+
+  refreshToken = null // Interdit à un refresh en vol de restaurer la session pendant la révocation push.
+  await Promise.allSettled([...beforeSessionClear].map((listener) => listener(reason)))
 
   accessToken = null
   refreshToken = null

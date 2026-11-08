@@ -2,13 +2,13 @@ import type { ConfigContext, ExpoConfig } from 'expo/config'
 import packageJson from './package.json'
 import tokens from './src/design-system/tokens.generated.json'
 
-/** Identifiant définitif côté stores (joutio-mobile est archivé). */
+/** Identifiant définitif côté stores, conservé lors du remplacement de l’ancienne app. */
 const APP_ID = 'com.joutio.app'
 
 const [major = 1, minor = 0, patch = 0] = packageJson.version.split('.').map((part) => Number.parseInt(part, 10) || 0)
 /**
  * `versionCode` Android : 10 000 000 + `major * 1e6 + minor * 1e3 + patch`, strictement croissant. Le décalage le
- * place au-dessus de joutio-mobile (1.1.2 = 1 001 002) : la nouvelle app s'installe par-dessus l'ancienne.
+ * place au-dessus de l’ancienne app (1.1.2 = 1 001 002) : la nouvelle app s'installe par-dessus l'ancienne.
  */
 const VERSION_CODE = Number(process.env.ANDROID_VERSION_CODE ?? 10_000_000 + major * 1_000_000 + minor * 1_000 + patch)
 
@@ -44,8 +44,16 @@ const socialPlugins: NonNullable<ExpoConfig['plugins']> = [
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: 'Joutio',
-  slug: 'joutio-mobile-expo',
+  slug: 'joutio-mobile',
+  owner: 'joutio-organization',
   version: packageJson.version,
+  extra: {
+    ...config.extra,
+    eas: {
+      ...config.extra?.eas,
+      projectId: process.env.EXPO_PUBLIC_EAS_PROJECT_ID || '7a0a8f58-6662-486f-a2d3-2e92f8eb83a2',
+    },
+  },
   scheme: 'joutio',
   orientation: 'portrait',
   icon: './assets/icon.png',
@@ -57,6 +65,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   android: {
     package: APP_ID,
+    ...(process.env.GOOGLE_SERVICES_JSON ? { googleServicesFile: process.env.GOOGLE_SERVICES_JSON } : {}),
     versionCode: VERSION_CODE,
     adaptiveIcon: {
       backgroundColor: tokens.color.dark.bg,
