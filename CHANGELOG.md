@@ -1,3 +1,9 @@
+## [1.21.1](https://github.com/joutio/joutio-mobile-expo/compare/v1.21.0...v1.21.1) (2026-11-08)
+
+### Bug Fixes
+
+* **mobile:** restore native refresh and harmonize navigation chrome ([b7b24d1](https://github.com/joutio/joutio-mobile-expo/commit/b7b24d195546e03062f49c8f1eb8bf24a7831ab9))
+
 ## [1.21.0](https://github.com/joutio/joutio-mobile-expo/compare/v1.20.1...v1.21.0) (2026-11-07)
 
 ### Features
