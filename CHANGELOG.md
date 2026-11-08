@@ -1,3 +1,9 @@
+## [1.23.0](https://github.com/joutio/joutio-mobile/compare/v1.22.0...v1.23.0) (2026-11-08)
+
+### Features
+
+* **notifications:** route mobile alerts and restrict catalog to admins ([3bfb253](https://github.com/joutio/joutio-mobile/commit/3bfb253c6804579f7c5bbc5ce6452813a5decc68))
+
 ## [1.22.0](https://github.com/joutio/joutio-mobile/compare/v1.21.1...v1.22.0) (2026-11-08)
 
 ### Features
