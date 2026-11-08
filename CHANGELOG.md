@@ -1,3 +1,9 @@
+## [1.22.0](https://github.com/joutio/joutio-mobile/compare/v1.21.1...v1.22.0) (2026-11-08)
+
+### Features
+
+* **notifications:** enable Expo push and adopt joutio-mobile name ([b696f99](https://github.com/joutio/joutio-mobile/commit/b696f99baae75d9dcc9a14433fb1b973c537d5a4))
+
 ## [1.21.1](https://github.com/joutio/joutio-mobile/compare/v1.21.0...v1.21.1) (2026-11-08)
 
 ### Bug Fixes
