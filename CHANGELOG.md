@@ -1,3 +1,9 @@
+## [1.25.0](https://github.com/joutio/joutio-mobile/compare/v1.24.0...v1.25.0) (2026-11-09)
+
+### Features
+
+* align mobile authoring and report moderation flows ([f2289e2](https://github.com/joutio/joutio-mobile/commit/f2289e2689d5819ab6cdb74212e71c08c70463c7))
+
 ## [1.24.0](https://github.com/joutio/joutio-mobile/compare/v1.23.0...v1.24.0) (2026-11-08)
 
 ### Features
