@@ -1,3 +1,4 @@
+import { useWorkshopNavigation } from '../hooks/use-workshop-navigation'
 import { router, useLocalSearchParams } from 'expo-router'
 import { useEffect, useState } from 'react'
 import { View } from 'react-native'
@@ -55,6 +56,7 @@ const reasonsOf = (item: ReportedQuestion) => reasonsLabel([...new Set(item.repo
  * valider contient les questions du créateur lui-même (toute question naît en attente).
  */
 export function ModerationScreen() {
+  const { inTabs, base } = useWorkshopNavigation()
   const params = useLocalSearchParams<{ id: string; name?: string; tab?: string }>()
   const topicId = params.id
   const me = useMe(true)
@@ -62,14 +64,12 @@ export function ModerationScreen() {
   const questions = useTopicQuestions(topicId)
   const reports = useTopicReports(topicId, workshop.permissions?.canManage ? questions.data : undefined)
   const moderate = useModerateQuestion(topicId)
-  const dismiss = useDismissReports(topicId)
   const [tab, setTab] = useState<Tab>(params.tab === 'reports' ? 'reports' : 'pending')
   useEffect(() => {
     if (params.tab === 'reports') setTab('reports')
   }, [params.tab])
   const [rejecting, setRejecting] = useState<QuestionEditorView>()
   const [reason, setReason] = useState('')
-  const [report, setReport] = useState<ReportedQuestion>()
   const [pendingPages, setPendingPages] = useState(1)
   const [reportPages, setReportPages] = useState(1)
 
@@ -150,7 +150,7 @@ export function ModerationScreen() {
                   label={questionText(item.question)}
                   sub={`${reasonsOf(item)} · ${item.reports.length} signaleur${item.reports.length > 1 ? 's' : ''}`}
                   control="chevron"
-                  onPress={() => setReport(item)}
+                  onPress={() => router.push({ pathname: `${base}/reports/[reportId]`, params: { id: topicId, reportId: item.reports[0]!.reportId } })}
                   last={index === shownReports.length - 1}
                 />
               ))}
@@ -162,18 +162,18 @@ export function ModerationScreen() {
     </DragToLoadMore>
   )
 
-  const comments = report?.reports.map((item) => item.comment?.trim()).filter((comment): comment is string => Boolean(comment)) ?? []
+
 
   if (workshop.isError || questions.isError)
     return (
       <Screen
-        inTabs
+        inTabs={inTabs}
         header={
           <MobileTopBar
             variant="inline"
             title="Modération"
             back="Sujet"
-            onBack={() => router.replace({ pathname: '/profile/topics/[id]', params: { id: topicId } })}
+            onBack={() => router.dismissTo({ pathname: base, params: { id: topicId } })}
           />
         }
       >
@@ -192,13 +192,13 @@ export function ModerationScreen() {
   if (!workshop.permissions?.canManage)
     return (
       <Screen
-        inTabs
+        inTabs={inTabs}
         header={
           <MobileTopBar
             variant="inline"
             title="Mes propositions"
             back="Sujet"
-            onBack={() => router.replace({ pathname: '/profile/topics/[id]', params: { id: topicId } })}
+            onBack={() => router.dismissTo({ pathname: base, params: { id: topicId } })}
           />
         }
       >
@@ -217,13 +217,13 @@ export function ModerationScreen() {
 
   return (
     <Screen
-      inTabs
+      inTabs={inTabs}
       scroll={false}
       header={
         <MobileTopBar
           variant="inline"
           back="Sujet"
-          onBack={() => router.replace({ pathname: '/profile/topics/[id]', params: { id: topicId } })}
+          onBack={() => router.dismissTo({ pathname: base, params: { id: topicId } })}
           title="Modération"
         />
       }
@@ -259,49 +259,7 @@ export function ModerationScreen() {
               onChangeText={setReason}
             />
           </MobileSheet>
-          <MobileSheet
-            open={report !== undefined}
-            onClose={() => setReport(undefined)}
-            title="Signalement"
-            subtitle={report ? reasonsOf(report) : undefined}
-            footer={
-              report && (
-                <View style={{ gap: tokens.space[2] }}>
-                  <Button
-                    full
-                    icon={PencilSimpleIcon}
-                    onPress={() => {
-                      const question = report.question
-                      setReport(undefined)
-                      openQuestionEditor(topicId, numberOf(question), question.questionId, true)
-                    }}
-                  >
-                    Modifier la question
-                  </Button>
-                  <Button
-                    full
-                    variant="gray"
-                    tone="neutral"
-                    loading={dismiss.isPending}
-                    onPress={() => dismiss.mutate(report.question.questionId, { onSuccess: () => setReport(undefined) })}
-                  >
-                    Clore sans modifier
-                  </Button>
-                </View>
-              )
-            }
-          >
-            {report && (
-              <View style={{ gap: tokens.space[3] }}>
-                <Text variant="headline">{questionText(report.question)}</Text>
-                {comments.map((comment, index) => (
-                  <Text key={`${index}-${comment}`} variant="callout" color="muted">
-                    {comment}
-                  </Text>
-                ))}
-              </View>
-            )}
-          </MobileSheet>
+
         </>
       }
     >

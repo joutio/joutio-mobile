@@ -116,7 +116,6 @@ export function SearchField({
             hitSlop={13}
             onPress={() => {
               onChange('')
-              input.current?.focus()
             }}
           >
             <XCircleIcon size={18} weight="fill" color={colors.muted} />

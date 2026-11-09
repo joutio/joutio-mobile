@@ -113,7 +113,10 @@ export function QuestionEditorScreen() {
   const onSave = () => {
     const operations = buildQuestionPlan(original, draft)
     if (operations.length === 0) return router.back()
-    save.mutate({ questionId, operations, resolveReports: params.resolveReports === '1' }, { onSuccess: () => router.back() })
+    save.mutate({ questionId, operations, resolveReports: params.resolveReports === '1' }, { onSuccess: (result) => {
+      if (params.reportStack && result.reportsResolved) router.dismissTo({ pathname: params.reportStack === 'profile' ? '/profile/topics/[id]/moderation' : '/workshop/[id]/moderation', params: { id: topicId, tab: 'reports' } })
+      else router.back()
+    } })
   }
 
   if (questionId && (questions.isError || (!questions.isPending && !original)))

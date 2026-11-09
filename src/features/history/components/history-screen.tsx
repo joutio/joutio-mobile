@@ -3,6 +3,8 @@ import { router, useLocalSearchParams } from 'expo-router'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { View } from 'react-native'
 import {
+  ArrowsDownUpIcon,
+  Chip,
   Button,
   DragToLoadMore,
   EmptyState,
@@ -28,7 +30,7 @@ import type { GameHistoryItemView, GameOutcome } from '@/shared/types/bff'
 import { topicName } from '@/shared/utils/topic-name'
 import { useHistoryGames } from '../hooks/use-history'
 import { DEFAULT_HISTORY_FILTERS, type HistoryFilterState } from '../lib/history-service'
-import { HistoryFiltersSheet } from './history-filters-sheet'
+import { HistoryFiltersSheet, HISTORY_SORTS } from './history-filters-sheet'
 import { feedFooterProps, pagedQuery } from '@/shared/utils/paging'
 import { useRefreshActive } from '@/shared/hooks/use-refresh-active'
 
@@ -149,6 +151,14 @@ export function HistoryScreen() {
       }
       contentStyle={{ flex: 1 }}
     >
+      {!list.isPending && !list.isError && (
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: tokens.space[3], paddingHorizontal: GUTTER, paddingBottom: tokens.space[2] }}>
+                <Text variant="callout" color="muted">{countLabel(count)}</Text>
+                <Chip icon={ArrowsDownUpIcon} onPress={() => setSheetOpen(true)}>
+                  {HISTORY_SORTS.find((option) => option.value === filterState.sort)?.label ?? ''}
+                </Chip>
+              </View>
+      )}
       {list.isPending ? (
         <Loading />
       ) : list.isError && !list.data ? (
@@ -196,11 +206,6 @@ export function HistoryScreen() {
             keyExtractor={(group) => group.day}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ paddingTop: tokens.space[3], paddingBottom: tokens.space[7] }}
-            ListHeaderComponent={
-              <Text variant="caption" weight="600" color="muted" style={{ paddingHorizontal: GUTTER, paddingBottom: tokens.space[2] }}>
-                {countLabel(count)}
-              </Text>
-            }
             ListFooterComponent={
               <FeedFooter style={{ marginHorizontal: GUTTER }} {...feedFooterProps(pagedQuery(list))} endLabel="Tu as vu toutes tes parties" />
             }

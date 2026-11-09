@@ -42,6 +42,7 @@ function AppNavigation() {
       <SafeAreaInsetsContext.Provider value={banner || bannerGame ? { ...insets, top: 0 } : insets}>
         <Stack screenOptions={nativeHeaderOptions(theme)}>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="workshop" options={{ headerShown: false }} />
           {/* Salon : page classique avec retour. Matchmaking et duel gardent leur présentation immersive. */}
           <Stack.Screen name="room/[roomId]" options={{ headerShown: false, presentation: 'card' }} />
           <Stack.Screen name="matchmaking/[ticketId]" options={{ headerShown: false, animation: 'fade', gestureEnabled: false }} />

@@ -9,10 +9,17 @@ import type { Language, PageResponse, TopicCardView, TopicOverviewView, HomeView
 import type { InfiniteData } from '@tanstack/react-query'
 import type { TopicPage } from '@/features/topics/lib/topics-service'
 
-import type { OwnerQuestionReport, QuestionEditorView } from '../domain/authoring'
+import type { OwnerQuestionReport, ReportDetail, QuestionEditorView } from '../domain/authoring'
 import { limitsFor, type LimitReason } from '../domain/limits'
 import type { QuestionOperation } from '../domain/question-draft'
 import { authoringService } from '../lib/authoring-service'
+
+function closeCachedReports(client: QueryClient, topicId: string, questionId: string, status: 'RESOLVED' | 'DISMISSED') {
+  client.setQueriesData<ReportDetail>({ queryKey: ['authoring', topicId, 'report-detail'] }, (detail) =>
+    detail?.questionId === questionId && detail.report.status === 'OPEN' ? { ...detail, report: { ...detail.report, status } } : detail)
+  client.setQueryData<OwnerQuestionReport[]>(['authoring', topicId, 'question-reports', questionId], (items) =>
+    items?.map((report) => report.status === 'OPEN' ? { ...report, status } : report))
+}
 
 const retryHint = { description: 'Vérifie ta connexion, puis réessaie.' }
 
@@ -243,6 +250,7 @@ export function useSaveQuestion(topicId: string) {
       })
       const reportTransaction = resolveReports
         ? await optimisticUpdate(client, [['authoring']], () => {
+            closeCachedReports(client, topicId, localId, 'RESOLVED')
             patchQuestion(client, topicId, localId, (question) => ({ ...question, openReportCount: 0 }))
             client.setQueriesData<ReportedQuestion[]>({ queryKey: queryKeys.authoring.reports(topicId) }, (items) =>
               items?.filter((item) => item.question.questionId !== localId),
@@ -335,6 +343,7 @@ export function useDismissReports(topicId: string) {
     mutationFn: (questionId: string) => authoringService.resolveReports(questionId, 'DISMISSED'),
     onMutate: (questionId: string) =>
       optimisticUpdate(client, [['authoring']], () => {
+        closeCachedReports(client, topicId, questionId, 'DISMISSED')
         patchQuestion(client, topicId, questionId, (question) => ({ ...question, openReportCount: 0 }))
         client.setQueriesData<ReportedQuestion[]>({ queryKey: queryKeys.authoring.reports(topicId) }, (items) =>
           items?.filter((item) => item.question.questionId !== questionId),

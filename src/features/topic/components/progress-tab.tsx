@@ -30,7 +30,9 @@ export function ProgressTab({ overview }: { overview: TopicOverviewView }) {
               tier={tier}
               title={label(tier)}
               progress={
-                !earned && progress && index > 0
+                !earned && index === 0
+                  ? { value: 0, label: '1 partie restante' }
+                  : !earned && progress && index > 0
                   ? {
                       value: Math.min(100, (progress.xp / MASTERY_XP[tier]) * 100),
                       label: `${formatNumber(Math.max(0, MASTERY_XP[tier] - progress.xp))} XP restants`,

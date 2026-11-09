@@ -1,3 +1,5 @@
+import { useRef } from 'react'
+import { haptic } from '@/design-system/haptics'
 import { router } from 'expo-router'
 import { RefreshControl, View } from 'react-native'
 import {
@@ -40,6 +42,7 @@ const awaiting = (item: NotificationView) => item.type === 'CHALLENGE_RECEIVED' 
  * (confirmé) dans la barre ; balayer une ligne la supprime.
  */
 export function NotificationsScreen() {
+  const refreshingManually = useRef(false)
   const { colors } = useTheme()
   const userId = useMe(true).data?.userId ?? ''
   const list = useNotifications()
@@ -101,7 +104,7 @@ export function NotificationsScreen() {
         <LoadMoreScrollView
           contentContainerStyle={{ flexGrow: 1, paddingBottom: tokens.space[7] }}
           refreshControl={
-            <RefreshControl refreshing={list.isRefetching && !list.isFetchingNextPage} onRefresh={() => void list.refetch()} tintColor={colors.muted} />
+            <RefreshControl refreshing={list.isRefetching && !list.isFetchingNextPage} onRefresh={() => { if (refreshingManually.current) return; refreshingManually.current = true; haptic('light'); void list.refetch().finally(() => { refreshingManually.current = false }) }} tintColor={colors.muted} />
           }
         >
           {list.isPending ? (

@@ -444,3 +444,20 @@ test('accepted challenge rooms remain reachable for both players, terminal rooms
     ['0', '1'],
   )
 })
+
+test('closing question reports updates detail and grouped views together and restores them on failure', async () => {
+  const h = harness()
+  const questionId = 'q'
+  const detailKey = ['authoring', 't', 'report-detail', 'r']
+  const reportsKey = ['authoring', 't', 'question-reports', questionId]
+  const report = { reportId: 'r', status: 'OPEN' }
+  h.client.setQueryData(detailKey, { questionId, report })
+  h.client.setQueryData(reportsKey, [report, { reportId: 'old', status: 'RESOLVED' }])
+  const mutation = h.load('@/features/authoring/hooks/use-authoring').useDismissReports('t')
+  const context = await mutation.onMutate(questionId)
+  assert.equal(h.client.getQueryData(detailKey).report.status, 'DISMISSED')
+  assert.deepEqual(h.client.getQueryData(reportsKey).map(item => item.status), ['DISMISSED', 'RESOLVED'])
+  mutation.onError(Error('offline'), questionId, context)
+  assert.equal(h.client.getQueryData(detailKey).report.status, 'OPEN')
+  assert.equal(h.client.getQueryData(reportsKey)[0].status, 'OPEN')
+})

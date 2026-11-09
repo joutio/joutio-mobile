@@ -10,6 +10,8 @@ import { tokens } from '../tokens.generated'
 import { MobileTopBar } from './mobile-top-bar'
 
 export interface SearchHeaderProps {
+  titleBar?: ReactNode
+  searchVisible?: boolean
   title: string
   value: string
   onChange: (value: string) => void
@@ -31,6 +33,8 @@ const FILTER_OUT = FadeOutRight.duration(250).easing(EASING)
 /** Joutio controls throughout: one input, a collapsing title and Cancel in place of the filter. */
 export function SearchHeader({
   title,
+  titleBar,
+  searchVisible = true,
   value,
   onChange,
   placeholder,
@@ -114,7 +118,7 @@ export function SearchHeader({
       <Animated.View layout={reduced ? undefined : LAYOUT} style={{ overflow: 'hidden' }}>
         {!searching && (
           <Animated.View entering={reduced ? undefined : TITLE_IN} exiting={reduced ? undefined : TITLE_OUT} pointerEvents={searching ? 'none' : 'auto'}>
-            <MobileTopBar
+            {titleBar ?? <MobileTopBar
               title={title}
               right={
                 <>
@@ -124,11 +128,11 @@ export function SearchHeader({
                   {notifications}
                 </>
               }
-            />
+            />}
           </Animated.View>
         )}
       </Animated.View>
-      <Animated.View
+      {searchVisible && <Animated.View
         layout={reduced ? undefined : LAYOUT}
         style={{ flexDirection: 'row', alignItems: 'center', gap: tokens.space[3], paddingHorizontal: tokens.space[5], paddingVertical: tokens.space[3] }}
       >
@@ -157,7 +161,7 @@ export function SearchHeader({
             />
           </Animated.View>
         )}
-      </Animated.View>
+      </Animated.View>}
     </Animated.View>
   )
 }

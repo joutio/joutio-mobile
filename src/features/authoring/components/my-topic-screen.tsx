@@ -1,3 +1,4 @@
+import { useWorkshopNavigation } from '../hooks/use-workshop-navigation'
 import { router, useLocalSearchParams } from 'expo-router'
 import { useState } from 'react'
 import { View } from 'react-native'
@@ -64,6 +65,7 @@ export interface MyTopicRouteParams {
  * brouillon a la barre « Publier », active à 7 questions approuvées.
  */
 export function MyTopicScreen() {
+  const { inTabs, base } = useWorkshopNavigation()
   const params = useLocalSearchParams<MyTopicRouteParams>()
   const topicId = params.id
   const { topic, permissions, isError, refetch } = useMyTopic(topicId)
@@ -116,7 +118,7 @@ export function MyTopicScreen() {
 
   if (isError)
     return (
-      <Screen inTabs header={<MobileTopBar variant="inline" title="Sujet" back="Retour" onBack={() => router.back()} />}>
+      <Screen inTabs={inTabs} header={<MobileTopBar variant="inline" title="Sujet" back="Retour" onBack={() => router.back()} />}>
         <Text>Le sujet est indisponible ou tu ne fais plus partie de son équipe.</Text>
         <Button onPress={() => void refetch()}>Réessayer</Button>
       </Screen>
@@ -125,7 +127,7 @@ export function MyTopicScreen() {
     <View style={{ flex: 1 }}>
       <ParallaxScreen
         onRefresh={pageRefresh.refresh}
-        inTabs
+        inTabs={inTabs}
         barTitleStart
         image={imageUrl}
         title={name}
@@ -148,6 +150,26 @@ export function MyTopicScreen() {
                 </Text>
               )}
             </View>
+          ) : !draft && permissions?.canManage ? (
+            <Button
+              full
+              size="L"
+              loading={draftTopic.isPending}
+              variant="gray"
+              tone="neutral"
+              onPress={() =>
+                showDialog({
+                  title: 'Repasser en brouillon ?',
+                  message: 'Les nouveaux départs de partie seront bloqués.',
+                  actions: [
+                    { label: 'Confirmer', onPress: () => draftTopic.mutate() },
+                    { label: 'Annuler', variant: 'plain' },
+                  ],
+                })
+              }
+            >
+              Repasser en brouillon
+            </Button>
           ) : undefined
         }
       >
@@ -188,43 +210,26 @@ export function MyTopicScreen() {
                 label="Questions"
                 control="chevron"
                 value={draft ? `${approved} / ${MIN_QUESTIONS}` : String(list.length || approved)}
-                onPress={() => router.push({ pathname: '/profile/topics/[id]/questions', params: { id: topicId, name } })}
+                onPress={() => router.push({ pathname: `${base}/questions`, params: { id: topicId, name } })}
               />
               <ListRow
                 icon={UsersThreeIcon}
                 label="Équipe"
                 control="chevron"
                 value={String(team.data?.length ?? 1)}
-                onPress={() => router.push({ pathname: '/profile/topics/[id]/team', params: { id: topicId, name } })}
+                onPress={() => router.push({ pathname: `${base}/team`, params: { id: topicId, name } })}
               />
               <ListRow
                 icon={ShieldCheckIcon}
                 label="Modération"
                 control="chevron"
                 value={String(pending + reported)}
-                onPress={() => router.push({ pathname: '/profile/topics/[id]/moderation', params: { id: topicId, name } })}
+                onPress={() => router.push({ pathname: `${base}/moderation`, params: { id: topicId, name } })}
                 last
               />
             </ListGroup>
           </View>
-          {!draft && permissions?.canManage && (
-            <Button
-              variant="gray"
-              tone="neutral"
-              onPress={() =>
-                showDialog({
-                  title: 'Repasser en brouillon ?',
-                  message: 'Les nouveaux départs de partie seront bloqués.',
-                  actions: [
-                    { label: 'Confirmer', onPress: () => draftTopic.mutate() },
-                    { label: 'Annuler', variant: 'plain' },
-                  ],
-                })
-              }
-            >
-              Repasser en brouillon
-            </Button>
-          )}
+
         </View>
       </ParallaxScreen>
 

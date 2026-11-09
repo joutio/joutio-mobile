@@ -15,7 +15,7 @@ const OUTCOMES: { value: HistoryOutcome; label: string }[] = [
   { value: 'DRAW', label: 'Nuls' },
 ]
 
-const SORTS: { value: HistorySort; label: string }[] = [
+export const HISTORY_SORTS: { value: HistorySort; label: string }[] = [
   { value: 'RECENT', label: 'Plus récentes' },
   { value: 'OLDEST', label: 'Plus anciennes' },
 ]
@@ -93,14 +93,14 @@ export function HistoryFiltersSheet({ open, onClose, filters, onChange, onReset,
           <SectionHeader title="Tri" />
           <ListGroup>
             <RadioGroup label="Tri">
-              {SORTS.map((option, index) => (
+              {HISTORY_SORTS.map((option, index) => (
                 <ListRow
                   key={option.value}
                   label={option.label}
                   control="radio"
                   on={filters.sort === option.value}
                   onToggle={() => onChange({ sort: option.value })}
-                  last={index === SORTS.length - 1}
+                  last={index === HISTORY_SORTS.length - 1}
                 />
               ))}
             </RadioGroup>

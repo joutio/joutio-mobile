@@ -1,3 +1,4 @@
+import { useWorkshopNavigation } from '../hooks/use-workshop-navigation'
 import { router, useLocalSearchParams } from 'expo-router'
 import { useMemo, useState } from 'react'
 import { View } from 'react-native'
@@ -20,10 +21,9 @@ import {
   ProhibitIcon,
   RadioGroup,
   Screen,
-  SearchField,
+  SearchHeader,
   SectionHeader,
   Skeleton,
-  SlidersHorizontalIcon,
   Text,
   tokens,
   useTheme,
@@ -78,10 +78,10 @@ export interface QuestionsRouteParams {
 }
 
 /** Ouvre l'éditeur de question en modale (création sans `questionId`). */
-export function openQuestionEditor(topicId: string, number: number, questionId?: string, resolveReports = false) {
+export function openQuestionEditor(topicId: string, number: number, questionId?: string, resolveReports = false, reportStack?: string) {
   router.push({
     pathname: '/question-editor',
-    params: { topicId, number: String(number), questionId: questionId ?? '', resolveReports: resolveReports ? '1' : '' },
+    params: { topicId, number: String(number), questionId: questionId ?? '', resolveReports: resolveReports ? '1' : '', reportStack },
   })
 }
 
@@ -122,6 +122,7 @@ function FilterOptions<T extends string>({
  * Tous les titres ; repère du minimum pour publier (brouillon) ou du plafond (publié). 10 par page.
  */
 export function QuestionsScreen() {
+  const { inTabs } = useWorkshopNavigation()
   const params = useLocalSearchParams<QuestionsRouteParams>()
   const topicId = params.id
   const { topic } = useMyTopic(topicId)
@@ -169,39 +170,25 @@ export function QuestionsScreen() {
   }
 
   const header = (
-    <View>
-      <MobileTopBar
-        variant="inline"
-        back="Sujet"
-        onBack={() => router.back()}
-        title="Questions"
-        right={<IconButton icon={PlusIcon} label="Ajouter une question" variant="plain" tone="accent" disabled={atCeiling} onPress={add} />}
-      />
-      {count > 0 && (
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: tokens.space[3],
-            paddingHorizontal: GUTTER,
-            paddingTop: tokens.space[2],
-            paddingBottom: tokens.space[3],
-          }}
-        >
-          <View style={{ flex: 1 }}>
-            <SearchField value={query} onChange={(next) => change(() => setQuery(next))} placeholder="Chercher une question" label="Chercher une question" />
-          </View>
-          <IconButton
-            icon={SlidersHorizontalIcon}
-            label="Filtrer les questions"
-            variant="gray"
-            tone="neutral"
-            badge={filterActive ? 'dot' : undefined}
-            onPress={() => setFilterOpen(true)}
-          />
-        </View>
-      )}
-    </View>
+    <SearchHeader
+      title="Questions"
+      titleBar={
+        <MobileTopBar
+          variant="inline"
+          back="Sujet"
+          onBack={() => router.back()}
+          title="Questions"
+          right={<IconButton icon={PlusIcon} label="Ajouter une question" variant="plain" tone="accent" disabled={atCeiling} onPress={add} />}
+        />
+      }
+      searchVisible={count > 0}
+      value={query}
+      onChange={(next) => change(() => setQuery(next))}
+      placeholder="Chercher une question"
+      filterLabel="Filtrer les questions"
+      filterDot={filterActive}
+      onFilter={() => setFilterOpen(true)}
+    />
   )
 
   const empty = () => {
@@ -261,7 +248,7 @@ export function QuestionsScreen() {
 
   return (
     <Screen
-      inTabs
+      inTabs={inTabs}
       header={header}
       loadMore={loadMoreOptions(source)}
       onRefresh={() => questions.refetch()}

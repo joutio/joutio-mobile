@@ -12,9 +12,8 @@ import {
   IconButton,
   LightningIcon,
   ParallaxIconButton,
-  PencilSimpleIcon,
   ShareNetworkIcon,
-  ShieldCheckIcon,
+  PencilSimpleIcon,
   Skeleton,
   ProgressBar,
   Stat,
@@ -189,9 +188,9 @@ export function TopicScreen({ stack = 'home' }: { stack?: TopicStack }) {
             )}
             {overview.data?.permissions?.canContribute && (
               <ParallaxIconButton
-                icon={ShieldCheckIcon}
-                label="Modération"
-                onPress={() => router.push({ pathname: '/profile/topics/[id]/moderation', params: { id: topicId } })}
+                icon={PencilSimpleIcon}
+                label="Modifier le sujet"
+                onPress={() => router.push({ pathname: '/workshop/[id]', params: { id: topicId } })}
               />
             )}
             <ParallaxIconButton icon={ShareNetworkIcon} label="Partager" onPress={share} />

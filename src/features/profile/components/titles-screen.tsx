@@ -2,6 +2,8 @@ import { router } from 'expo-router'
 import { useMemo, useState } from 'react'
 import { FlatList, View } from 'react-native'
 import {
+  ArrowsDownUpIcon,
+  Chip,
   DragToLoadMore,
   LoadMoreScrollView,
   Button,
@@ -254,11 +256,12 @@ export function TitlesScreen() {
           keyExtractor={(group) => group.topicId}
           contentContainerStyle={{ flexGrow: 1, gap: tokens.space[5], paddingHorizontal: GUTTER, paddingTop: tokens.space[2], paddingBottom: tokens.space[7] }}
           ListHeaderComponent={
-            shown.length > 0 ? (
-              <Text variant="caption" color="muted">
-                {countLabel(count)}
-              </Text>
-            ) : undefined
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: tokens.space[3] }}>
+              <Text variant="callout" color="muted">{countLabel(count)}</Text>
+              <Chip icon={ArrowsDownUpIcon} onPress={() => setFiltersOpen(true)}>
+                {SORTS.find((option) => option.value === sort)?.label ?? ''}
+              </Chip>
+            </View>
           }
           ListEmptyComponent={empty()}
           renderItem={({ item }) => (
