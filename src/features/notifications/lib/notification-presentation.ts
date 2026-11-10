@@ -14,7 +14,8 @@ export function notificationTitle(notification: NotificationView, name: string) 
     case 'WIZZ':
       return `${name} te demande de rejoindre la salle`
     case 'QUESTION_REPORTED':
-      return `${name} a signalé une question d'un de tes sujets`
+      // Anonyme (`notifications.md`) : jamais le signalant.
+      return 'Question signalée'
     case 'TOPIC_DRAFTED':
       return 'Ton sujet est repassé en brouillon'
     case 'ACCOUNT_SUSPENDED':

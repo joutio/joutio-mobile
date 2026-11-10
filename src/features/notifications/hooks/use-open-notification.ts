@@ -21,8 +21,9 @@ export function useOpenNotification() {
         router.navigate(challenges ? '/challenges' : '/home/notifications')
         toast.info(message)
       }
+      let resolved: { questionId?: string } = {}
       try {
-        await notificationsService.checkTarget(target)
+        resolved = (await notificationsService.checkTarget(target)) ?? {}
       } catch (error) {
         if (recipient !== getUserId() || !useSessionStore.getState().authenticated) return
         const status = (error as { statusCode?: number }).statusCode
@@ -44,12 +45,17 @@ export function useOpenNotification() {
         case 'room':
           router.push({ pathname: '/room/[roomId]', params: { roomId: target.id, fromPush: '1' } })
           break
+        // Tâches ciblées (`navigation.md`) : poussées par-dessus l'écran courant, hors onglets ; le retour y revient.
         case 'moderation':
-          if (target.reportId) router.push({ pathname: '/profile/topics/[id]/reports/[reportId]', params: { id: target.id, reportId: target.reportId } })
-          else router.push({ pathname: '/profile/topics/[id]/moderation', params: { id: target.id, tab: 'reports' } })
+          if (target.reportId && resolved.questionId)
+            router.push({
+              pathname: '/workshop/[id]/reports/[questionId]',
+              params: { id: target.id, questionId: resolved.questionId, highlight: target.reportId, from: 'notifications' },
+            })
+          else router.push({ pathname: '/workshop/[id]/moderation', params: { id: target.id, tab: 'reports' } })
           break
         case 'edit-topic':
-          router.push({ pathname: '/profile/topics/[id]', params: { id: target.id } })
+          router.push({ pathname: '/workshop/[id]', params: { id: target.id } })
           break
         case 'suspended':
           await clearSession('suspended')

@@ -2,7 +2,16 @@ import { api } from '@/lib/api'
 import { ENDPOINTS } from '@/lib/endpoints'
 import type { IdResponse, Language, PageResponse, TopicCardView } from '@/shared/types/bff'
 import type { CategoryCode } from '@/design-system'
-import type { TopicWorkshop, TeamMember, TeamRole, ReportDetail, OwnerQuestionReport, QuestionEditorView } from '../domain/authoring'
+import type {
+  TopicWorkshop,
+  TeamMember,
+  TeamRole,
+  ReportDetail,
+  OwnerQuestionReport,
+  QuestionEditorView,
+  ReportedQuestion,
+  TopicTodo,
+} from '../domain/authoring'
 import type { QuestionOperation } from '../domain/question-draft'
 
 /** Taille de page de `GET /api/topics/{id}/questions` (plafond BFF : 100). */
@@ -15,6 +24,12 @@ export const authoringService = {
   setMember: (id: string, userId: string, role: TeamRole) => api.put<TeamMember>(`/api/topics/${id}/team/${userId}`, { role }),
   removeMember: (id: string, userId: string) => api.delete<void>(`/api/topics/${id}/team/${userId}`),
   draft: (id: string) => api.post<void>(`/api/topics/${id}/draft`),
+  /** Supprime un brouillon (créateur seul) ; ses questions partent avec lui. */
+  deleteTopic: (id: string) => api.delete<void>(`/api/topics/${id}`),
+  /** File des signalements ouverts du sujet, une entrée par question. */
+  reportQueue: (topicId: string) => api.get<ReportedQuestion[]>(`/api/question-reports/topics/${topicId}`),
+  /** Mes sujets › À traiter. */
+  todo: () => api.get<TopicTodo[]>('/api/topics/contributed/todo'),
   deleteQuestion: (id: string) => api.delete<void>(`/api/questions/${id}`),
   archive: (id: string) => api.post<void>(`/api/questions/${id}/archive`),
   restore: (id: string) => api.post<void>(`/api/questions/${id}/restore`),

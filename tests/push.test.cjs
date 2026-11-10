@@ -445,8 +445,17 @@ test('opening a notification marks read, routes correctly, and falls back for un
   assert.deepEqual(reads, ['n'])
   await open({ ...notice, type: 'WIZZ' })
   assert.deepEqual(routes.at(-1), { pathname: '/room/[roomId]', params: { roomId: 's', fromPush: '1' } })
+  // Signalement : l'écran des Signalements de la question, poussé hors onglets, signalement mis en avant.
+  check = async () => ({ questionId: 'q' })
   await open({ ...notice, type: 'QUESTION_REPORTED', topicId: 't' })
-  assert.deepEqual(routes.at(-1), { pathname: '/profile/topics/[id]/reports/[reportId]', params: { id: 't', reportId: 's' } })
+  assert.deepEqual(routes.at(-1), {
+    pathname: '/workshop/[id]/reports/[questionId]',
+    params: { id: 't', questionId: 'q', highlight: 's', from: 'notifications' },
+  })
+  // Question introuvable : la file Signalements du sujet.
+  check = async () => ({})
+  await open({ ...notice, type: 'QUESTION_REPORTED', topicId: 't' })
+  assert.deepEqual(routes.at(-1), { pathname: '/workshop/[id]/moderation', params: { id: 't', tab: 'reports' } })
   check = async () => {
     throw { statusCode: 404 }
   }

@@ -9,23 +9,75 @@ import type { Language, PageResponse, TopicCardView, TopicOverviewView, HomeView
 import type { InfiniteData } from '@tanstack/react-query'
 import type { TopicPage } from '@/features/topics/lib/topics-service'
 
-import type { OwnerQuestionReport, ReportDetail, QuestionEditorView } from '../domain/authoring'
+import type { OwnerQuestionReport, ReportDetail, QuestionEditorView, ReportedQuestion, TopicTodo } from '../domain/authoring'
 import { limitsFor, type LimitReason } from '../domain/limits'
 import type { QuestionOperation } from '../domain/question-draft'
 import { authoringService } from '../lib/authoring-service'
 
 function closeCachedReports(client: QueryClient, topicId: string, questionId: string, status: 'RESOLVED' | 'DISMISSED') {
   client.setQueriesData<ReportDetail>({ queryKey: ['authoring', topicId, 'report-detail'] }, (detail) =>
-    detail?.questionId === questionId && detail.report.status === 'OPEN' ? { ...detail, report: { ...detail.report, status } } : detail)
+    detail?.questionId === questionId && detail.report.status === 'OPEN' ? { ...detail, report: { ...detail.report, status } } : detail,
+  )
   client.setQueryData<OwnerQuestionReport[]>(['authoring', topicId, 'question-reports', questionId], (items) =>
-    items?.map((report) => report.status === 'OPEN' ? { ...report, status } : report))
+    items?.map((report) => (report.status === 'OPEN' ? { ...report, status } : report)),
+  )
 }
 
 const retryHint = { description: 'Vérifie ta connexion, puis réessaie.' }
 
+/** Mes sujets › À traiter, ajusté sur place quand une action est traitée (signalements clos, question modérée). */
+function patchTodo(client: QueryClient, topicId: string, patch: (todo: TopicTodo) => TopicTodo) {
+  client.setQueryData<TopicTodo[]>(queryKeys.authoring.todo(), (items) =>
+    items?.map((todo) => (todo.topicId === topicId ? patch(todo) : todo)).filter((todo) => todo.pending + todo.reportedQuestions > 0),
+  )
+}
+
+/** Retire une question de la file des signalements et du compteur « À traiter ». */
+function dropFromQueue(client: QueryClient, topicId: string, questionId: string) {
+  const queue = client.getQueryData<ReportedQuestion[]>(queryKeys.authoring.reports(topicId))
+  if (queue?.some((item) => item.question.questionId === questionId))
+    patchTodo(client, topicId, (todo) => ({ ...todo, reportedQuestions: Math.max(0, todo.reportedQuestions - 1) }))
+  client.setQueryData<ReportedQuestion[]>(queryKeys.authoring.reports(topicId), (items) => items?.filter((item) => item.question.questionId !== questionId))
+}
+
+/** Mes sujets › À traiter : actions en attente par sujet géré. */
+export function useTopicTodo() {
+  return useQuery({ queryKey: queryKeys.authoring.todo(), queryFn: authoringService.todo, staleTime: 30_000 })
+}
+
+/** File des signalements ouverts d'un sujet (écran Signalements et Modération › Signalements). */
+export function useReportQueue(topicId: string, enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.authoring.reports(topicId),
+    queryFn: () => authoringService.reportQueue(topicId),
+    enabled: enabled && Boolean(topicId),
+    staleTime: 15_000,
+  })
+}
+
+/** Supprime un brouillon : il quitte Mes sujets sur place. */
+export function useDeleteTopic(topicId: string) {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: () => authoringService.deleteTopic(topicId),
+    onMutate: () =>
+      optimisticUpdate(client, [['authoring']], () => {
+        client.setQueryData<PageResponse<TopicCardView>>(queryKeys.authoring.topics(), (page) =>
+          page ? { ...page, content: page.content.filter((topic) => topic.topicId !== topicId), totalElements: Math.max(0, page.totalElements - 1) } : page,
+        )
+        client.setQueryData<TopicTodo[]>(queryKeys.authoring.todo(), (items) => items?.filter((todo) => todo.topicId !== topicId))
+      }),
+    onSuccess: () => toast.success('Brouillon supprimé'),
+    onError: (_error, _variables, context) => {
+      context?.rollback()
+      toast.error("Le brouillon n'a pas pu être supprimé", retryHint)
+    },
+  })
+}
+
 /** Mes sujets, brouillons et publiés. */
-export function useMyTopics() {
-  return useQuery({ queryKey: queryKeys.authoring.topics(), queryFn: authoringService.myTopics, staleTime: 30_000 })
+export function useMyTopics(enabled = true) {
+  return useQuery({ queryKey: queryKeys.authoring.topics(), queryFn: authoringService.myTopics, staleTime: 30_000, enabled })
 }
 
 /** Un de mes sujets, lu dans la liste Mes sujets (le BFF n'a pas de vue auteur d'un sujet seul). */
@@ -252,9 +304,7 @@ export function useSaveQuestion(topicId: string) {
         ? await optimisticUpdate(client, [['authoring']], () => {
             closeCachedReports(client, topicId, localId, 'RESOLVED')
             patchQuestion(client, topicId, localId, (question) => ({ ...question, openReportCount: 0 }))
-            client.setQueriesData<ReportedQuestion[]>({ queryKey: queryKeys.authoring.reports(topicId) }, (items) =>
-              items?.filter((item) => item.question.questionId !== localId),
-            )
+            dropFromQueue(client, topicId, localId)
           })
         : undefined
       return { ...transaction, reportTransaction, localId }
@@ -299,6 +349,8 @@ export function useModerateQuestion(topicId: string) {
       decision === 'approve' ? authoringService.approve(questionId) : authoringService.reject(questionId, reason ?? ''),
     onMutate: ({ questionId, decision }) =>
       optimisticUpdate(client, [['authoring'], ['topic', topicId], ['topics'], queryKeys.home()], () => {
+        const before = client.getQueryData<QuestionEditorView[]>(queryKeys.authoring.questions(topicId))?.find((question) => question.questionId === questionId)
+        if (before?.status === 'PENDING') patchTodo(client, topicId, (todo) => ({ ...todo, pending: Math.max(0, todo.pending - 1) }))
         patchQuestion(client, topicId, questionId, (question) => ({
           ...question,
           status: decision === 'approve' ? 'APPROVED' : 'REJECTED',
@@ -315,27 +367,6 @@ export function useModerateQuestion(topicId: string) {
   })
 }
 
-export interface ReportedQuestion {
-  question: QuestionEditorView
-  reports: OwnerQuestionReport[]
-}
-
-/** Signalements ouverts du sujet : questions avec `openReportCount > 0`, puis leurs signalements (le BFF n'agrège pas). */
-export function useTopicReports(topicId: string, questions: readonly QuestionEditorView[] | undefined) {
-  const reported = (questions ?? []).filter((question) => question.openReportCount > 0)
-  return useQuery({
-    queryKey: [...queryKeys.authoring.reports(topicId), reported.map((question) => question.questionId)],
-    queryFn: async (): Promise<ReportedQuestion[]> => {
-      const lists = await Promise.all(reported.map((question) => authoringService.reports(question.questionId)))
-      return reported
-        .map((question, index) => ({ question, reports: (lists[index] ?? []).filter((report) => report.status === 'OPEN') }))
-        .filter((item) => item.reports.length > 0)
-    },
-    enabled: questions !== undefined,
-    staleTime: 15_000,
-  })
-}
-
 /** « Clore sans modifier » : les signalements ouverts de la question sont écartés. */
 export function useDismissReports(topicId: string) {
   const client = useQueryClient()
@@ -345,11 +376,9 @@ export function useDismissReports(topicId: string) {
       optimisticUpdate(client, [['authoring']], () => {
         closeCachedReports(client, topicId, questionId, 'DISMISSED')
         patchQuestion(client, topicId, questionId, (question) => ({ ...question, openReportCount: 0 }))
-        client.setQueriesData<ReportedQuestion[]>({ queryKey: queryKeys.authoring.reports(topicId) }, (items) =>
-          items?.filter((item) => item.question.questionId !== questionId),
-        )
+        dropFromQueue(client, topicId, questionId)
       }),
-    onSuccess: () => toast.success('Signalement clos'),
+    onSuccess: () => toast.success('Signalements clos'),
     onError: (_error, _variables, context) => {
       context?.rollback()
       toast.error("Le signalement n'a pas pu être clos", retryHint)

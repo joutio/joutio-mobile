@@ -68,6 +68,7 @@
     "ios": "expo run:ios",
     "typecheck": "tsc --noEmit",
     "test:push": "node tests/push.test.cjs",
+    "test:authoring": "node tests/authoring.test.cjs",
     "test:mutations": "node tests/mutations.test.cjs",
     "test:search-header": "node tests/search-header.test.cjs",
     "test:api-client": "node tests/api-client.test.cjs",

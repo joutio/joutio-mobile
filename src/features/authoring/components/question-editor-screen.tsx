@@ -5,12 +5,15 @@ import { View } from 'react-native'
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import {
+  ArchiveIcon,
+  ArrowCounterClockwiseIcon,
   Button,
   showDialog,
   AnswerEditorRow,
   Field,
   ImagePicker,
   ListGroup,
+  ListRow,
   MobileTopBar,
   RadioGroup,
   SectionHeader,
@@ -18,6 +21,7 @@ import {
   Text,
   toast,
   tokens,
+  TrashIcon,
   useTheme,
 } from '@/design-system'
 import { pickImage, uploadImage } from '@/features/media/media-service'
@@ -34,6 +38,7 @@ import {
   translationStatus,
   type QuestionDraft,
 } from '../domain/question-draft'
+import { questionActions, workshopRole } from '../domain/authoring'
 import { useArchiveQuestion, useDeleteQuestion, useMyTopic, useSaveQuestion, useTopicQuestions } from '../hooks/use-authoring'
 import { LANGUAGES } from './topic-sheets'
 
@@ -91,6 +96,7 @@ export function QuestionEditorScreen() {
       (original?.creatorId === getUserId() && (original?.status === 'PENDING' || original?.status === 'REJECTED')),
     )
   const ready = loaded && isReady(draft, imageChanged) && !uploading && mayEdit
+  const actions = original ? questionActions(workshopRole(permissions), original, getUserId() ?? undefined) : []
   const missingCorrect = filled && draft.correct === undefined
   const text = draft.texts[language]
   const answers = draft.answers[language]
@@ -113,10 +119,9 @@ export function QuestionEditorScreen() {
   const onSave = () => {
     const operations = buildQuestionPlan(original, draft)
     if (operations.length === 0) return router.back()
-    save.mutate({ questionId, operations, resolveReports: params.resolveReports === '1' }, { onSuccess: (result) => {
-      if (params.reportStack && result.reportsResolved) router.dismissTo({ pathname: params.reportStack === 'profile' ? '/profile/topics/[id]/moderation' : '/workshop/[id]/moderation', params: { id: topicId, tab: 'reports' } })
-      else router.back()
-    } })
+    // Optimiste : l'écran d'origine (Questions, Signalements) affiche déjà la question corrigée au retour.
+    save.mutate({ questionId, operations, resolveReports: params.resolveReports === '1' })
+    router.back()
   }
 
   if (questionId && (questions.isError || (!questions.isPending && !original)))
@@ -219,34 +224,84 @@ export function QuestionEditorScreen() {
             </Text>
           )}
         </View>
-        {questionId && (permissions?.canManage || mayEdit) && (
-          <Button
-            variant="gray"
-            onPress={() => lifecycle.mutate({ id: questionId, restore: original?.status === 'ARCHIVED' }, { onSuccess: () => router.back() })}
-          >
-            {original?.status === 'ARCHIVED' ? 'Restaurer en attente de validation' : 'Archiver la question'}
-          </Button>
-        )}
         {original?.rejectionReason && <Text color="muted">{original.rejectionReason}</Text>}
-        {questionId &&
-          (permissions?.canManage || (original?.creatorId === getUserId() && (original?.status === 'PENDING' || original?.status === 'REJECTED'))) && (
-            <Button
-              variant="tinted"
-              tone="destructive"
-              onPress={() =>
-                showDialog({
-                  title: 'Supprimer cette question ?',
-                  message: 'Elle ne sera plus proposée dans les prochaines parties. Sous 7 questions jouables, le sujet repassera en brouillon.',
-                  actions: [
-                    { label: 'Supprimer', onPress: () => archive.mutate(questionId, { onSuccess: () => router.back() }) },
-                    { label: 'Annuler', variant: 'plain' },
-                  ],
-                })
-              }
-            >
-              Supprimer la question
-            </Button>
-          )}
+        {actions.length > 0 && questionId && (
+          // Cycle de vie, à l'écart de l'enregistrement ; archiver et supprimer passent toujours par une confirmation.
+          <View style={{ gap: tokens.space[3] }}>
+            <SectionHeader
+              title="Gérer"
+              subtitle={actions.includes('archive') ? 'Archiver retire la question des parties ; elle reste restaurable.' : undefined}
+            />
+            <ListGroup surface="surface">
+              {actions.includes('archive') && (
+                <ListRow
+                  icon={ArchiveIcon}
+                  label="Archiver la question"
+                  control="chevron"
+                  onPress={() =>
+                    showDialog({
+                      title: `Archiver la question ${params.number ?? ''} ?`.replace('  ', ' '),
+                      message: 'Elle est retirée des parties. Tu la retrouves dans le filtre Archivées ; la restaurer la remet en attente de validation.',
+                      icon: ArchiveIcon,
+                      actions: [
+                        {
+                          label: 'Archiver',
+                          onPress: () => {
+                            lifecycle.mutate({ id: questionId })
+                            router.back()
+                          },
+                        },
+                        { label: 'Annuler', variant: 'plain' },
+                      ],
+                    })
+                  }
+                  last={!actions.includes('delete')}
+                />
+              )}
+              {actions.includes('restore') && (
+                <ListRow
+                  icon={ArrowCounterClockwiseIcon}
+                  label="Restaurer la question"
+                  control="chevron"
+                  onPress={() => {
+                    lifecycle.mutate({ id: questionId, restore: true })
+                    router.back()
+                  }}
+                  last={!actions.includes('delete')}
+                />
+              )}
+              {actions.includes('delete') && (
+                <ListRow
+                  icon={TrashIcon}
+                  label="Supprimer la question"
+                  destructive
+                  control="none"
+                  onPress={() =>
+                    showDialog({
+                      title: `Supprimer la question ${params.number ?? ''} ?`.replace('  ', ' '),
+                      message:
+                        'Elle disparaît du sujet et de ses statistiques. Cette action est définitive ; pour la retirer seulement des parties, archive-la.',
+                      tone: 'danger',
+                      icon: TrashIcon,
+                      actions: [
+                        {
+                          label: 'Supprimer',
+                          tone: 'destructive',
+                          onPress: () => {
+                            archive.mutate(questionId)
+                            router.back()
+                          },
+                        },
+                        { label: 'Annuler', variant: 'plain' },
+                      ],
+                    })
+                  }
+                  last
+                />
+              )}
+            </ListGroup>
+          </View>
+        )}
       </KeyboardAwareScrollView>
     </View>
   )

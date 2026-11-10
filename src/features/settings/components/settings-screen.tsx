@@ -240,7 +240,7 @@ export function SettingsScreen() {
           <ListRow icon={SignOutIcon} label="Se déconnecter" control="none" destructive onPress={confirmLogout} last />
         </ListGroup>
         <ListGroup surface="surface">
-          <ListRow icon={TrashIcon} label="Supprimer mon compte" control="none" destructive onPress={() => router.push('/profile/settings/delete')} last />
+          <ListRow icon={TrashIcon} label="Supprimer mon compte" control="none" destructive onPress={() => router.push('/delete-account')} last />
         </ListGroup>
       </Section>
       {catalogAccess && (

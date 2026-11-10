@@ -38,7 +38,7 @@ export function DeleteAccountScreen() {
 
   if (remove.isSuccess) {
     return (
-      <Screen inTabs contentStyle={{ flexGrow: 1, justifyContent: 'center', padding: tokens.space[5] }}>
+      <Screen contentStyle={{ flexGrow: 1, justifyContent: 'center', padding: tokens.space[5] }}>
         <EmptyState
           icon={CheckCircleIcon}
           title="Compte supprimé"
@@ -55,7 +55,6 @@ export function DeleteAccountScreen() {
 
   return (
     <Screen
-      inTabs
       header={<MobileTopBar variant="inline" back="Réglages" onBack={() => router.back()} title="Suppression" />}
       contentStyle={{ flexGrow: 1, gap: tokens.space[6], paddingHorizontal: tokens.space[5], paddingTop: tokens.space[4], paddingBottom: tokens.space[5] }}
       scrollProps={{ keyboardShouldPersistTaps: 'handled' }}

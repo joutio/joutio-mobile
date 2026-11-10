@@ -1,4 +1,3 @@
-import { useWorkshopNavigation } from '../hooks/use-workshop-navigation'
 import { router, useLocalSearchParams } from 'expo-router'
 import { useEffect, useState } from 'react'
 import { View } from 'react-native'
@@ -13,7 +12,7 @@ import {
   MobileSheet,
   MobileTopBar,
   ModerationCard,
-  PencilSimpleIcon,
+  ProhibitIcon,
   Screen,
   Skeleton,
   DragToLoadMore,
@@ -32,9 +31,10 @@ import {
   reasonsLabel,
   type QuestionEditorView,
   type QuestionReportReason,
+  type ReportedQuestion,
 } from '../domain/authoring'
 import { MAX_REJECT } from '../domain/limits'
-import { useMyTopic, useDismissReports, useModerateQuestion, useTopicQuestions, useTopicReports, type ReportedQuestion } from '../hooks/use-authoring'
+import { useMyTopic, useModerateQuestion, useReportQueue, useTopicQuestions } from '../hooks/use-authoring'
 import { openQuestionEditor } from './questions-screen'
 import { clientSource, feedFooterProps, loadMoreOptions } from '@/shared/utils/paging'
 
@@ -56,13 +56,12 @@ const reasonsOf = (item: ReportedQuestion) => reasonsLabel([...new Set(item.repo
  * valider contient les questions du créateur lui-même (toute question naît en attente).
  */
 export function ModerationScreen() {
-  const { inTabs, base } = useWorkshopNavigation()
   const params = useLocalSearchParams<{ id: string; name?: string; tab?: string }>()
   const topicId = params.id
   const me = useMe(true)
   const workshop = useMyTopic(topicId)
   const questions = useTopicQuestions(topicId)
-  const reports = useTopicReports(topicId, workshop.permissions?.canManage ? questions.data : undefined)
+  const reports = useReportQueue(topicId, workshop.permissions?.canManage === true)
   const moderate = useModerateQuestion(topicId)
   const [tab, setTab] = useState<Tab>(params.tab === 'reports' ? 'reports' : 'pending')
   useEffect(() => {
@@ -131,7 +130,7 @@ export function ModerationScreen() {
   const reportsPage = (
     <DragToLoadMore {...loadMoreOptions(reportSource)}>
       <TabLoadMoreScrollView contentContainerStyle={PAGE}>
-        {questions.isPending || reports.isPending ? (
+        {reports.isPending ? (
           loading
         ) : reports.isError ? (
           <View>
@@ -146,11 +145,16 @@ export function ModerationScreen() {
               {shownReports.map((item, index) => (
                 <ListRow
                   key={item.question.questionId}
-                  icon={WarningIcon}
+                  icon={item.question.status === 'SUSPENDED' ? ProhibitIcon : WarningIcon}
                   label={questionText(item.question)}
-                  sub={`${reasonsOf(item)} · ${item.reports.length} signaleur${item.reports.length > 1 ? 's' : ''}`}
+                  sub={`${item.question.status === 'SUSPENDED' ? 'Suspendue · ' : ''}${reasonsOf(item)} · ${item.reports.length} signalement${item.reports.length > 1 ? 's' : ''}`}
                   control="chevron"
-                  onPress={() => router.push({ pathname: `${base}/reports/[reportId]`, params: { id: topicId, reportId: item.reports[0]!.reportId } })}
+                  onPress={() =>
+                    router.push({
+                      pathname: '/workshop/[id]/reports/[questionId]',
+                      params: { id: topicId, questionId: item.question.questionId, name: params.name ?? '' },
+                    })
+                  }
                   last={index === shownReports.length - 1}
                 />
               ))}
@@ -162,21 +166,9 @@ export function ModerationScreen() {
     </DragToLoadMore>
   )
 
-
-
   if (workshop.isError || questions.isError)
     return (
-      <Screen
-        inTabs={inTabs}
-        header={
-          <MobileTopBar
-            variant="inline"
-            title="Modération"
-            back="Sujet"
-            onBack={() => router.dismissTo({ pathname: base, params: { id: topicId } })}
-          />
-        }
-      >
+      <Screen header={<MobileTopBar variant="inline" title="Modération" back="Sujet" onBack={() => router.back()} />}>
         <Text>La modération n’est pas disponible.</Text>
         <Button
           onPress={() => {
@@ -191,17 +183,7 @@ export function ModerationScreen() {
   if (workshop.isPending) return <Screen>{loading}</Screen>
   if (!workshop.permissions?.canManage)
     return (
-      <Screen
-        inTabs={inTabs}
-        header={
-          <MobileTopBar
-            variant="inline"
-            title="Mes propositions"
-            back="Sujet"
-            onBack={() => router.dismissTo({ pathname: base, params: { id: topicId } })}
-          />
-        }
-      >
+      <Screen header={<MobileTopBar variant="inline" title="Mes propositions" back="Sujet" onBack={() => router.back()} />}>
         {all.length === 0 && <Text>Aucune proposition</Text>}
         {all.map((question) => (
           <ListRow
@@ -217,16 +199,8 @@ export function ModerationScreen() {
 
   return (
     <Screen
-      inTabs={inTabs}
       scroll={false}
-      header={
-        <MobileTopBar
-          variant="inline"
-          back="Sujet"
-          onBack={() => router.dismissTo({ pathname: base, params: { id: topicId } })}
-          title="Modération"
-        />
-      }
+      header={<MobileTopBar variant="inline" back="Sujet" onBack={() => router.back()} title="Modération" />}
       overlay={
         <>
           <MobileSheet
@@ -259,7 +233,6 @@ export function ModerationScreen() {
               onChangeText={setReason}
             />
           </MobileSheet>
-
         </>
       }
     >

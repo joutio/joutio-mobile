@@ -1,9 +1,10 @@
-import { useWorkshopNavigation } from '../hooks/use-workshop-navigation'
 import { router, useLocalSearchParams } from 'expo-router'
 import { useState } from 'react'
 import { View } from 'react-native'
 import {
   Button,
+  FileDashedIcon,
+  TrashIcon,
   Screen,
   MobileTopBar,
   showDialog,
@@ -28,10 +29,11 @@ import {
 import { pickImage, uploadImage } from '@/features/media/media-service'
 import { toast } from '@/design-system'
 import { topicName } from '@/shared/utils/topic-name'
-import { questionStatus } from '../domain/authoring'
+import { questionStatus, workshopRole } from '../domain/authoring'
 import { MAX_NAME, MIN_QUESTIONS } from '../domain/limits'
 
 import {
+  useDeleteTopic,
   useDraftTopic,
   useTeam,
   useCreationLimits,
@@ -65,11 +67,14 @@ export interface MyTopicRouteParams {
  * brouillon a la barre « Publier », active à 7 questions approuvées.
  */
 export function MyTopicScreen() {
-  const { inTabs, base } = useWorkshopNavigation()
+  const base = '/workshop/[id]' as const
   const params = useLocalSearchParams<MyTopicRouteParams>()
   const topicId = params.id
   const { topic, permissions, isError, refetch } = useMyTopic(topicId)
   const draftTopic = useDraftTopic(topicId)
+  const deleteTopic = useDeleteTopic(topicId)
+  const role = workshopRole(permissions)
+  const manager = permissions?.canManage === true
   const team = useTeam(topicId)
   const all = useMyTopics()
   const pageRefresh = useRefreshActive()
@@ -118,7 +123,7 @@ export function MyTopicScreen() {
 
   if (isError)
     return (
-      <Screen inTabs={inTabs} header={<MobileTopBar variant="inline" title="Sujet" back="Retour" onBack={() => router.back()} />}>
+      <Screen header={<MobileTopBar variant="inline" title="Sujet" back="Retour" onBack={() => router.back()} />}>
         <Text>Le sujet est indisponible ou tu ne fais plus partie de son équipe.</Text>
         <Button onPress={() => void refetch()}>Réessayer</Button>
       </Screen>
@@ -127,19 +132,21 @@ export function MyTopicScreen() {
     <View style={{ flex: 1 }}>
       <ParallaxScreen
         onRefresh={pageRefresh.refresh}
-        inTabs={inTabs}
         barTitleStart
         image={imageUrl}
         title={name}
         eyebrow={universeLabel(code)}
         onBack={() => router.back()}
         intro={
-          <View style={{ flexDirection: 'row' }}>
+          <View style={{ flexDirection: 'row', gap: tokens.space[2] }}>
             <Pill tone={draft ? 'neutral' : 'correct'}>{draft ? 'Brouillon' : 'Publié'}</Pill>
+            {permissions && role !== 'creator' && <Pill tone="neutral">{role === 'admin' ? 'Administrateur' : 'Rédacteur'}</Pill>}
           </View>
         }
+        // Zone d'actions du sujet, selon le rôle : publier ou supprimer le brouillon, repasser le publié en brouillon.
+        // Chaque action qui retire ou supprime passe par une confirmation.
         bottomBar={
-          draft && permissions?.canManage ? (
+          !manager ? undefined : draft ? (
             <View style={{ gap: tokens.space[1] }}>
               <Button full size="L" disabled={!ready} loading={publish.isPending} onPress={onPublish}>
                 Publier
@@ -149,20 +156,53 @@ export function MyTopicScreen() {
                   {`Encore ${missing} question${missing > 1 ? 's' : ''} pour publier.`}
                 </Text>
               )}
+              {role === 'creator' && (
+                <Button
+                  full
+                  variant="plain"
+                  tone="destructive"
+                  icon={TrashIcon}
+                  loading={deleteTopic.isPending}
+                  onPress={() =>
+                    showDialog({
+                      title: `Supprimer « ${name} » ?`,
+                      message: `Le brouillon et ses ${list.length} question${list.length > 1 ? 's' : ''} sont supprimés. Cette action est définitive.`,
+                      tone: 'danger',
+                      icon: TrashIcon,
+                      actions: [
+                        {
+                          label: 'Supprimer',
+                          tone: 'destructive',
+                          onPress: () => {
+                            deleteTopic.mutate()
+                            router.back()
+                          },
+                        },
+                        { label: 'Annuler', variant: 'plain' },
+                      ],
+                    })
+                  }
+                >
+                  Supprimer le brouillon
+                </Button>
+              )}
             </View>
-          ) : !draft && permissions?.canManage ? (
+          ) : (
             <Button
               full
               size="L"
+              icon={FileDashedIcon}
               loading={draftTopic.isPending}
               variant="gray"
               tone="neutral"
               onPress={() =>
                 showDialog({
                   title: 'Repasser en brouillon ?',
-                  message: 'Les nouveaux départs de partie seront bloqués.',
+                  message:
+                    "Le sujet quitte le catalogue : plus de nouvelles parties ni d'invitations. Les parties en cours se terminent. Tu pourras le republier.",
+                  icon: FileDashedIcon,
                   actions: [
-                    { label: 'Confirmer', onPress: () => draftTopic.mutate() },
+                    { label: 'Repasser en brouillon', onPress: () => draftTopic.mutate() },
                     { label: 'Annuler', variant: 'plain' },
                   ],
                 })
@@ -170,38 +210,41 @@ export function MyTopicScreen() {
             >
               Repasser en brouillon
             </Button>
-          ) : undefined
+          )
         }
       >
         <View style={{ gap: tokens.space[6], paddingHorizontal: tokens.space[5], paddingTop: tokens.space[2], paddingBottom: tokens.space[7] }}>
-          <View style={{ gap: tokens.space[3] }}>
-            <SectionHeader title="Sujet" />
-            <ListGroup surface="surface">
-              <ListRow
-                icon={PencilSimpleIcon}
-                label="Nom"
-                control="chevron"
-                value={name}
-                sub={englishName ? `English : ${englishName}` : 'English : facultatif'}
-                onPress={permissions?.canManage ? () => setSheet('name') : undefined}
-              />
-              <ListRow
-                icon={SquaresFourIcon}
-                label="Univers"
-                control="chevron"
-                value={universeLabel(code)}
-                onPress={permissions?.canManage ? () => setSheet('universe') : undefined}
-              />
-              <ListRow
-                icon={ImageIcon}
-                label="Vignette"
-                control="chevron"
-                value={imageUrl ? 'Modifier' : 'Ajouter'}
-                onPress={permissions?.canManage ? () => setSheet('image') : undefined}
-                last
-              />
-            </ListGroup>
-          </View>
+          {/* Nom, univers et vignette : réservés à ceux qui gèrent le sujet. */}
+          {manager && (
+            <View style={{ gap: tokens.space[3] }}>
+              <SectionHeader title="Sujet" />
+              <ListGroup surface="surface">
+                <ListRow
+                  icon={PencilSimpleIcon}
+                  label="Nom"
+                  control="chevron"
+                  value={name}
+                  sub={englishName ? `English : ${englishName}` : 'English : facultatif'}
+                  onPress={permissions?.canManage ? () => setSheet('name') : undefined}
+                />
+                <ListRow
+                  icon={SquaresFourIcon}
+                  label="Univers"
+                  control="chevron"
+                  value={universeLabel(code)}
+                  onPress={permissions?.canManage ? () => setSheet('universe') : undefined}
+                />
+                <ListRow
+                  icon={ImageIcon}
+                  label="Vignette"
+                  control="chevron"
+                  value={imageUrl ? 'Modifier' : 'Ajouter'}
+                  onPress={permissions?.canManage ? () => setSheet('image') : undefined}
+                  last
+                />
+              </ListGroup>
+            </View>
+          )}
           <View style={{ gap: tokens.space[3] }}>
             <SectionHeader title="Contenu" />
             <ListGroup surface="surface">
@@ -211,25 +254,30 @@ export function MyTopicScreen() {
                 control="chevron"
                 value={draft ? `${approved} / ${MIN_QUESTIONS}` : String(list.length || approved)}
                 onPress={() => router.push({ pathname: `${base}/questions`, params: { id: topicId, name } })}
+                last={!manager}
               />
-              <ListRow
-                icon={UsersThreeIcon}
-                label="Équipe"
-                control="chevron"
-                value={String(team.data?.length ?? 1)}
-                onPress={() => router.push({ pathname: `${base}/team`, params: { id: topicId, name } })}
-              />
-              <ListRow
-                icon={ShieldCheckIcon}
-                label="Modération"
-                control="chevron"
-                value={String(pending + reported)}
-                onPress={() => router.push({ pathname: `${base}/moderation`, params: { id: topicId, name } })}
-                last
-              />
+              {/* Un rédacteur propose des questions : ni équipe ni modération. */}
+              {manager && (
+                <ListRow
+                  icon={UsersThreeIcon}
+                  label="Équipe"
+                  control="chevron"
+                  value={String(team.data?.length ?? 1)}
+                  onPress={() => router.push({ pathname: `${base}/team`, params: { id: topicId, name } })}
+                />
+              )}
+              {manager && (
+                <ListRow
+                  icon={ShieldCheckIcon}
+                  label="Modération"
+                  control="chevron"
+                  value={String(pending + reported)}
+                  onPress={() => router.push({ pathname: `${base}/moderation`, params: { id: topicId, name } })}
+                  last
+                />
+              )}
             </ListGroup>
           </View>
-
         </View>
       </ParallaxScreen>
 

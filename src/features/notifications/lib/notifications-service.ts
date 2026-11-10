@@ -9,11 +9,16 @@ export const NOTIFICATIONS_PAGE_SIZE = 10
 /** Boîte de réception (`/api/notifications`). */
 export const notificationsService = {
   page: (page: number) => api.get<PageResponse<NotificationView>>(ENDPOINTS.notifications.list, { params: { page, size: NOTIFICATIONS_PAGE_SIZE } }),
-  /** Lecture initiale de la cible ; les salles gèrent leur expiration dans RoomScreen. */
-  checkTarget: async (target: NotificationTarget) => {
+  /**
+   * Lecture initiale de la cible ; les salles gèrent leur expiration dans RoomScreen. Un signalement renvoie la
+   * question visée, l'écran des Signalements étant centré sur la question.
+   */
+  checkTarget: async (target: NotificationTarget): Promise<{ questionId?: string }> => {
     if (target.kind === 'player') await api.get(ENDPOINTS.profiles.profile(target.id))
-    if (target.kind === 'moderation' && target.reportId) await api.get(`/api/question-reports/${target.reportId}`)
-    else if (target.kind === 'moderation' || target.kind === 'edit-topic') await api.get(`/api/topics/${target.id}/workshop`)
+    if (target.kind === 'moderation' && target.reportId)
+      return { questionId: (await api.get<{ questionId: string }>(`/api/question-reports/${target.reportId}`)).questionId }
+    if (target.kind === 'moderation' || target.kind === 'edit-topic') await api.get(`/api/topics/${target.id}/workshop`)
+    return {}
   },
   read: (notificationId: string) => api.post<void>(ENDPOINTS.notifications.read(notificationId)),
   readAll: () => api.post<void>(ENDPOINTS.notifications.readAll),

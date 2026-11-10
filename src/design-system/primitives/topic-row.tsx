@@ -2,6 +2,7 @@ import { Image } from 'expo-image'
 import { View, type StyleProp, type ViewStyle } from 'react-native'
 import { CategoryIcon } from '../brand/category-icon'
 import { CaretRightIcon, CircleIcon, RadioButtonIcon } from '../icons'
+import { CountBadge } from './icon-button'
 import { HAIRLINE } from '../theme/hairline'
 import { useTheme } from '../theme/theme-provider'
 import { tokens, type CategoryCode } from '../tokens.generated'
@@ -23,6 +24,8 @@ export interface TopicRowProps {
   last?: boolean
   disabled?: boolean
   onPress?: () => void
+  /** Actions en attente (Mes sujets › À traiter) : pastille `accent`, `9+` au-delà de 9 ; la sous-ligne ne change pas. */
+  badge?: number
   style?: StyleProp<ViewStyle>
 }
 
@@ -37,6 +40,7 @@ export function TopicRow({
   last = false,
   onPress,
   disabled = false,
+  badge,
   style,
 }: TopicRowProps) {
   const { colors, radius } = useTheme()
@@ -45,7 +49,7 @@ export function TopicRow({
   return (
     <PressableScale
       accessibilityRole={radio ? 'radio' : 'link'}
-      accessibilityLabel={`${title}, ${sub}`}
+      accessibilityLabel={`${title}, ${sub}${badge ? `, ${badge} à traiter` : ''}`}
       accessibilityState={radio ? { checked: on } : undefined}
       disabled={disabled}
       pressedScale={1}
@@ -89,6 +93,7 @@ export function TopicRow({
           {sub}
         </Text>
       </View>
+      {badge !== undefined && badge > 0 && <CountBadge count={badge} />}
       {radio ? (
         <SelectIcon size={24} weight={on ? 'fill' : 'regular'} color={on ? colors.accentInk : colors.muted} />
       ) : (

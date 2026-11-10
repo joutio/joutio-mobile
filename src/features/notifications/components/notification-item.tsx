@@ -18,6 +18,7 @@ import type { ChallengeView } from '@/shared/types/bff'
 import { avatarSvg } from '@/shared/utils/avatar'
 import { tierOf } from '@/shared/utils/tier'
 import { topicName } from '@/shared/utils/topic-name'
+import { useMyTopics } from '@/features/authoring/hooks/use-authoring'
 import { notificationTitle } from '../lib/notification-presentation'
 import { useOpenNotification } from '../hooks/use-open-notification'
 import { isExpired, isUnread, relativeTime } from '../lib/notifications-service'
@@ -40,7 +41,11 @@ const ICONS: Record<NotificationView['type'], Icon> = {
  * l'écran de l'action ; balayer supprime.
  */
 export function NotificationItem({ notification, challenge, last }: { notification: NotificationView; challenge: ChallengeView | undefined; last: boolean }) {
-  const actor = usePlayerProfile(notification.actorId ?? '', Boolean(notification.actorId))
+  // Un signalement reste anonyme : jamais le nom ni l'avatar du signalant, même si une ancienne notification le portait.
+  const anonymous = notification.type === 'QUESTION_REPORTED'
+  const actorId = anonymous ? null : notification.actorId
+  const actor = usePlayerProfile(actorId ?? '', Boolean(actorId))
+  const reportedTopic = useMyTopics(anonymous).data?.content.find((topic) => topic.topicId === notification.topicId)
   const open = useOpenNotification()
   const remove = useDeleteNotification()
   const profile = actor.data
@@ -51,15 +56,17 @@ export function NotificationItem({ notification, challenge, last }: { notificati
   const sub =
     notification.type === 'CHALLENGE_RECEIVED' && challenge
       ? `${topicName(challenge.topic.names)} · ${pending ? `expire dans ${duration(Date.parse(challenge.expiresAt) - now)}` : relativeTime(notification.createdAt, now)}`
-      : relativeTime(notification.createdAt, now)
+      : anonymous && reportedTopic
+        ? `${topicName(reportedTopic.names)} · ${relativeTime(notification.createdAt, now)}`
+        : relativeTime(notification.createdAt, now)
 
   return (
     <NotificationRow
       title={notificationTitle(notification, name)}
       sub={sub}
-      icon={notification.actorId ? undefined : (ICONS[notification.type] ?? BellIcon)}
+      icon={actorId ? undefined : (ICONS[notification.type] ?? BellIcon)}
       player={
-        notification.actorId
+        actorId
           ? {
               name,
               src: profile ? (avatarSvg(profile.avatarOptions, profile.userId) ?? undefined) : undefined,

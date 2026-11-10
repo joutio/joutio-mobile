@@ -1,10 +1,12 @@
-import { useWorkshopNavigation } from '../hooks/use-workshop-navigation'
 import { router, useLocalSearchParams } from 'expo-router'
 import { useMemo, useState } from 'react'
 import { View } from 'react-native'
 import {
+  ArchiveIcon,
+  ArrowsDownUpIcon,
   Banner,
   Button,
+  Chip,
   CheckCircleIcon,
   EmptyState,
   FeedFooter,
@@ -31,7 +33,17 @@ import {
   XCircleIcon,
   type Icon,
 } from '@/design-system'
-import { isTranslated, QUESTION_STATUS_LABEL, questionStatus, questionText, type QuestionStatus } from '../domain/authoring'
+import {
+  isTranslated,
+  QUESTION_SORTS,
+  QUESTION_STATUS_LABEL,
+  questionStatus,
+  questionText,
+  sortQuestions,
+  type QuestionEditorView,
+  type QuestionSort,
+  type QuestionStatus,
+} from '../domain/authoring'
 import { MIN_QUESTIONS, questionsLabel } from '../domain/limits'
 import { useCreationLimits, useMyTopic, useTopicQuestions } from '../hooks/use-authoring'
 import { clientSource, feedFooterProps, loadMoreOptions } from '@/shared/utils/paging'
@@ -42,14 +54,22 @@ const PAGE_SIZE = 10
 type StatusFilter = 'all' | QuestionStatus
 type TranslationFilter = 'all' | 'translated' | 'untranslated'
 
+/** « Tous les statuts » laisse de côté les archivées : on les retrouve par leur filtre. */
 const STATUS_FILTERS: readonly { value: StatusFilter; label: string }[] = [
   { value: 'all', label: 'Tous les statuts' },
   { value: 'approved', label: QUESTION_STATUS_LABEL.approved },
   { value: 'pending', label: QUESTION_STATUS_LABEL.pending },
+  { value: 'rejected', label: QUESTION_STATUS_LABEL.rejected },
   { value: 'suspended', label: QUESTION_STATUS_LABEL.suspended },
   { value: 'archived', label: QUESTION_STATUS_LABEL.archived },
-  { value: 'rejected', label: QUESTION_STATUS_LABEL.rejected },
 ]
+
+/** Sous-ligne : statut, signalements ouverts, traduction. */
+const questionSub = (question: QuestionEditorView) => {
+  const status = QUESTION_STATUS_LABEL[questionStatus(question)]
+  const reports = question.openReportCount > 0 ? ` · ${question.openReportCount} signalement${question.openReportCount > 1 ? 's' : ''}` : ''
+  return `${status}${reports} · ${isTranslated(question) ? 'traduite' : 'sans anglais'}`
+}
 const TRANSLATION_FILTERS: readonly { value: TranslationFilter; label: string }[] = [
   { value: 'all', label: 'Toutes' },
   { value: 'translated', label: 'Traduites' },
@@ -58,11 +78,11 @@ const TRANSLATION_FILTERS: readonly { value: TranslationFilter; label: string }[
 
 /** Statut à gauche de la ligne, en icône pleine ; le sous-titre le dit aussi en toutes lettres. */
 const STATUS_ICON: Record<QuestionStatus, { icon: Icon; color: 'correct' | 'accentInk' | 'wrong' | 'muted' }> = {
-  archived: { icon: ProhibitIcon, color: 'muted' },
+  archived: { icon: ArchiveIcon, color: 'muted' },
   approved: { icon: CheckCircleIcon, color: 'correct' },
   pending: { icon: HourglassMediumIcon, color: 'accentInk' },
   suspended: { icon: ProhibitIcon, color: 'wrong' },
-  rejected: { icon: XCircleIcon, color: 'muted' },
+  rejected: { icon: XCircleIcon, color: 'wrong' },
 }
 
 function StatusIcon({ status }: { status: QuestionStatus }) {
@@ -78,11 +98,16 @@ export interface QuestionsRouteParams {
 }
 
 /** Ouvre l'éditeur de question en modale (création sans `questionId`). */
-export function openQuestionEditor(topicId: string, number: number, questionId?: string, resolveReports = false, reportStack?: string) {
+export function openQuestionEditor(topicId: string, number: number, questionId?: string, resolveReports = false) {
   router.push({
     pathname: '/question-editor',
-    params: { topicId, number: String(number), questionId: questionId ?? '', resolveReports: resolveReports ? '1' : '', reportStack },
+    params: { topicId, number: String(number), questionId: questionId ?? '', resolveReports: resolveReports ? '1' : '' },
   })
+}
+
+/** Numéro d'une question dans son sujet : son rang de création (1 pour la plus ancienne). */
+export function questionNumber(questions: readonly QuestionEditorView[], questionId: string) {
+  return [...questions].sort((a, b) => a.createdAt.localeCompare(b.createdAt)).findIndex((question) => question.questionId === questionId) + 1
 }
 
 function FilterOptions<T extends string>({
@@ -122,7 +147,6 @@ function FilterOptions<T extends string>({
  * Tous les titres ; repère du minimum pour publier (brouillon) ou du plafond (publié). 10 par page.
  */
 export function QuestionsScreen() {
-  const { inTabs } = useWorkshopNavigation()
   const params = useLocalSearchParams<QuestionsRouteParams>()
   const topicId = params.id
   const { topic } = useMyTopic(topicId)
@@ -131,6 +155,7 @@ export function QuestionsScreen() {
   const [query, setQuery] = useState('')
   const [status, setStatus] = useState<StatusFilter>('all')
   const [translation, setTranslation] = useState<TranslationFilter>('all')
+  const [sort, setSort] = useState<QuestionSort>(QUESTION_SORTS[0])
   const [filterOpen, setFilterOpen] = useState(false)
   const [pages, setPages] = useState(1)
 
@@ -142,14 +167,20 @@ export function QuestionsScreen() {
   const search = query.trim().toLowerCase()
   const filtered = useMemo(
     () =>
-      all.filter(
-        (question) =>
-          (search === '' || questionText(question).toLowerCase().includes(search)) &&
-          (status === 'all' || questionStatus(question) === status) &&
-          (translation === 'all' || isTranslated(question) === (translation === 'translated')),
+      sortQuestions(
+        all.filter(
+          (question) =>
+            (search === '' || questionText(question).toLowerCase().includes(search)) &&
+            (status === 'all' ? questionStatus(question) !== 'archived' : questionStatus(question) === status) &&
+            (translation === 'all' || isTranslated(question) === (translation === 'translated')),
+        ),
+        sort,
       ),
-    [all, search, status, translation],
+    [all, search, status, translation, sort],
   )
+  const sorts = QUESTION_SORTS.filter((option) => !draft || option !== 'Plus signalées')
+  // Numéro d'une question : son rang de création, stable quels que soient le tri et les filtres.
+  const byCreation = useMemo(() => [...all].sort((a, b) => a.createdAt.localeCompare(b.createdAt)), [all])
   const shown = filtered.slice(0, pages * PAGE_SIZE)
   const source = clientSource(pages, setPages, shown.length < filtered.length)
   const filterActive = status !== 'all' || translation !== 'all'
@@ -162,6 +193,7 @@ export function QuestionsScreen() {
     change(() => {
       setStatus('all')
       setTranslation('all')
+      setSort(QUESTION_SORTS[0])
     })
 
   const add = () => {
@@ -185,7 +217,7 @@ export function QuestionsScreen() {
       value={query}
       onChange={(next) => change(() => setQuery(next))}
       placeholder="Chercher une question"
-      filterLabel="Filtrer les questions"
+      filterLabel="Trier et filtrer les questions"
       filterDot={filterActive}
       onFilter={() => setFilterOpen(true)}
     />
@@ -248,7 +280,6 @@ export function QuestionsScreen() {
 
   return (
     <Screen
-      inTabs={inTabs}
       header={header}
       loadMore={loadMoreOptions(source)}
       onRefresh={() => questions.refetch()}
@@ -257,7 +288,7 @@ export function QuestionsScreen() {
         <MobileSheet
           open={filterOpen}
           onClose={() => setFilterOpen(false)}
-          title="Filtrer les questions"
+          title="Trier et filtrer"
           action={
             <Button variant="plain" size="S" onPress={reset}>
               Réinitialiser
@@ -270,6 +301,12 @@ export function QuestionsScreen() {
           }
         >
           <View style={{ gap: tokens.space[6] }}>
+            <FilterOptions
+              label="Trier par"
+              options={sorts.map((option) => ({ value: option, label: option }))}
+              value={sort}
+              onChange={(next) => change(() => setSort(next))}
+            />
             <FilterOptions label="Statut" options={STATUS_FILTERS} value={status} onChange={(next) => change(() => setStatus(next))} />
             <FilterOptions label="Traduction" options={TRANSLATION_FILTERS} value={translation} onChange={(next) => change(() => setTranslation(next))} />
           </View>
@@ -292,11 +329,15 @@ export function QuestionsScreen() {
         empty()
       ) : (
         <>
-          {(search !== '' || filterActive) && (
-            <Text variant="caption" color="muted">
+          {/* Total et tri courant toujours visibles, comme Sujets ; la puce ouvre la feuille. */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: tokens.space[3] }}>
+            <Text variant="callout" color="muted">
               {questionsLabel(filtered.length)}
             </Text>
-          )}
+            <Chip icon={ArrowsDownUpIcon} onPress={() => setFilterOpen(true)}>
+              {sort}
+            </Chip>
+          </View>
           <ListGroup surface="surface">
             {shown.map((item, index) => {
               const itemStatus = questionStatus(item)
@@ -305,9 +346,9 @@ export function QuestionsScreen() {
                   key={item.questionId}
                   leading={<StatusIcon status={itemStatus} />}
                   label={questionText(item)}
-                  sub={`${QUESTION_STATUS_LABEL[itemStatus]} · ${isTranslated(item) ? 'traduite' : 'sans anglais'}`}
+                  sub={questionSub(item)}
                   control="chevron"
-                  onPress={() => openQuestionEditor(topicId, all.indexOf(item) + 1, item.questionId)}
+                  onPress={() => openQuestionEditor(topicId, byCreation.indexOf(item) + 1, item.questionId)}
                   last={index === shown.length - 1}
                 />
               )

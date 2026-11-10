@@ -10,6 +10,7 @@ import {
   PencilSimpleIcon,
   PlusIcon,
   Screen,
+  SectionHeader,
   Skeleton,
   toCategoryCode,
   tokens,
@@ -19,7 +20,8 @@ import {
 import type { TopicCardView } from '@/shared/types/bff'
 import { topicName } from '@/shared/utils/topic-name'
 import { MIN_QUESTIONS, questionsLabel } from '../domain/limits'
-import { useCreateTopic, useCreationLimits, useMyTopics } from '../hooks/use-authoring'
+import { todoTotal } from '../domain/authoring'
+import { useCreateTopic, useCreationLimits, useMyTopics, useTopicTodo } from '../hooks/use-authoring'
 import { CreateTopicSheet } from './topic-sheets'
 import { useRefreshActive } from '@/shared/hooks/use-refresh-active'
 
@@ -28,12 +30,17 @@ const topicSub = (topic: TopicCardView) =>
 
 /** Ouvre « Mon sujet » tout de suite : nom, univers et vignette passent par la navigation. */
 export function openMyTopic(topicId: string, name: string, category: string | null, imageUrl: string | null) {
-  router.push({ pathname: '/profile/topics/[id]', params: { id: topicId, name, category: category ?? '', image: imageUrl ?? '' } })
+  router.push({ pathname: '/workshop/[id]', params: { id: topicId, name, category: category ?? '', image: imageUrl ?? '' } })
 }
 
-/** Mes sujets (`creation.md` § 1) : brouillons et publiés, + pour créer. Entrée unique par Réglages. */
+/**
+ * Mes sujets (`creation.md` § 1) : brouillons et publiés, + pour créer. Entrée unique par Réglages, avec la barre
+ * d'onglets. Les sujets où une action est requise remontent dans « À traiter », avec une pastille ; comme les
+ * autres, ils s'ouvrent sur Mon sujet.
+ */
 export function MyTopicsScreen() {
   const topics = useMyTopics()
+  const todo = useTopicTodo()
   const pageRefresh = useRefreshActive()
   const create = useCreateTopic()
   const { limits, askPremium } = useCreationLimits()
@@ -80,9 +87,12 @@ export function MyTopicsScreen() {
           }
         />
       )
-    return (
+    const pending = (topic: TopicCardView) => todoTotal(todo.data?.find((item) => item.topicId === topic.topicId))
+    const toHandle = list.filter((topic) => pending(topic) > 0)
+    const others = list.filter((topic) => pending(topic) === 0)
+    const rows = (items: TopicCardView[]) => (
       <ListGroup surface="surface">
-        {list.map((topic, index) => (
+        {items.map((topic, index) => (
           <TopicRow
             key={topic.topicId}
             disabled={topic.topicId.startsWith('pending-')}
@@ -90,11 +100,28 @@ export function MyTopicsScreen() {
             category={toCategoryCode(topic.category)}
             image={topic.imageUrl ?? undefined}
             sub={topicSub(topic)}
+            badge={pending(topic)}
             onPress={() => openMyTopic(topic.topicId, topicName(topic.names), topic.category, topic.imageUrl)}
-            last={index === list.length - 1}
+            last={index === items.length - 1}
           />
         ))}
       </ListGroup>
+    )
+    return (
+      <View style={{ gap: tokens.space[6] }}>
+        {toHandle.length > 0 && (
+          <View style={{ gap: tokens.space[3] }}>
+            <SectionHeader title="À traiter" />
+            {rows(toHandle)}
+          </View>
+        )}
+        {others.length > 0 && (
+          <View style={{ gap: tokens.space[3] }}>
+            {toHandle.length > 0 && <SectionHeader title="Mes sujets" />}
+            {rows(others)}
+          </View>
+        )}
+      </View>
     )
   }
 

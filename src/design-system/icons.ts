@@ -52,6 +52,8 @@ export { EyeSlashIcon } from 'phosphor-react-native/src/icons/EyeSlash'
 export { DotsThreeIcon } from 'phosphor-react-native/src/icons/DotsThree'
 export { SignOutIcon } from 'phosphor-react-native/src/icons/SignOut'
 export { TrashIcon } from 'phosphor-react-native/src/icons/Trash'
+export { ArchiveIcon } from 'phosphor-react-native/src/icons/Archive'
+export { FileDashedIcon } from 'phosphor-react-native/src/icons/FileDashed'
 
 export { HeartIcon } from 'phosphor-react-native/src/icons/Heart'
 export { MapPinIcon } from 'phosphor-react-native/src/icons/MapPin'
