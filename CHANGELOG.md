@@ -1,3 +1,9 @@
+## [1.26.0](https://github.com/joutio/joutio-mobile/compare/v1.25.0...v1.26.0) (2026-11-10)
+
+### Features
+
+* **authoring:** report triage, focused workshop and role-based actions ([47c9dad](https://github.com/joutio/joutio-mobile/commit/47c9dad38f0612b30eb3ce81d1ecdbc7e7244c51))
+
 ## [1.25.0](https://github.com/joutio/joutio-mobile/compare/v1.24.0...v1.25.0) (2026-11-09)
 
 ### Features
