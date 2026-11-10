@@ -140,7 +140,7 @@ export function QuestionBlock({
           // Priorité à l'énoncé : jamais réduit ni tronqué, seule l'image cède de la place (`flexShrink: 0`).
           style={image ? { flexShrink: 0, minHeight: tokens.typography.question.lineHeight * 2, justifyContent: 'center' } : { flexShrink: 0 }}
         >
-          <Text variant="question" align="center" accessibilityRole="header" textBreakStrategy="balanced">
+          <Text variant="question" align="center" accessibilityRole="header" textBreakStrategy="balanced" android_hyphenationFrequency="normal">
             {text}
           </Text>
         </Animated.View>
