@@ -8,7 +8,7 @@ import {
   ArchiveIcon,
   ArrowCounterClockwiseIcon,
   Button,
-  showDialog,
+  Dialog,
   AnswerEditorRow,
   Field,
   ImagePicker,
@@ -78,6 +78,8 @@ export function QuestionEditorScreen() {
   const [language, setLanguage] = useState<Language>('fr')
   const [imageChanged, setImageChanged] = useState(false)
   const [uploading, setUploading] = useState(false)
+  // Confirmations rendues dans cet écran : le `Modal` du `DialogHost` racine reste sous une modale plein écran iOS.
+  const [confirm, setConfirm] = useState<'archive' | 'delete'>()
 
   // Question ouverte avant la fin du chargement : le brouillon part de la question dès qu'elle arrive.
   useEffect(() => {
@@ -238,23 +240,7 @@ export function QuestionEditorScreen() {
                   icon={ArchiveIcon}
                   label="Archiver la question"
                   control="chevron"
-                  onPress={() =>
-                    showDialog({
-                      title: `Archiver la question ${params.number ?? ''} ?`.replace('  ', ' '),
-                      message: 'Elle est retirée des parties. Tu la retrouves dans le filtre Archivées ; la restaurer la remet en attente de validation.',
-                      icon: ArchiveIcon,
-                      actions: [
-                        {
-                          label: 'Archiver',
-                          onPress: () => {
-                            lifecycle.mutate({ id: questionId })
-                            router.back()
-                          },
-                        },
-                        { label: 'Annuler', variant: 'plain' },
-                      ],
-                    })
-                  }
+                  onPress={() => setConfirm('archive')}
                   last={!actions.includes('delete')}
                 />
               )}
@@ -276,26 +262,7 @@ export function QuestionEditorScreen() {
                   label="Supprimer la question"
                   destructive
                   control="none"
-                  onPress={() =>
-                    showDialog({
-                      title: `Supprimer la question ${params.number ?? ''} ?`.replace('  ', ' '),
-                      message:
-                        'Elle disparaît du sujet et de ses statistiques. Cette action est définitive ; pour la retirer seulement des parties, archive-la.',
-                      tone: 'danger',
-                      icon: TrashIcon,
-                      actions: [
-                        {
-                          label: 'Supprimer',
-                          tone: 'destructive',
-                          onPress: () => {
-                            archive.mutate(questionId)
-                            router.back()
-                          },
-                        },
-                        { label: 'Annuler', variant: 'plain' },
-                      ],
-                    })
-                  }
+                  onPress={() => setConfirm('delete')}
                   last
                 />
               )}
@@ -303,6 +270,46 @@ export function QuestionEditorScreen() {
           </View>
         )}
       </KeyboardAwareScrollView>
+      {questionId && (
+        <>
+          <Dialog
+            open={confirm === 'archive'}
+            onClose={() => setConfirm(undefined)}
+            title={`Archiver la question ${params.number ?? ''} ?`.replace('  ', ' ')}
+            message="Elle est retirée des parties. Tu la retrouves dans le filtre Archivées ; la restaurer la remet en attente de validation."
+            icon={ArchiveIcon}
+            actions={[
+              {
+                label: 'Archiver',
+                onPress: () => {
+                  lifecycle.mutate({ id: questionId })
+                  router.back()
+                },
+              },
+              { label: 'Annuler', variant: 'plain' },
+            ]}
+          />
+          <Dialog
+            open={confirm === 'delete'}
+            onClose={() => setConfirm(undefined)}
+            title={`Supprimer la question ${params.number ?? ''} ?`.replace('  ', ' ')}
+            message="Elle disparaît du sujet et de ses statistiques. Cette action est définitive ; pour la retirer seulement des parties, archive-la."
+            tone="danger"
+            icon={TrashIcon}
+            actions={[
+              {
+                label: 'Supprimer',
+                tone: 'destructive',
+                onPress: () => {
+                  archive.mutate(questionId)
+                  router.back()
+                },
+              },
+              { label: 'Annuler', variant: 'plain' },
+            ]}
+          />
+        </>
+      )}
     </View>
   )
 }
