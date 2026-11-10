@@ -1,11 +1,10 @@
 import { router } from 'expo-router'
 import { useMemo, useRef, useState } from 'react'
-import { Platform, Pressable, Share, ScrollView, View, type NativeScrollEvent, type NativeSyntheticEvent, type ScrollViewInstance } from 'react-native'
+import { Pressable, Share, ScrollView, View, type NativeScrollEvent, type NativeSyntheticEvent, type ScrollViewInstance } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import {
   Banner,
   Button,
-  CaretDownIcon,
   CaretUpIcon,
   ChatCircleIcon,
   EloSummary,
@@ -44,8 +43,6 @@ import { ReportPlayerSheet } from './report-sheets'
 import { useMyAvatar } from '@/features/avatar/lib/avatar-preview'
 import { usePlayerAvatar } from '@/features/social/hooks/use-player-avatar'
 
-/** Aucune résistance (2026-11-10) : tout glissement non nul vers l'autre page la fait basculer au relâcher. */
-const SWITCH_DISTANCE = 0
 
 const ORDER = Object.keys(tokens.tier) as TierCode[]
 const masteryOf = (xp: number): MasteryTier => MASTERY_TIERS.reduce<MasteryTier>((best, tier) => (xp >= MASTERY_XP[tier] ? tier : best), 'FER')
@@ -137,9 +134,7 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
   const [reportOpen, setReportOpen] = useState(false)
   // Deux pages verticales fixes (résultat, Détails du duel), hauteur mesurée sous la barre.
   const pagerRef = useRef<ScrollViewInstance>(null)
-  const dragStart = useRef(0)
   const targetPage = useRef(0)
-  const enforceTarget = useRef(false)
   const [pageHeight, setPageHeight] = useState(0)
   const [page, setPage] = useState(0)
   const hasReview = useMemo(() => !cancelled && reviewRoundsOf(game).length > 0, [cancelled, game])
@@ -257,39 +252,19 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
             <ScrollView
               ref={pagerRef}
               style={{ flex: 1 }}
-              // Deux pages alignées : tout glissement non nul bascule, dans les deux sens.
+              // Paging natif : l'inertie et l'aimantation restent à l'OS, sans `scrollTo` au relâcher (saccade).
+              pagingEnabled
               decelerationRate="fast"
               bounces={false}
-              onScrollBeginDrag={(event: NativeSyntheticEvent<NativeScrollEvent>) => {
-                dragStart.current = event.nativeEvent.contentOffset.y
-              }}
-              onScrollEndDrag={(event: NativeSyntheticEvent<NativeScrollEvent>) => {
-                const offset = event.nativeEvent.contentOffset.y
-                const travelled = offset - dragStart.current
-                const from = Math.round(dragStart.current / pageHeight)
-                const passed = Math.abs(travelled) > SWITCH_DISTANCE
-                const target = passed ? Math.min(1, Math.max(0, from + Math.sign(travelled))) : from
-                targetPage.current = target
-                // Android seul relance son fling après cette commande (voir `onMomentumScrollBegin`).
-                enforceTarget.current = Platform.OS === 'android'
-                // Aucun rendu React pendant l'animation : la page active (accessibilité) est posée à son arrivée.
-                pagerRef.current?.scrollTo({ y: target * pageHeight, animated: true })
-              }}
+              overScrollMode="never"
               nestedScrollEnabled
               scrollEnabled={hasReview}
               scrollsToTop={false}
               showsVerticalScrollIndicator={false}
-              onMomentumScrollBegin={() => {
-                // Android démarre parfois son fling après la commande émise au relâcher.
-                // Reprendre une seule fois la destination choisie, sans relancer chaque animation.
-                if (!enforceTarget.current) return
-                enforceTarget.current = false
-                pagerRef.current?.scrollTo({ y: targetPage.current * pageHeight, animated: true })
-              }}
               onMomentumScrollEnd={(event: NativeSyntheticEvent<NativeScrollEvent>) => {
-                const target = targetPage.current * pageHeight
-                if (Math.abs(event.nativeEvent.contentOffset.y - target) > 1) pagerRef.current?.scrollTo({ y: target, animated: false })
-                if (page !== targetPage.current) setPage(targetPage.current)
+                const next = Math.round(event.nativeEvent.contentOffset.y / pageHeight)
+                targetPage.current = next
+                if (page !== next) setPage(next)
               }}
             >
               {/* Page 1 : le résultat. */}
@@ -393,7 +368,6 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
                     accessibilityHint="Ouvre la page Détails du duel"
                     onPress={() => {
                       targetPage.current = 1
-                      enforceTarget.current = false
                       setPage(1)
                       pagerRef.current?.scrollTo({ y: pageHeight, animated: true })
                     }}
@@ -420,24 +394,6 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
                   accessibilityElementsHidden={page !== 1}
                   importantForAccessibility={page !== 1 ? 'no-hide-descendants' : 'auto'}
                 >
-                  {/* Miroir de l'affordance du bas : on revient au résultat d'un toucher ou d'un glissé vers le bas. */}
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel="Revenir au résultat"
-                    hitSlop={8}
-                    onPress={() => {
-                      targetPage.current = 0
-                      enforceTarget.current = false
-                      setPage(0)
-                      pagerRef.current?.scrollTo({ y: 0, animated: true })
-                    }}
-                    style={{ alignItems: 'center', gap: tokens.space[1], paddingBottom: tokens.space[3], paddingHorizontal: tokens.space[5] }}
-                  >
-                    <CaretDownIcon size={20} color={colors.muted} />
-                    <Text variant="caption" color="muted" numberOfLines={1}>
-                      Glisse vers le bas pour revenir au résultat
-                    </Text>
-                  </Pressable>
                   <DuelReview game={game} me={userId} myName={myName} opponentName={opponentName} canReport />
                 </View>
               )}
