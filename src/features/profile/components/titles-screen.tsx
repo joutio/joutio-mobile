@@ -25,6 +25,7 @@ import {
   Text,
   TitleRow,
   tokens,
+  useGuardedRefresh,
   WarningCircleIcon,
 } from '@/design-system'
 import { useMyTitles, useWearTitle } from '@/features/topic/hooks/use-topic'
@@ -87,7 +88,7 @@ export function TitlesScreen() {
   const count = groups.reduce((sum, group) => sum + group.titles.length, 0)
   const shown = groups.slice(0, pages * PAGE_SIZE)
   const source = clientSource(pages, setPages, shown.length < groups.length)
-  const [refreshing, setRefreshing] = useState(false)
+  const { refreshing, refresh } = useGuardedRefresh(() => titles.refetch())
   const filtered = tier !== undefined || sort !== 'RECENT'
   const hasTitles = all.length > 0
   const change = (next: () => void) => {
@@ -249,10 +250,7 @@ export function TitlesScreen() {
           data={shown}
           renderScrollComponent={(props) => <LoadMoreScrollView {...props} />}
           refreshing={refreshing}
-          onRefresh={() => {
-            setRefreshing(true)
-            void titles.refetch().finally(() => setRefreshing(false))
-          }}
+          onRefresh={refresh}
           keyExtractor={(group) => group.topicId}
           contentContainerStyle={{ flexGrow: 1, gap: tokens.space[5], paddingHorizontal: GUTTER, paddingTop: tokens.space[2], paddingBottom: tokens.space[7] }}
           ListHeaderComponent={

@@ -44,6 +44,7 @@ function harness() {
     return module.exports
   }
   mocks['./header-geometry'] = load('../src/design-system/mobile/header-geometry.ts')
+  mocks['./guarded-refresh'] = load('../src/design-system/mobile/guarded-refresh.ts')
   mocks['./page-refresh'] = load('../src/design-system/mobile/page-refresh.tsx')
   mocks['expo-router/react-navigation'] = { HeaderHeightContext: {} }
   mocks['react-native-keyboard-controller'] = { KeyboardAwareScrollView: 'KeyboardScroll' }

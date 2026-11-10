@@ -228,7 +228,7 @@ sans ligne de co-auteur.
   `overlay`, loader en surimpression, traction portée par le défilement). Dans une enveloppe, le `ScrollView` est
   mesuré à **0 de haut** et la feuille paraît vide (2026-11-07 : « Choisis un sujet », « Qui veux-tu défier ? »).
   **Pages verticales fixes** (2026-11-05, résultat → Détails du duel) : `ScrollView` natif, hauteur de page mesurée
-  par `onLayout`, pas de feuille persistante ; bascule décidée au relâcher avec une résistance minimale (2026-11-07 : 8 points dans les deux sens, sans condition de vitesse), sinon retour ; affordance miroir en
+  par `onLayout`, pas de feuille persistante ; bascule décidée au relâcher **sans résistance** (2026-11-10 : tout glissement non nul bascule, seuil 0, sans condition de vitesse) ; affordance miroir en
   haut de la page 2. Pager **horizontal** : `@expo/ui/community/pager-view`
   (natif, SwiftUI / Compose), jamais un `ScrollView` piloté par `contentOffset`.
 - **Clavier** (2026-11-07) : `Screen` défile dans un `KeyboardAwareScrollView` (keyboard-controller, `bottomOffset` 24,
@@ -313,6 +313,8 @@ Expo change à chaque SDK. Avant de toucher une API Expo, EAS ou React Native : 
 - Cloches : utiliser `features/notifications/components/NotificationButton` dans les en-têtes (primitif `NotificationBell` du design system). Afficher le **nombre** non lu, jamais une simple pastille ; le cache du compteur est partagé entre tous les écrans et mis à jour optimistement avec l’inbox.
 - Social : pas de loupe globale en en-tête. Recherche de contacts vide → bouton « Rechercher globalement », avec `q` repris dans la recherche globale. Onglets sans chiffres ; total de la liste active et puce du tri courant dans une rangée sous les onglets, comme Sujets.
 - Pager / refresh Android : le patch `react-native-collapsible-tabs-native` arbitre la direction dès `dispatchTouchEvent`, avant `SwipeRefreshLayout`. Le refresh attend une direction verticale ; un geste horizontal reste horizontal jusqu’au relâchement, y compris sur une page vide. Ce correctif partagé couvre Social, Accueil, Profil, fiche sujet, modération et avatar. Ne pas désactiver le pager par un état React en cours de geste.
+
+- **Pull-to-refresh (règle, 2026-11-10)** : tout rafraîchissement par tiré déclenche `haptic('light')` **une seule fois**, après le verrou anti-doublon. Une seule implémentation : `useGuardedRefresh` (`design-system/mobile/guarded-refresh.ts`, verrou + haptic + `refreshing`), déjà intégrée à `Screen`, `ParallaxScreen`, `CollapsibleTabsScreen` (`usePageRefresh`) et `useRefreshActive`. Un écran qui pose un `RefreshControl` (listes) le nourrit avec ce hook ; interdit : verrou ou `setRefreshing` maison. Garde-fou : `npm run test:refresh-haptic` (à lancer avec `test:refresh`).
 
 - Charger la suite : `DragToLoadMore` déclenche `haptic('light')` **une seule fois** quand il accepte le chargement (traction ou pied touché), après le verrou anti-doublon. Le réglage appareil des vibrations est respecté ; aucun retour répété pendant le tiré ou une requête en cours.
 

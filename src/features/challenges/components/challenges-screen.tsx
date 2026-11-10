@@ -1,7 +1,7 @@
 import { NotificationButton } from '@/features/notifications/components/notification-button'
 import { useQueryClient } from '@tanstack/react-query'
 import { router } from 'expo-router'
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import { RefreshControl, ScrollView, View } from 'react-native'
 import {
   Button,
@@ -20,6 +20,7 @@ import {
   showDialog,
   Skeleton,
   tokens,
+  useGuardedRefresh,
   useTheme,
   WarningCircleIcon,
 } from '@/design-system'
@@ -79,8 +80,6 @@ export function ChallengesScreen() {
   const [filter, setFilter] = useState<Filter>('all')
   const [receivedPages, setReceivedPages] = useState(1)
   const [pickerOpen, setPickerOpen] = useState(false)
-  const refreshBusy = useRef(false)
-  const [refreshing, setRefreshing] = useState(false)
 
   const { received, sent } = splitChallenges(challenges.data, userId)
   const salons = resumableRooms(rooms.data)
@@ -94,19 +93,9 @@ export function ChallengesScreen() {
   const counts: Record<Filter, number | undefined> = { all: undefined, received: received.length, sent: sent.length, rooms: salons.length }
   const subtitle = `${sent.length} défi${sent.length > 1 ? 's' : ''} envoyé${sent.length > 1 ? 's' : ''} sur ${CHALLENGE_LIMIT} possibles`
 
-  const refresh = async () => {
-    if (refreshBusy.current) return
-    refreshBusy.current = true
-    setRefreshing(true)
-    try {
-      await Promise.all([client.refetchQueries({ queryKey: queryKeys.challenges() }), client.refetchQueries({ queryKey: queryKeys.rooms() })])
-    } catch {
-      // Les états d’erreur des requêtes restent affichés dans les sections.
-    } finally {
-      refreshBusy.current = false
-      setRefreshing(false)
-    }
-  }
+  const { refreshing, refresh } = useGuardedRefresh(() =>
+    Promise.all([client.refetchQueries({ queryKey: queryKeys.challenges() }), client.refetchQueries({ queryKey: queryKeys.rooms() })]),
+  )
 
   const refuseAll = () =>
     showDialog({
@@ -198,7 +187,7 @@ export function ChallengesScreen() {
     <Screen
       inTabs
       header={header}
-      scrollProps={{ refreshControl: <RefreshControl refreshing={refreshing} onRefresh={() => void refresh()} tintColor={colors.muted} /> }}
+      scrollProps={{ refreshControl: <RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={colors.muted} /> }}
       loadMore={loadMoreOptions(receivedSource)}
       contentStyle={{ flexGrow: 1, paddingBottom: tokens.space[7] }}
       overlay={
@@ -223,7 +212,7 @@ export function ChallengesScreen() {
             title="Impossible de charger les défis"
             description="Vérifie ta connexion, puis réessaie."
             action={
-              <Button style={{ alignSelf: 'center' }} loading={refreshing} onPress={() => void refresh()}>
+              <Button style={{ alignSelf: 'center' }} loading={refreshing} onPress={refresh}>
                 Réessayer
               </Button>
             }

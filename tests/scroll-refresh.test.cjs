@@ -11,11 +11,17 @@ function harness(callback) {
     '../haptics': { haptic: kind => haptics.push(kind) },
     '../theme/theme-provider': { useTheme: () => ({ colors: { muted: 'gray', surface: 'white' } }) },
   }
-  const code = ts.transpileModule(fs.readFileSync(require.resolve('../src/design-system/mobile/page-refresh.tsx'), 'utf8'), {
-    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX },
-  }).outputText
-  const module = { exports: {} }
-  new Function('require', 'module', 'exports', code)(id => mocks[id], module, module.exports)
+  const load = (file, requireFn) => {
+    const code = ts.transpileModule(fs.readFileSync(require.resolve(file), 'utf8'), {
+      compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX },
+    }).outputText
+    const mod = { exports: {} }
+    new Function('require', 'module', 'exports', code)(requireFn, mod, mod.exports)
+    return mod
+  }
+  // Le hook partagé (verrou + haptic) est chargé réellement : c'est lui que le conteneur utilise.
+  mocks['./guarded-refresh'] = load('../src/design-system/mobile/guarded-refresh.ts', id => mocks[id]).exports
+  const module = load('../src/design-system/mobile/page-refresh.tsx', id => mocks[id])
   return { refresh: module.exports.usePageRefresh(callback), states, haptics }
 }
 const settled = () => new Promise(resolve => setImmediate(resolve))

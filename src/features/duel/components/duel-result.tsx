@@ -44,8 +44,8 @@ import { ReportPlayerSheet } from './report-sheets'
 import { useMyAvatar } from '@/features/avatar/lib/avatar-preview'
 import { usePlayerAvatar } from '@/features/social/hooks/use-player-avatar'
 
-/** Seuil minimal en points : distingue un glissement volontaire d'un toucher, sans condition de vitesse. */
-const SWITCH_DISTANCE = 8
+/** Aucune résistance (2026-11-10) : tout glissement non nul vers l'autre page la fait basculer au relâcher. */
+const SWITCH_DISTANCE = 0
 
 const ORDER = Object.keys(tokens.tier) as TierCode[]
 const masteryOf = (xp: number): MasteryTier => MASTERY_TIERS.reduce<MasteryTier>((best, tier) => (xp >= MASTERY_XP[tier] ? tier : best), 'FER')
@@ -267,7 +267,7 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
                 const offset = event.nativeEvent.contentOffset.y
                 const travelled = offset - dragStart.current
                 const from = Math.round(dragStart.current / pageHeight)
-                const passed = Math.abs(travelled) >= SWITCH_DISTANCE
+                const passed = Math.abs(travelled) > SWITCH_DISTANCE
                 const target = passed ? Math.min(1, Math.max(0, from + Math.sign(travelled))) : from
                 targetPage.current = target
                 enforceTarget.current = true

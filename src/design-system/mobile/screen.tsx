@@ -1,6 +1,6 @@
 import { ScrollEdgeContext } from './scroll-edge'
 import { scrollEdgeProgress } from './header-geometry'
-import { useContext, useMemo, useRef, useState, type ReactNode, type Ref } from 'react'
+import { useContext, useMemo, type ReactNode, type Ref } from 'react'
 import { RefreshControl, ScrollView, View, type ScrollViewInstance, type ScrollViewProps, type StyleProp, type ViewStyle } from 'react-native'
 import { HeaderHeightContext } from 'expo-router/react-navigation'
 import { Platform } from 'react-native'
@@ -11,6 +11,7 @@ import { useDerivedValue, useSharedValue, type SharedValue } from 'react-native-
 import { HeaderSeparator } from './header-separator'
 import { useTheme } from '../theme/theme-provider'
 import { DragToLoadMore, LoadMoreScrollView } from './drag-to-load-more'
+import { useGuardedRefresh } from './guarded-refresh'
 
 /** Liste paginée de l'écran : la suite se charge en tirant en bas (`DragToLoadMore`, `contenu.md`). */
 /** Marge entre le champ actif et le haut du clavier. */
@@ -86,26 +87,14 @@ export function Screen({
   const headerOffset = scrollOffset ?? ownOffset
   const headerContext = useMemo(() => ({ docking: stickyTabs, offset: headerOffset }), [stickyTabs, headerOffset])
   const separator = useDerivedValue(() => scrollEdgeProgress(headerOffset.value) * (1 - stickyTabs.value))
-  const refreshBusy = useRef(false)
-  const [refreshing, setRefreshing] = useState(false)
+  const { refreshing, refresh } = useGuardedRefresh(onRefresh)
   const refreshControl = onRefresh ? (
     <RefreshControl
       refreshing={refreshing}
       tintColor={colors.muted}
       colors={[colors.accentInk]}
       progressBackgroundColor={colors.surface}
-      onRefresh={() => {
-        if (refreshBusy.current) return
-        refreshBusy.current = true
-        setRefreshing(true)
-        Promise.resolve()
-          .then(onRefresh)
-          .catch(() => undefined)
-          .finally(() => {
-            refreshBusy.current = false
-            setRefreshing(false)
-          })
-      }}
+      onRefresh={refresh}
     />
   ) : undefined
 

@@ -76,6 +76,7 @@ export * from './primitives/challenge-list-row'
 export * from './primitives/notification-row'
 
 export * from './mobile/bottom-nav'
+export * from './mobile/guarded-refresh'
 export * from './mobile/collapsible-tabs-screen'
 export * from './mobile/horizontal-gesture'
 export * from './mobile/rail'

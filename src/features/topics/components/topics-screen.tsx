@@ -13,7 +13,7 @@ import {
   EmptyState,
   EyeSlashIcon,
   FeedFooter,
-  haptic,
+  useGuardedRefresh,
   ListGroup,
   ListRow,
   LoadMoreScrollView,
@@ -126,21 +126,7 @@ export function TopicsScreen() {
     setHideFollowed(false)
   }
   // Tiré vers le bas en haut de la grille : catalogue, univers et cloche se rechargent.
-  const refreshBusy = useRef(false)
-  const [refreshing, setRefreshing] = useState(false)
-  const refresh = () => {
-    if (refreshBusy.current) return
-    refreshBusy.current = true
-    // Android ne remonte pas la traction : le retour haptique marque le déclenchement.
-    haptic('light')
-    setRefreshing(true)
-    void Promise.all([topics.refetch(), facets.refetch(), unread.refetch()])
-      .catch(() => undefined)
-      .finally(() => {
-        refreshBusy.current = false
-        setRefreshing(false)
-      })
-  }
+  const { refreshing, refresh } = useGuardedRefresh(() => Promise.all([topics.refetch(), facets.refetch(), unread.refetch()]))
 
   // Ce qui reste à charger : connu par les facettes, qui ignorent « Masquer les sujets suivis » (alors rien).
   const remaining = facets.data && !hideFollowed ? count - items.length : 0

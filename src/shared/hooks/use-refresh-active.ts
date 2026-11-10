@@ -1,5 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { useCallback, useState } from 'react'
+import { useCallback } from 'react'
+import { useGuardedRefresh } from '@/design-system/mobile/guarded-refresh'
 
 /**
  * Tirer pour rafraîchir une page entière (2026-11-07) : recharge toutes les requêtes affichées, pas seulement l'en-tête.
@@ -8,11 +9,7 @@ import { useCallback, useState } from 'react'
  */
 export function useRefreshActive() {
   const client = useQueryClient()
-  const [refreshing, setRefreshing] = useState(false)
   const refresh = useCallback(() => client.refetchQueries({ type: 'active' }), [client])
-  const onRefresh = useCallback(() => {
-    setRefreshing(true)
-    void refresh().finally(() => setRefreshing(false))
-  }, [refresh])
+  const { refreshing, refresh: onRefresh } = useGuardedRefresh(refresh)
   return { refresh, refreshing, onRefresh }
 }

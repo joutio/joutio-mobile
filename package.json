@@ -73,6 +73,7 @@
     "test:search-header": "node tests/search-header.test.cjs",
     "test:api-client": "node tests/api-client.test.cjs",
     "test:refresh": "node tests/scroll-refresh.test.cjs",
+    "test:refresh-haptic": "node tests/refresh-haptic.test.cjs",
     "test:headers": "node tests/header-separators.test.cjs",
     "test:collapse-slack": "node tests/collapse-slack.test.cjs",
     "doctor": "npx expo-doctor",

@@ -1,7 +1,8 @@
 import { compactHeaderEdge } from './header-geometry'
 import { HeaderSeparator } from './header-separator'
 import { Image } from 'expo-image'
-import { createContext, useContext, useMemo, useRef, useState, type ReactNode } from 'react'
+import { createContext, useContext, useMemo, useState, type ReactNode } from 'react'
+import { useGuardedRefresh } from './guarded-refresh'
 import { RefreshControl, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native'
 import { GestureDetector } from 'react-native-gesture-handler'
 import Animated, {
@@ -288,20 +289,7 @@ export function ParallaxScreen({
   const stretch = useOverscrollStretch(scroll)
   const imageStyle = useAnimatedStyle(() => ({ transform: heroImageTransform(scroll.value - stretch.pull.value, reduced, heroHeight) }))
   // Le contrôle système possède le geste et l’indicateur de rafraîchissement.
-  const refreshBusy = useRef(false)
-  const [refreshing, setRefreshing] = useState(false)
-  const refresh = () => {
-    if (!onRefresh || refreshBusy.current) return
-    refreshBusy.current = true
-    setRefreshing(true)
-    Promise.resolve()
-      .then(onRefresh)
-      .catch(() => undefined)
-      .finally(() => {
-        refreshBusy.current = false
-        setRefreshing(false)
-      })
-  }
+  const { refreshing, refresh } = useGuardedRefresh(onRefresh)
   const titleStyle = useAnimatedStyle(() => ({ opacity: heroTitleOpacity(scroll.value, titleStart.value, titleLength.value) }))
   const separator = useDerivedValue(() => compactHeaderEdge(progress.value))
   const barStyle = useAnimatedStyle(() => ({ opacity: progress.value }))
