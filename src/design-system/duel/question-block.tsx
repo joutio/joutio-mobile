@@ -16,6 +16,9 @@ const [X1, Y1, X2, Y2] = tokens.motion.base.easing.type === 'bezier' ? tokens.mo
 const EASE = Easing.bezier(X1, Y1, X2, Y2)
 /** Sous cette hauteur de bloc, la liste passe en 2 × 2 (container query `jo-question-short` : 519 px au plus). */
 const SHORT_HEIGHT = 519
+/** Image d'une question : 5:4, 370 pt de large au plus (`max-w-[370px]` du lab). */
+const IMAGE_RATIO = 5 / 4
+const IMAGE_MAX_WIDTH = 370
 
 /** `@keyframes` du lab, rejouées à l'identique (durée et easing `base`). */
 const FADE = new Keyframe({ 0: { opacity: 0 }, 100: { opacity: 1, easing: EASE } }).duration(BASE_MS)
@@ -101,6 +104,10 @@ export function QuestionBlock({
   // `min-h-[max(18cqh,72px)]` en 2 × 2, `min-h-[max(12cqh,64px)]` en liste.
   const cardMin = grid ? Math.max(height * 0.18, 72) : Math.max(height * 0.12, 64)
   const count = answers?.length ?? 0
+  // Image contenue dans sa zone (`object-contain` de la boîte du lab) : 5:4, 370 pt de large au plus.
+  const [zone, setZone] = useState({ width: 0, height: 0 })
+  const imageWidth = Math.max(0, Math.min(zone.width, IMAGE_MAX_WIDTH, zone.height * IMAGE_RATIO))
+  const imageBox = { width: imageWidth, height: imageWidth / IMAGE_RATIO }
 
   // `jo-question-lock` : réponses inactives jusqu'à la fin de leur apparition (toujours actives en mouvement réduit).
   const [locked, setLocked] = useState(true)
@@ -145,13 +152,18 @@ export function QuestionBlock({
           </Text>
         </Animated.View>
         {image && (
-          // Rangée `minmax(0, 1fr)` : zone dédiée de l'image, qui s'y contient (5:4) et y est centrée.
-          <View style={{ flex: 1, minHeight: 0, justifyContent: 'center', alignItems: 'center', marginTop: tokens.space[2] }}>
-            <Animated.View entering={play ? FADE : undefined} style={{ height: '100%', maxWidth: 370, aspectRatio: 5 / 4 }}>
+          // Rangée `minmax(0, 1fr)` : zone dédiée de l'image, qui s'y contient (5:4) et y est centrée. La boîte est
+          // calculée depuis la zone mesurée : `height: 100%` + `aspectRatio` en déduisait une largeur plus grande que
+          // l'écran dès que la zone était haute (image débordant sur les côtés, ratio cassé par `maxWidth`, 2026-11-10).
+          <View
+            onLayout={(event) => setZone({ width: event.nativeEvent.layout.width, height: event.nativeEvent.layout.height })}
+            style={{ flex: 1, minHeight: 0, alignSelf: 'stretch', justifyContent: 'center', alignItems: 'center', marginTop: tokens.space[2] }}
+          >
+            <Animated.View entering={play ? FADE : undefined} style={imageBox}>
               {/* Image contenue dans sa zone : rendue seulement une fois le bloc mesuré. Au premier layout, sa boîte est
                   encore provisoire ; Android (Glide) décodait l'image à cette petite taille, gardée en cache par taille,
                   et la première page de la revue restait floue (2026-11-07). Pas de sous-échantillonnage non plus. */}
-              {height > 0 && (
+              {height > 0 && imageBox.width > 0 && (
                 <Image
                   source={{ uri: image }}
                   recyclingKey={image}
