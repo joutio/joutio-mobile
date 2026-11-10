@@ -1,5 +1,5 @@
 import { Image } from 'expo-image'
-import { useImperativeHandle, useRef, useState, type ReactNode, type Ref } from 'react'
+import { useContext, useImperativeHandle, useRef, useState, type ReactNode, type Ref } from 'react'
 import { SectionList, StyleSheet, View } from 'react-native'
 import {
   CollapsibleTabView,
@@ -9,6 +9,7 @@ import {
   type CollapsibleTabsRef,
   type Route,
 } from 'react-native-collapsible-tabs-native'
+import { BottomTabBarHeightContext } from 'expo-router/js-tabs'
 import Animated, { useAnimatedReaction, useAnimatedStyle, useDerivedValue, useEvent, useSharedValue, type SharedValue } from 'react-native-reanimated'
 import { scheduleOnRN } from 'react-native-worklets'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -81,8 +82,6 @@ export interface CollapsibleTabsScreenProps<T extends string> {
   barTitleStart?: boolean
   /** Barre fixe en bas de l'écran, au-dessus de la barre d'onglets (ligne du joueur dans un classement). */
   bottomBar?: ReactNode
-  /** Racine d'onglet : la barre d'onglets porte la zone sûre du bas. Un écran poussé n'a pas de barre (2026-11-10). */
-  inTabs?: boolean
   /** Sous l'image : défile avec elle (statistiques, actions principales). */
   intro?: ReactNode
   tabs: readonly CollapsibleTab<T>[]
@@ -192,11 +191,12 @@ export function CollapsibleTabsScreen<T extends string>({
   dockAt,
   barTitleStart = false,
   bottomBar,
-  inTabs = false,
   ...hero
 }: CollapsibleTabsScreenProps<T>) {
   const { colors } = useTheme()
   const insets = useSafeAreaInsets()
+  // Dans un onglet, la barre d'onglets porte déjà la zone sûre du bas.
+  const inTabs = useContext(BottomTabBarHeightContext) !== undefined
   const bottomInset = inTabs ? 0 : insets.bottom
   const barHeight = insets.top + TOP_BAR_HEIGHT
   const refresh = usePageRefresh(onRefresh)

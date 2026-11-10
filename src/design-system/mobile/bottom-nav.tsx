@@ -1,5 +1,4 @@
 import type { BottomTabBarProps } from 'expo-router/js-tabs'
-import { getFocusedRouteNameFromRoute } from 'expo-router/react-navigation'
 import { Platform, View, type StyleProp, type ViewStyle } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import type { Icon } from '../icons'
@@ -73,15 +72,6 @@ export function BottomNav<K extends string>({ items, active, onChange, style }: 
 }
 
 /**
- * Seules les racines d'onglet affichent la barre (2026-11-10, `navigation.md`) : tout écran poussé dans la pile d'un
- * onglet (recherche, notifications, fiches, classements, parties, réglages…) la masque et reprend la safe area basse.
- * La racine d'une pile est sa route `index` ; un onglet sans pile (Défis) n'a pas de route imbriquée.
- */
-export function isTabRoot(routeName: string | undefined) {
-  return routeName === undefined || routeName === 'index'
-}
-
-/**
  * `tabBar` des `Tabs` d'expo-router. Titre et badge viennent des options de chaque écran, l'icône de `icons`
  * (clé : nom de route). Toucher l'onglet actif émet `tabPress`, ce qui
  * remonte la liste en haut (`useScrollToTop`).
@@ -99,8 +89,6 @@ export function JoTabBar({ state, descriptors, emitter, navigateToTab, icons }: 
     }
   })
   const active = state.routes[state.index]?.key ?? ''
-  const focused = state.routes[state.index]
-  if (focused && !isTabRoot(getFocusedRouteNameFromRoute(focused))) return null
   return (
     <BottomNav
       items={items}

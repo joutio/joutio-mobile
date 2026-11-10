@@ -93,7 +93,6 @@ export function ProfileScreen() {
   return (
     <>
       <CollapsibleTabsScreen<Tab>
-        inTabs
         heroHeight={HERO_HEIGHT + AVATAR_SIZES.xxl - AVATAR_SIZES.xl}
         back={false}
         centered

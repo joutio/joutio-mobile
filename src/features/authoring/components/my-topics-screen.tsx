@@ -128,6 +128,7 @@ export function MyTopicsScreen() {
   return (
     <Screen
       onRefresh={pageRefresh.refresh}
+      inTabs
       header={
         <MobileTopBar
           variant="inline"

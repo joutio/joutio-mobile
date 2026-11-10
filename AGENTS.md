@@ -314,7 +314,18 @@ Expo change à chaque SDK. Avant de toucher une API Expo, EAS ou React Native : 
 - Social : pas de loupe globale en en-tête. Recherche de contacts vide → bouton « Rechercher globalement », avec `q` repris dans la recherche globale. Onglets sans chiffres ; total de la liste active et puce du tri courant dans une rangée sous les onglets, comme Sujets.
 - Pager / refresh Android : le patch `react-native-collapsible-tabs-native` arbitre la direction dès `dispatchTouchEvent`, avant `SwipeRefreshLayout`. Le refresh attend une direction verticale ; un geste horizontal reste horizontal jusqu’au relâchement, y compris sur une page vide. Ce correctif partagé couvre Social, Accueil, Profil, fiche sujet, modération et avatar. Ne pas désactiver le pager par un état React en cours de geste.
 
-- **Bottom bar (règle, 2026-11-10)** : seules les 5 racines d'onglet (`index`, Défis) affichent `JoTabBar` ; tout écran poussé dans la pile d'un onglet (recherche, notifications, fiches, classements, parties, réglages, Mes sujets…) la masque (`isTabRoot`, route focalisée ≠ `index` → `null`). Un écran poussé **ne passe pas `inTabs`** (sa safe area basse est portée par le contenu) ; `CollapsibleTabsScreen` reçoit `inTabs` explicitement (Profil seulement). Un nouvel écran poussé n'a donc rien à faire ; un nouvel onglet racine passe `inTabs`.
+- **Bottom bar (règle, 2026-11-10, standard iOS HIG — remplace « barre sur les racines seules »)** : la barre reste
+  visible sur toute la navigation de consultation, poussée dans la pile de l'onglet (`(tabs)/*` : fiches sujet et
+  joueur, recherche, notifications, classements, historique, sujets joués, série, titres, Réglages, Mes sujets).
+  Les tâches ciblées et le plein écran vivent dans la Stack `(app)` et glissent par-dessus : duel, matchmaking,
+  salon, résultat, chat, éditeurs, atelier, suppression de compte. **`JoTabBar` ne se démonte jamais** : la masquer
+  en renvoyant `null` agrandit la zone des scènes pendant la transition native (flash sur les bords, racine
+  re-mesurée, flou remonté). Pour masquer la barre, on place l'écran dans `(app)`. Les fonds react-navigation
+  suivent `colors.bg` (`ThemeProvider` d'expo-router dans `app/_layout.tsx`, `sceneStyle` des `Tabs`).
+- **Animations sans rendu React par frame** : une animation de plus de quelques frames passe par une valeur
+  Reanimated (`useAnimatedProps` / `useAnimatedStyle`, SVG compris), jamais par un `setState` dans
+  `requestAnimationFrame`. Exemple : `TopicsDonut` anime `strokeDashoffset` de chaque part et ne joue qu'une fois.
+  Le pager résultat ne change aucun état React pendant son `scrollTo`.
 
 - **Pull-to-refresh (règle, 2026-11-10)** : tout rafraîchissement par tiré déclenche `haptic('light')` **une seule fois**, après le verrou anti-doublon. Une seule implémentation : `useGuardedRefresh` (`design-system/mobile/guarded-refresh.ts`, verrou + haptic + `refreshing`), déjà intégrée à `Screen`, `ParallaxScreen`, `CollapsibleTabsScreen` (`usePageRefresh`) et `useRefreshActive`. Un écran qui pose un `RefreshControl` (listes) le nourrit avec ce hook ; interdit : verrou ou `setRefreshing` maison. Garde-fou : `npm run test:refresh-haptic` (à lancer avec `test:refresh`).
 
@@ -372,7 +383,7 @@ Décision utilisateur : supprimer l’ancien dépôt GitHub `joutio/joutio-mobil
 
 - **Sans barre d'onglets** (`navigation.md`, Tâches ciblées) : tout l'atelier vit sous `(app)/workshop/[id]/*`
   (Mon sujet, Questions, Équipe, Modération, Signalements) ; les doublons `(tabs)/profile/topics/[id]/*` et
-  `useWorkshopNavigation` sont supprimés. Mes sujets reste `(tabs)/profile/topics` (écran poussé, sans barre). Supprimer mon
+  `useWorkshopNavigation` sont supprimés. Mes sujets reste `(tabs)/profile/topics` (avec la barre). Supprimer mon
   compte passe en `(app)/delete-account`. Retour natif partout, sans `dismissTo` ni `usePreventRemove`.
 - **Signalements** : `(app)/workshop/[id]/reports/[questionId]` (`highlight`, `from=notifications`), file de tri sur
   `GET /api/question-reports/topics/{id}` : question en plein écran (`QuestionBlock` du duel, Actuelle / Signalée),

@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router/js-tabs'
-import { CompassIcon, HouseIcon, JoTabBar, SwordIcon, UserIcon, UsersIcon, type Icon } from '@/design-system'
+import { CompassIcon, HouseIcon, JoTabBar, SwordIcon, UserIcon, UsersIcon, type Icon, useTheme } from '@/design-system'
 import { splitChallenges, useChallengesRealtime, useMyChallenges } from '@/features/challenges'
 import { useMe } from '@/features/me'
 
@@ -15,13 +15,14 @@ const TABS: { name: string; title: string; icon: Icon }[] = [
 const ICONS = Object.fromEntries(TABS.map((tab) => [tab.name, tab.icon]))
 
 export default function TabsLayout() {
+  const { colors } = useTheme()
   const userId = useMe(true).data?.userId ?? ''
   // Badge Défis : défis reçus en attente, tenus à jour par le flux personnel STOMP.
   const challenges = useMyChallenges(Boolean(userId))
   useChallengesRealtime()
   const received = splitChallenges(challenges.data, userId).received.length
   return (
-    <Tabs tabBar={(props) => <JoTabBar {...props} icons={ICONS} />} screenOptions={{ headerShown: false }}>
+    <Tabs tabBar={(props) => <JoTabBar {...props} icons={ICONS} />} screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: colors.bg } }}>
       {TABS.map((tab) => (
         <Tabs.Screen
           key={tab.name}

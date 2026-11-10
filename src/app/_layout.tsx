@@ -1,9 +1,9 @@
 import { QueryClientProvider } from '@tanstack/react-query'
-import { Stack } from 'expo-router'
+import { DarkTheme, DefaultTheme, Stack, ThemeProvider as NavigationThemeProvider } from 'expo-router'
 import * as SplashScreen from 'expo-splash-screen'
 import { StatusBar } from 'expo-status-bar'
 import * as SystemUI from 'expo-system-ui'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { View } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { KeyboardProvider } from 'react-native-keyboard-controller'
@@ -78,15 +78,25 @@ function Root() {
     SystemUI.setBackgroundColorAsync(colors.bg).catch(() => undefined)
   }, [colors.bg])
 
+  // Thème react-navigation : ses fonds par défaut (scènes d'onglets, cartes) sont clairs et apparaissent pendant
+  // les transitions natives. Ils reprennent ici le fond de l'app.
+  const navigationTheme = useMemo(() => {
+    const base = scheme === 'dark' ? DarkTheme : DefaultTheme
+    return {
+      ...base,
+      colors: { ...base.colors, background: colors.bg, card: colors.bg, border: colors.border, text: colors.text, primary: colors.accent },
+    }
+  }, [scheme, colors])
+
   return (
-    <>
+    <NavigationThemeProvider value={navigationTheme}>
       <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
       <SessionRuntime />
       <Navigation />
       <ExpoPushRuntime />
       <ToastHost />
       <DialogHost />
-    </>
+    </NavigationThemeProvider>
   )
 }
 

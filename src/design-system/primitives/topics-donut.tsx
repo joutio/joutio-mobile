@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from 'react'
+import { memo, useEffect, useMemo, useState } from 'react'
 import { View, type StyleProp, type ViewStyle } from 'react-native'
+import Animated, { Easing, ReduceMotion, useAnimatedProps, useAnimatedStyle, useDerivedValue, useSharedValue, withTiming, type SharedValue } from 'react-native-reanimated'
 import Svg, { Circle, G, Line, Text as SvgText } from 'react-native-svg'
 import { useReducedMotion } from '../motion'
 import { useTheme } from '../theme/theme-provider'
@@ -73,7 +74,8 @@ function plan(data: readonly TopicsDonutDatum[], maxSegments: number, otherLabel
       fraction,
       zone: zoneOf(angle),
       arcLength: Math.max(0, fraction * CIRCUMFERENCE - SEGMENT_GAP),
-      arcOffset: -(start * CIRCUMFERENCE + SEGMENT_GAP / 2),
+      /* Chaque part est son propre cercle, tourné pour que son tracé commence au début de la part. */
+      arcRotation: -90 + (start + SEGMENT_GAP / 2 / CIRCUMFERENCE) * 360,
       count: polar(R_MID, angle),
       dot: polar(R_OUTER + 0.8, angle),
       labelX: 50,
@@ -109,36 +111,53 @@ function plan(data: readonly TopicsDonutDatum[], maxSegments: number, otherLabel
   return segments
 }
 
-/** Avancement de 0 à 1 (ease-out cubique), lancé par `play` ; immédiat sous mouvement réduit. */
+const AnimatedCircle = Animated.createAnimatedComponent(Circle)
+const AnimatedG = Animated.createAnimatedComponent(G)
+
+/**
+ * Avancement de 0 à 1 (ease-out cubique) sur le thread UI, lancé une seule fois par `play` : revenir sur l'onglet ne
+ * rejoue pas le dessin. Immédiat sous mouvement réduit. Aucun rendu React par frame.
+ */
 function useReveal(play: boolean) {
   const reduced = useReducedMotion()
-  const [progress, setProgress] = useState(0)
+  const progress = useSharedValue(0)
   useEffect(() => {
-    if (!play) return
-    if (reduced) {
-      setProgress(1)
-      return
-    }
-    let frame = 0
-    let start: number | undefined
-    const tick = (now: number) => {
-      start ??= now
-      const value = Math.min(1, (now - start) / REVEAL_MS)
-      setProgress(1 - (1 - value) ** 3)
-      if (value < 1) frame = requestAnimationFrame(tick)
-    }
-    frame = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(frame)
-  }, [play, reduced])
+    if (!play || progress.value > 0) return
+    progress.value = reduced ? 1 : withTiming(1, { duration: REVEAL_MS, easing: Easing.out(Easing.cubic), reduceMotion: ReduceMotion.Never })
+  }, [play, reduced, progress])
   return progress
 }
 
+/**
+ * Une part : tiret de sa longueur suivi d'un vide plus long que le cercle. Le décalage fait avancer le tiret depuis
+ * le début de la part, si bien que seul `strokeDashoffset` (un nombre) est animé.
+ */
+function Arc({ color, length, rotation, progress }: { color: string; length: number; rotation: number; progress: SharedValue<number> }) {
+  const animatedProps = useAnimatedProps(() => ({ strokeDashoffset: length * (1 - progress.value) }))
+  return (
+    <AnimatedCircle
+      cx={50}
+      cy={50}
+      r={R_MID}
+      fill="none"
+      stroke={color}
+      strokeWidth={R_OUTER - R_INNER}
+      strokeDasharray={`${length} ${CIRCUMFERENCE}`}
+      animatedProps={animatedProps}
+      transform={`rotate(${rotation} 50 50)`}
+    />
+  )
+}
+
 /** Répartition par sujet : parts colorées, compteur dans chaque part, libellés reliés à l'anneau. */
-export function TopicsDonut({ data, label, maxSegments = 6, otherLabel = 'Autres', play = true, style }: TopicsDonutProps) {
+export const TopicsDonut = memo(function TopicsDonut({ data, label, maxSegments = 6, otherLabel = 'Autres', play = true, style }: TopicsDonutProps) {
   const { colors } = useTheme()
   const segments = useMemo(() => plan(data, maxSegments, otherLabel, colors.border), [data, maxSegments, otherLabel, colors.border])
   const progress = useReveal(play)
-  const reveal = clamp((progress - 0.6) / 0.4, 0, 1)
+  // Compteurs, traits et libellés apparaissent en fondu sur la fin du dessin.
+  const reveal = useDerivedValue(() => Math.max(0, Math.min(1, (progress.value - 0.6) / 0.4)))
+  const revealProps = useAnimatedProps(() => ({ opacity: reveal.value }))
+  const revealStyle = useAnimatedStyle(() => ({ opacity: reveal.value }))
   const [width, setWidth] = useState(0)
   const height = (width * CROP_HEIGHT) / 100
   const summary = `${label} : ${segments.map((segment) => `${segment.label} ${segment.value}`).join(', ')}`
@@ -155,72 +174,60 @@ export function TopicsDonut({ data, label, maxSegments = 6, otherLabel = 'Autres
         <>
           <Svg width={width} height={height} viewBox={`0 ${CROP_TOP} 100 ${CROP_HEIGHT}`} style={{ position: 'absolute', overflow: 'visible' }}>
             {segments.map((segment) => (
-              <Circle
-                key={segment.key}
-                cx={50}
-                cy={50}
-                r={R_MID}
-                fill="none"
-                stroke={segment.color}
-                strokeWidth={R_OUTER - R_INNER}
-                strokeDasharray={`${segment.arcLength * progress} ${CIRCUMFERENCE - segment.arcLength * progress}`}
-                strokeDashoffset={segment.arcOffset}
-                transform="rotate(-90 50 50)"
-              />
+              <Arc key={segment.key} color={segment.color} length={segment.arcLength} rotation={segment.arcRotation} progress={progress} />
             ))}
-            {segments
-              .filter((segment) => segment.fraction >= COUNT_MIN_SHARE)
-              .map((segment) => (
-                <SvgText
-                  key={segment.key}
-                  x={segment.count.x}
-                  y={segment.count.y + 1.5}
-                  textAnchor="middle"
-                  fontSize={4.4}
-                  fontFamily={fontFace('GeistMono', '700')}
-                  fill={segment.key === OTHER_KEY ? colors.text : colors.onAccent}
-                  opacity={reveal}
-                >
-                  {String(Math.round(segment.value * progress))}
-                </SvgText>
-              ))}
+            <AnimatedG animatedProps={revealProps}>
+              {segments
+                .filter((segment) => segment.fraction >= COUNT_MIN_SHARE)
+                .map((segment) => (
+                  <SvgText
+                    key={segment.key}
+                    x={segment.count.x}
+                    y={segment.count.y + 1.5}
+                    textAnchor="middle"
+                    fontSize={4.4}
+                    fontFamily={fontFace('GeistMono', '700')}
+                    fill={segment.key === OTHER_KEY ? colors.text : colors.onAccent}
+                  >
+                    {String(segment.value)}
+                  </SvgText>
+                ))}
+              {segments.map((segment) => {
+                const side = segment.zone === 'left' || segment.zone === 'right'
+                const endX = side ? segment.labelX + (segment.zone === 'right' ? -LEADER_GAP : LEADER_GAP) : segment.labelX
+                const endY = side ? segment.labelY : segment.labelY + (segment.zone === 'top' ? 5 : -5)
+                const ink = segment.key === OTHER_KEY ? colors.muted : segment.color
+                return (
+                  <G key={segment.key}>
+                    <Line x1={segment.dot.x} y1={segment.dot.y} x2={endX} y2={endY} stroke={ink} strokeWidth={0.6} strokeLinecap="round" />
+                    <Circle cx={segment.dot.x} cy={segment.dot.y} r={1} fill={ink} />
+                  </G>
+                )
+              })}
+            </AnimatedG>
+          </Svg>
+          <Animated.View pointerEvents="none" style={[{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }, revealStyle]}>
             {segments.map((segment) => {
               const side = segment.zone === 'left' || segment.zone === 'right'
-              const endX = side ? segment.labelX + (segment.zone === 'right' ? -LEADER_GAP : LEADER_GAP) : segment.labelX
-              const endY = side ? segment.labelY : segment.labelY + (segment.zone === 'top' ? 5 : -5)
-              const ink = segment.key === OTHER_KEY ? colors.muted : segment.color
+              const boxWidth = (width * (side ? LABEL_WIDTH : 32)) / 100
+              const left = segment.zone === 'left' ? 0 : (width * segment.labelX) / 100 - (side ? 0 : boxWidth / 2)
+              const top = ((segment.labelY - CROP_TOP) * height) / CROP_HEIGHT
               return (
-                <G key={segment.key} opacity={reveal}>
-                  <Line x1={segment.dot.x} y1={segment.dot.y} x2={endX} y2={endY} stroke={ink} strokeWidth={0.6} strokeLinecap="round" />
-                  <Circle cx={segment.dot.x} cy={segment.dot.y} r={1} fill={ink} />
-                </G>
+                <View key={segment.key} style={{ position: 'absolute', left, top, width: boxWidth, transform: [{ translateY: '-50%' }] }}>
+                  <Text
+                    variant="caption"
+                    weight="600"
+                    align={segment.zone === 'left' ? 'right' : segment.zone === 'right' ? 'left' : 'center'}
+                    textBreakStrategy="balanced"
+                  >
+                    {segment.label}
+                  </Text>
+                </View>
               )
             })}
-          </Svg>
-          {segments.map((segment) => {
-            const side = segment.zone === 'left' || segment.zone === 'right'
-            const boxWidth = (width * (side ? LABEL_WIDTH : 32)) / 100
-            const left = segment.zone === 'left' ? 0 : (width * segment.labelX) / 100 - (side ? 0 : boxWidth / 2)
-            const top = ((segment.labelY - CROP_TOP) * height) / CROP_HEIGHT
-            return (
-              <View
-                key={segment.key}
-                pointerEvents="none"
-                style={{ position: 'absolute', left, top, width: boxWidth, transform: [{ translateY: '-50%' }], opacity: reveal }}
-              >
-                <Text
-                  variant="caption"
-                  weight="600"
-                  align={segment.zone === 'left' ? 'right' : segment.zone === 'right' ? 'left' : 'center'}
-                  textBreakStrategy="balanced"
-                >
-                  {segment.label}
-                </Text>
-              </View>
-            )
-          })}
+          </Animated.View>
         </>
       )}
     </View>
   )
-}
+})

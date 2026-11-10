@@ -1,4 +1,5 @@
 import { router } from 'expo-router'
+import { useMemo } from 'react'
 import { View } from 'react-native'
 import {
   Button,
@@ -91,9 +92,14 @@ export interface StatsTabProps {
 export function StatsTab({ streak, tier, rating, provisional, wins, draws, losses, topics, active, onStreak, onRanks, onPlayed }: StatsTabProps) {
   const played = wins + draws + losses
   const rank = tier && !provisional ? rankProgress(tier, rating) : undefined
-  const donut = (topics ?? [])
-    .filter((topic) => topic.games > 0)
-    .map((topic) => ({ key: topic.topicId, label: topicName(topic.names), value: topic.games, color: topic.color ?? tokens.category.GENERAL.color }))
+  // Référence stable : le donut est mémorisé et ne se redessine pas à chaque rendu de l'onglet.
+  const donut = useMemo(
+    () =>
+      (topics ?? [])
+        .filter((topic) => topic.games > 0)
+        .map((topic) => ({ key: topic.topicId, label: topicName(topic.names), value: topic.games, color: topic.color ?? tokens.category.GENERAL.color })),
+    [topics],
+  )
   return (
     <TabScrollView contentContainerStyle={PAGE}>
       <View style={{ gap: tokens.space[4] }}>

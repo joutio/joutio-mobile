@@ -1,6 +1,6 @@
 import { router } from 'expo-router'
 import { useMemo, useRef, useState } from 'react'
-import { Pressable, Share, ScrollView, View, type NativeScrollEvent, type NativeSyntheticEvent, type ScrollViewInstance } from 'react-native'
+import { Platform, Pressable, Share, ScrollView, View, type NativeScrollEvent, type NativeSyntheticEvent, type ScrollViewInstance } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import {
   Banner,
@@ -257,7 +257,7 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
             <ScrollView
               ref={pagerRef}
               style={{ flex: 1 }}
-              // Deux pages alignées : un glissement de 8 points suffit dans les deux sens.
+              // Deux pages alignées : tout glissement non nul bascule, dans les deux sens.
               decelerationRate="fast"
               bounces={false}
               onScrollBeginDrag={(event: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -270,8 +270,9 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
                 const passed = Math.abs(travelled) > SWITCH_DISTANCE
                 const target = passed ? Math.min(1, Math.max(0, from + Math.sign(travelled))) : from
                 targetPage.current = target
-                enforceTarget.current = true
-                setPage(target)
+                // Android seul relance son fling après cette commande (voir `onMomentumScrollBegin`).
+                enforceTarget.current = Platform.OS === 'android'
+                // Aucun rendu React pendant l'animation : la page active (accessibilité) est posée à son arrivée.
                 pagerRef.current?.scrollTo({ y: target * pageHeight, animated: true })
               }}
               nestedScrollEnabled
@@ -288,7 +289,7 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
               onMomentumScrollEnd={(event: NativeSyntheticEvent<NativeScrollEvent>) => {
                 const target = targetPage.current * pageHeight
                 if (Math.abs(event.nativeEvent.contentOffset.y - target) > 1) pagerRef.current?.scrollTo({ y: target, animated: false })
-                setPage(targetPage.current)
+                if (page !== targetPage.current) setPage(targetPage.current)
               }}
             >
               {/* Page 1 : le résultat. */}
