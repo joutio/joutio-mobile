@@ -1,3 +1,9 @@
+## [1.27.1](https://github.com/joutio/joutio-mobile/compare/v1.27.0...v1.27.1) (2026-11-10)
+
+### Bug Fixes
+
+* **duel:** break very long unspaced words in the question statement ([afed6ea](https://github.com/joutio/joutio-mobile/commit/afed6ea286a958b8c5256be949e81ec93478edff))
+
 ## [1.27.0](https://github.com/joutio/joutio-mobile/compare/v1.26.0...v1.27.0) (2026-11-10)
 
 ### Features
