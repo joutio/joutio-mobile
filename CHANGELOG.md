@@ -1,3 +1,11 @@
+## [1.28.1](https://github.com/joutio/joutio-mobile/compare/v1.28.0...v1.28.1) (2026-11-10)
+
+### Bug Fixes
+
+* **duel:** any fling switches the result pager to the duel details on Android ([4fda796](https://github.com/joutio/joutio-mobile/commit/4fda7966edff7d18d0a72b87193b597601a8c2cb))
+* **duel:** contain the question image in its zone, centred ([f5a413e](https://github.com/joutio/joutio-mobile/commit/f5a413e4276301dade403a1f97cda9017a40bd25))
+* **topic:** launch duel sheet order, world, player, robot, then room ([774cb2d](https://github.com/joutio/joutio-mobile/commit/774cb2d9517b3a92bec72931efd648b61c9c0d5f))
+
 ## [1.28.0](https://github.com/joutio/joutio-mobile/compare/v1.27.2...v1.28.0) (2026-11-10)
 
 ### Features
