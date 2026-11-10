@@ -100,7 +100,6 @@ export function SettingsScreen() {
 
   return (
     <Screen
-      inTabs
       header={<MobileTopBar variant="inline" back="Profil" onBack={() => router.back()} title="Réglages" />}
       overlay={
         <>

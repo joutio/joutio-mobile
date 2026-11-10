@@ -45,7 +45,6 @@ export function StreakScreen() {
   return (
     <Screen
       onRefresh={pageRefresh.refresh}
-      inTabs
       header={<MobileTopBar variant="inline" back="Profil" onBack={() => router.back()} title="Série" />}
       contentStyle={{ gap: tokens.space[5], paddingHorizontal: tokens.space[5], paddingTop: tokens.space[2], paddingBottom: tokens.space[7] }}
     >

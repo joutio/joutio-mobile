@@ -71,7 +71,6 @@ export function NotificationsScreen() {
 
   return (
     <Screen
-      inTabs
       scroll={false}
       header={
         <MobileTopBar

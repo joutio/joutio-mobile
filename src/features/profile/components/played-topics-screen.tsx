@@ -97,7 +97,6 @@ export function PlayedTopicsScreen() {
 
   return (
     <Screen
-      inTabs
       header={<MobileTopBar variant="inline" back="Profil" onBack={() => router.back()} title="Sujets joués" />}
       loadMore={loadMoreOptions(source)}
       onRefresh={() => topics.refetch()}

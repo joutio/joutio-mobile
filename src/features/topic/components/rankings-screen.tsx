@@ -102,7 +102,6 @@ export function RankingsScreen() {
 
   return (
     <Screen
-      inTabs
       scroll={false}
       header={
         <MobileTopBar

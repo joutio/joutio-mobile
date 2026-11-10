@@ -187,7 +187,6 @@ export function TitlesScreen() {
 
   return (
     <Screen
-      inTabs
       scroll={false}
       header={header}
       overlay={

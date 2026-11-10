@@ -117,7 +117,6 @@ export function HistoryScreen() {
 
   return (
     <Screen
-      inTabs
       scroll={false}
       header={
         <MobileTopBar
