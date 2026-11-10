@@ -250,7 +250,7 @@ export function TitlesTab({ titles, equippedKey, loading, error, retrying, onRet
   return (
     <TabScrollView contentContainerStyle={{ ...PAGE, gap: tokens.space[4] }}>
       <SectionHeader
-        title="Derniers titres"
+        title="Meilleurs titres"
         action={
           <Button variant="plain" size="S" onPress={onAll}>
             Tout voir

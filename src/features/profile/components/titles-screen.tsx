@@ -2,8 +2,6 @@ import { router } from 'expo-router'
 import { useMemo, useState } from 'react'
 import { FlatList, View } from 'react-native'
 import {
-  ArrowsDownUpIcon,
-  Chip,
   DragToLoadMore,
   LoadMoreScrollView,
   Button,
@@ -38,13 +36,6 @@ import { titleLabel } from '../lib/format'
 const GUTTER = tokens.space[5]
 const PAGE_SIZE = 5
 const TIERS: MasteryTier[] = ['DIAMANT', 'EMERAUDE', 'PLATINE', 'OR', 'ARGENT', 'BRONZE', 'FER']
-type Sort = 'RECENT' | 'OLDEST' | 'ALPHA'
-const SORTS: { value: Sort; label: string }[] = [
-  { value: 'RECENT', label: 'Plus récents' },
-  { value: 'OLDEST', label: 'Plus anciens' },
-  { value: 'ALPHA', label: 'Alphabétique' },
-]
-
 interface Group {
   topicId: string
   topic: string
@@ -53,11 +44,8 @@ interface Group {
 
 const countLabel = (count: number) => `${count} titre${count > 1 ? 's' : ''}`
 
-/**
- * Groupes par sujet, du palier le plus haut au plus bas. Sans `unlockedAt` côté BFF (`titres.md` § 6), « Plus
- * récents » suit l'ordre du serveur et « Plus anciens » l'inverse.
- */
-function groupsOf(titles: readonly TitleView[], tier: MasteryTier | undefined, query: string, sort: Sort): Group[] {
+/** Groupes par sujet (ordre du serveur), titres du palier le plus haut au plus bas. Le BFF ne date pas les déblocages. */
+function groupsOf(titles: readonly TitleView[], tier: MasteryTier | undefined, query: string): Group[] {
   const search = query.trim().toLowerCase()
   const groups = new Map<string, Group>()
   for (const title of titles) {
@@ -69,27 +57,24 @@ function groupsOf(titles: readonly TitleView[], tier: MasteryTier | undefined, q
     groups.set(title.topicId, group)
   }
   const list = [...groups.values()].map((group) => ({ ...group, titles: group.titles.sort((a, b) => TIERS.indexOf(a.tier) - TIERS.indexOf(b.tier)) }))
-  if (sort === 'OLDEST') list.reverse()
-  if (sort === 'ALPHA') list.sort((a, b) => a.topic.localeCompare(b.topic, 'fr'))
   return list
 }
 
-/** Tous les titres (`titres.md`) : recherche, filtre par rang et tri ; liste groupée par sujet, 5 sujets par page. */
+/** Tous les titres (`titres.md`) : recherche et filtre par rang ; liste groupée par sujet, 5 sujets par page. */
 export function TitlesScreen() {
   const titles = useMyTitles()
   const wear = useWearTitle()
   const [query, setQuery] = useState('')
   const [tier, setTier] = useState<MasteryTier>()
-  const [sort, setSort] = useState<Sort>('RECENT')
   const [pages, setPages] = useState(1)
   const [filtersOpen, setFiltersOpen] = useState(false)
   const all = titles.data?.titles ?? []
-  const groups = useMemo(() => groupsOf(all, tier, query, sort), [all, tier, query, sort])
+  const groups = useMemo(() => groupsOf(all, tier, query), [all, tier, query])
   const count = groups.reduce((sum, group) => sum + group.titles.length, 0)
   const shown = groups.slice(0, pages * PAGE_SIZE)
   const source = clientSource(pages, setPages, shown.length < groups.length)
   const { refreshing, refresh } = useGuardedRefresh(() => titles.refetch())
-  const filtered = tier !== undefined || sort !== 'RECENT'
+  const filtered = tier !== undefined
   const hasTitles = all.length > 0
   const change = (next: () => void) => {
     next()
@@ -98,7 +83,6 @@ export function TitlesScreen() {
   const reset = () =>
     change(() => {
       setTier(undefined)
-      setSort('RECENT')
     })
 
   const header = (
@@ -224,23 +208,6 @@ export function TitlesScreen() {
                 </ListGroup>
               </RadioGroup>
             </View>
-            <View style={{ gap: tokens.space[4] }}>
-              <SectionHeader title="Tri" />
-              <RadioGroup label="Tri">
-                <ListGroup>
-                  {SORTS.map((item, index) => (
-                    <ListRow
-                      key={item.value}
-                      label={item.label}
-                      control="radio"
-                      on={sort === item.value}
-                      onToggle={() => change(() => setSort(item.value))}
-                      last={index === SORTS.length - 1}
-                    />
-                  ))}
-                </ListGroup>
-              </RadioGroup>
-            </View>
           </View>
         </MobileSheet>
       }
@@ -256,9 +223,6 @@ export function TitlesScreen() {
           ListHeaderComponent={
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: tokens.space[3] }}>
               <Text variant="callout" color="muted">{countLabel(count)}</Text>
-              <Chip icon={ArrowsDownUpIcon} onPress={() => setFiltersOpen(true)}>
-                {SORTS.find((option) => option.value === sort)?.label ?? ''}
-              </Chip>
             </View>
           }
           ListEmptyComponent={empty()}
