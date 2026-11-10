@@ -95,7 +95,7 @@ export function ListRow({
         <Text numberOfLines={1} color={textColor} weight={strong ? '600' : undefined}>
           {label}
         </Text>
-        {sub && (
+        {!!sub && (
           <Text variant="caption" color="muted" numberOfLines={1}>
             {sub}
           </Text>
@@ -104,7 +104,7 @@ export function ListRow({
       {control === 'toggle' && <Switch embedded label={label} checked={on} disabled={disabled} onChange={(value) => onToggle?.(value)} />}
       {control === 'chevron' && (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: tokens.space[2] }}>
-          {value && <Text color="muted">{value}</Text>}
+          {!!value && <Text color="muted">{value}</Text>}
           <CaretRightIcon size={14} color={colors.muted} />
         </View>
       )}
