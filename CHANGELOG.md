@@ -1,3 +1,15 @@
+## [1.27.0](https://github.com/joutio/joutio-mobile/compare/v1.26.0...v1.27.0) (2026-11-10)
+
+### Features
+
+* haptic on every pull-to-refresh and drop duel result resistance ([c2e9792](https://github.com/joutio/joutio-mobile/commit/c2e9792222f18504cf0c707ea3e56608b9470ccc))
+* **nav:** show the bottom bar only on tab roots, hide it on every pushed screen ([66f6bef](https://github.com/joutio/joutio-mobile/commit/66f6befe5719f307f7c11b41338062f373081010))
+
+### Bug Fixes
+
+* **duel:** give every QuestionBlock part its own zone so the image never slips under the answers ([288fa87](https://github.com/joutio/joutio-mobile/commit/288fa8715b393e3b8306a38fba8bddf5ab38d5f6))
+* **history:** let the games count and sort row scroll with the list ([ddf6111](https://github.com/joutio/joutio-mobile/commit/ddf61111e0a7d14b14f65e7bb07c8aaa8edf7319))
+
 ## [1.26.0](https://github.com/joutio/joutio-mobile/compare/v1.25.0...v1.26.0) (2026-11-10)
 
 ### Features
