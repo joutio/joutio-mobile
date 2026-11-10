@@ -1,6 +1,6 @@
 import { router } from 'expo-router'
 import { useMemo, useRef, useState } from 'react'
-import { Pressable, Share, ScrollView, View, type NativeScrollEvent, type NativeSyntheticEvent, type ScrollViewInstance } from 'react-native'
+import { Platform, Pressable, Share, ScrollView, View, type NativeScrollEvent, type NativeSyntheticEvent, type ScrollViewInstance } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import {
   Banner,
@@ -252,8 +252,13 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
             <ScrollView
               ref={pagerRef}
               style={{ flex: 1 }}
-              // Paging natif : l'inertie et l'aimantation restent à l'OS, sans `scrollTo` au relâcher (saccade).
-              pagingEnabled
+              // Aimantation native, sans `scrollTo` au relâcher (saccade). iOS : paging de l'OS. Android : le paging
+              // ne bascule qu'au-delà de la moitié de la page prédite, d'où des glissés qui reviennent ; avec
+              // `snapToOffsets`, tout lancer va au cran suivant dans sa direction (`flingAndSnap` de RN), un
+              // glissé lent et relâché va au cran le plus proche.
+              pagingEnabled={Platform.OS === 'ios'}
+              snapToOffsets={Platform.OS === 'android' ? [0, pageHeight] : undefined}
+              disableIntervalMomentum
               decelerationRate="fast"
               bounces={false}
               overScrollMode="never"
