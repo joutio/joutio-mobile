@@ -76,7 +76,7 @@ export interface QuestionBlockProps {
  * Énoncé et réponses d'une manche (`QuestionBlock` du lab), à la taille de son parent qui doit avoir une hauteur.
  * Chaque composante a sa zone dédiée (2026-11-10) : méta, énoncé (deux lignes réservées avec une image, qu'il en
  * fasse une ou deux), image (tout l'espace restant, 5:4 contenue dans sa zone, 370 pt au plus) puis réponses (hauteur
- * propre). L'image ne déborde jamais sur l'énoncé ni sous les réponses ; elle rétrécit si la place manque. Sans image,
+ * propre). L'énoncé est toujours affiché en entier : c'est l'image qui rétrécit (jusqu'à disparaître) si la place manque, elle ne déborde jamais sur l'énoncé ni sous les réponses. Sans image,
  * l'énoncé est centré dans l'espace au-dessus des réponses.
  */
 export function QuestionBlock({
@@ -128,7 +128,7 @@ export function QuestionBlock({
     <View onLayout={(event) => setHeight(event.nativeEvent.layout.height)} style={[{ flex: 1, gap: tokens.space[5] }, style]}>
       <View style={{ flex: 1, minHeight: 0, gap: tokens.space[4], justifyContent: image ? 'flex-start' : 'center' }}>
         {meta && (
-          <Animated.View entering={play ? FADE : undefined}>
+          <Animated.View entering={play ? FADE : undefined} style={{ flexShrink: 0 }}>
             <Text variant="caption" weight="600" color="muted" align="center">
               {meta}
             </Text>
@@ -137,7 +137,8 @@ export function QuestionBlock({
         {/* Zone de l'énoncé : deux lignes réservées avec une image (une ligne ne remonte pas l'image), plus si besoin. */}
         <Animated.View
           entering={play ? RISE : undefined}
-          style={image ? { minHeight: tokens.typography.question.lineHeight * 2, justifyContent: 'center' } : undefined}
+          // Priorité à l'énoncé : jamais réduit ni tronqué, seule l'image cède de la place (`flexShrink: 0`).
+          style={image ? { flexShrink: 0, minHeight: tokens.typography.question.lineHeight * 2, justifyContent: 'center' } : { flexShrink: 0 }}
         >
           <Text variant="question" align="center" accessibilityRole="header" textBreakStrategy="balanced">
             {text}
