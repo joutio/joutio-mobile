@@ -1,3 +1,9 @@
+## [1.27.2](https://github.com/joutio/joutio-mobile/compare/v1.27.1...v1.27.2) (2026-11-10)
+
+### Bug Fixes
+
+* **nav:** keep the tab bar mounted and smooth result and profile animations ([f7bf172](https://github.com/joutio/joutio-mobile/commit/f7bf17206aeb8d033dd95d01477a892cfe164c62))
+
 ## [1.27.1](https://github.com/joutio/joutio-mobile/compare/v1.27.0...v1.27.1) (2026-11-10)
 
 ### Bug Fixes
