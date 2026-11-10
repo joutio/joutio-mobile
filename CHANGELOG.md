@@ -1,3 +1,15 @@
+## [1.28.0](https://github.com/joutio/joutio-mobile/compare/v1.27.2...v1.28.0) (2026-11-10)
+
+### Features
+
+* **profile:** drop titles sort and label the tab as best titles ([ba60f5e](https://github.com/joutio/joutio-mobile/commit/ba60f5e4a99da68766018d7b8a0f41f9ec9b74de))
+
+### Bug Fixes
+
+* **authoring:** render question archive and delete confirmations inside the editor ([1f69f9f](https://github.com/joutio/joutio-mobile/commit/1f69f9f270f651e4321d6f950ec28b5349ddbc58))
+* **duel:** use native paging for the result pager ([730c7c3](https://github.com/joutio/joutio-mobile/commit/730c7c3c7577af203b6d97a4399f362b7ff5ff65))
+* **ui:** coerce ListRow sub and value before conditional rendering ([13419ef](https://github.com/joutio/joutio-mobile/commit/13419efea212d5971296301de6aac0425b8392f6))
+
 ## [1.27.2](https://github.com/joutio/joutio-mobile/compare/v1.27.1...v1.27.2) (2026-11-10)
 
 ### Bug Fixes
