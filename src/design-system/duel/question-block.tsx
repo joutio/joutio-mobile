@@ -55,8 +55,6 @@ export interface QuestionBlockProps {
   /** Sujet et avancement, par exemple « Rois de France · question 4 sur 7 ». */
   meta?: string
   image?: string
-  /** Hors duel (revue) : l'image se réduit à la place disponible, à ratio égal, au lieu de sa taille fixe. */
-  fitImage?: boolean
   /** Réponses : leur place est réservée dès l'énoncé, même avant leur apparition. */
   answers?: readonly (AnswerCardProps & { key: string })[]
   /**
@@ -76,15 +74,15 @@ export interface QuestionBlockProps {
 
 /**
  * Énoncé et réponses d'une manche (`QuestionBlock` du lab), à la taille de son parent qui doit avoir une hauteur.
- * Sans image, l'énoncé est centré dans l'espace au-dessus des réponses ; avec une image, méta et énoncé en haut puis
- * l'image, centrée dans l'espace restant. L'image a une taille et un cadrage fixes (5:4, 370 pt au plus) : un grand
- * écran ne doit pas aider à répondre.
+ * Chaque composante a sa zone dédiée (2026-11-10) : méta, énoncé (deux lignes réservées avec une image, qu'il en
+ * fasse une ou deux), image (tout l'espace restant, 5:4 contenue dans sa zone, 370 pt au plus) puis réponses (hauteur
+ * propre). L'image ne déborde jamais sur l'énoncé ni sous les réponses ; elle rétrécit si la place manque. Sans image,
+ * l'énoncé est centré dans l'espace au-dessus des réponses.
  */
 export function QuestionBlock({
   text,
   meta,
   image,
-  fitImage = false,
   answers,
   answersShown = true,
   layout = 'auto',
@@ -136,36 +134,33 @@ export function QuestionBlock({
             </Text>
           </Animated.View>
         )}
-        <Animated.View entering={play ? RISE : undefined}>
+        {/* Zone de l'énoncé : deux lignes réservées avec une image (une ligne ne remonte pas l'image), plus si besoin. */}
+        <Animated.View
+          entering={play ? RISE : undefined}
+          style={image ? { minHeight: tokens.typography.question.lineHeight * 2, justifyContent: 'center' } : undefined}
+        >
           <Text variant="question" align="center" accessibilityRole="header" textBreakStrategy="balanced">
             {text}
           </Text>
         </Animated.View>
         {image && (
-          // Rangée `minmax(0, 1fr)` : l'image, à taille fixe, est centrée dans l'espace restant (`self-center`).
+          // Rangée `minmax(0, 1fr)` : zone dédiée de l'image, qui s'y contient (5:4) et y est centrée.
           <View style={{ flex: 1, minHeight: 0, justifyContent: 'center', alignItems: 'center', marginTop: tokens.space[2] }}>
-            <Animated.View
-              entering={play ? FADE : undefined}
-              style={fitImage ? { height: '100%', maxWidth: '100%', aspectRatio: 5 / 4 } : { width: '100%', maxWidth: 370 }}
-            >
-              {/* Image ajustée (revue du duel) : rendue seulement une fois le bloc mesuré. Au premier layout, sa boîte est
+            <Animated.View entering={play ? FADE : undefined} style={{ height: '100%', maxWidth: 370, aspectRatio: 5 / 4 }}>
+              {/* Image contenue dans sa zone : rendue seulement une fois le bloc mesuré. Au premier layout, sa boîte est
                   encore provisoire ; Android (Glide) décodait l'image à cette petite taille, gardée en cache par taille,
                   et la première page de la revue restait floue (2026-11-07). Pas de sous-échantillonnage non plus. */}
-              {(!fitImage || height > 0) && (
+              {height > 0 && (
                 <Image
                   source={{ uri: image }}
                   recyclingKey={image}
-                  allowDownscaling={!fitImage}
+                  allowDownscaling={false}
                   contentFit="cover"
                   // Préchargée à la création de la partie (`usePrefetchQuestionImages`) : lue depuis le cache.
                   cachePolicy="memory-disk"
                   transition={0}
                   accessibilityIgnoresInvertColors
-                  style={
-                    fitImage
-                      ? [StyleSheet.absoluteFill, { borderRadius: radius.xl, borderWidth: HAIRLINE, borderColor: colors.border }]
-                      : { width: '100%', aspectRatio: 5 / 4, borderRadius: radius.xl, borderWidth: HAIRLINE, borderColor: colors.border }
-                  }
+                  style={[StyleSheet.absoluteFill, { borderRadius: radius.xl, borderWidth: HAIRLINE, borderColor: colors.border }]}
                 />
               )}
             </Animated.View>

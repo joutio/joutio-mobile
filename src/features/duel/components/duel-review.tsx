@@ -74,7 +74,7 @@ const ReviewPage = memo(function ReviewPage({ round, me, opponent, myName, oppon
         opponent={{ name: opponentName, seconds: theirs ? theirs.timeMs / 1000 : undefined, points: theirs?.points ?? 0 }}
       />
       <View style={{ flex: 1, minHeight: 0 }}>
-        <QuestionBlock text={questionText} image={round.imageUrl ?? undefined} fitImage layout="2x2" answers={cards} notchColor={colors.bg} />
+        <QuestionBlock text={questionText} image={round.imageUrl ?? undefined} layout="2x2" answers={cards} notchColor={colors.bg} />
       </View>
     </View>
   )

@@ -120,7 +120,6 @@ const QuestionPage = memo(function QuestionPage({
         <QuestionBlock
           text={text}
           image={(snapshot ? snapshot.imageUrl : question.imageUrl) ?? undefined}
-          fitImage
           layout="2x2"
           answers={cards}
           notchColor={colors.bg}
