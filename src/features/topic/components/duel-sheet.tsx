@@ -40,9 +40,9 @@ type Contacts = 'following' | 'followers'
 
 const MODES: { value: Mode; icon: Icon; label: string; sub: string }[] = [
   { value: 'world', icon: GlobeHemisphereWestIcon, label: 'Défier le monde', sub: 'Adversaire en direct, apparié par Elo' },
+  { value: 'player', icon: UserPlusIcon, label: 'Défier un joueur', sub: 'Invitation nominative, à accepter ou refuser' },
   { value: 'training', icon: RobotIcon, label: "S'entraîner avec un robot", sub: 'Aucune expérience gagnée' },
   { value: 'room', icon: LinkIcon, label: 'Créer un salon', sub: 'Salon privé à partager par lien' },
-  { value: 'player', icon: UserPlusIcon, label: 'Défier un joueur', sub: 'Invitation nominative, à accepter ou refuser' },
 ]
 
 const LEVELS: { value: BotDifficulty; label: string; sub: string }[] = [
