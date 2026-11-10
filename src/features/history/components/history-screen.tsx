@@ -151,14 +151,6 @@ export function HistoryScreen() {
       }
       contentStyle={{ flex: 1 }}
     >
-      {!list.isPending && !list.isError && (
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: tokens.space[3], paddingHorizontal: GUTTER, paddingBottom: tokens.space[2] }}>
-                <Text variant="callout" color="muted">{countLabel(count)}</Text>
-                <Chip icon={ArrowsDownUpIcon} onPress={() => setSheetOpen(true)}>
-                  {HISTORY_SORTS.find((option) => option.value === filterState.sort)?.label ?? ''}
-                </Chip>
-              </View>
-      )}
       {list.isPending ? (
         <Loading />
       ) : list.isError && !list.data ? (
@@ -206,6 +198,14 @@ export function HistoryScreen() {
             keyExtractor={(group) => group.day}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ paddingTop: tokens.space[3], paddingBottom: tokens.space[7] }}
+            ListHeaderComponent={
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: tokens.space[3], paddingHorizontal: GUTTER, paddingBottom: tokens.space[2] }}>
+                <Text variant="callout" color="muted">{countLabel(count)}</Text>
+                <Chip icon={ArrowsDownUpIcon} onPress={() => setSheetOpen(true)}>
+                  {HISTORY_SORTS.find((option) => option.value === filterState.sort)?.label ?? ''}
+                </Chip>
+              </View>
+            }
             ListFooterComponent={
               <FeedFooter style={{ marginHorizontal: GUTTER }} {...feedFooterProps(pagedQuery(list))} endLabel="Tu as vu toutes tes parties" />
             }
