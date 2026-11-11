@@ -19,8 +19,6 @@ export const playService = {
   createBotRoom: (topicId: string, difficulty: BotDifficulty) => api.post<IdResponse>(ENDPOINTS.rooms.bot, { topicId, difficulty }),
   room: (roomId: string) => api.get<RoomView>(ENDPOINTS.rooms.get(roomId)),
   /** Apparition dans la salle (idempotent) : présence, et participant pour le second humain. */
-  joinRoom: (roomId: string) => api.post<void>(ENDPOINTS.rooms.join(roomId)),
-  leaveRoom: (roomId: string) => api.post<void>(ENDPOINTS.rooms.leave(roomId)),
   cancelRoom: (roomId: string) => api.post<void>(ENDPOINTS.rooms.cancel(roomId)),
   /** Relance (« wizz ») de l'adversaire nommé absent : pur temps réel, cadence 10 s par joueur côté serveur. */
   wizzRoom: (roomId: string) => api.post<void>(ENDPOINTS.rooms.wizz(roomId)),

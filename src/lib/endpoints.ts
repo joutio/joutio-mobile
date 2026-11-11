@@ -53,18 +53,22 @@ export const ENDPOINTS = {
     mine: '/api/rooms/mine',
     bot: '/api/rooms/bot',
     get: (roomId: string) => `/api/rooms/${roomId}`,
-    join: (roomId: string) => `/api/rooms/${roomId}/join`,
-    leave: (roomId: string) => `/api/rooms/${roomId}/leave`,
     cancel: (roomId: string) => `/api/rooms/${roomId}/cancel`,
     wizz: (roomId: string) => `/api/rooms/${roomId}/wizz`,
     notifications: (roomId: string) => `/api/rooms/${roomId}/notifications`,
     topic: (roomId: string) => `/topic/rooms/${roomId}`,
+    /** Canal de présence : abonné = dans le salon ; le serveur observe l'abonnement, l'app ne déclare rien. */
+    presence: (roomId: string) => `/topic/rooms/${roomId}/presence`,
+    /** Refus d'entrée dans un salon (salle pleine, non invité…), poussé au joueur. */
+    presenceErrors: '/user/queue/room-presence',
   },
   matchmaking: {
     tickets: '/api/matchmaking/tickets',
     cancel: (ticketId: string) => `/api/matchmaking/tickets/${ticketId}/cancel`,
     notifications: (ticketId: string) => `/api/matchmaking/tickets/${ticketId}/notifications`,
     topic: (ticketId: string) => `/topic/matchmaking/tickets/${ticketId}`,
+    /** Canal de présence du ticket : quitter l'écran ou perdre la connexion annule la recherche côté serveur. */
+    presence: (ticketId: string) => `/topic/matchmaking/tickets/${ticketId}/presence`,
   },
   challenges: {
     create: '/api/challenges',

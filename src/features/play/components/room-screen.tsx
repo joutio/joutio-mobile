@@ -85,7 +85,7 @@ export function RoomScreen() {
   const myAvatar = useMyAvatar()
   const userId = me.data?.userId ?? ''
   const { view, room, status } = useRoom(roomId)
-  const presence = useRoomPresence(roomId, true)
+  const presence = useRoomPresence(roomId)
   const wizz = useWizzRoom(roomId)
   const cancellation = useCloseRoom()
   const now = useServerNow()
@@ -132,24 +132,11 @@ export function RoomScreen() {
     router.replace({ pathname: '/duel/[gameId]', params: { gameId, topicName: topic, category: category ?? '', topicId: topicId ?? '' } })
   }, [focused, gameId, topic, category, topicId])
 
-  // Quitter l'écran pendant l'attente : on quitte le salon sans le fermer (joutio-web) ; l'annulation est explicite.
-  const leftRef = useRef(false)
-  const waitingRef = useRef(waiting)
-  waitingRef.current = waiting
-  useEffect(
-    () => () => {
-      if (done.current || leftRef.current || !waitingRef.current) return
-      playService.leaveRoom(roomId).catch(() => undefined)
-    },
-    [roomId],
-  )
+  // Quitter l'écran, passer en arrière-plan ou perdre le réseau : le serveur le constate (canal de présence).
 
   const cancel = () => {
     cancellation.mutate(roomId, {
-      onSuccess: () => {
-        leftRef.current = true
-        router.back()
-      },
+      onSuccess: () => router.back(),
     })
   }
   useEffect(() => {
@@ -201,7 +188,7 @@ export function RoomScreen() {
             {presence.failed && (
               <View style={{ gap: tokens.space[2] }}>
                 <Text variant="caption" color="muted" align="center">
-                  Impossible de rejoindre le salon. Vérifie ta connexion.
+                  {presence.problem?.detail ?? 'Impossible de rejoindre le salon. Vérifie ta connexion.'}
                 </Text>
                 <Button full variant="gray" tone="neutral" onPress={presence.retry}>
                   Réessayer

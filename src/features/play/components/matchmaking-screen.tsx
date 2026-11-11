@@ -27,7 +27,7 @@ import { readServerNow, useServerClock } from '@/lib/realtime/server-clock'
 import { useConnectionStore } from '@/lib/ws'
 import { countryLabel } from '@/shared/utils/country'
 import { tierOf } from '@/shared/utils/tier'
-import { useAutoTrain, useBotDifficulty, useTicket, type PlayTopic } from '../hooks/use-play'
+import { useAutoTrain, useBotDifficulty, useTicket, useTicketPresence, type PlayTopic } from '../hooks/use-play'
 import { playService } from '../lib/play-service'
 import { userAvatar } from '@/shared/utils/avatar'
 
@@ -101,7 +101,6 @@ function MatchmakingScreenContent() {
   const autoTrain = useAutoTrain()
   const difficulty = useBotDifficulty((state) => state.difficulty)
   const [pickerOpen, setPickerOpen] = useState(false)
-  const settled = useRef(false)
 
   const roomId = ticket.state?.roomId ?? null
   const room = useQuery({ queryKey: ['rooms', roomId], queryFn: () => playService.room(roomId ?? ''), enabled: Boolean(roomId) })
@@ -131,7 +130,6 @@ function MatchmakingScreenContent() {
       playService.cancelRoom(id).catch(() => undefined)
       return
     }
-    settled.current = true
     router.replace({ pathname: '/room/[roomId]', params: { roomId: id, topicId: topic.topicId, topicName: topic.name, category: topic.category ?? '' } })
   }
   const training = useMutation({
@@ -142,7 +140,6 @@ function MatchmakingScreenContent() {
   const retry = useMutation({
     mutationFn: () => playService.enqueue(topic.topicId),
     onSuccess: (next) => {
-      settled.current = true
       router.replace({ pathname: '/matchmaking/[ticketId]', params: { ...params, ticketId: next.ticketId } })
     },
     onError: () => toast.error("La recherche n'a pas pu redémarrer"),
@@ -167,15 +164,13 @@ function MatchmakingScreenContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status])
 
-  // Quitter pendant la recherche supprime le ticket.
-  const statusRef = useRef(status)
-  statusRef.current = status
-  useEffect(
-    () => () => {
-      if (!settled.current && statusRef.current === 'SEARCHING') playService.cancelTicket(params.ticketId).catch(() => undefined)
-    },
-    [params.ticketId],
-  )
+  // Quitter l'écran pendant la recherche (ou perdre la connexion) l'annule : le serveur le constate.
+  // « Annuler la recherche » est une intention du joueur : la commande part, l'écran se ferme sans attendre.
+  const cancelSearch = () => {
+    playService.cancelTicket(params.ticketId).catch(() => undefined)
+    router.back()
+  }
+  useTicketPresence(params.ticketId, status === 'SEARCHING')
 
   const bottom = { position: 'absolute' as const, left: tokens.space[5], right: tokens.space[5], bottom: insets.bottom + tokens.space[5] }
   const found = status === 'MATCHED'
@@ -219,7 +214,7 @@ function MatchmakingScreenContent() {
               </Text>
             )}
           </View>
-          <Button full size="L" variant="tinted" tone="destructive" onPress={() => router.back()}>
+          <Button full size="L" variant="tinted" tone="destructive" onPress={cancelSearch}>
             Annuler la recherche
           </Button>
         </View>
@@ -310,7 +305,7 @@ function MatchmakingScreenContent() {
         </View>
       )}
 
-      {connection === 'reconnecting' && status === 'SEARCHING' && <ReconnectCountdown onLeave={() => router.back()} leaveLabel="Annuler la recherche" />}
+      {connection === 'reconnecting' && status === 'SEARCHING' && <ReconnectCountdown onLeave={cancelSearch} leaveLabel="Annuler la recherche" />}
       <PlayerPickerSheet
         open={pickerOpen}
         onClose={() => setPickerOpen(false)}

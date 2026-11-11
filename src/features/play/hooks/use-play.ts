@@ -9,6 +9,7 @@ import { ENDPOINTS } from '@/lib/endpoints'
 import { optimisticUpdate, optimisticId } from '@/lib/optimistic-cache'
 import { queryKeys } from '@/lib/query-keys'
 import { readServerNow } from '@/lib/realtime/server-clock'
+import { subscribeStomp } from '@/lib/ws'
 import { useNotificationStream } from '@/lib/realtime/use-notification-stream'
 import { getItem, setItem } from '@/lib/storage'
 import type { MeView, PeopleSort, ChallengeView } from '@joutio/client-domain/api-types'
@@ -219,38 +220,42 @@ export function useTicket(ticketId: string) {
   )
 }
 
-/** Reprises de l'apparition avant d'afficher l'échec (comme joutio-web). */
-const JOIN_ATTEMPTS = 3
+type PresenceProblem = { type?: string; title?: string; detail?: string }
 
 /**
- * Présence dans la salle tant que l'écran est monté (idempotent côté serveur). Sans elle la salle ne démarre pas : après
- * quelques reprises, `failed` passe à vrai et `retry` relance (2026-11-07, l'échec était muet).
+ * Présence dans le salon tant que l'écran est monté (comme joutio-web, 2026-11-11) : l'app s'abonne au canal de
+ * présence et le serveur en déduit l'entrée, la sortie (écran quitté) et la déconnexion (arrière-plan, réseau,
+ * après une grâce). Rien n'est déclaré par l'app. Un refus d'entrée arrive sur la file personnelle ; `retry` se
+ * réabonne.
  */
-export function useRoomPresence(roomId: string, enabled: boolean) {
-  const [failed, setFailed] = useState(false)
+export function useRoomPresence(roomId: string) {
   const [attempt, setAttempt] = useState(0)
+  const [failure, setFailure] = useState<{ attempt: number; problem: PresenceProblem } | null>(null)
   useEffect(() => {
-    if (!enabled) return
-    let cancelled = false
-    const run = async () => {
-      for (let tries = 0; tries < JOIN_ATTEMPTS; tries += 1) {
-        try {
-          await playService.joinRoom(roomId)
-          if (!cancelled) setFailed(false)
-          return
-        } catch {
-          await new Promise((resolve) => setTimeout(resolve, 800 * (tries + 1)))
-          if (cancelled) return
-        }
+    const offErrors = subscribeStomp(ENDPOINTS.rooms.presenceErrors, (message) => {
+      try {
+        const body = JSON.parse(message.body) as { roomId?: string; problem?: PresenceProblem }
+        if (body.roomId === roomId) setFailure({ attempt, problem: body.problem ?? {} })
+      } catch {
+        // Trame illisible : ignorée.
       }
-      if (!cancelled) setFailed(true)
-    }
-    void run()
+    })
+    const offPresence = subscribeStomp(ENDPOINTS.rooms.presence(roomId), () => undefined)
     return () => {
-      cancelled = true
+      offPresence()
+      offErrors()
     }
-  }, [roomId, enabled, attempt])
-  return { failed, retry: () => setAttempt((value) => value + 1) }
+  }, [roomId, attempt])
+  const current = failure?.attempt === attempt ? failure.problem : null
+  return { failed: current !== null, problem: current, retry: () => setAttempt((value) => value + 1) }
+}
+
+/** Recherche en cours tant que l'écran est monté : le quitter (ou perdre la connexion) l'annule côté serveur. */
+export function useTicketPresence(ticketId: string, enabled: boolean) {
+  useEffect(() => {
+    if (!enabled || !ticketId) return
+    return subscribeStomp(ENDPOINTS.matchmaking.presence(ticketId), () => undefined)
+  }, [ticketId, enabled])
 }
 
 /** Relance de l'adversaire absent. */
