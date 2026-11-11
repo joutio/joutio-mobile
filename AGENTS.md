@@ -49,7 +49,8 @@ Décisions :
   atelier) et les DTOs du BFF viennent de `@joutio/client-domain` (`libraries/joutio-client-domain`, GitHub Packages),
   importés par sous-chemin (`/game`, `/rooms`, `/authoring`, `/api-types`). Aucune copie locale : un changement se fait
   dans le paquet, puis on monte sa version ici. Installation : `.npmrc` du projet (scope `@joutio`) et un jeton
-  `read:packages` dans `~/.npmrc` ; la CI lit avec `GITHUB_TOKEN`.
+  `read:packages` dans `~/.npmrc` (`make init` du workspace) ; la CI lit avec l'action partagée `setup-node-npm` et le
+  secret `JOUTIO_GITHUB_TOKEN`.
 - **Refresh / scroll iOS / médias / salon (2026-11-08)** : contrôles de refresh système, sans indicateur React superposé (détails en fin de fichier). Le patch Swift `collapseSlackBase` réconcilie l’inset après une remise à zéro RN pour éviter de couper Sujets joués après chargement. Nouveau dev build requis : Android compilé et installé ; iOS à valider sur macOS. Le client API utilise `whatwg-fetch` uniquement pour les FormData de fichiers locaux ; expo/fetch reste utilisé pour le JSON. Cela corrige `Unsupported FormDataPart implementation`. Salon : MobileTopBar Joutio, retour conservé, en-tête natif masqué.
 
 

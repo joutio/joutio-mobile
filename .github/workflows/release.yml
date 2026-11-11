@@ -13,8 +13,6 @@ on:
 
 permissions:
   contents: write
-  # Lecture de @joutio/client-domain sur GitHub Packages.
-  packages: read
 
 # Jamais d'annulation en cours de release : les pushes suivants attendent leur tour.
 concurrency:
@@ -40,17 +38,15 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - uses: actions/setup-node@v5
+      # Node + npm/.npmrc partagé (paquets @joutio/* sur GitHub Packages), comme setup-java-maven pour Maven.
+      - name: Setup Node + npm
+        uses: joutio/joutio-reusable-workflows/actions/setup-node-npm@main
         with:
           node-version: '22'
-          cache: npm
-          registry-url: https://npm.pkg.github.com
-          scope: '@joutio'
+          server-password: ${{ secrets.JOUTIO_GITHUB_TOKEN }}
 
       - name: Install dependencies
         run: npm ci
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # Avant toute release : on ne tague jamais un code qui ne compile pas.
       - name: Typecheck
