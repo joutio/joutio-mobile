@@ -1,5 +1,5 @@
 import { ListGroup, ListRow, MobileSheet, RadioGroup } from '@/design-system'
-import type { PeopleSort } from '@/shared/types/bff'
+import type { PeopleSort } from '@joutio/client-domain/api-types'
 
 /** Libellés seuls, comme le lab (`SOCIAL_SORTS`). */
 export const SOCIAL_SORTS: { value: PeopleSort; label: string }[] = [

@@ -28,7 +28,7 @@ import {
 } from '@/design-system'
 import { useMyTitles, useWearTitle } from '@/features/topic/hooks/use-topic'
 import { tierLabel } from '@/features/topic/lib/format'
-import type { MasteryTier, TitleView } from '@/shared/types/bff'
+import type { MasteryTier, TitleView } from '@joutio/client-domain/api-types'
 import { clientSource, feedFooterProps, loadMoreOptions } from '@/shared/utils/paging'
 import { topicName } from '@/shared/utils/topic-name'
 import { titleLabel } from '../lib/format'
@@ -222,7 +222,9 @@ export function TitlesScreen() {
           contentContainerStyle={{ flexGrow: 1, gap: tokens.space[5], paddingHorizontal: GUTTER, paddingTop: tokens.space[2], paddingBottom: tokens.space[7] }}
           ListHeaderComponent={
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: tokens.space[3] }}>
-              <Text variant="callout" color="muted">{countLabel(count)}</Text>
+              <Text variant="callout" color="muted">
+                {countLabel(count)}
+              </Text>
             </View>
           }
           ListEmptyComponent={empty()}

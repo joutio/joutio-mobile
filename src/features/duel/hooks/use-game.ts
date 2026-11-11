@@ -1,14 +1,14 @@
 import { queryKeys } from '@/lib/query-keys'
-import type { MeView, PlayerProfileView, TopicOverviewView } from '@/shared/types/bff'
+import type { MeView, PlayerProfileView, TopicOverviewView } from '@joutio/client-domain/api-types'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Image } from 'expo-image'
 import { useEffect, useState, useRef } from 'react'
 import { ENDPOINTS } from '@/lib/endpoints'
 import { readServerNow } from '@/lib/realtime/server-clock'
 import { useNotificationStream } from '@/lib/realtime/use-notification-stream'
-import { emptyGame, applyGameNotification } from '../domain/game-fold'
-import type { GameState } from '../domain/game'
-import type { GameNotification } from '../domain/game-notification'
+import { emptyGame, applyGameNotification } from '@joutio/client-domain/game'
+import type { GameState } from '@joutio/client-domain/game'
+import type { GameNotification } from '@joutio/client-domain/game'
 import { gameService } from '../lib/game-service'
 
 /** Partie repliée de ses notifications : historique REST à l'ouverture (et à chaque reconnexion), puis STOMP. */

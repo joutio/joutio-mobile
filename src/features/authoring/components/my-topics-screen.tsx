@@ -17,10 +17,10 @@ import {
   TopicRow,
   WarningCircleIcon,
 } from '@/design-system'
-import type { TopicCardView } from '@/shared/types/bff'
+import type { TopicCardView } from '@joutio/client-domain/api-types'
 import { topicName } from '@/shared/utils/topic-name'
-import { MIN_QUESTIONS, questionsLabel } from '../domain/limits'
-import { todoTotal } from '../domain/authoring'
+import { MIN_QUESTIONS, questionsLabel } from '@joutio/client-domain/authoring'
+import { todoTotal } from '@joutio/client-domain/authoring'
 import { useCreateTopic, useCreationLimits, useMyTopics, useTopicTodo } from '../hooks/use-authoring'
 import { CreateTopicSheet } from './topic-sheets'
 import { useRefreshActive } from '@/shared/hooks/use-refresh-active'

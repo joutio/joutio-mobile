@@ -43,8 +43,8 @@ import {
   type QuestionEditorView,
   type QuestionSort,
   type QuestionStatus,
-} from '../domain/authoring'
-import { MIN_QUESTIONS, questionsLabel } from '../domain/limits'
+} from '@joutio/client-domain/authoring'
+import { MIN_QUESTIONS, questionsLabel } from '@joutio/client-domain/authoring'
 import { useCreationLimits, useMyTopic, useTopicQuestions } from '../hooks/use-authoring'
 import { clientSource, feedFooterProps, loadMoreOptions } from '@/shared/utils/paging'
 

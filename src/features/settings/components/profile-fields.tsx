@@ -27,8 +27,8 @@ import {
 import { useMyAvatar } from '@/features/avatar/lib/avatar-preview'
 import { pickImage, uploadImage } from '@/features/media/media-service'
 import { useUpdateMe } from '@/features/profile/hooks/use-profile'
-import type { MeView } from '@/shared/types/bff'
-import type { ApiError } from '@/shared/types/api'
+import type { MeView } from '@joutio/client-domain/api-types'
+import type { ApiError } from '@joutio/client-domain/api-types'
 import { COUNTRY_CODES, countryFlag, countryLabel } from '@/shared/utils/country'
 
 type FieldId = 'pseudonym' | 'bio' | 'country' | 'interests' | 'banner'

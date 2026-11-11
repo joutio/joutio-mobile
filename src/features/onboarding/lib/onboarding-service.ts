@@ -1,6 +1,6 @@
 import { api } from '@/lib/api'
 import { ENDPOINTS } from '@/lib/endpoints'
-import type { MeView, TopicCardView } from '@/shared/types/bff'
+import type { MeView, TopicCardView } from '@joutio/client-domain/api-types'
 
 export const onboardingService = {
   /** 0 à 3 codes d'univers, ordre conservé (premier = principal). */

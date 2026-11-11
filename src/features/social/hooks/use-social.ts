@@ -3,7 +3,7 @@ import { toast } from '@/design-system'
 import { useMe } from '@/features/me'
 import { optimisticUpdate } from '@/lib/optimistic-cache'
 import { queryKeys } from '@/lib/query-keys'
-import type { MeView, PageResponse, PlayerCardView, PlayerProfileView } from '@/shared/types/bff'
+import type { MeView, PageResponse, PlayerCardView, PlayerProfileView } from '@joutio/client-domain/api-types'
 import { socialService } from '../lib/social-service'
 
 /** Fiche publique d'un joueur. */

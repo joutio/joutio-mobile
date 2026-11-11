@@ -20,8 +20,8 @@ import {
   type ReviewAnswer,
   type ReviewRoundTab,
 } from '@/design-system'
-import { sortedRounds } from '../domain/arena-timeline'
-import { localizedQuestion, type GameRoundState, type GameState } from '../domain/game'
+import { sortedRounds } from '@joutio/client-domain/game'
+import { localizedQuestion, type GameRoundState, type GameState } from '@joutio/client-domain/game'
 import { ReportQuestionSheet } from './report-sheets'
 
 const GUTTER = tokens.space[5]

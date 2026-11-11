@@ -1,7 +1,7 @@
-import type { RoomView } from '@/features/play/domain/room'
+import type { RoomView } from '@joutio/client-domain/rooms'
 import { api } from '@/lib/api'
 import { ENDPOINTS } from '@/lib/endpoints'
-import type { ChallengeView } from '@/shared/types/bff'
+import type { ChallengeView } from '@joutio/client-domain/api-types'
 
 /** Défis nominatifs et salons du joueur (`/api/challenges`, `/api/rooms`). */
 export const challengesService = {

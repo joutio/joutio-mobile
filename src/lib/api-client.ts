@@ -1,4 +1,4 @@
-import type { ApiError } from '@/shared/types/api'
+import type { ApiError } from '@joutio/client-domain/api-types'
 
 // Expo SDK 58 installe expo/fetch globalement. Son encodeur multipart refuse
 // les pièces RN { uri, name, type }. Le transport XHR de whatwg-fetch garde

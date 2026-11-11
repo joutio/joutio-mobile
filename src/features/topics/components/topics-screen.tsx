@@ -36,7 +36,7 @@ import {
 import { openTopic } from '@/features/topic'
 import { DEFAULT_TOPIC_SORT } from '../lib/topics-service'
 import { useDebounced } from '@/shared/hooks/use-debounced'
-import type { TopicCardView, TopicSort } from '@/shared/types/bff'
+import type { TopicCardView, TopicSort } from '@joutio/client-domain/api-types'
 import { topicName } from '@/shared/utils/topic-name'
 import { useTopicFacets, useTopics } from '../hooks/use-topics'
 import { useOnline } from '@/shared/hooks/use-online'

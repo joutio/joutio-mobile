@@ -30,10 +30,10 @@ import {
   QUESTION_CHOICES,
   reasonsLabel,
   type QuestionEditorView,
-  type QuestionReportReason,
   type ReportedQuestion,
-} from '../domain/authoring'
-import { MAX_REJECT } from '../domain/limits'
+} from '@joutio/client-domain/authoring'
+import type { QuestionReportReason } from '@joutio/client-domain/api-types'
+import { MAX_REJECT } from '@joutio/client-domain/authoring'
 import { useMyTopic, useModerateQuestion, useReportQueue, useTopicQuestions } from '../hooks/use-authoring'
 import { openQuestionEditor } from './questions-screen'
 import { clientSource, feedFooterProps, loadMoreOptions } from '@/shared/utils/paging'

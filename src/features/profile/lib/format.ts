@@ -1,6 +1,6 @@
 import { tokens, type TierCode } from '@/design-system'
 import { formatNumber, MASTERY_TIERS, MASTERY_XP, tierLabel } from '@/features/topic/lib/format'
-import type { MasteryTier, TitleView } from '@/shared/types/bff'
+import type { MasteryTier, TitleView } from '@joutio/client-domain/api-types'
 import { topicName } from '@/shared/utils/topic-name'
 
 export const RANKS = Object.keys(tokens.tier) as TierCode[]

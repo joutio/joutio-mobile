@@ -41,7 +41,7 @@ import {
 } from '@/design-system'
 import { useMe } from '@/features/me'
 import { useMyActivity } from '@/features/profile/hooks/use-profile'
-import type { TopicCardView } from '@/shared/types/bff'
+import type { TopicCardView } from '@joutio/client-domain/api-types'
 import { tierOf } from '@/shared/utils/tier'
 import { topicName } from '@/shared/utils/topic-name'
 import { openTopic } from '@/features/topic'

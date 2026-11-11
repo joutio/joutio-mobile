@@ -1,5 +1,5 @@
 import { tokens, type StreakCalendarProps, type StreakDay, type TierCode } from '@/design-system'
-import type { ActivityView, BadgeCollectionView } from '@/shared/types/bff'
+import type { ActivityView, BadgeCollectionView } from '@joutio/client-domain/api-types'
 
 const MONTH = new Intl.DateTimeFormat('fr-FR', { month: 'long', year: 'numeric' })
 

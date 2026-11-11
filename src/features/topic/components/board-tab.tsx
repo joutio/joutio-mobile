@@ -13,7 +13,7 @@ import {
   TrophyIcon,
   WarningCircleIcon,
 } from '@/design-system'
-import type { LeaderboardEntryView } from '@/shared/types/bff'
+import type { LeaderboardEntryView } from '@joutio/client-domain/api-types'
 import { tierOf } from '@/shared/utils/tier'
 import { useTopicLeaderboard } from '../hooks/use-topic'
 import { formatNumber, tierLabel } from '../lib/format'

@@ -22,7 +22,7 @@ import {
 } from '@/design-system'
 import { openTopic } from '@/features/topic'
 import { useOnline } from '@/shared/hooks/use-online'
-import type { SuggestionView } from '@/shared/types/bff'
+import type { SuggestionView } from '@joutio/client-domain/api-types'
 import { avatarSvg } from '@/shared/utils/avatar'
 import { topicName } from '@/shared/utils/topic-name'
 import { useRecentSearches, useSuggestions } from './use-search'

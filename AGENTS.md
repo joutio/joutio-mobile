@@ -45,6 +45,11 @@ Onboarding, écarts assumés :
 
 Décisions :
 
+- **Domaine partagé (2026-11-11, D17)** : la logique pure (fold du duel, chronologie de l'arène, salles, matchmaking,
+  atelier) et les DTOs du BFF viennent de `@joutio/client-domain` (`libraries/joutio-client-domain`, GitHub Packages),
+  importés par sous-chemin (`/game`, `/rooms`, `/authoring`, `/api-types`). Aucune copie locale : un changement se fait
+  dans le paquet, puis on monte sa version ici. Installation : `.npmrc` du projet (scope `@joutio`) et un jeton
+  `read:packages` dans `~/.npmrc` ; la CI lit avec `GITHUB_TOKEN`.
 - **Refresh / scroll iOS / médias / salon (2026-11-08)** : contrôles de refresh système, sans indicateur React superposé (détails en fin de fichier). Le patch Swift `collapseSlackBase` réconcilie l’inset après une remise à zéro RN pour éviter de couper Sujets joués après chargement. Nouveau dev build requis : Android compilé et installé ; iOS à valider sur macOS. Le client API utilise `whatwg-fetch` uniquement pour les FormData de fichiers locaux ; expo/fetch reste utilisé pour le JSON. Cela corrige `Unsupported FormDataPart implementation`. Salon : MobileTopBar Joutio, retour conservé, en-tête natif masqué.
 
 
@@ -128,8 +133,7 @@ src/
     motion.ts haptics.ts icons.ts a11y.ts
   features/                 # auth (OTP, session), me, onboarding : composants, hooks, services, stores
   lib/                      # infra : config, endpoints, auth (tokens, refresh), api-client, query-client
-  shared/                   # types BFF, utilitaires partagés
-  domain/                   # logique sans React (Lot 5), vide pour l'instant
+  shared/                   # utilitaires partagés (types BFF : @joutio/client-domain/api-types)
   dev/                      # démos du catalogue
 assets/brand, assets/topics # repris du lab par npm run assets:sync
 ```
@@ -396,7 +400,7 @@ Décision utilisateur : supprimer l’ancien dépôt GitHub `joutio/joutio-mobil
 - **Rôles** (`questionActions`, `workshopRole`) : section « Gérer » de l'éditeur (archiver et supprimer toujours
   confirmés) ; Mon sujet : Publier / Supprimer le brouillon (créateur, `DELETE /api/topics/{id}`) / Repasser en
   brouillon, chacun confirmé ; un rédacteur ne voit ni Sujet, ni Équipe, ni Modération.
-- Tests : `npm run test:authoring` (matrice des rôles, tris, contenu signalé), `test:push` (cible des signalements).
+- Tests : matrice des rôles, tris et contenu signalé dans `@joutio/client-domain` (`authoring.test.ts`) ; `test:push` (cible des signalements).
 
 ### Atelier et reprise des défis — 2026-11-08
 

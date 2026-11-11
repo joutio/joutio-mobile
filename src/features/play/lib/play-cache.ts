@@ -1,8 +1,8 @@
 import type { QueryClient } from '@tanstack/react-query'
-import type { ChallengeStatus, ChallengeView } from '@/shared/types/bff'
+import type { ChallengeStatus, ChallengeView } from '@joutio/client-domain/api-types'
 import { queryKeys } from '@/lib/query-keys'
 import { nameUuid } from '@/shared/utils/name-uuid'
-import type { RoomStatus, RoomView } from '../domain/room'
+import type { RoomStatus, RoomView } from '@joutio/client-domain/rooms'
 
 /** A successful command must not be undone by an older CQRS projection. */
 export function reconcileChallenges(previous: ChallengeView[] | undefined, incoming: ChallengeView[]): ChallengeView[] {

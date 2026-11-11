@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import { View } from 'react-native'
 import { Button, Field, ListGroup, ListRow, MobileSheet, RadioGroup, Segmented, Text, tokens, type CategoryCode } from '@/design-system'
-import type { Language } from '@/shared/types/bff'
-import { MAX_NAME } from '../domain/limits'
-import type { Localized } from '../domain/question-draft'
+import type { Language } from '@joutio/client-domain/api-types'
+import { MAX_NAME } from '@joutio/client-domain/authoring'
+import type { Localized } from '@joutio/client-domain/authoring'
 
 export const UNIVERSES = Object.keys(tokens.category) as CategoryCode[]
 export const universeLabel = (category: CategoryCode) => tokens.category[category].label

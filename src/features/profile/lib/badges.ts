@@ -18,7 +18,7 @@ import {
   type TierCode,
 } from '@/design-system'
 import { formatNumber } from '@/features/topic/lib/format'
-import type { BadgeCollectionView, BadgeFamily, BadgeItemView } from '@/shared/types/bff'
+import type { BadgeCollectionView, BadgeFamily, BadgeItemView } from '@joutio/client-domain/api-types'
 
 const TIERS = Object.keys(tokens.tier) as TierCode[]
 

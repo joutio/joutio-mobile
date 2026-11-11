@@ -1,13 +1,13 @@
 import { useMemo, useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
-import type { ApiError } from '@/shared/types/api'
+import type { ApiError } from '@joutio/client-domain/api-types'
 import { gameService } from '../lib/game-service'
 
 type GaugeState = 'idle' | 'correct' | 'wrong'
-import { sceneAt, type ArenaScene } from '../domain/arena-timeline'
-import { answerDeadlineMs, firstAnswerPct, localizedQuestion, type GameState } from '../domain/game'
-import { isGameChoice, type GameChoice } from '../domain/game-dto'
-import { LATE_JOIN_MS, PENDING_ECHO_GRACE_MS, ROUND_SECONDS } from '../domain/game-constants'
+import { sceneAt, type ArenaScene } from '@joutio/client-domain/game'
+import { answerDeadlineMs, firstAnswerPct, localizedQuestion, type GameState } from '@joutio/client-domain/game'
+import { isGameChoice, type GameChoice } from '@joutio/client-domain/game'
+import { LATE_JOIN_MS, PENDING_ECHO_GRACE_MS, ROUND_SECONDS } from '@joutio/client-domain/game'
 
 /** Option de réponse affichée (`A`→`D`, libellé localisé). */
 export interface AnswerOption {

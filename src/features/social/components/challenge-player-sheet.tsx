@@ -1,7 +1,7 @@
 import { useRef } from 'react'
 import { useChallengePlayer } from '@/features/play/hooks/use-play'
 import { TopicPickerSheet } from '@/features/topics/components/topic-picker-sheet'
-import type { PlayerCardView } from '@/shared/types/bff'
+import type { PlayerCardView } from '@joutio/client-domain/api-types'
 
 /**
  * « Défier <joueur> » (`fiche-joueur.md` § 2), partagée par Social et la Fiche joueur : le choix d'un sujet envoie le

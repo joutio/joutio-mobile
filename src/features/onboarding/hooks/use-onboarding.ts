@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { optimisticUpdate } from '@/lib/optimistic-cache'
-import type { MeView } from '@/shared/types/bff'
+import type { MeView } from '@joutio/client-domain/api-types'
 import { queryKeys } from '@/lib/query-keys'
 import { onboardingService } from '../lib/onboarding-service'
 

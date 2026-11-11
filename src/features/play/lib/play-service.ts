@@ -1,12 +1,12 @@
 import { api } from '@/lib/api'
 import { ENDPOINTS } from '@/lib/endpoints'
 import type { EventEnvelopeResponse } from '@/lib/realtime/notification-stream'
-import type { IdResponse, PageResponse, PeopleSort, PlayerCardView } from '@/shared/types/bff'
-import type { BotDifficulty } from '@/features/duel/domain/game-dto'
-import type { MatchmakingTicket } from '../domain/matchmaking'
-import type { MatchmakingNotification } from '../domain/matchmaking-notification'
-import type { RoomView } from '../domain/room'
-import type { RoomNotification } from '../domain/room-notification'
+import type { IdResponse, PageResponse, PeopleSort, PlayerCardView } from '@joutio/client-domain/api-types'
+import type { BotDifficulty } from '@joutio/client-domain/game'
+import type { MatchmakingTicket } from '@joutio/client-domain/rooms'
+import type { MatchmakingNotification } from '@joutio/client-domain/rooms'
+import type { RoomView } from '@joutio/client-domain/rooms'
+import type { RoomNotification } from '@joutio/client-domain/rooms'
 
 export const CONTACTS_PAGE_SIZE = 20
 

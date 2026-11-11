@@ -4,7 +4,7 @@ import { View } from 'react-native'
 import { Button, Field, ListGroup, ListRow, MobileSheet, Text, toast, tokens } from '@/design-system'
 import { api } from '@/lib/api'
 import { ENDPOINTS } from '@/lib/endpoints'
-import type { QuestionReportReason, UserReportReason } from '@/shared/types/bff'
+import type { QuestionReportReason, UserReportReason } from '@joutio/client-domain/api-types'
 
 const MAX_COMMENT = 500
 

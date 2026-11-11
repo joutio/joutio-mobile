@@ -2,7 +2,7 @@ import { api } from '@/lib/api'
 import { ENDPOINTS } from '@/lib/endpoints'
 import type { NotificationView } from '@/lib/realtime/personal-notifications'
 import type { NotificationTarget } from './notification-target'
-import type { PageResponse } from '@/shared/types/bff'
+import type { PageResponse } from '@joutio/client-domain/api-types'
 
 export const NOTIFICATIONS_PAGE_SIZE = 10
 

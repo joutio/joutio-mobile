@@ -3,15 +3,15 @@ import { toast, type CategoryCode } from '@/design-system'
 import { useMe } from '@/features/me'
 import { usePremiumSheet } from '@/features/premium/premium-store'
 import { optimisticUpdate, optimisticId } from '@/lib/optimistic-cache'
-import { applyQuestionOperations } from '../domain/question-cache'
+import { applyQuestionOperations } from '@joutio/client-domain/authoring'
 import { queryKeys } from '@/lib/query-keys'
-import type { Language, PageResponse, TopicCardView, TopicOverviewView, HomeView } from '@/shared/types/bff'
+import type { Language, PageResponse, TopicCardView, TopicOverviewView, HomeView } from '@joutio/client-domain/api-types'
 import type { InfiniteData } from '@tanstack/react-query'
 import type { TopicPage } from '@/features/topics/lib/topics-service'
 
-import type { OwnerQuestionReport, ReportDetail, QuestionEditorView, ReportedQuestion, TopicTodo } from '../domain/authoring'
-import { limitsFor, type LimitReason } from '../domain/limits'
-import type { QuestionOperation } from '../domain/question-draft'
+import type { OwnerQuestionReport, ReportDetail, QuestionEditorView, ReportedQuestion, TopicTodo } from '@joutio/client-domain/authoring'
+import { limitsFor, type LimitReason } from '@joutio/client-domain/authoring'
+import type { QuestionOperation } from '@joutio/client-domain/authoring'
 import { authoringService } from '../lib/authoring-service'
 
 function closeCachedReports(client: QueryClient, topicId: string, questionId: string, status: 'RESOLVED' | 'DISMISSED') {
@@ -99,7 +99,7 @@ function patchTopic(client: QueryClient, topicId: string, patch: (topic: TopicCa
   client.setQueryData<PageResponse<TopicCardView>>(queryKeys.authoring.topics(), (page) =>
     page ? { ...page, content: page.content.map((topic) => (topic.topicId === topicId ? patch(topic) : topic)) } : page,
   )
-  client.setQueryData<import('../domain/authoring').TopicWorkshop>(['authoring', topicId, 'workshop'], (view) =>
+  client.setQueryData<import('@joutio/client-domain/authoring').TopicWorkshop>(['authoring', topicId, 'workshop'], (view) =>
     view ? { ...view, topic: patch(view.topic) } : view,
   )
   client.setQueryData<TopicOverviewView>(queryKeys.topic.overview(topicId), (view) => (view ? { ...view, topic: patch(view.topic) } : view))
@@ -392,17 +392,17 @@ export function useTeam(topicId: string) {
 export function useTeamChange(topicId: string) {
   const client = useQueryClient()
   return useMutation({
-    mutationFn: async ({ member, remove }: { member: import('../domain/authoring').TeamMember; remove?: boolean }) =>
+    mutationFn: async ({ member, remove }: { member: import('@joutio/client-domain/authoring').TeamMember; remove?: boolean }) =>
       remove ? authoringService.removeMember(topicId, member.userId) : authoringService.setMember(topicId, member.userId, member.role),
     onMutate: ({ member, remove }) =>
       optimisticUpdate(client, [['authoring', topicId, 'team']], () => {
-        client.setQueryData<import('../domain/authoring').TeamMember[]>(['authoring', topicId, 'team'], (items) =>
+        client.setQueryData<import('@joutio/client-domain/authoring').TeamMember[]>(['authoring', topicId, 'team'], (items) =>
           remove ? items?.filter((m) => m.userId !== member.userId) : [...(items ?? []).filter((m) => m.userId !== member.userId), member],
         )
       }),
     onSuccess: (member) => {
       if (member)
-        client.setQueryData<import('../domain/authoring').TeamMember[]>(['authoring', topicId, 'team'], (items) =>
+        client.setQueryData<import('@joutio/client-domain/authoring').TeamMember[]>(['authoring', topicId, 'team'], (items) =>
           items?.map((item) => (item.userId === member.userId ? member : item)),
         )
     },

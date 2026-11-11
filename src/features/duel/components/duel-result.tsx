@@ -31,18 +31,17 @@ import { useBotDifficulty, useStartMatchmaking, useStartTraining } from '@/featu
 import { useSendRematch } from '@/features/play/hooks/use-rematch'
 import { useMyTitles, useWearTitle } from '@/features/topic/hooks/use-topic'
 import { formatNumber, MASTERY_TIERS, MASTERY_XP, tierLabel } from '@/features/topic/lib/format'
-import type { MasteryTier } from '@/shared/types/bff'
+import type { MasteryTier } from '@joutio/client-domain/api-types'
 import { tierOf } from '@/shared/utils/tier'
-import { sortedRounds } from '../domain/arena-timeline'
-import { isBonusRound, ROUNDS } from '../domain/game-constants'
-import type { GameState } from '../domain/game'
-import type { GameResultView } from '../domain/game-dto'
+import { sortedRounds } from '@joutio/client-domain/game'
+import { isBonusRound, ROUNDS } from '@joutio/client-domain/game'
+import type { GameState } from '@joutio/client-domain/game'
+import type { GameResultView } from '@joutio/client-domain/game'
 import { useGameResult } from '../hooks/use-game'
 import { DuelReview, reviewRoundsOf } from './duel-review'
 import { ReportPlayerSheet } from './report-sheets'
 import { useMyAvatar } from '@/features/avatar/lib/avatar-preview'
 import { usePlayerAvatar } from '@/features/social/hooks/use-player-avatar'
-
 
 const ORDER = Object.keys(tokens.tier) as TierCode[]
 const masteryOf = (xp: number): MasteryTier => MASTERY_TIERS.reduce<MasteryTier>((best, tier) => (xp >= MASTERY_XP[tier] ? tier : best), 'FER')

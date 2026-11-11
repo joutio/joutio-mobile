@@ -22,7 +22,7 @@ import {
 } from '@/design-system'
 import { useSuggestions } from '@/features/search/use-search'
 import { useCreationLimits, useMyTopic, useTeam, useTeamChange } from '../hooks/use-authoring'
-import type { TeamMember } from '../domain/authoring'
+import type { TeamMember } from '@joutio/client-domain/authoring'
 import { topicName } from '@/shared/utils/topic-name'
 import { avatarSvg } from '@/shared/utils/avatar'
 

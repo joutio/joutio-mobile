@@ -29,7 +29,7 @@ import { useCreatePrivateRoom } from '@/features/play/hooks/use-play'
 import { readServerNow } from '@/lib/realtime/server-clock'
 import { queryKeys } from '@/lib/query-keys'
 import { TopicPickerSheet } from '@/features/topics/components/topic-picker-sheet'
-import type { ChallengeView } from '@/shared/types/bff'
+import type { ChallengeView } from '@joutio/client-domain/api-types'
 import { avatarSvg } from '@/shared/utils/avatar'
 import { topicName } from '@/shared/utils/topic-name'
 import {

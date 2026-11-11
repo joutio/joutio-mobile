@@ -4,7 +4,7 @@ import { useMe } from '@/features/me'
 import { optimisticUpdate } from '@/lib/optimistic-cache'
 import { queryKeys } from '@/lib/query-keys'
 import { usePersonalNotifications, type NotificationView } from '@/lib/realtime/personal-notifications'
-import type { PageResponse } from '@/shared/types/bff'
+import type { PageResponse } from '@joutio/client-domain/api-types'
 import { NOTIFICATIONS_PAGE_SIZE, notificationsService } from '../lib/notifications-service'
 
 type Pages = InfiniteData<PageResponse<NotificationView>, number>

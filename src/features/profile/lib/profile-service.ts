@@ -8,7 +8,7 @@ import type {
   NotificationPreferenceView,
   RewardsView,
   TopicStatView,
-} from '@/shared/types/bff'
+} from '@joutio/client-domain/api-types'
 
 /** Profil du joueur connecté : progression (badges, série, sujets, récompenses) et réglages (`/api/profiles/{id}/…`). */
 export const profileService = {

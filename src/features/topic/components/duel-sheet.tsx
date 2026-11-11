@@ -20,7 +20,7 @@ import {
   UserPlusIcon,
   type Icon,
 } from '@/design-system'
-import type { BotDifficulty } from '@/features/duel/domain/game-dto'
+import type { BotDifficulty } from '@joutio/client-domain/game'
 import {
   useBotDifficulty,
   useChallengePlayer,

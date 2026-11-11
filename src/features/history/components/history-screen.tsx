@@ -26,7 +26,7 @@ import {
 } from '@/design-system'
 import { dayLabel, formatNumber } from '@/features/topic/lib/format'
 import { useMe } from '@/features/me'
-import type { GameHistoryItemView, GameOutcome } from '@/shared/types/bff'
+import type { GameHistoryItemView, GameOutcome } from '@joutio/client-domain/api-types'
 import { topicName } from '@/shared/utils/topic-name'
 import { useHistoryGames } from '../hooks/use-history'
 import { DEFAULT_HISTORY_FILTERS, type HistoryFilterState } from '../lib/history-service'
@@ -199,8 +199,19 @@ export function HistoryScreen() {
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ paddingTop: tokens.space[3], paddingBottom: tokens.space[7] }}
             ListHeaderComponent={
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: tokens.space[3], paddingHorizontal: GUTTER, paddingBottom: tokens.space[2] }}>
-                <Text variant="callout" color="muted">{countLabel(count)}</Text>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: tokens.space[3],
+                  paddingHorizontal: GUTTER,
+                  paddingBottom: tokens.space[2],
+                }}
+              >
+                <Text variant="callout" color="muted">
+                  {countLabel(count)}
+                </Text>
                 <Chip icon={ArrowsDownUpIcon} onPress={() => setSheetOpen(true)}>
                   {HISTORY_SORTS.find((option) => option.value === filterState.sort)?.label ?? ''}
                 </Chip>

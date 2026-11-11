@@ -14,7 +14,7 @@ import {
 import { duration } from '@/features/challenges/lib/challenges-service'
 import { usePlayerProfile } from '@/features/social/hooks/use-social'
 import type { NotificationView } from '@/lib/realtime/personal-notifications'
-import type { ChallengeView } from '@/shared/types/bff'
+import type { ChallengeView } from '@joutio/client-domain/api-types'
 import { avatarSvg } from '@/shared/utils/avatar'
 import { tierOf } from '@/shared/utils/tier'
 import { topicName } from '@/shared/utils/topic-name'

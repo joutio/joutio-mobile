@@ -1,6 +1,6 @@
 import { View } from 'react-native'
 import { Button, ListGroup, ListRow, MobileSheet, RadioGroup, SectionHeader, tokens } from '@/design-system'
-import type { LeaderboardPeriod, LeaderboardScope } from '@/shared/types/bff'
+import type { LeaderboardPeriod, LeaderboardScope } from '@joutio/client-domain/api-types'
 import type { RankingFilterState } from '../lib/topic-service'
 
 const PERIODS: { value: LeaderboardPeriod; label: string }[] = [

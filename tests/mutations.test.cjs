@@ -34,6 +34,11 @@ function harness(extraMocks = {}) {
   function load(file) {
     if (mocks[file]) return mocks[file]
     if (file.endsWith('-service') || file.endsWith('/quota')) return new Proxy({}, { get: () => service })
+    // Domaine partagé : modules ESM compilés du paquet, transpilés en CommonJS comme les sources de l'app.
+    if (file.startsWith('@joutio/client-domain')) {
+      const sub = file.slice('@joutio/client-domain'.length) || '/'
+      file = path.join(root, '..', 'node_modules/@joutio/client-domain/dist', sub, 'index.js')
+    }
     let resolved = file.startsWith('@/') ? path.join(root, file.slice(2)) : file
     if (!path.extname(resolved)) resolved += fs.existsSync(resolved + '.ts') ? '.ts' : '.tsx'
     if (modules.has(resolved)) return modules.get(resolved).exports

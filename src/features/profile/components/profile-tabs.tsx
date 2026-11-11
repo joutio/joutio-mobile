@@ -31,7 +31,7 @@ import {
 import { useMe } from '@/features/me'
 import { useWearTitle } from '@/features/topic/hooks/use-topic'
 import { dayLabel, formatNumber } from '@/features/topic/lib/format'
-import type { GameHistoryItemView, GameOutcome, MasteryTier, TitleView, TopicStatView } from '@/shared/types/bff'
+import type { GameHistoryItemView, GameOutcome, MasteryTier, TitleView, TopicStatView } from '@joutio/client-domain/api-types'
 import { topicName } from '@/shared/utils/topic-name'
 import type { BadgeFamilySummary } from '../lib/badges'
 import { rankProgress, titleLabel } from '../lib/format'

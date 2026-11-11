@@ -25,8 +25,8 @@ import {
   useTheme,
 } from '@/design-system'
 import { pickImage, uploadImage } from '@/features/media/media-service'
-import type { Language } from '@/shared/types/bff'
-import { MAX_ALT, MAX_ANSWER, MAX_QUESTION } from '../domain/limits'
+import type { Language } from '@joutio/client-domain/api-types'
+import { MAX_ALT, MAX_ANSWER, MAX_QUESTION } from '@joutio/client-domain/authoring'
 import {
   buildQuestionPlan,
   draftFromQuestion,
@@ -37,8 +37,8 @@ import {
   TRANSLATION_STATUS_LABEL,
   translationStatus,
   type QuestionDraft,
-} from '../domain/question-draft'
-import { questionActions, workshopRole } from '../domain/authoring'
+} from '@joutio/client-domain/authoring'
+import { questionActions, workshopRole } from '@joutio/client-domain/authoring'
 import { useArchiveQuestion, useDeleteQuestion, useMyTopic, useSaveQuestion, useTopicQuestions } from '../hooks/use-authoring'
 import { LANGUAGES } from './topic-sheets'
 
@@ -257,14 +257,7 @@ export function QuestionEditorScreen() {
                 />
               )}
               {actions.includes('delete') && (
-                <ListRow
-                  icon={TrashIcon}
-                  label="Supprimer la question"
-                  destructive
-                  control="none"
-                  onPress={() => setConfirm('delete')}
-                  last
-                />
+                <ListRow icon={TrashIcon} label="Supprimer la question" destructive control="none" onPress={() => setConfirm('delete')} last />
               )}
             </ListGroup>
           </View>

@@ -1,5 +1,5 @@
 import { ListGroup, TabScrollView, TitleRow, tokens } from '@/design-system'
-import type { TopicOverviewView } from '@/shared/types/bff'
+import type { TopicOverviewView } from '@joutio/client-domain/api-types'
 import { topicName } from '@/shared/utils/topic-name'
 import { useMyTitles, useWearTitle } from '../hooks/use-topic'
 import { formatNumber, MASTERY_TIERS, MASTERY_XP, tierLabel } from '../lib/format'
@@ -33,11 +33,11 @@ export function ProgressTab({ overview }: { overview: TopicOverviewView }) {
                 !earned && index === 0
                   ? { value: 0, label: '1 partie restante' }
                   : !earned && progress && index > 0
-                  ? {
-                      value: Math.min(100, (progress.xp / MASTERY_XP[tier]) * 100),
-                      label: `${formatNumber(Math.max(0, MASTERY_XP[tier] - progress.xp))} XP restants`,
-                    }
-                  : undefined
+                    ? {
+                        value: Math.min(100, (progress.xp / MASTERY_XP[tier]) * 100),
+                        label: `${formatNumber(Math.max(0, MASTERY_XP[tier] - progress.xp))} XP restants`,
+                      }
+                    : undefined
               }
               locked={!earned}
               worn={titles.data?.equippedKey === key}

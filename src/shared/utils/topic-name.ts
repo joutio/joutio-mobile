@@ -1,4 +1,4 @@
-import type { TopicNames } from '@/shared/types/bff'
+import type { TopicNames } from '@joutio/client-domain/api-types'
 
 /** Nom d'un sujet dans la langue demandée, avec repli sur le français, l'anglais, puis le premier nom. */
 export function topicName(names: TopicNames | null | undefined, language = 'fr'): string {

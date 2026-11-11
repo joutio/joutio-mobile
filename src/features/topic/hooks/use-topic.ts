@@ -4,7 +4,7 @@ import { toast } from '@/design-system'
 import { useMe } from '@/features/me'
 import { optimisticUpdate } from '@/lib/optimistic-cache'
 import { queryKeys } from '@/lib/query-keys'
-import type { HomeView, TitlesView, TopicCardView, TopicOverviewView, MeView, PlayerProfileView } from '@/shared/types/bff'
+import type { HomeView, TitlesView, TopicCardView, TopicOverviewView, MeView, PlayerProfileView } from '@joutio/client-domain/api-types'
 import { topicService, type RankingFilters } from '../lib/topic-service'
 
 /** En-tête, statistiques et progression du sujet. */

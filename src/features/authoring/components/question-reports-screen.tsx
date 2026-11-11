@@ -36,7 +36,7 @@ import {
   type QuestionEditorView,
   type ReportedQuestion,
   type ReportSnapshot,
-} from '../domain/authoring'
+} from '@joutio/client-domain/authoring'
 import { useDismissReports, useMyTopic, useReportQueue, useTopicQuestions } from '../hooks/use-authoring'
 import { openQuestionEditor, questionNumber } from './questions-screen'
 

@@ -1,5 +1,5 @@
 import { tokens, type TierCode } from '@/design-system'
-import type { MasteryTier } from '@/shared/types/bff'
+import type { MasteryTier } from '@joutio/client-domain/api-types'
 
 const NUMBER = new Intl.NumberFormat('fr-FR')
 /** `2 418`, avec l'espace fine du français. */

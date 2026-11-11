@@ -24,7 +24,7 @@ import {
 import { useMe } from '@/features/me'
 import { countryLabel } from '@/shared/utils/country'
 import { tierOf } from '@/shared/utils/tier'
-import type { LeaderboardEntryView } from '@/shared/types/bff'
+import type { LeaderboardEntryView } from '@joutio/client-domain/api-types'
 import { useTopicLeaderboardPage } from '../hooks/use-topic'
 import { formatNumber, monthlyLegend } from '../lib/format'
 import { DEFAULT_RANKING_FILTERS, type RankingFilterState } from '../lib/topic-service'

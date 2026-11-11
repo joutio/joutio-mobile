@@ -9,7 +9,7 @@ import { api } from '@/lib/api'
 import { ENDPOINTS } from '@/lib/endpoints'
 import { usePersonalNotifications } from '@/lib/realtime/personal-notifications'
 import { readServerNow } from '@/lib/realtime/server-clock'
-import type { ChallengeView, IdResponse, MeView, PlayerProfileView } from '@/shared/types/bff'
+import type { ChallengeView, IdResponse, MeView, PlayerProfileView } from '@joutio/client-domain/api-types'
 import { nameUuid } from '@/shared/utils/name-uuid'
 
 export const rematchService = {

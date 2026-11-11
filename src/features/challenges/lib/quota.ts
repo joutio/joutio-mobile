@@ -1,7 +1,7 @@
 import { router } from 'expo-router'
 import { LightningIcon, showDialog } from '@/design-system'
 import { usePremiumSheet } from '@/features/premium/premium-store'
-import type { ApiError } from '@/shared/types/api'
+import type { ApiError } from '@joutio/client-domain/api-types'
 
 const CHALLENGE_QUOTA = 'urn:joutio:bff:challenge:quotaExceeded'
 const ROOM_QUOTA = 'urn:joutio:bff:room:quotaExceeded'

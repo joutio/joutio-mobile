@@ -16,7 +16,7 @@ import {
   tokens,
   useTheme,
 } from '@/design-system'
-import type { TopicCardView } from '@/shared/types/bff'
+import type { TopicCardView } from '@joutio/client-domain/api-types'
 import { topicName } from '@/shared/utils/topic-name'
 import { useCompleteOnboarding, useRecommendations } from '../hooks/use-onboarding'
 import { useOnboardingStore } from '../onboarding-store'

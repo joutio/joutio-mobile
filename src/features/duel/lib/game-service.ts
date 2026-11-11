@@ -1,8 +1,8 @@
 import { api } from '@/lib/api'
 import { ENDPOINTS } from '@/lib/endpoints'
 import type { EventEnvelopeResponse } from '@/lib/realtime/notification-stream'
-import type { ActiveGameView, GameChoice, GameResultView } from '../domain/game-dto'
-import type { GameNotification } from '../domain/game-notification'
+import type { ActiveGameView, GameChoice, GameResultView } from '@joutio/client-domain/game'
+import type { GameNotification } from '@joutio/client-domain/game'
 
 /** Arène : réponse, abandon, bilan et historique. La création passe par la salle. */
 export const gameService = {

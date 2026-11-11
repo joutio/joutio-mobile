@@ -29,8 +29,8 @@ import {
 import { pickImage, uploadImage } from '@/features/media/media-service'
 import { toast } from '@/design-system'
 import { topicName } from '@/shared/utils/topic-name'
-import { questionStatus, workshopRole } from '../domain/authoring'
-import { MAX_NAME, MIN_QUESTIONS } from '../domain/limits'
+import { questionStatus, workshopRole } from '@joutio/client-domain/authoring'
+import { MAX_NAME, MIN_QUESTIONS } from '@joutio/client-domain/authoring'
 
 import {
   useDeleteTopic,

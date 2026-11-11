@@ -15,7 +15,7 @@ import {
   WarningCircleIcon,
   type MatchOutcome,
 } from '@/design-system'
-import type { GameHistoryItemView, GameOutcome } from '@/shared/types/bff'
+import type { GameHistoryItemView, GameOutcome } from '@joutio/client-domain/api-types'
 import { topicName as formatTopicName } from '@/shared/utils/topic-name'
 import { useTopicGames } from '../hooks/use-topic'
 import { dayLabel, formatNumber } from '../lib/format'

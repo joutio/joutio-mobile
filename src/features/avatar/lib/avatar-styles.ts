@@ -1,6 +1,6 @@
 import type { RewardState } from '@/design-system'
 import { formatNumber } from '@/features/topic/lib/format'
-import type { BadgeCollectionView, MeView, RewardsView } from '@/shared/types/bff'
+import type { BadgeCollectionView, MeView, RewardsView } from '@joutio/client-domain/api-types'
 
 export type AvatarStyleId = 'base' | 'micah' | 'lorelei' | 'notionists'
 

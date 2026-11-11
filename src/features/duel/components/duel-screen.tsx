@@ -30,7 +30,7 @@ import { useMe } from '@/features/me'
 import { useServerClock } from '@/lib/realtime/server-clock'
 import { useConnectionStore } from '@/lib/ws'
 import { tierOf } from '@/shared/utils/tier'
-import { sortedRounds } from '../domain/arena-timeline'
+import { sortedRounds } from '@joutio/client-domain/game'
 import {
   isBonusRound,
   MAX_SCORE,
@@ -41,8 +41,8 @@ import {
   SWOOSH_DURATION_MS,
   ROUND_INTRO_MS,
   LATE_JOIN_MS,
-} from '../domain/game-constants'
-import type { GameState } from '../domain/game'
+} from '@joutio/client-domain/game'
+import type { GameState } from '@joutio/client-domain/game'
 import { useDuelArena } from '../hooks/use-duel-arena'
 import { useGameStream, usePrefetchQuestionImages, useServerNow } from '../hooks/use-game'
 import { gameService } from '../lib/game-service'

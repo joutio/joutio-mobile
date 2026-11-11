@@ -26,7 +26,7 @@ import {
 import { useMe } from '@/features/me'
 import { useContacts } from '@/features/play/hooks/use-play'
 import { formatNumber } from '@/features/topic/lib/format'
-import type { PeopleSort, PlayerCardView } from '@/shared/types/bff'
+import type { PeopleSort, PlayerCardView } from '@joutio/client-domain/api-types'
 import { tierOf } from '@/shared/utils/tier'
 import { useMyProfile } from '../hooks/use-social'
 import { presenceOf, presenceSub } from '../lib/presence'

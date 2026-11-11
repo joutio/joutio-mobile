@@ -11,7 +11,7 @@ import type {
   ChallengeView,
   NotificationCategory,
   NotificationPreferenceView,
-} from '@/shared/types/bff'
+} from '@joutio/client-domain/api-types'
 import { profileService } from '../lib/profile-service'
 
 const useUserId = () => useMe(true).data?.userId ?? ''

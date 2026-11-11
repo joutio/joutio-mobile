@@ -1,6 +1,6 @@
 import { api } from '@/lib/api'
 import { ENDPOINTS } from '@/lib/endpoints'
-import type { HeadToHeadView, PlayerProfileView } from '@/shared/types/bff'
+import type { HeadToHeadView, PlayerProfileView } from '@joutio/client-domain/api-types'
 
 /** Fiche joueur, suivi et face-à-face (`/api/profiles/{id}`). */
 export const socialService = {

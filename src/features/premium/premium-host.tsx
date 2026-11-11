@@ -16,7 +16,7 @@ import {
   UserCircleIcon,
   useTheme,
 } from '@/design-system'
-import { LIMIT_REASONS } from '@/features/authoring/domain/limits'
+import { LIMIT_REASONS } from '@joutio/client-domain/authoring'
 import { usePremiumSheet } from './premium-store'
 
 const PERKS = [

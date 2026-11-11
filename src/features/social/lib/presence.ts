@@ -1,4 +1,4 @@
-import type { PresenceStatus } from '@/shared/types/bff'
+import type { PresenceStatus } from '@joutio/client-domain/api-types'
 
 /** Présence d'un joueur, telle que la portent `PlayerCardView` et `PlayerProfileView`. */
 export interface PresenceLike {

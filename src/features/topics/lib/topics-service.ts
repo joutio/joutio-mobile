@@ -1,7 +1,7 @@
 import { api } from '@/lib/api'
 import { ENDPOINTS } from '@/lib/endpoints'
 import type { CategoryCode } from '@/design-system'
-import type { PageResponse, TopicCardView, TopicFacetsView, TopicSort } from '@/shared/types/bff'
+import type { PageResponse, TopicCardView, TopicFacetsView, TopicSort } from '@joutio/client-domain/api-types'
 
 export const PAGE_SIZE = 20
 
