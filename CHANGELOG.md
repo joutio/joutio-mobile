@@ -1,3 +1,10 @@
+## [1.29.1](https://github.com/joutio/joutio-mobile/compare/v1.29.0...v1.29.1) (2026-11-11)
+
+### Bug Fixes
+
+* **duel:** decide late join once per round so answers always animate in ([298f51b](https://github.com/joutio/joutio-mobile/commit/298f51bad72a50207f8f4155e3a969269ec3a7b9))
+* **duel:** refresh game-related views once the result arrives ([c19f104](https://github.com/joutio/joutio-mobile/commit/c19f104ccd38378cfbeabc7a25631881fc03a980))
+
 ## [1.29.0](https://github.com/joutio/joutio-mobile/compare/v1.28.1...v1.29.0) (2026-11-11)
 
 ### Features
