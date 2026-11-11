@@ -217,8 +217,8 @@ function DuelScreenContent() {
   // (ou à la révélation). Hors de la question, `answersShown` reste faux : un montage à la fin de l'intro ne doit
   // jamais figer les cartes à leur état final.
   const answersShown = questionReady && (scene.kind === 'reveal' || (scene.kind === 'question' && !scene.locked))
-  // Un joueur présent pendant l'intro n'est pas « en retard » même si le premier rendu de la question arrive après
-  // `LATE_JOIN_MS` (latence JS/réseau) : l'intro prouve qu'il a vu le début de la manche.
+  // Retard figé par manche au premier regard (`useDuelArena`) : un joueur qui a vu l'intro n'est jamais « en retard »,
+  // même si l'intro n'a pas signalé sa fin avant la question (horloge serveur en avance sur l'animation).
   const animateQuestion = !arena.joinedLate || introDone === arena.roundIndex
   const answers: (AnswerCardProps & { key: string })[] = arena.answers.map(({ choice, label }) => {
     const mine = arena.yourPick === choice || arena.pendingChoice === choice

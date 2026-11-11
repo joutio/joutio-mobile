@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import type { ApiError } from '@joutio/client-domain/api-types'
 import { gameService } from '../lib/game-service'
@@ -68,8 +68,14 @@ export function useDuelArena({ gameId, game, now, serverNow, userId, language, r
   const questionText = localized.questionText
   const imageUrl = currentRound?.imageUrl ?? null
   // Client arrivé après le début de la question (reprise/rechargement) : on saute le délai de
-  // lecture et les animations d'entrée pour rendre la question immédiatement.
-  const joinedLate = scene.kind === 'question' && scene.elapsedMs > LATE_JOIN_MS
+  // lecture et les animations d'entrée pour rendre la question immédiatement. **Décidé une fois par manche, au premier
+  // regard** (intro ou question) : recalculé à chaque rendu, `elapsedMs` dépassait `LATE_JOIN_MS` en pleine question
+  // et coupait l'apparition des réponses (révélées à `QUESTION_READ_MS`) dès que l'intro n'avait pas signalé sa fin.
+  const lateRounds = useRef(new Map<number, boolean>())
+  if ((scene.kind === 'roundIntro' || scene.kind === 'question') && !lateRounds.current.has(scene.round)) {
+    lateRounds.current.set(scene.round, scene.kind === 'question' && scene.elapsedMs > LATE_JOIN_MS)
+  }
+  const joinedLate = lateRounds.current.get(roundIndex) ?? false
   const correctAnswer = currentRound?.correctAnswer ?? null
 
   const yourAnswer = currentRound?.playerAnswers[userId] ?? null
