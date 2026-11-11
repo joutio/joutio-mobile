@@ -258,7 +258,9 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
               pagingEnabled={Platform.OS === 'ios'}
               snapToOffsets={Platform.OS === 'android' ? [0, pageHeight] : undefined}
               disableIntervalMomentum
-              decelerationRate="fast"
+              // Décélération normale (2026-11-11) : `fast` accélérait l'aimantation de page (iOS) et le cran (Android),
+              // nettement plus vif que le pager natif des onglets de Détails du duel.
+              decelerationRate="normal"
               bounces={false}
               overScrollMode="never"
               nestedScrollEnabled

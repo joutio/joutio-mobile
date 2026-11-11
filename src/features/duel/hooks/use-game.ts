@@ -78,6 +78,14 @@ export function useGameResult(gameId: string, enabled: boolean, waitForReward = 
           }
         : view,
     )
+    // Une partie terminée est un résultat calculé par le serveur, pas une mutation du joueur : les vues qu'elle touche
+    // se relisent une fois le bilan arrivé (écran actif tout de suite, les autres à leur prochain affichage). Sans ça,
+    // l'historique, les parties du sujet, le classement, la série et les sujets joués restaient figés jusqu'au tiré.
+    if (me) void client.invalidateQueries({ queryKey: ['profiles', me.userId] })
+    void client.invalidateQueries({ queryKey: queryKeys.topic.all(data.topic.topicId) })
+    void client.invalidateQueries({ queryKey: queryKeys.home() })
+    void client.invalidateQueries({ queryKey: ['active-games'] })
+    void client.invalidateQueries({ queryKey: queryKeys.rooms() })
   }, [client, gameId, result.data, waitForReward])
   return result
 }
