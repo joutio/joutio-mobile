@@ -135,7 +135,7 @@ export function MyTopicScreen() {
         barTitleStart
         image={imageUrl}
         title={name}
-        eyebrow={universeLabel(code)}
+        eyebrow={<Pill category={code}>{universeLabel(code)}</Pill>}
         onBack={() => router.back()}
         intro={
           <View style={{ flexDirection: 'row', gap: tokens.space[2] }}>

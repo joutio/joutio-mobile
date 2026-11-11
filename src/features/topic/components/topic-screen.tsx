@@ -19,6 +19,7 @@ import {
   Stat,
   TabScrollView,
   useTransitionDone,
+  Pill,
   Text,
   useTheme,
   toCategoryCode,
@@ -170,11 +171,7 @@ export function TopicScreen({ stack = 'home' }: { stack?: TopicStack }) {
       <CollapsibleTabsScreen<Tab>
         image={image}
         title={name}
-        eyebrow={
-          <Text variant="caption" weight="600" color={tokens.category[category].color}>
-            {tokens.category[category].label}
-          </Text>
-        }
+        eyebrow={<Pill category={category}>{tokens.category[category].label}</Pill>}
         onBack={() => router.back()}
         barTitleStart
         dockAt={actionsHeight}
