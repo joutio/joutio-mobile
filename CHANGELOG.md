@@ -1,3 +1,9 @@
+## [1.30.0](https://github.com/joutio/joutio-mobile/compare/v1.29.1...v1.30.0) (2026-11-11)
+
+### Features
+
+* room and search presence through server-observed channels ([364003d](https://github.com/joutio/joutio-mobile/commit/364003d1b9fb81d2b6f122081ca7d904547cf390))
+
 ## [1.29.1](https://github.com/joutio/joutio-mobile/compare/v1.29.0...v1.29.1) (2026-11-11)
 
 ### Bug Fixes
