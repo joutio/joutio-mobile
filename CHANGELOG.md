@@ -1,3 +1,9 @@
+## [1.29.0](https://github.com/joutio/joutio-mobile/compare/v1.28.1...v1.29.0) (2026-11-11)
+
+### Features
+
+* **topic:** category tinted pill on the topic header image ([d95e62d](https://github.com/joutio/joutio-mobile/commit/d95e62d0143e595ff3a21319cee84f2c8c913de1))
+
 ## [1.28.1](https://github.com/joutio/joutio-mobile/compare/v1.28.0...v1.28.1) (2026-11-10)
 
 ### Bug Fixes
