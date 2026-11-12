@@ -1,3 +1,9 @@
+## [1.30.1](https://github.com/joutio/joutio-mobile/compare/v1.30.0...v1.30.1) (2026-11-12)
+
+### Bug Fixes
+
+* refresh challenges, rooms and inbox after a push tap or a reconnection ([b3b9560](https://github.com/joutio/joutio-mobile/commit/b3b9560dfe2831a19abe646a7e371341c3e119a1))
+
 ## [1.30.0](https://github.com/joutio/joutio-mobile/compare/v1.29.1...v1.30.0) (2026-11-11)
 
 ### Features
