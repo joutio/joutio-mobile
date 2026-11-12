@@ -268,6 +268,11 @@ sans ligne de co-auteur.
   (`useServerClock`) est mesurée à l'ouverture et au premier plan, puis ré-ancrée sur chaque trame. Seule exception :
   la récompense d'une partie terminée (`GET /api/games/{id}/result`) est relue toutes les 1,5 s tant qu'elle est
   absente (aucun canal STOMP ne la porte).
+  **Flux personnel** (`/topic/notifications/{userId}`, 2026-11-12) : sans historique rejouable, il perd ce qui arrive
+  pendant une coupure (arrière-plan, réseau). `usePersonalNotifications(userId, handler, onResync)` rappelle `onResync`
+  à chaque **re**connexion : la boîte, les défis et les salons sont alors relus. Un clic sur un push relit aussi ces
+  vues avant d'ouvrir l'écran (le push est arrivé flux fermé) ; ce sont des événements d'un autre joueur, pas la
+  confirmation d'une mutation.
 - **Séquences d'animation** du lab (`@keyframes`) : `useTimeline` + `keyframe()` (`design-system/timeline.ts`), une
   progression linéaire démarrable en plein milieu (`elapsedMs`, le serveur peut être en avance).
 - **Ouverture d'un écran** (2026-11-05) : un écran poussé s'ouvre **tout de suite**, sans jamais attendre une requête

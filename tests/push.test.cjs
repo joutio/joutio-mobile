@@ -293,7 +293,9 @@ function pushRuntime() {
     beforeClear,
     lastResolve
   const opened = [],
-    clears = []
+    clears = [],
+    refreshed = []
+  const client = { invalidateQueries: ({ queryKey }) => refreshed.push(queryKey.join('/')) }
   const notifications = {
     DEFAULT_ACTION_IDENTIFIER: 'default',
     setNotificationHandler: () => {},
@@ -326,6 +328,11 @@ function pushRuntime() {
       useRootNavigationState: () => ({ key: 'root' }),
     },
     react: h.react,
+    '@tanstack/react-query': { useQueryClient: () => client },
+    '@/features/challenges/hooks/use-challenges': {
+      refreshChallenges: (target) => ['challenges/mine', 'rooms/mine'].forEach((key) => target.invalidateQueries({ queryKey: key.split('/') })),
+    },
+    '@/lib/query-keys': { queryKeys: { notifications: { all: () => ['notifications'] } } },
     'react-native': { AppState: { addEventListener: () => ({ remove() {} }) } },
     '@/features/auth/session-store': { useSessionStore: (select) => select(state) },
     '@/features/me': { useMe: () => ({ data: me }) },
@@ -348,6 +355,7 @@ function pushRuntime() {
     state,
     opened,
     clears,
+    refreshed,
     response,
     emit: (data) => responseListener(response(data)),
     last: (data) => lastResolve(data ? response(data) : null),
@@ -385,6 +393,8 @@ test('cold-start click waits for auth, onboarding and the app route before navig
   await r.flush()
   assert.equal(r.opened.length, 1)
   assert.equal(r.opened[0][0].notificationId, notice.notificationId)
+  // Reçu flux STOMP fermé : défis, salons et boîte relus avant d'ouvrir l'écran.
+  assert.deepEqual(r.refreshed, ['challenges/mine', 'rooms/mine', 'notifications'])
   r.emit(notice)
   await r.flush()
   assert.equal(r.opened.length, 1)

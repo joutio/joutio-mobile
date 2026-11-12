@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { router } from 'expo-router'
 import { toast } from '@/design-system'
 import { useMe } from '@/features/me'
@@ -46,18 +46,28 @@ export function splitChallenges(challenges: readonly ChallengeView[] | undefined
 export const resumableRooms = (rooms: readonly RoomView[] | undefined) =>
   (rooms ?? []).filter((room) => !room.vsBot && !['COMPLETED', 'CANCELLED', 'EXPIRED', 'FAILED'].includes(room.status))
 
+/** Relit défis et salons : événements d'un autre joueur, jamais la confirmation d'une commande locale. */
+export function refreshChallenges(client: QueryClient) {
+  void client.invalidateQueries({ queryKey: queryKeys.challenges() })
+  void client.invalidateQueries({ queryKey: queryKeys.rooms() })
+}
+
 /**
- * Flux personnel STOMP : un défi reçu, refusé ou accepté rafraîchit les défis et les salons (aucun polling). Monté
- * une fois, dans le layout des onglets (badge de l'onglet Défis).
+ * Flux personnel STOMP : un défi reçu, refusé ou accepté rafraîchit les défis et les salons (aucun polling), et une
+ * reconnexion (retour au premier plan) rattrape ce qui a été reçu pendant la coupure. Monté une fois, dans le layout
+ * des onglets (badge de l'onglet Défis).
  */
 export function useChallengesRealtime() {
   const client = useQueryClient()
   const userId = useMe(true).data?.userId
-  usePersonalNotifications(userId, (notification) => {
-    if (notification.type !== 'CHALLENGE_RECEIVED' && notification.type !== 'CHALLENGE_DECLINED' && notification.type !== 'ROOM_ACCEPTED') return
-    void client.invalidateQueries({ queryKey: queryKeys.challenges() })
-    void client.invalidateQueries({ queryKey: queryKeys.rooms() })
-  })
+  usePersonalNotifications(
+    userId,
+    (notification) => {
+      if (notification.type !== 'CHALLENGE_RECEIVED' && notification.type !== 'CHALLENGE_DECLINED' && notification.type !== 'ROOM_ACCEPTED') return
+      refreshChallenges(client)
+    },
+    () => refreshChallenges(client),
+  )
 }
 
 /** Apply each confirmed command separately: partial bulk failure keeps successful decisions. */

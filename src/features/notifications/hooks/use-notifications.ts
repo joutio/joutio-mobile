@@ -51,7 +51,7 @@ export function useNotificationsRealtime(onCreated?: (notification: Notification
     )
     if (existing.readAt === null)
       client.setQueryData<{ count: number }>(queryKeys.notifications.unreadCount(), (count) => (count ? { count: Math.max(0, count.count - 1) } : count))
-  })
+  }, () => void client.invalidateQueries({ queryKey: queryKeys.notifications.all() }))
 }
 
 /** Applique un changement à la liste et au compteur en cache, restaurés si le BFF refuse. */

@@ -1,9 +1,12 @@
+import { useQueryClient } from '@tanstack/react-query'
 import * as Notifications from 'expo-notifications'
 import { router, useRootNavigationState, useSegments } from 'expo-router'
 import { useEffect, useRef, useState } from 'react'
 import { AppState } from 'react-native'
 import { useSessionStore } from '@/features/auth/session-store'
+import { refreshChallenges } from '@/features/challenges/hooks/use-challenges'
 import { useMe } from '@/features/me'
+import { queryKeys } from '@/lib/query-keys'
 import { getUserId, onBeforeSessionClear } from '@/lib/auth'
 import { useOpenNotification } from '../hooks/use-open-notification'
 import { syncExpoPush, unregisterExpoPush } from '../lib/expo-push'
@@ -23,6 +26,7 @@ export function ExpoPushRuntime() {
   const inApp = segments[0] === '(app)'
   const outsidePlayerFlow = segments[0] === '(dev)' || segments[0] === 'join'
   const open = useOpenNotification()
+  const client = useQueryClient()
   const [pending, setPending] = useState<PushNotice | null>(null)
   const receiveOnce = useRef(createNotificationDeduplicator())
   const responseEpoch = useRef(0)
@@ -90,7 +94,11 @@ export function ExpoPushRuntime() {
     if (!inApp) return
     setPending(null)
     void Notifications.clearLastNotificationResponseAsync().catch(() => undefined)
-    if (pending.userId === getUserId()) void open(pending, pending.userId)
-  }, [pending, ready, navigation?.key, authenticated, me.data?.userId, me.data?.onboardingCompleted, inApp, outsidePlayerFlow, open])
+    if (pending.userId !== getUserId()) return
+    // Le push a été reçu flux STOMP fermé (arrière-plan) : l'écran ouvert ne doit pas montrer un cache d'avant.
+    refreshChallenges(client)
+    void client.invalidateQueries({ queryKey: queryKeys.notifications.all() })
+    void open(pending, pending.userId)
+  }, [pending, ready, navigation?.key, authenticated, me.data?.userId, me.data?.onboardingCompleted, inApp, outsidePlayerFlow, open, client])
   return null
 }
