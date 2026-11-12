@@ -1,3 +1,16 @@
+## [1.32.0](https://github.com/joutio/joutio-mobile/compare/v1.31.0...v1.32.0) (2026-11-12)
+
+### Features
+
+* native iOS tab bar, Joutio tab bar kept on Android, app appearance applied to native UI ([605a2db](https://github.com/joutio/joutio-mobile/commit/605a2db6da4df92845f920b642088f314755deda))
+
+### Bug Fixes
+
+* avatar lifted off the pseudonym on Profil and Fiche joueur ([2de8d7d](https://github.com/joutio/joutio-mobile/commit/2de8d7d5a406f379e6c001ef7f36be77c42efb8a))
+* category color behind transparent topic visuals, painted by the image itself ([fc91032](https://github.com/joutio/joutio-mobile/commit/fc910325221431748deafd4ba86334c0dc6f0399))
+* lists end above the native iOS tab bar while content still scrolls under it ([0a60ea0](https://github.com/joutio/joutio-mobile/commit/0a60ea0ee739d75014d942cec6b1ccfa5d4e81b4))
+* self-scrolling tab screens run under the native iOS tab bar again ([51b8054](https://github.com/joutio/joutio-mobile/commit/51b8054a44a1b79759969493d7dc7b140d6dd743))
+
 ## [1.31.0](https://github.com/joutio/joutio-mobile/compare/v1.30.2...v1.31.0) (2026-11-12)
 
 ### Features
