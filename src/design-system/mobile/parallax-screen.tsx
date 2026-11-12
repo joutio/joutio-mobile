@@ -3,7 +3,7 @@ import { HeaderSeparator } from './header-separator'
 import { Image } from 'expo-image'
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react'
 import { useGuardedRefresh } from './guarded-refresh'
-import { RefreshControl, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native'
+import { Platform, RefreshControl, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native'
 import { GestureDetector } from 'react-native-gesture-handler'
 import Animated, {
   interpolate,
@@ -274,6 +274,8 @@ export function ParallaxScreen({
   const [viewport, setViewport] = useState(0)
 
   const barHeight = insets.top + TOP_BAR_HEIGHT
+  // Seule la `JoTabBar` d'Android porte la zone sûre du bas ; la tab bar native iOS flotte sur le contenu.
+  const tabBarOwnsBottom = inTabs && Platform.OS !== 'ios'
   // Position du titre dans l'image, mesurée : la barre prend le relais au moment exact où il passe dessous.
   const titleStart = useSharedValue(heroHeight - barHeight)
   const titleLength = useSharedValue(56)
@@ -361,7 +363,7 @@ export function ParallaxScreen({
             </View>
             {intro && <View style={{ paddingHorizontal: tokens.space[5], paddingTop: tokens.space[2], paddingBottom: tokens.space[3] }}>{intro}</View>}
             {/* Le contenu remplit au moins l'espace sous la barre compacte : assez pour replier, sans défilement à vide. */}
-            <View style={{ minHeight: Math.max(0, viewport - barHeight), paddingBottom: bottomBar || inTabs ? 0 : insets.bottom }}>
+            <View style={{ minHeight: Math.max(0, viewport - barHeight), paddingBottom: bottomBar || tabBarOwnsBottom ? 0 : insets.bottom }}>
               {ready ? (
                 children
               ) : (
@@ -408,7 +410,7 @@ export function ParallaxScreen({
               backgroundColor: colors.bg,
               paddingHorizontal: tokens.space[5],
               paddingTop: tokens.space[3],
-              paddingBottom: tokens.space[3] + (inTabs ? 0 : insets.bottom),
+              paddingBottom: tokens.space[3] + (tabBarOwnsBottom ? 0 : insets.bottom),
             }}
           >
             {bottomBar}

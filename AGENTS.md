@@ -334,6 +334,11 @@ Expo change à chaque SDK. Avant de toucher une API Expo, EAS ou React Native : 
   marge basse compte la barre, et la première liste de l'écran s'y ajuste seule (le contenu passe sous la barre).
   **Android** = `JoTabBar` de Joutio (`Tabs` d'`expo-router/js-tabs`). Le réglage d'apparence de l'app est propagé au
   natif (`Appearance.setColorScheme` dans `ThemeProvider`) : sinon la barre native suit le système.
+  **Fin de liste** : la barre native flotte sur le contenu et les listes de l'app (FlashList, `TabList`, défilement
+  à chargement natif) ne reçoivent pas l'ajustement automatique d'iOS ; tout contenu défilant finit par
+  `useTabBarInset()` (zone sûre de l'onglet sur iOS, 0 sur Android). Déjà compté par `Screen`, `ParallaxScreen`,
+  `CollapsibleTabsScreen` et les listes de page d'onglets (`withActivePageScrollsToTop`) ; à ajouter à la main sur
+  une liste posée directement (`withBottomInset` ou `paddingBottom: … + tabInset`).
 - **Bottom bar (règle, 2026-11-10, standard iOS HIG — remplace « barre sur les racines seules »)** : la barre reste
   visible sur toute la navigation de consultation, poussée dans la pile de l'onglet (`(tabs)/*` : fiches sujet et
   joueur, recherche, notifications, classements, historique, sujets joués, série, titres, Réglages, Mes sujets).

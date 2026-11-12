@@ -20,6 +20,7 @@ import {
   TrophyIcon,
   useTheme,
   WarningCircleIcon,
+  useTabBarInset,
 } from '@/design-system'
 import { useMe } from '@/features/me'
 import { countryLabel } from '@/shared/utils/country'
@@ -57,6 +58,8 @@ function Loading() {
 
 /** Page complète des classements d'un sujet (`classements.md`) : podium, pagination de 20, filtres période/portée. */
 export function RankingsScreen() {
+  // Fin de liste au-dessus de la tab bar native iOS (`useTabBarInset`).
+  const tabInset = useTabBarInset()
   const params = useLocalSearchParams<RankingsRouteParams>()
   const topicId = params.topicId
   const me = useMe(true)
@@ -182,7 +185,7 @@ export function RankingsScreen() {
             data={rest}
             keyExtractor={(entry) => entry.userId}
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingTop: tokens.space[3], paddingBottom: tokens.space[7] }}
+            contentContainerStyle={{ paddingTop: tokens.space[3], paddingBottom: tokens.space[7] + tabInset }}
             ListHeaderComponent={
               <View style={{ gap: tokens.space[4], paddingHorizontal: GUTTER, paddingBottom: tokens.space[3] }}>
                 <Text variant="caption" color="muted">

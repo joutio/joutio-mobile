@@ -20,6 +20,7 @@ import {
   TrashIcon,
   useTheme,
   WarningCircleIcon,
+  useTabBarInset,
 } from '@/design-system'
 import { useMyChallenges } from '@/features/challenges/hooks/use-challenges'
 import { useMe } from '@/features/me'
@@ -41,6 +42,8 @@ const awaiting = (item: NotificationView) => item.type === 'CHALLENGE_RECEIVED' 
  * (confirmé) dans la barre ; balayer une ligne la supprime.
  */
 export function NotificationsScreen() {
+  // Fin de liste au-dessus de la tab bar native iOS (`useTabBarInset`).
+  const tabInset = useTabBarInset()
   const { refresh } = useGuardedRefresh(() => list.refetch())
   const { colors } = useTheme()
   const userId = useMe(true).data?.userId ?? ''
@@ -101,10 +104,8 @@ export function NotificationsScreen() {
         onLoadMore={() => list.fetchNextPage()}
       >
         <LoadMoreScrollView
-          contentContainerStyle={{ flexGrow: 1, paddingBottom: tokens.space[7] }}
-          refreshControl={
-            <RefreshControl refreshing={list.isRefetching && !list.isFetchingNextPage} onRefresh={refresh} tintColor={colors.muted} />
-          }
+          contentContainerStyle={{ flexGrow: 1, paddingBottom: tokens.space[7] + tabInset }}
+          refreshControl={<RefreshControl refreshing={list.isRefetching && !list.isFetchingNextPage} onRefresh={refresh} tintColor={colors.muted} />}
         >
           {list.isPending ? (
             <View accessibilityLabel="Chargement" style={{ gap: tokens.space[3], paddingHorizontal: GUTTER, paddingTop: tokens.space[2] }}>

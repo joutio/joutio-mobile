@@ -19,6 +19,7 @@ import {
   useTheme,
   WarningCircleIcon,
   WifiSlashIcon,
+  useTabBarInset,
 } from '@/design-system'
 import { openTopic } from '@/features/topic'
 import { useOnline } from '@/shared/hooks/use-online'
@@ -37,6 +38,8 @@ const PLAYER_PATH = { home: '/home/player/[id]', social: '/social/player/[id]' }
  * fiche dans la pile de l'onglet (Accueil ou Social).
  */
 export function SearchScreen({ stack }: { stack: SearchStack }) {
+  // Fin de liste au-dessus de la tab bar native iOS (`useTabBarInset`).
+  const tabInset = useTabBarInset()
   const { colors } = useTheme()
   const insets = useSafeAreaInsets()
   const online = useOnline()
@@ -171,7 +174,12 @@ export function SearchScreen({ stack }: { stack: SearchStack }) {
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ gap: tokens.space[6], paddingHorizontal: tokens.space[5], paddingTop: tokens.space[2], paddingBottom: tokens.space[7] }}
+        contentContainerStyle={{
+          gap: tokens.space[6],
+          paddingHorizontal: tokens.space[5],
+          paddingTop: tokens.space[2],
+          paddingBottom: tokens.space[7] + tabInset,
+        }}
       >
         {content()}
       </ScrollView>

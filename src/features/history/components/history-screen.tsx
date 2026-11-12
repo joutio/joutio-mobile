@@ -23,6 +23,7 @@ import {
   tokens,
   WarningCircleIcon,
   type MatchOutcome,
+  useTabBarInset,
 } from '@/design-system'
 import { dayLabel, formatNumber } from '@/features/topic/lib/format'
 import { useMe } from '@/features/me'
@@ -65,6 +66,8 @@ type DayGroup = { day: string; games: GameHistoryItemView[] }
 
 /** Historique complet (`historique.md`) : filtres type/résultat/tri, pagination de 20 parties, groupement par jour. */
 export function HistoryScreen() {
+  // Fin de liste au-dessus de la tab bar native iOS (`useTabBarInset`).
+  const tabInset = useTabBarInset()
   const params = useLocalSearchParams<HistoryRouteParams>()
   const me = useMe(true)
   const userId = params.userId ?? me.data?.userId ?? ''
@@ -197,7 +200,7 @@ export function HistoryScreen() {
             data={groups}
             keyExtractor={(group) => group.day}
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingTop: tokens.space[3], paddingBottom: tokens.space[7] }}
+            contentContainerStyle={{ paddingTop: tokens.space[3], paddingBottom: tokens.space[7] + tabInset }}
             ListHeaderComponent={
               <View
                 style={{

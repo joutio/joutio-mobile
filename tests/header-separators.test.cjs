@@ -30,6 +30,7 @@ function harness() {
     './horizontal-gesture': { HorizontalGestureContext: { Provider: 'HorizontalProvider' } },
     './scroll-to-top-pill': { ScrollToTopPill: 'ScrollToTopPill' },
     './tab-page': { TabPageActiveContext: { Provider: 'TabPageProvider' } },
+    './tab-bar-inset': { useTabBarInset: () => 0, withBottomInset: (style) => style },
     '../haptics': { haptic() {} },
   }
   const load = file => {

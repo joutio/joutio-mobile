@@ -34,6 +34,7 @@ import {
   useTheme,
   WarningCircleIcon,
   type CategoryCode,
+  useTabBarInset,
 } from '@/design-system'
 import { openTopic } from '@/features/topic'
 import { DEFAULT_TOPIC_SORT, pageSizeFor } from '../lib/topics-service'
@@ -90,6 +91,8 @@ function Loading({ animated = true, columns, tile }: { animated?: boolean; colum
  * pleines (environ 20 sujets). Toucher Sujets remonte en haut.
  */
 export function TopicsScreen() {
+  // Fin de liste au-dessus de la tab bar native iOS (`useTabBarInset`).
+  const tabInset = useTabBarInset()
   const unread = useUnreadCount()
   const { colors } = useTheme()
   const { width } = useWindowDimensions()
@@ -311,7 +314,7 @@ export function TopicsScreen() {
             data={items}
             keyExtractor={(topic) => topic.topicId}
             numColumns={columns}
-            contentContainerStyle={{ paddingTop: tokens.space[3], paddingBottom: tokens.space[7] }}
+            contentContainerStyle={{ paddingTop: tokens.space[3], paddingBottom: tokens.space[7] + tabInset }}
             showsVerticalScrollIndicator={false}
             keyboardDismissMode="on-drag"
             keyboardShouldPersistTaps="handled"

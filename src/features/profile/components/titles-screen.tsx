@@ -25,6 +25,7 @@ import {
   tokens,
   useGuardedRefresh,
   WarningCircleIcon,
+  useTabBarInset,
 } from '@/design-system'
 import { useMyTitles, useWearTitle } from '@/features/topic/hooks/use-topic'
 import { tierLabel } from '@/features/topic/lib/format'
@@ -62,6 +63,8 @@ function groupsOf(titles: readonly TitleView[], tier: MasteryTier | undefined, q
 
 /** Tous les titres (`titres.md`) : recherche et filtre par rang ; liste groupée par sujet, 5 sujets par page. */
 export function TitlesScreen() {
+  // Fin de liste au-dessus de la tab bar native iOS (`useTabBarInset`).
+  const tabInset = useTabBarInset()
   const titles = useMyTitles()
   const wear = useWearTitle()
   const [query, setQuery] = useState('')
@@ -219,7 +222,13 @@ export function TitlesScreen() {
           refreshing={refreshing}
           onRefresh={refresh}
           keyExtractor={(group) => group.topicId}
-          contentContainerStyle={{ flexGrow: 1, gap: tokens.space[5], paddingHorizontal: GUTTER, paddingTop: tokens.space[2], paddingBottom: tokens.space[7] }}
+          contentContainerStyle={{
+            flexGrow: 1,
+            gap: tokens.space[5],
+            paddingHorizontal: GUTTER,
+            paddingTop: tokens.space[2],
+            paddingBottom: tokens.space[7] + tabInset,
+          }}
           ListHeaderComponent={
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: tokens.space[3] }}>
               <Text variant="callout" color="muted">

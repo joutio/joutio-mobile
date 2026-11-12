@@ -1,5 +1,6 @@
 import { ScrollEdgeContext } from './scroll-edge'
 import { scrollEdgeProgress } from './header-geometry'
+import { withBottomInset } from './tab-bar-inset'
 import { useContext, useMemo, type ReactNode, type Ref } from 'react'
 import { RefreshControl, ScrollView, View, type ScrollViewInstance, type ScrollViewProps, type StyleProp, type ViewStyle } from 'react-native'
 import { HeaderHeightContext } from 'expo-router/react-navigation'
@@ -81,7 +82,10 @@ export function Screen({
   const headerHeight = useContext(HeaderHeightContext) ?? 0
   // iOS : l'en-tête natif est translucide et posé sur le contenu ; un contenu fixe doit le contourner.
   const underHeader = nativeHeader && Platform.OS === 'ios'
-  const bottom = inTabs || bottomBar ? 0 : insets.bottom
+  // Dans un onglet, seule la `JoTabBar` d'Android porte la zone sûre du bas ; la tab bar native iOS flotte sur le
+  // contenu, qui garde la marge de la zone sûre de l'onglet (barre comprise).
+  const tabBarOwnsBottom = inTabs && Platform.OS !== 'ios'
+  const bottom = tabBarOwnsBottom || bottomBar ? 0 : insets.bottom
   const stickyTabs = useSharedValue(0)
   const ownOffset = useSharedValue(0)
   const headerOffset = scrollOffset ?? ownOffset
@@ -89,13 +93,7 @@ export function Screen({
   const separator = useDerivedValue(() => scrollEdgeProgress(headerOffset.value) * (1 - stickyTabs.value))
   const { refreshing, refresh } = useGuardedRefresh(onRefresh)
   const refreshControl = onRefresh ? (
-    <RefreshControl
-      refreshing={refreshing}
-      tintColor={colors.muted}
-      colors={[colors.accentInk]}
-      progressBackgroundColor={colors.surface}
-      onRefresh={refresh}
-    />
+    <RefreshControl refreshing={refreshing} tintColor={colors.muted} colors={[colors.accentInk]} progressBackgroundColor={colors.surface} onRefresh={refresh} />
   ) : undefined
 
   // Champ touché toujours visible au-dessus du clavier (2026-11-07) : le défilement d'un écran suit le clavier
@@ -118,7 +116,7 @@ export function Screen({
         scrollProps?.onScroll?.(event)
       }}
       style={{ flex: 1, backgroundColor: colors.bg }}
-      contentContainerStyle={[{ paddingBottom: bottom }, contentStyle]}
+      contentContainerStyle={withBottomInset([{ paddingBottom: 0 }, contentStyle], bottom)}
     >
       {children}
     </Scroller>
@@ -133,7 +131,7 @@ export function Screen({
     )
   const extras = (
     <>
-      {bottomBar && <View style={{ paddingBottom: inTabs ? 0 : insets.bottom, backgroundColor: colors.bg }}>{bottomBar}</View>}
+      {bottomBar && <View style={{ paddingBottom: tabBarOwnsBottom ? 0 : insets.bottom, backgroundColor: colors.bg }}>{bottomBar}</View>}
       {overlay}
     </>
   )
