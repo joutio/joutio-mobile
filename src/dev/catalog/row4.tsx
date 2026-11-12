@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { View } from 'react-native'
 import {
   Banner,
+  Notice,
   Button,
   DotsThreeIcon,
   Field,
@@ -231,13 +232,26 @@ export function ToastDemo() {
   )
 }
 
+/** Bandes du haut de la fenêtre (sans safe area dans le catalogue). */
 export function BannerDemo() {
   return (
     <>
-      <Banner title="Hors connexion" message="Les données affichées peuvent dater." action={{ label: 'Réessayer' }} />
-      <Banner tone="info" title="Saison 3 en cours" message="Fin dans 12 jours." />
-      <Banner tone="live" title="Partie en cours" message="Contre Sofia R. · manche 3" action={{ label: 'Reprendre' }} />
-      <Banner tone="training" title="Entraînement" message="Sans Elo ni XP." />
+      <Banner connection="offline" />
+      <Banner connection="retrying" />
+      <Banner connection="restored" />
+      <Banner tone="live" title="Partie en cours" message="Contre Sofia R. · manche 3" action={{ label: 'Rejoindre' }} />
+    </>
+  )
+}
+
+/** Cartes dans le flux de l'écran. */
+export function NoticeDemo() {
+  return (
+    <>
+      <Notice title="Hors connexion" message="Les données affichées peuvent dater." action={{ label: 'Réessayer' }} />
+      <Notice tone="info" title="Sujet complet" message="Retire une question pour en ajouter une autre." />
+      <Notice tone="live" title="Sofia R. t'attend" message="Manche 3 sur 7" />
+      <Notice tone="training" title="Entraînement" message="Sans Elo ni XP." />
     </>
   )
 }

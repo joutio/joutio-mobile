@@ -37,7 +37,7 @@ function AppNavigation() {
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.bg }}>
       {banner && <ConnectionBanner state={connection.state} onRetry={() => void connection.retry()} />}
-      <ActiveGameBanner belowConnection={banner} />
+      <ActiveGameBanner hidden={banner} />
       {/* La bannière prend la safe area haute : les barres des écrans dessous ne la réservent plus. */}
       <SafeAreaInsetsContext.Provider value={banner || bannerGame ? { ...insets, top: 0 } : insets}>
         <Stack screenOptions={nativeHeaderOptions(theme)}>

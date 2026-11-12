@@ -4,7 +4,7 @@ import { View } from 'react-native'
 import {
   ArchiveIcon,
   ArrowsDownUpIcon,
-  Banner,
+  Notice,
   Button,
   Chip,
   CheckCircleIcon,
@@ -321,7 +321,7 @@ export function QuestionsScreen() {
             <ProgressBar label={`${count} / ${limits.questions} questions`} value={Math.min(100, (count * 100) / limits.questions)} />
           )}
           {atCeiling && (
-            <Banner tone="info" title="Sujet complet" message={`${limits.questions} questions au maximum. Retire une question pour en ajouter une autre.`} />
+            <Notice tone="info" title="Sujet complet" message={`${limits.questions} questions au maximum. Retire une question pour en ajouter une autre.`} />
           )}
         </View>
       ) : null}

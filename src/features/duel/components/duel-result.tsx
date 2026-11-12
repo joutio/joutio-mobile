@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react'
 import { Pressable, Share, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import {
-  Banner,
+  Notice,
   Button,
   CaretUpIcon,
   ChatCircleIcon,
@@ -274,7 +274,7 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
                     }}
                   />
                   {bot || cancelled ? (
-                    <Banner
+                    <Notice
                       tone="training"
                       title={cancelled ? 'Partie annulée' : 'Entraînement'}
                       message={

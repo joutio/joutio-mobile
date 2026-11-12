@@ -16,7 +16,7 @@ import {
   SegmentedDemo,
   SwitchDemo,
 } from './row3'
-import { BannerDemo, DialogDemo, MenuDemo, MobileSheetDemo, MobileSheetInputDemo, SheetHeaderDemo, ToastDemo } from './row4'
+import { BannerDemo, DialogDemo, NoticeDemo, MenuDemo, MobileSheetDemo, MobileSheetInputDemo, SheetHeaderDemo, ToastDemo } from './row4'
 import { CategoryTileDemo, CodeInputDemo, LogoDemo, PageDotsDemo, SocialButtonDemo, SplashLogoDemo, TopicCardDemo, TopicRowDemo } from './onboarding'
 import { BadgeFamilyRowDemo, RankLadderDemo, RewardCardDemo, StreakCalendarDemo, StreakDemo, TopicsDonutDemo } from './profile'
 import { ChallengeListRowDemo, NotificationRowDemo } from './inbox'
@@ -66,6 +66,7 @@ export const CATALOG: CatalogEntry[] = [
   { id: 'menu', title: 'Menu', row: 4, spec: 'components/feedback.md', Demo: MenuDemo },
   { id: 'toast', title: 'Toast', row: 4, spec: 'components/toast.md', Demo: ToastDemo },
   { id: 'banner', title: 'Banner', row: 4, spec: 'components/feedback.md', Demo: BannerDemo },
+  { id: 'notice', title: 'Notice', row: 4, spec: 'components/feedback.md', Demo: NoticeDemo },
   { id: 'section-header', title: 'SectionHeader', row: 5, spec: 'components/primitives.md', Demo: SectionHeaderDemo },
   { id: 'empty-state', title: 'EmptyState', row: 5, spec: 'components/primitives.md', Demo: EmptyStateDemo },
   { id: 'native-load-more', title: 'Suite native (écran et feuille)', row: 5, spec: 'components/contenu.md', Demo: LoadMoreDemo, fullscreen: true },

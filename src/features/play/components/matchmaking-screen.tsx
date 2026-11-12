@@ -5,7 +5,7 @@ import { useWindowDimensions, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import {
   Avatar,
-  Banner,
+  Notice,
   Button,
   CheckCircleIcon,
   EmptyState,
@@ -254,7 +254,7 @@ function MatchmakingScreenContent() {
 
       {status === 'EXPIRED' && autoTrain.enabled && (
         <View style={[bottom, { gap: tokens.space[4] }]}>
-          <Banner
+          <Notice
             tone="training"
             title="Aucun adversaire, lancement d'un entraînement…"
             message="Partie sans XP ni série. Tu pourras retenter un duel humain ensuite."

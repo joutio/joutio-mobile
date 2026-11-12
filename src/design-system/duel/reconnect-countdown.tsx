@@ -1,7 +1,7 @@
 import { View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { WifiSlashIcon } from '../icons'
-import { Banner } from '../primitives/banner'
+import { Notice } from '../primitives/notice'
 import { Button } from '../primitives/button'
 import { Text } from '../primitives/text'
 import { ForceDark, useTheme } from '../theme/theme-provider'
@@ -65,7 +65,7 @@ function Body({ variant = 'lost', seconds, waiting, leaveLabel = 'Abandonner le 
             : 'Reconnecte-toi pour reprendre le duel.'}
         </Text>
       </View>
-      {waiting && <Banner tone="live" title={waiting.title} message={waiting.message} />}
+      {waiting && <Notice tone="live" title={waiting.title} message={waiting.message} />}
       {lost ? (
         onLeave && (
           <Button variant="tinted" tone="destructive" size="L" full onPress={onLeave}>

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { ScrollView, View } from 'react-native'
 import {
   alpha,
-  Banner,
+  Notice,
   Button,
   EmptyState,
   LightningIcon,
@@ -54,7 +54,7 @@ export function FirstTopicStep() {
       }
       footer={
         <View style={{ gap: tokens.space[3] }}>
-          {complete.isError && <Banner title="L'accueil n'a pas pu s'ouvrir" message="Vérifie ta connexion et réessaie." />}
+          {complete.isError && <Notice title="L'accueil n'a pas pu s'ouvrir" message="Vérifie ta connexion et réessaie." />}
           <Button full icon={LightningIcon} disabled={!picked} loading={complete.isPending} onPress={finish}>
             Découvrir le duel
           </Button>
@@ -77,7 +77,7 @@ export function FirstTopicStep() {
           <Skeleton shape="row" />
         </View>
       ) : recommendations.isError ? (
-        <Banner
+        <Notice
           title="Les thèmes n'ont pas pu se charger"
           message="Vérifie ta connexion."
           action={{ label: 'Réessayer', onPress: () => void recommendations.refetch() }}

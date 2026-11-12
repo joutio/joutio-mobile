@@ -1,7 +1,7 @@
 import { router } from 'expo-router'
 import { useEffect, useState } from 'react'
 import { View } from 'react-native'
-import { Banner, Button, CheckCircleIcon, CodeInput, EmptyState, MobileTopBar, Screen, Text, tokens, WarningIcon } from '@/design-system'
+import { Notice, Button, CheckCircleIcon, CodeInput, EmptyState, MobileTopBar, Screen, Text, tokens, WarningIcon } from '@/design-system'
 import { useLogout } from '@/features/auth'
 import { useMe } from '@/features/me'
 import { useDeleteAccount, useMyBadges, useRequestDeletionCode } from '@/features/profile/hooks/use-profile'
@@ -59,7 +59,7 @@ export function DeleteAccountScreen() {
       contentStyle={{ flexGrow: 1, gap: tokens.space[6], paddingHorizontal: tokens.space[5], paddingTop: tokens.space[4], paddingBottom: tokens.space[5] }}
       scrollProps={{ keyboardShouldPersistTaps: 'handled' }}
     >
-      <Banner tone="error" title="C'est immédiat et définitif" message={summary} icon={WarningIcon} />
+      <Notice tone="error" title="C'est immédiat et définitif" message={summary} icon={WarningIcon} />
       <View style={{ gap: tokens.space[4] }}>
         <Text variant="callout" color="muted">
           Tes parties restent chez tes adversaires sous « Joueur supprimé ».

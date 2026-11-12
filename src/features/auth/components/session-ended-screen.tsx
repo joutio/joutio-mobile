@@ -1,6 +1,6 @@
 import { Linking, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { Banner, Button, ClockIcon, ProhibitIcon, Text, tokens, useTheme } from '@/design-system'
+import { Notice, Button, ClockIcon, ProhibitIcon, Text, tokens, useTheme } from '@/design-system'
 import type { SessionEndReason } from '@/shared/types/session'
 
 const SUPPORT = 'mailto:contact@joutio.com'
@@ -24,7 +24,7 @@ export function SessionEndedScreen({ reason, onLogin }: { reason: SessionEndReas
     >
       {suspended ? (
         <>
-          <Banner tone="error" icon={ProhibitIcon} title="Compte suspendu" message="Consulte l'e-mail reçu pour connaître le motif et l'échéance." />
+          <Notice tone="error" icon={ProhibitIcon} title="Compte suspendu" message="Consulte l'e-mail reçu pour connaître le motif et l'échéance." />
           <Text color="muted">Tes défis et salons en cours ont été annulés. Ton Elo et ta collection sont conservés pendant la suspension.</Text>
           <View style={{ gap: tokens.space[3] }}>
             <Button full variant="gray" tone="neutral" onPress={() => Linking.openURL(SUPPORT).catch(() => undefined)}>
@@ -37,7 +37,7 @@ export function SessionEndedScreen({ reason, onLogin }: { reason: SessionEndReas
         </>
       ) : (
         <>
-          <Banner tone="info" icon={ClockIcon} title="Ta session a expiré" message="Reconnecte-toi pour reprendre là où tu en étais." />
+          <Notice tone="info" icon={ClockIcon} title="Ta session a expiré" message="Reconnecte-toi pour reprendre là où tu en étais." />
           <Button full onPress={onLogin}>
             Se reconnecter
           </Button>

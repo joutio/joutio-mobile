@@ -8,7 +8,7 @@ import { View } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { KeyboardProvider } from 'react-native-keyboard-controller'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
-import { Banner, Button, DialogHost, ThemeProvider, ToastHost, tokens, useJoutioFonts, useTheme } from '@/design-system'
+import { Notice, Button, DialogHost, ThemeProvider, ToastHost, tokens, useJoutioFonts, useTheme } from '@/design-system'
 import { LaunchScreen, SessionRuntime, useLogout, useSessionStore } from '@/features/auth'
 import { useMe } from '@/features/me'
 import { ExpoPushRuntime } from '@/features/notifications/components/expo-push-runtime'
@@ -26,7 +26,7 @@ function BootError({ onRetry }: { onRetry: () => void }) {
   const logout = useLogout()
   return (
     <View style={{ flex: 1, justifyContent: 'center', gap: tokens.space[4], padding: tokens.space[5], backgroundColor: colors.bg }}>
-      <Banner title="Joutio ne répond pas" message="Vérifie ta connexion et réessaie." />
+      <Notice title="Joutio ne répond pas" message="Vérifie ta connexion et réessaie." />
       <Button full onPress={onRetry}>
         Réessayer
       </Button>

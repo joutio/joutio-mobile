@@ -1,7 +1,7 @@
 import { router } from 'expo-router'
 import { useState } from 'react'
 import { View } from 'react-native'
-import { Banner, Button, CategoryTile, Text, tokens, type CategoryCode } from '@/design-system'
+import { Notice, Button, CategoryTile, Text, tokens, type CategoryCode } from '@/design-system'
 import { useSaveInterests } from '../hooks/use-onboarding'
 import { MAX_UNIVERSES, useOnboardingStore } from '../onboarding-store'
 import { Steps } from './steps'
@@ -40,7 +40,7 @@ export function UniversesStep() {
       }
       footer={
         <View style={{ gap: tokens.space[3] }}>
-          {save.isError && <Banner title="Tes univers n'ont pas pu être enregistrés" message="Vérifie ta connexion et réessaie." />}
+          {save.isError && <Notice title="Tes univers n'ont pas pu être enregistrés" message="Vérifie ta connexion et réessaie." />}
           <Button
             full
             disabled={selected.length === 0}
