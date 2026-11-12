@@ -1,3 +1,9 @@
+## [1.30.2](https://github.com/joutio/joutio-mobile/compare/v1.30.1...v1.30.2) (2026-11-12)
+
+### Bug Fixes
+
+* duel details switch like a carousel, tabs and dots follow the question ([387be64](https://github.com/joutio/joutio-mobile/commit/387be64621400741123ae754979563b0d729eb9d))
+
 ## [1.30.1](https://github.com/joutio/joutio-mobile/compare/v1.30.0...v1.30.1) (2026-11-12)
 
 ### Bug Fixes
