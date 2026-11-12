@@ -42,7 +42,7 @@ import { ResultPages } from './result-pages'
 import { DuelReview, reviewRoundsOf } from './duel-review'
 import { ReportPlayerSheet } from './report-sheets'
 import { useMyAvatar } from '@/features/avatar/lib/avatar-preview'
-import { usePlayerAvatar, usePlayerPremium } from '@/features/social/hooks/use-player-avatar'
+import { usePlayerAvatar, usePlayerPremium, usePlayerRanked } from '@/features/social/hooks/use-player-avatar'
 import { usePlayerIdentity } from '@/features/me'
 
 const ORDER = Object.keys(tokens.tier) as TierCode[]
@@ -59,7 +59,8 @@ function unlocksOf(result: GameResultView): Unlock[] {
   if (result.botGame) return []
   const unlocks: Unlock[] = []
   const delta = result.eloDelta ?? 0
-  if (result.rated && delta > 0) {
+  // Rang provisoire : pas encore de palier acquis, donc pas de promotion à célébrer.
+  if (result.rated && delta > 0 && !result.progression.provisional) {
     const from = tierOf(result.progression.rating - delta)
     const tier = tierOf(result.progression.rating)
     if (from !== tier) unlocks.push({ kind: 'rank', from, tier })
@@ -164,7 +165,10 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
     : me.data?.progression && !me.data.progression.provisional
       ? tierOf(me.data.progression.rating)
       : undefined
-  const opponentTier = data && data.opponentRated && data.opponentRating != null ? tierOf(data.opponentRating) : undefined
+  // `opponentRated` dit seulement que la partie a compté pour son Elo, y compris en période provisoire : le cadre
+  // attend un rang acquis (profil non provisoire), comme le mien. Sinon, avatar sans cadre (lab), jamais le Fer.
+  const opponentRanked = usePlayerRanked(opponentId, !bot)
+  const opponentTier = data && data.opponentRated && data.opponentRating != null && opponentRanked ? tierOf(data.opponentRating) : undefined
   const unlocks = celebrate && data && !sequenceDone ? unlocksOf(data) : []
 
   // ─── Séquence de déblocages : une page par déblocage, balayables ───

@@ -16,3 +16,13 @@ export function usePlayerPremium(userId: string | null | undefined, enabled = tr
   const profile = usePlayerProfile(userId ?? '', enabled && Boolean(userId))
   return usePlayerIdentity().premium(profile.data, userId)
 }
+
+/**
+ * Joueur classé (rang acquis, hors période provisoire) connu seulement par son identifiant, même profil en cache.
+ * `false` tant que le profil charge ou sans progression : aucun cadre de rang, jamais le Fer par défaut.
+ */
+export function usePlayerRanked(userId: string | null | undefined, enabled = true): boolean {
+  const profile = usePlayerProfile(userId ?? '', enabled && Boolean(userId))
+  const progression = profile.data?.progression
+  return Boolean(progression && !progression.provisional)
+}
