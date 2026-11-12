@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { create } from 'zustand'
 import { haptic, toast } from '@/design-system'
 import { showQuotaDialog } from '@/features/challenges/lib/quota'
+import { quotaProblemOf } from '@joutio/client-domain/premium'
 import { useMe } from '@/features/me'
 import { ENDPOINTS } from '@/lib/endpoints'
 import { optimisticUpdate, optimisticId } from '@/lib/optimistic-cache'
@@ -80,7 +81,11 @@ export function useStartTraining() {
   return useMutation({
     mutationFn: ({ topic, difficulty }: { topic: PlayTopic; difficulty: BotDifficulty }) => playService.createBotRoom(topic.topicId, difficulty),
     onSuccess: ({ id }, { topic }) => router.push({ pathname: '/room/[roomId]', params: { roomId: id, ...topicParams(topic) } }),
-    onError: launchError("L'entraînement n'a pas pu démarrer"),
+    // Salons bot : garde-fou anti-spam identique pour tous (P22), Premium n'y change rien.
+    onError: (error) =>
+      quotaProblemOf(error) === 'rooms'
+        ? toast.error("Trop d'entraînements ouverts", { description: "Termine ou quitte un entraînement avant d'en lancer un autre." })
+        : launchError("L'entraînement n'a pas pu démarrer")(),
   })
 }
 
@@ -125,7 +130,7 @@ export function useCreatePrivateRoom() {
     },
     onError: (error, _topic, context) => {
       context?.rollback()
-      showQuotaDialog(error) || launchError("Le salon n'a pas pu être créé")()
+      showQuotaDialog(error, client.getQueryData<MeView>(queryKeys.me())) || launchError("Le salon n'a pas pu être créé")()
     },
   })
 }
@@ -163,7 +168,7 @@ export function useChallengePlayer() {
     },
     onError: (error, _variables, context) => {
       context?.rollback()
-      showQuotaDialog(error) || launchError("Le défi n'a pas pu être envoyé")()
+      showQuotaDialog(error, me.data) || launchError("Le défi n'a pas pu être envoyé")()
     },
   })
 }

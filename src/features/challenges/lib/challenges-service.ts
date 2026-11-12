@@ -13,12 +13,6 @@ export const challengesService = {
   cancelRoom: (roomId: string) => api.post<void>(ENDPOINTS.rooms.cancel(roomId)),
 }
 
-/**
- * Plafond des défis en attente et des salons ouverts (`DuelLimitPolicy` du BFF, `joutio.duel.limits.*`, 5 par
- * défaut). Le BFF ne l'expose pas : la valeur par défaut est reprise ici.
- */
-export const CHALLENGE_LIMIT = 5
-
 const HOUR = 3_600_000
 const DAY = 24 * HOUR
 

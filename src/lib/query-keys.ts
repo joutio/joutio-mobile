@@ -25,6 +25,7 @@ export const queryKeys = {
   },
   authoring: {
     topics: () => ['authoring', 'topics'] as const,
+    created: () => ['authoring', 'created'] as const,
     questions: (topicId: string) => ['authoring', 'questions', topicId] as const,
     reports: (topicId: string) => ['authoring', 'reports', topicId] as const,
     todo: () => ['authoring', 'todo'] as const,

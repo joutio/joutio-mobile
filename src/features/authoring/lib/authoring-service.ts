@@ -34,8 +34,10 @@ export const authoringService = {
   archive: (id: string) => api.post<void>(`/api/questions/${id}/archive`),
   restore: (id: string) => api.post<void>(`/api/questions/${id}/restore`),
   reportDetail: (id: string) => api.get<ReportDetail>(`/api/question-reports/${id}`),
-  /** Mes sujets, brouillons et publiés (`mine=true`, exclusif des autres filtres). */
+  /** Mes sujets, brouillons et publiés, dont ceux où je suis dans l'équipe. */
   myTopics: () => api.get<PageResponse<TopicCardView>>('/api/topics/contributed', { params: { page: 0, size: 100 } }),
+  /** Sujets dont je suis le créateur (`mine=true`, exclusif des autres filtres) : seuls comptent dans le plafond. */
+  createdTopics: () => api.get<PageResponse<TopicCardView>>(ENDPOINTS.topics.list, { params: { mine: true, page: 0, size: 100 } }),
 
   createTopic: (name: string, category: CategoryCode) => api.post<IdResponse>(ENDPOINTS.topics.list, { names: { fr: name }, category }),
 

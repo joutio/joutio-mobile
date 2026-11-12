@@ -41,7 +41,8 @@ import {
   useMyChallenges,
   useMyRooms,
 } from '../hooks/use-challenges'
-import { CHALLENGE_LIMIT, duration } from '../lib/challenges-service'
+import { duration } from '../lib/challenges-service'
+import { planLimits } from '@joutio/client-domain/premium'
 import { clientSource, feedFooterProps, loadMoreOptions } from '@/shared/utils/paging'
 
 type Filter = 'all' | 'received' | 'sent' | 'rooms'
@@ -92,7 +93,7 @@ export function ChallengesScreen() {
   const receivedRows = filter === 'all' ? received.slice(0, RECEIVED_PREVIEW) : received.slice(0, receivedPages * RECEIVED_PAGE)
   const receivedSource = clientSource(receivedPages, setReceivedPages, filter === 'received' && receivedRows.length < received.length)
   const counts: Record<Filter, number | undefined> = { all: undefined, received: received.length, sent: sent.length, rooms: salons.length }
-  const subtitle = `${sent.length} défi${sent.length > 1 ? 's' : ''} envoyé${sent.length > 1 ? 's' : ''} sur ${CHALLENGE_LIMIT} possibles`
+  const subtitle = `${sent.length} défi${sent.length > 1 ? 's' : ''} envoyé${sent.length > 1 ? 's' : ''} sur ${planLimits(me.data).pendingChallenges} possibles`
 
   const { refreshing, refresh } = useGuardedRefresh(() =>
     Promise.all([client.refetchQueries({ queryKey: queryKeys.challenges() }), client.refetchQueries({ queryKey: queryKeys.rooms() })]),

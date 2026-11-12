@@ -39,8 +39,8 @@ import {
   useDraftTopic,
   useTeam,
   useCreationLimits,
+  useFrozen,
   useMyTopic,
-  useMyTopics,
   usePublishTopic,
   useTopicQuestions,
   useUpdateTopicCategory,
@@ -48,6 +48,7 @@ import {
   useUpdateTopicPictogram,
   useUpdateTopicNames,
 } from '../hooks/use-authoring'
+import { FrozenNotice } from './frozen-notice'
 import { LocalizedFieldSheet, UniverseSheet, universeLabel } from './topic-sheets'
 import { useRefreshActive } from '@/shared/hooks/use-refresh-active'
 
@@ -79,10 +80,10 @@ export function MyTopicScreen() {
   const role = workshopRole(permissions)
   const manager = permissions?.canManage === true
   const team = useTeam(topicId)
-  const all = useMyTopics()
   const pageRefresh = useRefreshActive()
   const questions = useTopicQuestions(topicId)
   const { premium, limits, askPremium } = useCreationLimits()
+  const { frozen, published, locks } = useFrozen()
   const names = useUpdateTopicNames(topicId)
   const category = useUpdateTopicCategory(topicId)
   const image = useUpdateTopicImage(topicId)
@@ -103,7 +104,7 @@ export function MyTopicScreen() {
   const pending = list.filter((question) => questionStatus(question) === 'pending').length
   const reported = list.filter((question) => question.openReportCount > 0).length
   const ready = approved >= MIN_QUESTIONS
-  const published = (all.data?.content ?? []).filter((item) => item.status === 'PUBLISHED').length
+  const locked = locks(topic, role)
 
   const pickThumbnail = async () => {
     const asset = await pickImage(THUMBNAIL_ASPECT)
@@ -141,7 +142,7 @@ export function MyTopicScreen() {
   }
 
   const onPublish = () => {
-    if (published >= limits.topics) return askPremium('topics')
+    if (role === 'creator' && !premium && published >= limits.publishedTopics) return askPremium(frozen ? 'frozen' : 'topics')
     publish.mutate()
   }
 
@@ -242,6 +243,7 @@ export function MyTopicScreen() {
         }
       >
         <View style={{ gap: tokens.space[6], paddingHorizontal: tokens.space[5], paddingTop: tokens.space[2], paddingBottom: tokens.space[7] }}>
+          {locked && <FrozenNotice published={published} limit={limits.publishedTopics} />}
           {/* Nom, univers et vignette : réservés à ceux qui gèrent le sujet. */}
           {manager && (
             <View style={{ gap: tokens.space[3] }}>
@@ -250,31 +252,35 @@ export function MyTopicScreen() {
                 <ListRow
                   icon={PencilSimpleIcon}
                   label="Nom"
-                  control="chevron"
+                  control={locked ? 'none' : 'chevron'}
+                  disabled={locked}
                   value={name}
                   sub={englishName ? `English : ${englishName}` : 'English : facultatif'}
-                  onPress={permissions?.canManage ? () => setSheet('name') : undefined}
+                  onPress={permissions?.canManage && !locked ? () => setSheet('name') : undefined}
                 />
                 <ListRow
                   icon={SquaresFourIcon}
                   label="Univers"
-                  control="chevron"
+                  control={locked ? 'none' : 'chevron'}
+                  disabled={locked}
                   value={universeLabel(code)}
-                  onPress={permissions?.canManage ? () => setSheet('universe') : undefined}
+                  onPress={permissions?.canManage && !locked ? () => setSheet('universe') : undefined}
                 />
                 <ListRow
                   icon={ImageIcon}
                   label="Vignette"
-                  control="chevron"
+                  control={locked ? 'none' : 'chevron'}
+                  disabled={locked}
                   value={imageUrl ? 'Modifier' : 'Ajouter'}
-                  onPress={permissions?.canManage ? () => setSheet('image') : undefined}
+                  onPress={permissions?.canManage && !locked ? () => setSheet('image') : undefined}
                 />
                 <ListRow
                   icon={StickerIcon}
                   label="Pictogramme"
-                  control="chevron"
+                  control={locked ? 'none' : 'chevron'}
+                  disabled={locked}
                   value={pictogramUrl ? 'Modifier' : 'Ajouter'}
-                  onPress={permissions?.canManage ? () => setSheet('pictogram') : undefined}
+                  onPress={permissions?.canManage && !locked ? () => setSheet('pictogram') : undefined}
                   last
                 />
               </ListGroup>

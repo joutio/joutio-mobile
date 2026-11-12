@@ -45,7 +45,9 @@ import {
   type QuestionStatus,
 } from '@joutio/client-domain/authoring'
 import { MIN_QUESTIONS, questionsLabel } from '@joutio/client-domain/authoring'
-import { useCreationLimits, useMyTopic, useTopicQuestions } from '../hooks/use-authoring'
+import { useCreationLimits, useFrozen, useMyTopic, useTopicQuestions } from '../hooks/use-authoring'
+import { workshopRole } from '@joutio/client-domain/authoring'
+import { FrozenNotice } from './frozen-notice'
 import { clientSource, feedFooterProps, loadMoreOptions } from '@/shared/utils/paging'
 
 const GUTTER = tokens.space[5]
@@ -149,9 +151,11 @@ function FilterOptions<T extends string>({
 export function QuestionsScreen() {
   const params = useLocalSearchParams<QuestionsRouteParams>()
   const topicId = params.id
-  const { topic } = useMyTopic(topicId)
+  const { topic, permissions } = useMyTopic(topicId)
   const questions = useTopicQuestions(topicId)
   const { premium, limits, askPremium } = useCreationLimits()
+  const { published, locks } = useFrozen()
+  const locked = locks(topic, workshopRole(permissions))
   const [query, setQuery] = useState('')
   const [status, setStatus] = useState<StatusFilter>('all')
   const [translation, setTranslation] = useState<TranslationFilter>('all')
@@ -163,7 +167,7 @@ export function QuestionsScreen() {
   const draft = (topic?.status ?? 'DRAFT') === 'DRAFT'
   const count = all.length
   const approved = all.filter((question) => questionStatus(question) === 'approved').length
-  const atCeiling = premium && count >= limits.questions
+  const atCeiling = premium && count >= limits.questionsPerTopic
   const search = query.trim().toLowerCase()
   const filtered = useMemo(
     () =>
@@ -197,7 +201,8 @@ export function QuestionsScreen() {
     })
 
   const add = () => {
-    if (!premium && count >= limits.questions) return askPremium('questions')
+    if (locked) return askPremium('frozen')
+    if (!premium && count >= limits.questionsPerTopic) return askPremium('questions')
     openQuestionEditor(topicId, count + 1)
   }
 
@@ -210,7 +215,7 @@ export function QuestionsScreen() {
           back="Sujet"
           onBack={() => router.back()}
           title="Questions"
-          right={<IconButton icon={PlusIcon} label="Ajouter une question" variant="plain" tone="accent" disabled={atCeiling} onPress={add} />}
+          right={<IconButton icon={PlusIcon} label="Ajouter une question" variant="plain" tone="accent" disabled={atCeiling || locked} onPress={add} />}
         />
       }
       searchVisible={count > 0}
@@ -316,9 +321,10 @@ export function QuestionsScreen() {
       {questions.data ? (
         <View style={{ gap: tokens.space[3] }}>
           {/* Brouillon : l'avancement vers la publication est sur Mon sujet. */}
-          {!draft && <ProgressBar label={`${count} / ${limits.questions} questions`} value={Math.min(100, (count * 100) / limits.questions)} />}
+          {!draft && <ProgressBar label={`${count} / ${limits.questionsPerTopic} questions`} value={Math.min(100, (count * 100) / limits.questionsPerTopic)} />}
+          {locked && <FrozenNotice published={published} limit={limits.publishedTopics} />}
           {atCeiling && (
-            <Notice tone="info" title="Sujet complet" message={`${limits.questions} questions au maximum. Retire une question pour en ajouter une autre.`} />
+            <Notice tone="info" title="Sujet complet" message={`${limits.questionsPerTopic} questions au maximum. Retire une question pour en ajouter une autre.`} />
           )}
         </View>
       ) : null}

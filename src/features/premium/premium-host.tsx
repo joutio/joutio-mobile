@@ -16,18 +16,18 @@ import {
   UserCircleIcon,
   useTheme,
 } from '@/design-system'
-import { LIMIT_REASONS } from '@joutio/client-domain/authoring'
+import { limitReason, planLimits, PREMIUM_LIMITS as P } from '@joutio/client-domain/premium'
+import { useMe } from '@/features/me'
 import { usePremiumSheet } from './premium-store'
 
+/** Chiffres tirés des limites Premium par défaut, jamais figés dans les textes (`premium.md` § 2). */
 const PERKS = [
   { icon: ProhibitIcon, label: 'Aucune publicité' },
-  { icon: LightningIcon, label: '20 défis et 20 salons ouverts' },
+  { icon: LightningIcon, label: `${P.pendingChallenges} défis et ${P.openRooms} salons ouverts` },
   { icon: ChartLineUpIcon, label: 'Statistiques par sujet' },
   { icon: UserCircleIcon, label: 'Avatars Lorelei et Notionists' },
-  { icon: PencilSimpleIcon, label: '10 sujets, 150 questions, équipe' },
+  { icon: PencilSimpleIcon, label: `${P.publishedTopics} sujets, ${P.questionsPerTopic} questions, équipe` },
 ]
-
-const QUOTA_REASON = 'Tu as atteint 5 défis ouverts. Premium monte la limite à 20.'
 
 /**
  * Feuille Premium (`premium.md`), état **Bientôt** : l'offre n'est pas ouverte (achat StoreKit / Play Billing à venir),
@@ -40,12 +40,11 @@ export function PremiumHost() {
   const hide = usePremiumSheet((state) => state.hide)
   const joined = useDeviceSettings((state) => state.premiumWaitlist)
   const set = useDeviceSettings((state) => state.set)
+  const limits = planLimits(useMe(true).data)
   const pitch =
-    context === 'quota'
-      ? QUOTA_REASON
-      : context === 'offer'
-        ? 'Premium arrive bientôt. Il ne change rien aux duels : même chrono, mêmes questions, même Elo.'
-        : LIMIT_REASONS[context]
+    context === 'offer'
+      ? 'Premium arrive bientôt. Il ne change rien aux duels : même chrono, mêmes questions, même Elo.'
+      : limitReason(context, limits)
   return (
     <MobileSheet
       open={open}

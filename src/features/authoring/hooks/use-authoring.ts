@@ -10,7 +10,8 @@ import type { InfiniteData } from '@tanstack/react-query'
 import type { TopicPage } from '@/features/topics/lib/topics-service'
 
 import type { OwnerQuestionReport, ReportDetail, QuestionEditorView, ReportedQuestion, TopicTodo } from '@joutio/client-domain/authoring'
-import { limitsFor, type LimitReason } from '@joutio/client-domain/authoring'
+import type { MeView } from '@joutio/client-domain/api-types'
+import { isFrozen, planLimits, premiumReasonOf, quotaProblemOf, type PremiumReason } from '@joutio/client-domain/premium'
 import type { QuestionOperation } from '@joutio/client-domain/authoring'
 import { authoringService } from '../lib/authoring-service'
 
@@ -68,8 +69,9 @@ export function useDeleteTopic(topicId: string) {
         client.setQueryData<TopicTodo[]>(queryKeys.authoring.todo(), (items) => items?.filter((todo) => todo.topicId !== topicId))
       }),
     onSuccess: () => toast.success('Brouillon supprimé'),
-    onError: (_error, _variables, context) => {
+    onError: (error, _variables, context) => {
       context?.rollback()
+      if (limitHit(client, error)) return
       toast.error("Le brouillon n'a pas pu être supprimé", retryHint)
     },
   })
@@ -86,16 +88,53 @@ export function useMyTopic(topicId: string) {
   return { ...workshop, topic: workshop.data?.topic, permissions: workshop.data?.permissions }
 }
 
-/** Plafonds Gratuit / Premium (appliqués par l'app) et ouverture de la feuille Premium avec l'accroche dédiée. */
+/** Limites du plan lues dans `MeView.limits` (appliquées par le BFF) et feuille Premium avec l'accroche dédiée. */
 export function useCreationLimits() {
   const me = useMe(true)
   const show = usePremiumSheet((state) => state.show)
   const premium = me.data?.premium ?? false
-  return { premium, limits: limitsFor(premium), askPremium: (reason: LimitReason) => show(reason) }
+  return { premium, limits: planLimits(me.data), askPremium: (reason: PremiumReason) => show(reason) }
+}
+
+/** Sujets dont je suis le créateur : seuls comptent dans le plafond de sujets publiés. */
+export function useCreatedTopics(enabled = true) {
+  return useQuery({ queryKey: queryKeys.authoring.created(), queryFn: authoringService.createdTopics, staleTime: 30_000, enabled })
+}
+
+/**
+ * Sujets gelés (`creation.md` § 3, P21) : sans Premium, au-delà du plafond de sujets publiés, mes sujets publiés ne se
+ * modifient plus. `locks` ne vaut que pour le créateur ; un membre de l'équipe l'apprend du BFF (`topic:overQuota`).
+ */
+export function useFrozen() {
+  const me = useMe(true).data
+  const created = useCreatedTopics(Boolean(me))
+  const published = created.data?.content.filter((topic) => topic.status === 'PUBLISHED').length ?? 0
+  const frozen = isFrozen(me, published)
+  return {
+    frozen,
+    published,
+    limit: planLimits(me).publishedTopics,
+    locks: (topic: Pick<TopicCardView, 'status'> | undefined, role: string | undefined) => frozen && role === 'creator' && topic?.status === 'PUBLISHED',
+  }
+}
+
+/** Limite du plan dans une erreur (éventuellement enveloppée : `cause`) : ouvre la feuille Premium, sans Premium. */
+function limitHit(client: QueryClient, error: unknown) {
+  const problem = quotaProblemOf(error) ?? (error instanceof Error ? quotaProblemOf(error.cause) : null)
+  if (!problem) return false
+  if (client.getQueryData<MeView>(queryKeys.me())?.premium) {
+    toast.error('La limite de ton offre est atteinte')
+    return true
+  }
+  usePremiumSheet.getState().show(premiumReasonOf(problem))
+  return true
 }
 
 /** Remplace un de mes sujets dans la liste, sur place. */
 function patchTopic(client: QueryClient, topicId: string, patch: (topic: TopicCardView) => TopicCardView) {
+  client.setQueryData<PageResponse<TopicCardView>>(queryKeys.authoring.created(), (page) =>
+    page ? { ...page, content: page.content.map((topic) => (topic.topicId === topicId ? patch(topic) : topic)) } : page,
+  )
   client.setQueryData<PageResponse<TopicCardView>>(queryKeys.authoring.topics(), (page) =>
     page ? { ...page, content: page.content.map((topic) => (topic.topicId === topicId ? patch(topic) : topic)) } : page,
   )
@@ -153,8 +192,9 @@ export function useCreateTopic() {
       patchTopic(client, context.tempId, (topic) => ({ ...topic, topicId: id }))
       client.setQueryData<QuestionEditorView[]>(queryKeys.authoring.questions(id), [])
     },
-    onError: (_error, _variables, context) => {
+    onError: (error, _variables, context) => {
       context?.rollback()
+      if (limitHit(client, error)) return
       toast.error("Le sujet n'a pas pu être créé", retryHint)
     },
   })
@@ -183,6 +223,7 @@ export function useUpdateTopicNames(topicId: string) {
       context?.rollback()
       if ('completedNames' in error)
         patchTopic(client, topicId, (topic) => ({ ...topic, names: { ...topic.names, ...(error.completedNames as Partial<Record<Language, string>>) } }))
+      if (limitHit(client, error)) return
       toast.error("Le nom n'a pas pu être enregistré", retryHint)
     },
   })
@@ -196,8 +237,9 @@ export function useUpdateTopicCategory(topicId: string) {
       optimisticUpdate(client, [['authoring'], ['topic', topicId], ['topics'], queryKeys.home()], () =>
         patchTopic(client, topicId, (topic) => ({ ...topic, category })),
       ),
-    onError: (_error, _variables, context) => {
+    onError: (error, _variables, context) => {
       context?.rollback()
+      if (limitHit(client, error)) return
       toast.error('L’univers n’a pas pu être enregistré', retryHint)
     },
   })
@@ -211,8 +253,9 @@ export function useUpdateTopicImage(topicId: string) {
       optimisticUpdate(client, [['authoring'], ['topic', topicId], ['topics'], queryKeys.home()], () =>
         patchTopic(client, topicId, (topic) => ({ ...topic, imageUrl })),
       ),
-    onError: (_error, _variables, context) => {
+    onError: (error, _variables, context) => {
       context?.rollback()
+      if (limitHit(client, error)) return
       toast.error('La vignette n’a pas pu être enregistrée', retryHint)
     },
   })
@@ -227,8 +270,9 @@ export function useUpdateTopicPictogram(topicId: string) {
       optimisticUpdate(client, [['authoring'], ['topic', topicId], ['topics'], queryKeys.home()], () =>
         patchTopic(client, topicId, (topic) => ({ ...topic, pictogramUrl })),
       ),
-    onError: (_error, _variables, context) => {
+    onError: (error, _variables, context) => {
       context?.rollback()
+      if (limitHit(client, error)) return
       toast.error('Le pictogramme n’a pas pu être enregistré', retryHint)
     },
   })
@@ -243,8 +287,9 @@ export function usePublishTopic(topicId: string) {
         patchTopic(client, topicId, (topic) => ({ ...topic, status: 'PUBLISHED' })),
       ),
     onSuccess: () => toast.success('Sujet publié'),
-    onError: (_error, _variables, context) => {
+    onError: (error, _variables, context) => {
       context?.rollback()
+      if (limitHit(client, error)) return
       toast.error("Le sujet n'a pas pu être publié", { description: 'Il faut 7 questions approuvées.' })
     },
   })
@@ -354,6 +399,7 @@ export function useSaveQuestion(topicId: string) {
         })
         syncApprovedCount(client, topicId)
       }
+      if (limitHit(client, error)) return
       toast.error("La question n'a pas pu être entièrement enregistrée", retryHint)
     },
   })
@@ -377,8 +423,9 @@ export function useModerateQuestion(topicId: string) {
         syncApprovedCount(client, topicId)
       }),
     onSuccess: (_result, { decision }) => toast.success(decision === 'approve' ? 'Question approuvée' : 'Question rejetée'),
-    onError: (_error, { decision }, context) => {
+    onError: (error, { decision }, context) => {
       context?.rollback()
+      if (limitHit(client, error)) return
       toast.error(decision === 'approve' ? "La question n'a pas pu être approuvée" : "La question n'a pas pu être rejetée", retryHint)
     },
   })
@@ -396,8 +443,9 @@ export function useDismissReports(topicId: string) {
         dropFromQueue(client, topicId, questionId)
       }),
     onSuccess: () => toast.success('Signalements clos'),
-    onError: (_error, _variables, context) => {
+    onError: (error, _variables, context) => {
       context?.rollback()
+      if (limitHit(client, error)) return
       toast.error("Le signalement n'a pas pu être clos", retryHint)
     },
   })
@@ -423,8 +471,9 @@ export function useTeamChange(topicId: string) {
           items?.map((item) => (item.userId === member.userId ? member : item)),
         )
     },
-    onError: (_error, _variables, context) => {
+    onError: (error, _variables, context) => {
       context?.rollback()
+      if (limitHit(client, error)) return
       toast.error("L'équipe n'a pas pu être modifiée", { description: 'Les administrateurs doivent être Premium.' })
     },
   })
@@ -437,8 +486,9 @@ export function useDraftTopic(topicId: string) {
       optimisticUpdate(client, [['authoring'], ['topic', topicId], ['topics'], queryKeys.home()], () =>
         patchTopic(client, topicId, (t) => ({ ...t, status: 'DRAFT' })),
       ),
-    onError: (_e, _v, context) => {
+    onError: (error, _v, context) => {
       context?.rollback()
+      if (limitHit(client, error)) return
       toast.error('Le sujet n’a pas pu repasser en brouillon')
     },
   })
@@ -454,8 +504,9 @@ export function useDeleteQuestion(topicId: string) {
         const questions = client.getQueryData<QuestionEditorView[]>(queryKeys.authoring.questions(topicId))
         if (questions && questions.filter((q) => q.status === 'APPROVED').length < 7) patchTopic(client, topicId, (t) => ({ ...t, status: 'DRAFT' }))
       }),
-    onError: (_e, _v, context) => {
+    onError: (error, _v, context) => {
       context?.rollback()
+      if (limitHit(client, error)) return
       toast.error('La question n’a pas pu être supprimée')
     },
   })
@@ -473,8 +524,9 @@ export function useArchiveQuestion(topicId: string) {
         if (!restore && questions && questions.filter((q) => q.status === 'APPROVED').length < 7)
           patchTopic(client, topicId, (t) => ({ ...t, status: 'DRAFT' }))
       }),
-    onError: (_e, _v, context) => {
+    onError: (error, _v, context) => {
       context?.rollback()
+      if (limitHit(client, error)) return
       toast.error('La question n’a pas pu être mise à jour')
     },
   })

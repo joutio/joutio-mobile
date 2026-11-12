@@ -1,7 +1,9 @@
 import { create } from 'zustand'
 
-/** `topics`, `questions`, `team` : plafonds de création (`creation.md` § 3). */
-export type PremiumContext = 'offer' | 'quota' | 'topics' | 'questions' | 'team'
+import type { PremiumReason } from '@joutio/client-domain/premium'
+
+/** `quota` : défis ; `topics`, `questions`, `team` : plafonds de création ; `frozen` : sujets gelés (`creation.md` § 3). */
+export type PremiumContext = 'offer' | PremiumReason
 
 interface PremiumState {
   open: boolean

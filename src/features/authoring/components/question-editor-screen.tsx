@@ -39,7 +39,8 @@ import {
   type QuestionDraft,
 } from '@joutio/client-domain/authoring'
 import { questionActions, workshopRole } from '@joutio/client-domain/authoring'
-import { useArchiveQuestion, useDeleteQuestion, useMyTopic, useSaveQuestion, useTopicQuestions } from '../hooks/use-authoring'
+import { useArchiveQuestion, useCreationLimits, useDeleteQuestion, useFrozen, useMyTopic, useSaveQuestion, useTopicQuestions } from '../hooks/use-authoring'
+import { FrozenNotice } from './frozen-notice'
 import { LANGUAGES } from './topic-sheets'
 
 /** Image de question : 5:4, comme `QuestionBlock`. */
@@ -72,7 +73,10 @@ export function QuestionEditorScreen() {
   const save = useSaveQuestion(topicId)
   const archive = useDeleteQuestion(topicId)
   const lifecycle = useArchiveQuestion(topicId)
-  const { permissions } = useMyTopic(topicId)
+  const { topic, permissions } = useMyTopic(topicId)
+  const { limits } = useCreationLimits()
+  const { published, locks } = useFrozen()
+  const locked = locks(topic, workshopRole(permissions))
   const [draft, setDraft] = useState<QuestionDraft>(() => (original ? draftFromQuestion(original) : emptyDraft()))
   const [loaded, setLoaded] = useState(!questionId || original !== undefined)
   const [language, setLanguage] = useState<Language>('fr')
@@ -97,7 +101,7 @@ export function QuestionEditorScreen() {
       (permissions?.canManage && original?.status !== 'ARCHIVED') ||
       (original?.creatorId === getUserId() && (original?.status === 'PENDING' || original?.status === 'REJECTED')),
     )
-  const ready = loaded && isReady(draft, imageChanged) && !uploading && mayEdit
+  const ready = loaded && isReady(draft, imageChanged) && !uploading && mayEdit && !locked
   const actions = original ? questionActions(workshopRole(permissions), original, getUserId() ?? undefined) : []
   const missingCorrect = filled && draft.correct === undefined
   const text = draft.texts[language]
@@ -227,6 +231,7 @@ export function QuestionEditorScreen() {
           )}
         </View>
         {original?.rejectionReason && <Text color="muted">{original.rejectionReason}</Text>}
+        {locked && <FrozenNotice published={published} limit={limits.publishedTopics} />}
         {actions.length > 0 && questionId && (
           // Cycle de vie, à l'écart de l'enregistrement ; archiver et supprimer passent toujours par une confirmation.
           <View style={{ gap: tokens.space[3] }}>

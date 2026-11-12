@@ -21,7 +21,8 @@ import type { TopicCardView } from '@joutio/client-domain/api-types'
 import { topicName } from '@/shared/utils/topic-name'
 import { MIN_QUESTIONS, questionsLabel } from '@joutio/client-domain/authoring'
 import { todoTotal } from '@joutio/client-domain/authoring'
-import { useCreateTopic, useCreationLimits, useMyTopics, useTopicTodo } from '../hooks/use-authoring'
+import { useCreateTopic, useCreationLimits, useFrozen, useMyTopics, useTopicTodo } from '../hooks/use-authoring'
+import { FrozenNotice } from './frozen-notice'
 import { CreateTopicSheet } from './topic-sheets'
 import { useRefreshActive } from '@/shared/hooks/use-refresh-active'
 
@@ -43,13 +44,13 @@ export function MyTopicsScreen() {
   const todo = useTopicTodo()
   const pageRefresh = useRefreshActive()
   const create = useCreateTopic()
-  const { limits, askPremium } = useCreationLimits()
+  const { premium, limits, askPremium } = useCreationLimits()
+  const { frozen, published } = useFrozen()
   const [createOpen, setCreateOpen] = useState(false)
   const list = topics.data?.content ?? []
-  const published = list.filter((topic) => topic.status === 'PUBLISHED').length
 
   const startCreate = () => {
-    if (published >= limits.topics) return askPremium('topics')
+    if (!premium && published >= limits.publishedTopics) return askPremium(frozen ? 'frozen' : 'topics')
     setCreateOpen(true)
   }
 
@@ -109,6 +110,7 @@ export function MyTopicsScreen() {
     )
     return (
       <View style={{ gap: tokens.space[6] }}>
+        {frozen && <FrozenNotice published={published} limit={limits.publishedTopics} />}
         {toHandle.length > 0 && (
           <View style={{ gap: tokens.space[3] }}>
             <SectionHeader title="À traiter" />
