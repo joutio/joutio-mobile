@@ -1,3 +1,9 @@
+## [1.33.0](https://github.com/joutio/joutio-mobile/compare/v1.32.2...v1.33.0) (2026-11-12)
+
+### Features
+
+* player identity and premium badge ([3a8cebc](https://github.com/joutio/joutio-mobile/commit/3a8cebc67a2ccb8d748ddc6bf202de23d0d43180))
+
 ## [1.32.2](https://github.com/joutio/joutio-mobile/compare/v1.32.1...v1.32.2) (2026-11-12)
 
 ### Bug Fixes
