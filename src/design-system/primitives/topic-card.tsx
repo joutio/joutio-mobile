@@ -46,7 +46,8 @@ export function TopicCard({ title, category, orientation = 'landscape', image, o
           <Image
             source={typeof image === 'number' ? image : { uri: image }}
             contentFit="cover"
-            style={{ position: 'absolute', inset: 0 }}
+            // Couleur d'univers sur l'image elle-même, visible à travers une bannière détourée, sans vue colorée dessous.
+            style={{ position: 'absolute', inset: 0, backgroundColor: color }}
             transition={tokens.motion.micro.duration}
             onError={() => setFailedImage(image)}
           />

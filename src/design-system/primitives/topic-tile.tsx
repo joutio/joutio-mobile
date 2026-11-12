@@ -28,8 +28,9 @@ export interface TopicTileProps {
  * visuel : pictogramme, sinon bannière recadrée au carré, sinon couleur et icône de l'univers. Une source qui échoue
  * passe à la suivante.
  *
- * Le visuel est peint par **un seul élément** : l'image arrondie, ou la couleur d'univers en repli, jamais l'une
- * derrière l'autre (la couleur transparaîtrait dans l'anticrénelage des coins).
+ * Le visuel est peint par **un seul élément** : l'image arrondie porte elle-même la couleur d'univers en fond (visible à
+ * travers une image détourée), ou la couleur seule en repli ; jamais une vue colorée sous l'image (elle transparaîtrait
+ * dans l'anticrénelage des coins).
  */
 export function TopicTile({ title, category, pictogram, image, onPress, style }: TopicTileProps) {
   const { colors, radius, categoryColor } = useTheme()
@@ -50,7 +51,8 @@ export function TopicTile({ title, category, pictogram, image, onPress, style }:
           key={source}
           source={typeof source === 'number' ? source : { uri: source }}
           contentFit="cover"
-          style={box}
+          // Couleur d'univers sur l'image elle-même : visible à travers un PNG ou SVG détouré, sans calque dessous.
+          style={[box, { backgroundColor: categoryColor(category) }]}
           transition={tokens.motion.micro.duration}
           onError={() => setFailed((list) => [...list, source])}
         />
