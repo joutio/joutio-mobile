@@ -157,7 +157,13 @@ export function Screen({
               {header && <HeaderSeparator progress={separator} />}
             </View>
           )}
-          {scroll ? scroller : <View style={[{ flex: 1, paddingTop: underHeader ? headerHeight : 0, paddingBottom: bottom }, contentStyle]}>{children}</View>}
+          {/* Contenu qui défile lui-même : dans un onglet, il descend sous la tab bar (native iOS : effet verre) et finit
+              lui-même au-dessus (`useTabBarInset`) ; aucune marge sur ce conteneur, qui couperait le contenu au bord de la barre. */}
+          {scroll ? (
+            scroller
+          ) : (
+            <View style={[{ flex: 1, paddingTop: underHeader ? headerHeight : 0, paddingBottom: inTabs ? 0 : bottom }, contentStyle]}>{children}</View>
+          )}
           {extras}
         </ScrollEdgeContext.Provider>
       </StickyHeaderContext.Provider>
