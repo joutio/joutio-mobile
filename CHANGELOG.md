@@ -1,3 +1,9 @@
+## [1.35.0](https://github.com/joutio/joutio-mobile/compare/v1.34.0...v1.35.0) (2026-11-12)
+
+### Features
+
+* **premium:** read plan limits and show frozen topics ([103b06f](https://github.com/joutio/joutio-mobile/commit/103b06fd83061e35d20b8743f12d62adbf7f8dfe))
+
 ## [1.34.0](https://github.com/joutio/joutio-mobile/compare/v1.33.1...v1.34.0) (2026-11-12)
 
 ### Features
