@@ -148,7 +148,9 @@ function Hero({ heroHeight, image, title, eyebrow, centered, intro, scroll, pull
                 left: tokens.space[5],
                 right: tokens.space[5],
                 bottom: tokens.space[4],
-                gap: tokens.space[2],
+                // Identité centrée (Profil, Fiche joueur) : l'avatar porte un cadre de rang qui déborde de son cercle ;
+                // l'écart le décolle du pseudonyme (2026-11-12). Sinon, un sur-titre texte reste au plus près.
+                gap: centered ? tokens.space[6] : tokens.space[2],
                 alignItems: centered ? 'center' : 'flex-start',
               },
               titleStyle,
