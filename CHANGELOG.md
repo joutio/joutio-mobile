@@ -1,3 +1,9 @@
+## [1.32.2](https://github.com/joutio/joutio-mobile/compare/v1.32.1...v1.32.2) (2026-11-12)
+
+### Bug Fixes
+
+* badge rows, publish progress, experience points, TopicTile corners ([2dc93de](https://github.com/joutio/joutio-mobile/commit/2dc93de229e17c1955a2a188632c27ab690c6bc5))
+
 ## [1.32.1](https://github.com/joutio/joutio-mobile/compare/v1.32.0...v1.32.1) (2026-11-12)
 
 ### Bug Fixes
