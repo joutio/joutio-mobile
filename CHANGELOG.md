@@ -1,3 +1,9 @@
+## [1.32.1](https://github.com/joutio/joutio-mobile/compare/v1.32.0...v1.32.1) (2026-11-12)
+
+### Bug Fixes
+
+* pull-to-load spinner stays above the native iOS tab bar ([85094d8](https://github.com/joutio/joutio-mobile/commit/85094d8533ff5c578fc3f776b019f2f064753b24))
+
 ## [1.32.0](https://github.com/joutio/joutio-mobile/compare/v1.31.0...v1.32.0) (2026-11-12)
 
 ### Features
