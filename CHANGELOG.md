@@ -1,3 +1,9 @@
+## [1.36.0](https://github.com/joutio/joutio-mobile/compare/v1.35.0...v1.36.0) (2026-11-12)
+
+### Features
+
+* **play:** explain why a room failed to prepare ([76e8db6](https://github.com/joutio/joutio-mobile/commit/76e8db6c05c6441723164016dd672a8695282c89))
+
 ## [1.35.0](https://github.com/joutio/joutio-mobile/compare/v1.34.0...v1.35.0) (2026-11-12)
 
 ### Features
