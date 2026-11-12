@@ -28,7 +28,7 @@ export function TitleRowDemo() {
       </Specimen>
       <Specimen label="Verrouillé · progression conservée">
         <ListGroup surface="surface">
-          <TitleRow tier="DIAMANT" title="Souverain des royaumes oubliés" locked progress={{ value: 62, label: '212 XP restants' }} last />
+          <TitleRow tier="DIAMANT" title="Souverain des royaumes oubliés" locked progress={{ value: 62, label: "212 points d'expérience restants" }} last />
         </ListGroup>
       </Specimen>
     </>

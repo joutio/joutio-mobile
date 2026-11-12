@@ -60,7 +60,7 @@ export function TeamScreen() {
             permissions?.canManageTeam ? (
               <IconButton
                 icon={UserPlusIcon}
-                label="Inviter un rédacteur"
+                label="Ajouter un rédacteur"
                 variant="plain"
                 tone="accent"
                 onPress={() => (permissions?.canAddMembers ? setAdding(true) : askPremium('team'))}
@@ -99,8 +99,15 @@ export function TeamScreen() {
               </ListGroup>
             )}
           </MobileSheet>
-          <MobileSheet open={adding} title="Inviter un rédacteur" subtitle={name} tall onClose={() => setAdding(false)}>
-            <SearchField label="Chercher un joueur" value={query} onChange={setQuery} placeholder="Chercher un joueur" />
+          <MobileSheet
+            open={adding}
+            title="Ajouter un rédacteur"
+            subtitle={name}
+            tall
+            onClose={() => setAdding(false)}
+            // Recherche collée en haut, hors de la liste : les lignes défilent dessous sans la chevaucher.
+            stickyHeader={<SearchField label="Chercher un joueur" value={query} onChange={setQuery} placeholder="Chercher un joueur" />}
+          >
             {suggestions.isError && <Text>La recherche a échoué. Réessaie.</Text>}
             {candidates.length > 0 && (
               <ListGroup>

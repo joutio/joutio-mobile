@@ -199,7 +199,7 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
           topic={topic}
           text="Porte-le : il s'affiche sous ton nom, sur ton profil et en duel."
           next={nextTier}
-          nextRule={nextTier ? `à ${formatNumber(MASTERY_XP[nextTier])} XP.` : undefined}
+          nextRule={nextTier ? `à ${formatNumber(MASTERY_XP[nextTier])} points d'expérience.` : undefined}
           worn={titles.data?.equippedKey === key}
           wearing={wear.isPending && wear.variables === key}
           onWear={() => wear.mutate(key)}

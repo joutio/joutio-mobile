@@ -79,8 +79,9 @@ export function TopicsDonutDemo() {
 export function BadgeFamilyRowDemo() {
   return (
     <>
-      <BadgeFamilyRow name="Rapidité" icon={LightningIcon} meta="Or · 30 / 100" earned={4} progress={30} onPress={() => undefined} />
-      <BadgeFamilyRow name="Série" icon={FireIcon} meta="4 / 5" earned={0} progress={80} />
+      <BadgeFamilyRow name="Rapidité" icon={LightningIcon} remaining="Encore 70 réponses rapides" earned={4} progress={30} onPress={() => undefined} />
+      <BadgeFamilyRow name="Série" icon={FireIcon} remaining="Encore 1 victoire d'affilée" earned={0} progress={80} />
+      <BadgeFamilyRow name="Exploits" icon={FireIcon} earned={0} progress={0} feats={[{ tier: 'BRONZE', earned: true }, { tier: 'ARGENT', earned: false }, { tier: 'OR', earned: true }, { tier: 'PLATINE', earned: false }]} />
     </>
   )
 }

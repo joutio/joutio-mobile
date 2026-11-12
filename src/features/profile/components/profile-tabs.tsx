@@ -209,7 +209,8 @@ export function BadgesTab({ families, summary, loading, error, retrying, onRetry
           key={family.family}
           name={family.name}
           icon={family.icon}
-          meta={family.meta}
+          remaining={family.remaining}
+          feats={family.feats}
           earned={family.earned}
           progress={family.progress}
           onPress={() => onOpen(family)}

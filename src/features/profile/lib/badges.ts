@@ -26,8 +26,8 @@ const TIERS = Object.keys(tokens.tier) as TierCode[]
 export const FAMILIES: Record<BadgeFamily, { name: string; icon: Icon; description: string }> = {
   VOLUME: { name: 'Volume', icon: SwordIcon, description: 'Duels terminés contre des joueurs.' },
   VICTORY: { name: 'Victoires', icon: CrownIcon, description: 'Duels gagnés contre des joueurs.' },
-  MASTERY: { name: 'Maîtrise', icon: GraduationCapIcon, description: 'XP de ton meilleur sujet.' },
-  EXPLOIT: { name: 'Exploits', icon: SparkleIcon, description: 'Hauts faits rares.' },
+  MASTERY: { name: 'Maîtrise', icon: GraduationCapIcon, description: "Points d'expérience de ton meilleur sujet." },
+  EXPLOIT: { name: 'Exploits', icon: SparkleIcon, description: 'Hauts faits ponctuels, chacun à son palier, dans n’importe quel ordre.' },
   SERIES: { name: 'Série', icon: FireIcon, description: 'Victoires de suite contre des joueurs.' },
   ASSIDUITY: { name: 'Assiduité', icon: CalendarCheckIcon, description: 'Jours de suite avec au moins un duel terminé.' },
   SOCIAL: { name: 'Social', icon: UsersIcon, description: 'Abonnés gagnés.' },
@@ -39,24 +39,35 @@ export const FAMILIES: Record<BadgeFamily, { name: string; icon: Icon; descripti
   COLLECTION: { name: 'Collection', icon: StackIcon, description: 'Badges acquis au total.' },
 }
 
-/** Unité d'un compteur, au pluriel (`joutio-web`, `progression.metric`). */
-const UNITS: Record<string, string> = {
-  HUMAN_DUELS: 'duels',
-  HUMAN_WINS: 'victoires',
-  WIN_STREAK: "victoires d'affilée",
-  PERFECT_DUELS: 'duels parfaits',
-  FAST_ANSWERS: 'réponses rapides',
-  DAILY_STREAK: "jours d'affilée",
-  FOLLOWERS_GAINED: 'abonnés',
-  CHALLENGES_SENT: 'défis lancés',
-  IMAGE_CORRECT: 'questions illustrées',
-  TOPIC_MASTERY: 'XP',
-  DISTINCT_TOPICS: 'sujets',
-  EARNED_BADGES: 'badges',
-  ONE_SHOT: 'exploit',
+/** Unité d'un compteur, au singulier puis au pluriel, en toutes lettres (« point d'expérience »). */
+const UNITS: Record<string, readonly [string, string]> = {
+  HUMAN_DUELS: ['duel', 'duels'],
+  HUMAN_WINS: ['victoire', 'victoires'],
+  WIN_STREAK: ["victoire d'affilée", "victoires d'affilée"],
+  PERFECT_DUELS: ['duel parfait', 'duels parfaits'],
+  FAST_ANSWERS: ['réponse rapide', 'réponses rapides'],
+  DAILY_STREAK: ["jour d'affilée", "jours d'affilée"],
+  FOLLOWERS_GAINED: ['abonné', 'abonnés'],
+  CHALLENGES_SENT: ['défi lancé', 'défis lancés'],
+  IMAGE_CORRECT: ['question illustrée', 'questions illustrées'],
+  TOPIC_MASTERY: ["point d'expérience", "points d'expérience"],
+  DISTINCT_TOPICS: ['sujet', 'sujets'],
+  EARNED_BADGES: ['badge', 'badges'],
+  ONE_SHOT: ['exploit', 'exploits'],
 }
 
-const unitOf = (badge: BadgeItemView) => UNITS[badge.metric] ?? ''
+/** Valeur d'échelle (espace réduit) : « XP » pour la maîtrise. */
+const LADDER_UNITS: Record<string, string> = { TOPIC_MASTERY: 'XP' }
+
+/** Exploits : nom et critère de déblocage en toutes lettres (`BadgeRules` de `joutio-profile`). */
+const FEATS: Record<string, { title: string; rule: string }> = {
+  FIRST_WIN: { title: 'Première victoire', rule: 'Gagner un duel contre un joueur.' },
+  LIGHTNING: { title: 'Éclair', rule: '5 bonnes réponses en moins de 3 s dans un même duel.' },
+  PERFECT: { title: 'Perfectionniste', rule: 'Marquer le score maximal, 160 points, dans un duel.' },
+  STREAK_MASTER: { title: 'Série de feu', rule: 'Gagner 10 duels de suite.' },
+}
+
+const unitOf = (badge: BadgeItemView, count: number) => UNITS[badge.metric]?.[count > 1 ? 1 : 0] ?? ''
 
 export interface BadgeFamilySummary {
   family: BadgeFamily
@@ -67,8 +78,10 @@ export interface BadgeFamilySummary {
   earned: number
   /** Avancement vers le palier suivant, en %. */
   progress: number
-  /** `Or · 30 / 100`, `4 / 5`, `Diamant · complet`. */
-  meta: string
+  /** Ce qui reste avant le palier suivant : « Encore 70 réponses rapides » ; absent une fois les 7 acquis. */
+  remaining?: string
+  /** Exploits : hauts faits ponctuels, chacun à son palier, sans échelle (`BadgeFamilyRow` `feats`). */
+  feats?: { tier: TierCode; earned: boolean }[]
   rungs: LadderRung[]
 }
 
@@ -78,19 +91,20 @@ export function summarize(family: BadgeFamily, badges: readonly BadgeItemView[])
   const sorted = [...badges].sort((a, b) => TIERS.indexOf(a.tier) - TIERS.indexOf(b.tier))
   const earned = sorted.filter((badge) => badge.earned).length
   const current = sorted.find((badge) => !badge.earned)
-  const lastEarned = [...sorted].reverse().find((badge) => badge.earned)
   const progress = current ? Math.round((Math.min(current.progress, current.target) / Math.max(1, current.target)) * 100) : 100
-  const reached = lastEarned ? tokens.tier[lastEarned.tier].label : undefined
-  const meta = current
-    ? [reached, `${formatNumber(current.progress)} / ${formatNumber(current.target)}`].filter(Boolean).join(' · ')
-    : `${reached ?? ''} · complet`
+  const feat = family === 'EXPLOIT'
+  const left = current ? Math.max(0, current.target - current.progress) : 0
+  const remaining = current && !feat ? `Encore ${formatNumber(left)} ${unitOf(current, left)}`.trim() : undefined
+  // Exploits : un haut fait nommé par ligne, avec son critère de déblocage (jamais « 1 exploit »).
   const rungs = sorted.map<LadderRung>((badge) => ({
     tier: badge.tier,
-    rule: `${formatNumber(badge.target)} ${unitOf(badge)}`.trim(),
-    status: badge.earned ? 'Acquis' : badge === current ? `${formatNumber(badge.progress)} / ${formatNumber(badge.target)}` : '—',
+    title: feat ? (FEATS[badge.code]?.title ?? badge.label) : undefined,
+    rule: feat ? (FEATS[badge.code]?.rule ?? '') : `${formatNumber(badge.target)} ${LADDER_UNITS[badge.metric] ?? unitOf(badge, badge.target)}`.trim(),
+    status: badge.earned ? 'Acquis' : !feat && badge === current ? `${formatNumber(badge.progress)} / ${formatNumber(badge.target)}` : '—',
     earned: badge.earned,
   }))
-  return { family, ...info, earned, progress, meta, rungs }
+  const feats = feat ? sorted.map((badge) => ({ tier: badge.tier, earned: badge.earned })) : undefined
+  return { family, ...info, earned, progress, remaining, feats, rungs }
 }
 
 /** Familles à échelle (7 paliers), dans l'ordre du serveur ; les exploits ponctuels n'ont pas d'échelle. */

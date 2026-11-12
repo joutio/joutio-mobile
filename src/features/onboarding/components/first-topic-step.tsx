@@ -65,7 +65,7 @@ export function FirstTopicStep() {
         <Text variant="title1" accessibilityRole="header">
           Ton premier thème
         </Text>
-        <Text color="muted">Choisis-en un pour commencer. Contre un bot, sans Elo ni XP.</Text>
+        <Text color="muted">Choisis-en un pour commencer. Contre un bot, sans Elo ni points d'expérience.</Text>
       </View>
 
       {universes.length === 0 ? (

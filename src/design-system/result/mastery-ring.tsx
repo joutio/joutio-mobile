@@ -75,7 +75,7 @@ export function MasteryRing({ tier, next, gained, remaining, size = 180, state =
       accessible
       accessibilityRole="image"
       accessibilityLabel={
-        pending ? `Maîtrise ${tier}, XP en cours de calcul` : `Maîtrise ${tier}, ${gained} XP gagnés, ${next ? `${remaining} avant ${next}` : 'palier max'}`
+        pending ? `Maîtrise ${tier}, points d'expérience en cours de calcul` : `Maîtrise ${tier}, ${gained} points d'expérience gagnés, ${next ? `${remaining} avant ${next}` : 'palier max'}`
       }
       style={[{ alignSelf: 'stretch', height: size, alignItems: 'center' }, style]}
     >

@@ -17,7 +17,7 @@ export function UnlockSequenceDemo() {
       topic="Histoire de France"
       text="Porte-le : il s'affiche sous ton nom, sur ton profil et en duel."
       next="PLATINE"
-      nextRule="à 9 000 XP."
+      nextRule="à 9 000 points d'expérience."
       worn={worn}
       onWear={() => setWorn(true)}
     />,

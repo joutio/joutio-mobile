@@ -8,7 +8,9 @@ import { Text } from './text'
 
 export interface LadderRung {
   tier: TierCode
-  /** Condition du palier. */
+  /** Nom de la ligne ; le palier par défaut. Exploits : le nom du haut fait (« Éclair »). */
+  title?: string
+  /** Condition du palier, en entier (passe à la ligne). */
   rule: string
   /** `Acquis`, avancement ou tiret. */
   status: string
@@ -32,7 +34,7 @@ export function RankLadder({ rungs, icon, style }: RankLadderProps) {
         <View
           key={rung.tier}
           accessible
-          accessibilityLabel={[tokens.tier[rung.tier].label, rung.rule, rung.status].join(', ')}
+          accessibilityLabel={[rung.title ?? tokens.tier[rung.tier].label, rung.rule, rung.status].join(', ')}
           style={{
             minHeight: 64,
             flexDirection: 'row',
@@ -47,9 +49,9 @@ export function RankLadder({ rungs, icon, style }: RankLadderProps) {
           <TierMedal tier={rung.tier} icon={icon} size={44} state={rung.earned ? 'earned' : 'locked'} />
           <View style={{ flex: 1, minWidth: 0 }}>
             <Text variant="body" numberOfLines={1}>
-              {tokens.tier[rung.tier].label}
+              {rung.title ?? tokens.tier[rung.tier].label}
             </Text>
-            <Text variant="caption" color="muted" numberOfLines={1}>
+            <Text variant="caption" color="muted">
               {rung.rule}
             </Text>
           </View>

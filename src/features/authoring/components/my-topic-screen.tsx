@@ -26,6 +26,7 @@ import {
   tokens,
   UsersThreeIcon,
   type CategoryCode,
+  ProgressBar,
 } from '@/design-system'
 import { pickImage, uploadImage } from '@/features/media/media-service'
 import { toast } from '@/design-system'
@@ -66,7 +67,7 @@ export interface MyTopicRouteParams {
 /**
  * Mon sujet (`creation.md` § 1) : page commune au brouillon et au publié, en `ParallaxScreen` comme la Fiche sujet.
  * Section Sujet (nom, univers, vignette, chacun en feuille), section Contenu (questions, équipe, modération). Le
- * brouillon a la barre « Publier », active à 7 questions approuvées.
+ * brouillon a l'avancement « n / 7 » puis « Publier » à 7 questions approuvées.
  */
 export function MyTopicScreen() {
   const base = '/workshop/[id]' as const
@@ -102,7 +103,6 @@ export function MyTopicScreen() {
   const pending = list.filter((question) => questionStatus(question) === 'pending').length
   const reported = list.filter((question) => question.openReportCount > 0).length
   const ready = approved >= MIN_QUESTIONS
-  const missing = MIN_QUESTIONS - approved
   const published = (all.data?.content ?? []).filter((item) => item.status === 'PUBLISHED').length
 
   const pickThumbnail = async () => {
@@ -172,13 +172,17 @@ export function MyTopicScreen() {
         bottomBar={
           !manager ? undefined : draft ? (
             <View style={{ gap: tokens.space[1] }}>
-              <Button full size="L" disabled={!ready} loading={publish.isPending} onPress={onPublish}>
-                Publier
-              </Button>
-              {!ready && (
-                <Text variant="caption" color="muted" align="center">
-                  {`Encore ${missing} question${missing > 1 ? 's' : ''} pour publier.`}
-                </Text>
+              {/* Tant que le minimum manque, l'avancement remplace un bouton Publier inactif (2026-11-12). */}
+              {ready ? (
+                <Button full size="L" loading={publish.isPending} onPress={onPublish}>
+                  Publier
+                </Button>
+              ) : (
+                <ProgressBar
+                  style={{ paddingVertical: tokens.space[2] }}
+                  label={`${approved} / ${MIN_QUESTIONS} minimum pour publier`}
+                  value={Math.min(100, (approved * 100) / MIN_QUESTIONS)}
+                />
               )}
               {role === 'creator' && (
                 <Button

@@ -84,7 +84,7 @@ export function BoardTab({
         }
       />
       <Text variant="caption" color="muted">
-        XP cumulée · Mondial
+        Points d'expérience cumulés · Mondial
       </Text>
       {board.isPending ? (
         <>

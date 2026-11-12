@@ -251,7 +251,7 @@ export function NoticeDemo() {
       <Notice title="Hors connexion" message="Les données affichées peuvent dater." action={{ label: 'Réessayer' }} />
       <Notice tone="info" title="Sujet complet" message="Retire une question pour en ajouter une autre." />
       <Notice tone="live" title="Sofia R. t'attend" message="Manche 3 sur 7" />
-      <Notice tone="training" title="Entraînement" message="Sans Elo ni XP." />
+      <Notice tone="training" title="Entraînement" message="Sans Elo ni points d'expérience." />
     </>
   )
 }

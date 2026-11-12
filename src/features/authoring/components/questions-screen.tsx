@@ -144,7 +144,7 @@ function FilterOptions<T extends string>({
 
 /**
  * Questions (`creation.md` § 1) : même page en brouillon et publié. Recherche et filtres dans l'en-tête fixe, comme
- * Tous les titres ; repère du minimum pour publier (brouillon) ou du plafond (publié). 10 par page.
+ * Tous les titres ; repère du plafond une fois publié. 10 par page.
  */
 export function QuestionsScreen() {
   const params = useLocalSearchParams<QuestionsRouteParams>()
@@ -315,11 +315,8 @@ export function QuestionsScreen() {
     >
       {questions.data ? (
         <View style={{ gap: tokens.space[3] }}>
-          {draft ? (
-            <ProgressBar label={`${approved} / ${MIN_QUESTIONS} minimum pour publier`} value={Math.min(100, (approved * 100) / MIN_QUESTIONS)} />
-          ) : (
-            <ProgressBar label={`${count} / ${limits.questions} questions`} value={Math.min(100, (count * 100) / limits.questions)} />
-          )}
+          {/* Brouillon : l'avancement vers la publication est sur Mon sujet. */}
+          {!draft && <ProgressBar label={`${count} / ${limits.questions} questions`} value={Math.min(100, (count * 100) / limits.questions)} />}
           {atCeiling && (
             <Notice tone="info" title="Sujet complet" message={`${limits.questions} questions au maximum. Retire une question pour en ajouter une autre.`} />
           )}

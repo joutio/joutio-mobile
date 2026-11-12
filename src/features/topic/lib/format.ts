@@ -23,7 +23,7 @@ const MONTH = new Intl.DateTimeFormat('fr-FR', { month: 'long' })
 /** Légende du classement du mois : « XP gagnée en novembre · Mondial · remise à zéro le 1er décembre ». */
 export function monthlyLegend(now = new Date()) {
   const next = new Date(now.getFullYear(), now.getMonth() + 1, 1)
-  return `XP gagnée en ${MONTH.format(now)} · Mondial · remise à zéro le 1er ${MONTH.format(next)}`
+  return `Points d'expérience gagnés en ${MONTH.format(now)} · Mondial · remise à zéro le 1er ${MONTH.format(next)}`
 }
 
 const WEEKDAY = new Intl.DateTimeFormat('fr-FR', { weekday: 'long' })

@@ -94,8 +94,8 @@ export function RankingsScreen() {
     filterState.period === 'MONTHLY' && filterState.scope === 'WORLD'
       ? monthlyLegend()
       : filterState.period === 'MONTHLY'
-        ? `XP gagnée en ${MONTH.format(new Date())} · ${scopeLabel} · remise à zéro le 1er du mois`
-        : `XP cumulée · ${scopeLabel}`
+        ? `Points d'expérience gagnés en ${MONTH.format(new Date())} · ${scopeLabel} · remise à zéro le 1er du mois`
+        : `Points d'expérience cumulés · ${scopeLabel}`
   const reset = () => setFilterState(DEFAULT_RANKING_FILTERS)
   const change = (patch: Partial<RankingFilterState>) => setFilterState((current) => ({ ...current, ...patch }))
 

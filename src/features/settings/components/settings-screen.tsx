@@ -191,7 +191,7 @@ export function SettingsScreen() {
           <ListRow
             icon={RobotIcon}
             label="Entraînement si aucun adversaire"
-            sub="Après 10 s sans joueur, sans XP ni série"
+            sub="Après 10 s sans joueur, sans points d'expérience ni série"
             control="toggle"
             on={autoTrain.enabled}
             disabled={autoTrain.pending}

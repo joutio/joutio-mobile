@@ -257,7 +257,7 @@ function MatchmakingScreenContent() {
           <Notice
             tone="training"
             title="Aucun adversaire, lancement d'un entraînement…"
-            message="Partie sans XP ni série. Tu pourras retenter un duel humain ensuite."
+            message="Partie sans points d'expérience ni série. Tu pourras retenter un duel humain ensuite."
           />
           <Button full size="L" variant="tinted" tone="destructive" onPress={() => router.back()}>
             {"Annuler l'entraînement"}
