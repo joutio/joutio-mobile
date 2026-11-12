@@ -1,6 +1,6 @@
 import { router } from 'expo-router'
-import { useMemo, useRef, useState } from 'react'
-import { Platform, Pressable, Share, ScrollView, View, type NativeScrollEvent, type NativeSyntheticEvent, type ScrollViewInstance } from 'react-native'
+import { useMemo, useState } from 'react'
+import { Pressable, Share, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import {
   Banner,
@@ -38,6 +38,7 @@ import { isBonusRound, ROUNDS } from '@joutio/client-domain/game'
 import type { GameState } from '@joutio/client-domain/game'
 import type { GameResultView } from '@joutio/client-domain/game'
 import { useGameResult } from '../hooks/use-game'
+import { ResultPages } from './result-pages'
 import { DuelReview, reviewRoundsOf } from './duel-review'
 import { ReportPlayerSheet } from './report-sheets'
 import { useMyAvatar } from '@/features/avatar/lib/avatar-preview'
@@ -132,8 +133,6 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
   const [sequenceDone, setSequenceDone] = useState(!celebrate)
   const [reportOpen, setReportOpen] = useState(false)
   // Deux pages verticales fixes (résultat, Détails du duel), hauteur mesurée sous la barre.
-  const pagerRef = useRef<ScrollViewInstance>(null)
-  const targetPage = useRef(0)
   const [pageHeight, setPageHeight] = useState(0)
   const [page, setPage] = useState(0)
   const hasReview = useMemo(() => !cancelled && reviewRoundsOf(game).length > 0, [cancelled, game])
@@ -248,36 +247,10 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
         </View>
         <View style={{ flex: 1 }} onLayout={(event) => setPageHeight(event.nativeEvent.layout.height)}>
           {pageHeight > 0 && (
-            <ScrollView
-              ref={pagerRef}
-              style={{ flex: 1 }}
-              // Aimantation native, sans `scrollTo` au relâcher (saccade). iOS : paging de l'OS. Android : le paging
-              // ne bascule qu'au-delà de la moitié de la page prédite, d'où des glissés qui reviennent ; avec
-              // `snapToOffsets`, tout lancer va au cran suivant dans sa direction (`flingAndSnap` de RN), un
-              // glissé lent et relâché va au cran le plus proche.
-              pagingEnabled={Platform.OS === 'ios'}
-              snapToOffsets={Platform.OS === 'android' ? [0, pageHeight] : undefined}
-              disableIntervalMomentum
-              // Décélération normale (2026-11-11) : `fast` accélérait l'aimantation de page (iOS) et le cran (Android),
-              // nettement plus vif que le pager natif des onglets de Détails du duel.
-              decelerationRate="normal"
-              bounces={false}
-              overScrollMode="never"
-              nestedScrollEnabled
-              scrollEnabled={hasReview}
-              scrollsToTop={false}
-              showsVerticalScrollIndicator={false}
-              onMomentumScrollEnd={(event: NativeSyntheticEvent<NativeScrollEvent>) => {
-                const next = Math.round(event.nativeEvent.contentOffset.y / pageHeight)
-                targetPage.current = next
-                if (page !== next) setPage(next)
-              }}
-            >
+            <ResultPages height={pageHeight} page={page} onPageChange={setPage} enabled={hasReview}>
               {/* Page 1 : le résultat. */}
               <View
-                style={{ height: pageHeight, paddingBottom: hasReview ? 0 : insets.bottom + tokens.space[3] }}
-                accessibilityElementsHidden={page !== 0}
-                importantForAccessibility={page !== 0 ? 'no-hide-descendants' : 'auto'}
+                style={{ flex: 1, paddingBottom: hasReview ? 0 : insets.bottom + tokens.space[3] }}
               >
                 <View style={{ flex: 1, justifyContent: 'space-between', gap: tokens.space[5], paddingHorizontal: tokens.space[5] }}>
                   <ResultHeader
@@ -372,11 +345,7 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
                     accessibilityRole="button"
                     accessibilityLabel="Revoir les questions du duel"
                     accessibilityHint="Ouvre la page Détails du duel"
-                    onPress={() => {
-                      targetPage.current = 1
-                      setPage(1)
-                      pagerRef.current?.scrollTo({ y: pageHeight, animated: true })
-                    }}
+                    onPress={() => setPage(1)}
                     style={{
                       alignItems: 'center',
                       gap: tokens.space[1],
@@ -394,16 +363,12 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
                 )}
               </View>
               {/* Page 2 : Détails du duel. */}
-              {hasReview && (
-                <View
-                  style={{ height: pageHeight, paddingTop: tokens.space[2], paddingBottom: insets.bottom + tokens.space[3] }}
-                  accessibilityElementsHidden={page !== 1}
-                  importantForAccessibility={page !== 1 ? 'no-hide-descendants' : 'auto'}
-                >
+              {hasReview ? (
+                <View style={{ flex: 1, paddingTop: tokens.space[2], paddingBottom: insets.bottom + tokens.space[3] }}>
                   <DuelReview game={game} me={userId} myName={myName} opponentName={opponentName} canReport />
                 </View>
-              )}
-            </ScrollView>
+              ) : null}
+            </ResultPages>
           )}
         </View>
       </View>

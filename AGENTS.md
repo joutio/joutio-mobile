@@ -234,10 +234,13 @@ sans ligne de co-auteur.
   **Liste paginée en feuille** (`loadMore`) : le défilement reste l'**enfant direct** de la feuille (`DragToLoadMore`
   `overlay`, loader en surimpression, traction portée par le défilement). Dans une enveloppe, le `ScrollView` est
   mesuré à **0 de haut** et la feuille paraît vide (2026-11-07 : « Choisis un sujet », « Qui veux-tu défier ? »).
-  **Pages verticales fixes** (2026-11-05, résultat → Détails du duel) : `ScrollView` natif, hauteur de page mesurée
-  par `onLayout`, pas de feuille persistante ; bascule décidée au relâcher **sans résistance** (2026-11-10 : tout glissement non nul bascule, seuil 0, sans condition de vitesse) ; affordance miroir en
+  **Pages verticales fixes** (2026-11-05, résultat → Détails du duel) : `ResultPages` (Gesture Handler + Reanimated,
+  2026-11-12 — le `ScrollView` aimanté d'Android basculait presque instantanément), hauteur de page mesurée par
+  `onLayout`, pas de feuille persistante ; bascule décidée au relâcher **sans résistance** (2026-11-10 : tout glissement
+  non nul bascule, seuil 0, sans condition de vitesse), animée 450 ms amortie comme un carrousel ; affordance miroir en
   haut de la page 2. Pager **horizontal** : `@expo/ui/community/pager-view`
-  (natif, SwiftUI / Compose), jamais un `ScrollView` piloté par `contentOffset`.
+  (natif, SwiftUI / Compose), jamais un `ScrollView` piloté par `contentOffset` ; onglets et points suivent la page
+  **pendant** le glissé (`onPageScroll`, arrondi de `position + offset`), pas seulement à l'arrêt.
 - **Clavier** (2026-11-07) : `Screen` défile dans un `KeyboardAwareScrollView` (keyboard-controller, `bottomOffset` 24,
   `keyboardShouldPersistTaps="handled"`) sauf en-tête natif ou liste paginée ; feuilles : `keyboardScrollOffset` et pied
   qui remonte avec `keyboardOffset` ; chat : `KeyboardAvoidingView` de keyboard-controller ; Android

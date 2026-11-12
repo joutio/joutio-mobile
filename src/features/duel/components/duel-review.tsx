@@ -106,6 +106,13 @@ export const DuelReview = memo(function DuelReview({
   const images = useMemo(() => [...new Set(rounds.map((round) => round.imageUrl).filter((url): url is string => Boolean(url)))], [rounds])
   const opponent = game.player1Id === me ? game.player2Id : game.player1Id
   const [index, setIndex] = useState(0)
+  // Manche affichée, suivie pendant le glissé (onglets et points à jour avant l'arrêt du pager) ; un rendu par changement.
+  const shown = useRef(0)
+  const follow = useCallback((next: number) => {
+    if (next === shown.current) return
+    shown.current = next
+    setIndex(next)
+  }, [])
   const [reportOpen, setReportOpen] = useState(false)
   const [reported, setReported] = useState<readonly number[]>([])
   const pager = useRef<PagerViewRef>(null)
@@ -134,10 +141,10 @@ export const DuelReview = memo(function DuelReview({
   const go = useCallback(
     (next: number) => {
       const target = Math.min(count - 1, Math.max(0, next))
-      setIndex(target)
+      follow(target)
       pager.current?.setPage(target)
     },
-    [count],
+    [count, follow],
   )
 
   if (count === 0) return null
@@ -154,7 +161,13 @@ export const DuelReview = memo(function DuelReview({
           </Text>
           <RoundReviewTabs me={myName} opponent={opponentName} value={index} onChange={go} rounds={tabs} />
         </View>
-        <PagerView ref={pager} style={{ flex: 1 }} initialPage={0} onPageSelected={(event) => setIndex(event.nativeEvent.position)}>
+        <PagerView
+          ref={pager}
+          style={{ flex: 1 }}
+          initialPage={0}
+          onPageScroll={(event) => follow(Math.min(count - 1, Math.max(0, Math.round(event.nativeEvent.position + event.nativeEvent.offset))))}
+          onPageSelected={(event) => follow(event.nativeEvent.position)}
+        >
           {pages}
         </PagerView>
         <View style={{ gap: tokens.space[3], paddingHorizontal: GUTTER }}>
