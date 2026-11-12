@@ -1,3 +1,14 @@
+## [1.31.0](https://github.com/joutio/joutio-mobile/compare/v1.30.2...v1.31.0) (2026-11-12)
+
+### Features
+
+* adaptive TopicTile grid in Sujets, topic pictograms and themed category colors ([650491e](https://github.com/joutio/joutio-mobile/commit/650491eb10c96f9d0e5afc7dc4f582d0b6aa895b))
+* Banner as a full-width band at the top of the window, in-flow card renamed Notice ([798987b](https://github.com/joutio/joutio-mobile/commit/798987bd61b4ea2ac748a2fc69425492cb935071))
+
+### Bug Fixes
+
+* header separator drawn as a filled hairline, visible under docked tabs on iOS ([3b8c45c](https://github.com/joutio/joutio-mobile/commit/3b8c45c8989634ee5e3bd7b27f425345d1f3cd88))
+
 ## [1.30.2](https://github.com/joutio/joutio-mobile/compare/v1.30.1...v1.30.2) (2026-11-12)
 
 ### Bug Fixes
