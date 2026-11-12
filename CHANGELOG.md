@@ -1,3 +1,9 @@
+## [1.34.0](https://github.com/joutio/joutio-mobile/compare/v1.33.1...v1.34.0) (2026-11-12)
+
+### Features
+
+* **settings:** live pseudonym availability and stricter rules ([508b7a8](https://github.com/joutio/joutio-mobile/commit/508b7a8db1dd5e0090812cb23e3f689a1bfcc98b))
+
 ## [1.33.1](https://github.com/joutio/joutio-mobile/compare/v1.33.0...v1.33.1) (2026-11-12)
 
 ### Bug Fixes
