@@ -14,10 +14,13 @@ export interface MediaView {
 
 /**
  * Choisit une image dans la photothèque (recadrage au ratio demandé) ; `null` si le joueur annule. Aucune
- * permission demandée : le sélecteur système n'en exige pas.
+ * permission demandée : le sélecteur système n'en exige pas. `crop: false` garde le fichier d'origine : le recadrage
+ * système réencode en JPEG et perdrait la transparence d'un PNG (pictogramme).
  */
-export async function pickImage(aspect: [number, number]): Promise<ImagePicker.ImagePickerAsset | null> {
-  const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect, quality: 0.85 })
+export async function pickImage(aspect: [number, number], { crop = true }: { crop?: boolean } = {}): Promise<ImagePicker.ImagePickerAsset | null> {
+  const result = await ImagePicker.launchImageLibraryAsync(
+    crop ? { mediaTypes: ['images'], allowsEditing: true, aspect, quality: 0.85 } : { mediaTypes: ['images'], quality: 1 },
+  )
   return result.canceled ? null : (result.assets[0] ?? null)
 }
 

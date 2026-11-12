@@ -5,6 +5,9 @@ import type { PageResponse, TopicCardView, TopicFacetsView, TopicSort } from '@j
 
 export const PAGE_SIZE = 20
 
+/** Page en rangées pleines : environ 20 sujets, arrondis au multiple du nombre de colonnes (`sujets.md`). */
+export const pageSizeFor = (columns: number) => columns * Math.ceil(PAGE_SIZE / columns)
+
 /** Tri par défaut du catalogue (Sujets, feuille de défi). */
 export const DEFAULT_TOPIC_SORT: TopicSort = 'POPULAR'
 
@@ -16,11 +19,20 @@ export interface TopicFilters {
   hideFollowed: boolean
   /** Uniquement les sujets suivis (onglet Suivis de l'Accueil) : `GET /api/topics?followed=true`. */
   followed?: boolean
+  /** Taille de page envoyée au BFF ; 20 par défaut. */
+  size?: number
 }
 
 const page = (filters: TopicFilters, category: CategoryCode | undefined, index: number) =>
   api.get<PageResponse<TopicCardView>>(ENDPOINTS.topics.list, {
-    params: { q: filters.query || undefined, category, followed: filters.followed || undefined, sort: filters.sort, page: index, size: PAGE_SIZE },
+    params: {
+      q: filters.query || undefined,
+      category,
+      followed: filters.followed || undefined,
+      sort: filters.sort,
+      page: index,
+      size: filters.size ?? PAGE_SIZE,
+    },
   })
 
 /** Ordre d'une page fusionnée quand le tri est connu côté client ; sinon on garde l'alternance du serveur. */

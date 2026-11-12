@@ -35,7 +35,7 @@ export interface MatchRowProps {
 
 /** Partie terminée : tuile de l'univers, titre, issue et score. */
 export function MatchRow({ topic, category, image, sub, outcome, score, bot = false, last = false, onPress, style }: MatchRowProps) {
-  const { colors, radius } = useTheme()
+  const { colors, radius, categoryColor, scheme } = useTheme()
   const { label, color } = OUTCOMES[outcome]
   return (
     <PressableScale
@@ -65,7 +65,7 @@ export function MatchRow({ topic, category, image, sub, outcome, score, bot = fa
           alignItems: 'center',
           justifyContent: 'center',
           borderRadius: radius.md,
-          backgroundColor: image !== undefined ? colors.raised : tokens.category[category].color,
+          backgroundColor: image !== undefined ? colors.raised : categoryColor(category),
         }}
       >
         {image !== undefined ? (

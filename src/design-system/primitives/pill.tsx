@@ -21,7 +21,7 @@ export interface PillProps {
 
 /** Statut court : présence, attente, suspension, issue. */
 export function Pill({ tone = 'neutral', category, icon: IconComponent, style, children }: PillProps) {
-  const { colors, radius } = useTheme()
+  const { colors, radius, categoryColor, scheme } = useTheme()
   const color = {
     neutral: colors.muted,
     online: colors.correct,
@@ -30,8 +30,8 @@ export function Pill({ tone = 'neutral', category, icon: IconComponent, style, c
     correct: colors.correct,
     wrong: colors.wrong,
   }[tone]
-  const universe = category ? tokens.category[category].color : undefined
-  const ink = universe ? categoryInk(universe, colors.text) : color
+  const universe = category ? categoryColor(category) : undefined
+  const ink = universe ? categoryInk(universe, colors.text, scheme) : color
   const background = universe ? mix(universe, colors.bg, 0.22) : tint(tone === 'pending' ? colors.accent : color)
   const hasDot = !category && !IconComponent && (tone === 'online' || tone === 'pending' || tone === 'suspended')
   return (

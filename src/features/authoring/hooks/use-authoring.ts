@@ -135,6 +135,7 @@ export function useCreateTopic() {
           categoryLabel: '',
           imageUrl: null,
           bannerUrl: null,
+          pictogramUrl: null,
           followersCount: 0,
           questionsCount: 0,
           followed: false,
@@ -213,6 +214,22 @@ export function useUpdateTopicImage(topicId: string) {
     onError: (_error, _variables, context) => {
       context?.rollback()
       toast.error('La vignette n’a pas pu être enregistrée', retryHint)
+    },
+  })
+}
+
+/** Pictogramme carré du sujet (`TopicTile`) : PNG envoyé par le créateur, les SVG viennent du seed. */
+export function useUpdateTopicPictogram(topicId: string) {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (pictogramUrl: string | null) => authoringService.updatePictogramUrl(topicId, pictogramUrl),
+    onMutate: (pictogramUrl: string | null) =>
+      optimisticUpdate(client, [['authoring'], ['topic', topicId], ['topics'], queryKeys.home()], () =>
+        patchTopic(client, topicId, (topic) => ({ ...topic, pictogramUrl })),
+      ),
+    onError: (_error, _variables, context) => {
+      context?.rollback()
+      toast.error('Le pictogramme n’a pas pu être enregistré', retryHint)
     },
   })
 }

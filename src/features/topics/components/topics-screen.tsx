@@ -26,7 +26,9 @@ import {
   SectionHeader,
   Skeleton,
   Text,
-  TopicCard,
+  TOPIC_TILE_TITLE_HEIGHT,
+  TOPIC_TILE_VISUAL,
+  TopicTile,
   tokens,
   toCategoryCode,
   useTheme,
@@ -34,7 +36,7 @@ import {
   type CategoryCode,
 } from '@/design-system'
 import { openTopic } from '@/features/topic'
-import { DEFAULT_TOPIC_SORT } from '../lib/topics-service'
+import { DEFAULT_TOPIC_SORT, pageSizeFor } from '../lib/topics-service'
 import { useDebounced } from '@/shared/hooks/use-debounced'
 import type { TopicCardView, TopicSort } from '@joutio/client-domain/api-types'
 import { topicName } from '@/shared/utils/topic-name'
@@ -43,7 +45,12 @@ import { useOnline } from '@/shared/hooks/use-online'
 import { feedFooterProps, pagedQuery } from '@/shared/utils/paging'
 
 const GUTTER = tokens.space[5]
-const GAP = tokens.space[4]
+/** Écarts de la grille : 12 px entre colonnes, 16 px entre rangées. */
+const GAP_X = tokens.space[4]
+const GAP_Y = tokens.space[5]
+/** Largeur minimale d'une colonne : 3 colonnes sur téléphone, 5 sur l'iPhone Duo ouvert. */
+const MIN_COLUMN = 96
+const columnsFor = (width: number) => Math.max(1, Math.floor((width - GUTTER * 2 + GAP_X) / (MIN_COLUMN + GAP_X)))
 const UNIVERSES = Object.keys(tokens.category) as CategoryCode[]
 const SORTS: { value: TopicSort; label: string }[] = [
   { value: 'POPULAR', label: 'Les plus suivis' },
@@ -56,12 +63,21 @@ const countLabel = (count: number) => `${count} ${count > 1 ? 'sujets' : 'sujet'
 const toggle = (list: readonly CategoryCode[], category: CategoryCode) =>
   list.includes(category) ? list.filter((item) => item !== category) : [...list, category]
 
-function Loading({ animated = true }: { animated?: boolean }) {
+/** Neuf pictogrammes et titres en squelette, sur la grille des tuiles. */
+function Loading({ animated = true, columns, tile }: { animated?: boolean; columns: number; tile: number }) {
   return (
-    <View accessible accessibilityLabel="Chargement" style={{ flexDirection: 'row', flexWrap: 'wrap', gap: GAP, paddingHorizontal: GUTTER }}>
-      {[0, 1, 2, 3].map((index) => (
-        <View key={index} style={{ flexBasis: '45%', flexGrow: 1 }}>
-          <Skeleton shape="card" animated={animated} style={{ aspectRatio: 3 / 4, height: undefined }} />
+    <View
+      accessible
+      accessibilityLabel="Chargement"
+      style={{ flexDirection: 'row', flexWrap: 'wrap', columnGap: GAP_X, rowGap: GAP_Y, paddingHorizontal: GUTTER }}
+    >
+      {Array.from({ length: Math.max(9, columns) }, (_, index) => (
+        <View key={index} style={{ width: tile, alignItems: 'center', gap: tokens.space[3] }}>
+          <Skeleton shape="card" animated={animated} style={{ width: TOPIC_TILE_VISUAL, height: TOPIC_TILE_VISUAL }} />
+          <View style={{ alignSelf: 'stretch', gap: tokens.space[2], height: TOPIC_TILE_TITLE_HEIGHT, alignItems: 'center' }}>
+            <Skeleton animated={animated} width="90%" />
+            <Skeleton animated={animated} width="60%" />
+          </View>
         </View>
       ))}
     </View>
@@ -70,14 +86,17 @@ function Loading({ animated = true }: { animated?: boolean }) {
 
 /**
  * Sujets (`design/specs/screens/sujets.md`) : en-tête de recherche animé avec les composants Joutio ;
- * puces d'univers, compteur et tri ; grille de 2 colonnes, 20 sujets par page. Toucher Sujets remonte en haut.
+ * puces d'univers, compteur et tri ; grille adaptative de `TopicTile` (colonnes d'au moins 96 px), pages en rangées
+ * pleines (environ 20 sujets). Toucher Sujets remonte en haut.
  */
 export function TopicsScreen() {
   const unread = useUnreadCount()
   const { colors } = useTheme()
   const { width } = useWindowDimensions()
-  // Largeur fixe d'une colonne : une carte seule sur sa ligne ne s'étire pas sur toute la largeur.
-  const cardWidth = (width - GUTTER * 2 - GAP) / 2
+  // Autant de colonnes que la largeur en permet (pliable ouvert compris) ; la place restante va aux colonnes.
+  const columns = columnsFor(width)
+  const tile = (width - GUTTER * 2 - GAP_X * (columns - 1)) / columns
+  const cell = width / columns
   const list = useRef<FlashListRef<TopicCardView>>(null)
   useScrollToTop(list)
 
@@ -89,7 +108,8 @@ export function TopicsScreen() {
   const offset = useSharedValue(0)
 
   const search = useDebounced(query.trim())
-  const filters = useMemo(() => ({ query: search, categories, sort, hideFollowed }), [search, categories, sort, hideFollowed])
+  const size = pageSizeFor(columns)
+  const filters = useMemo(() => ({ query: search, categories, sort, hideFollowed, size }), [search, categories, sort, hideFollowed, size])
   const topics = useTopics(filters)
   const online = useOnline()
   const facets = useTopicFacets(search)
@@ -164,7 +184,7 @@ export function TopicsScreen() {
 
   const emptyState =
     topics.isPending || !online ? (
-      <Loading animated={online} />
+      <Loading animated={online} columns={columns} tile={tile} />
     ) : topics.isError ? (
       <EmptyState
         icon={WarningCircleIcon}
@@ -273,6 +293,7 @@ export function TopicsScreen() {
           onLoadMore={() => topics.fetchNextPage()}
         >
           <FlashList
+            key={columns}
             ref={list}
             renderScrollComponent={LoadMoreScrollView}
             // Activé par défaut en v2 : à un nouveau tri, il garderait en vue le sujet affiché avant, au lieu du haut.
@@ -289,7 +310,7 @@ export function TopicsScreen() {
             style={{ flex: 1, backgroundColor: colors.bg }}
             data={items}
             keyExtractor={(topic) => topic.topicId}
-            numColumns={2}
+            numColumns={columns}
             contentContainerStyle={{ paddingTop: tokens.space[3], paddingBottom: tokens.space[7] }}
             showsVerticalScrollIndicator={false}
             keyboardDismissMode="on-drag"
@@ -300,19 +321,18 @@ export function TopicsScreen() {
             ListHeaderComponent={listHeader}
             ListEmptyComponent={emptyState}
             renderItem={({ item, index }) => {
-              // Deux colonnes : gouttière dehors, demi-écart dedans ; la carte garde sa largeur fixe.
-              const left = index % 2 === 0
+              // Cellules de largeur égale (`width / columns`) : le décalage place chaque tuile sur la grille gouttière + écarts.
+              const left = GUTTER + (index % columns) * (tile + GAP_X - cell)
               return (
-                <View style={{ paddingLeft: left ? GUTTER : GAP / 2, paddingRight: left ? GAP / 2 : GUTTER, paddingBottom: GAP }}>
-                  <View style={{ width: cardWidth }}>
-                    <TopicCard
-                      title={topicName(item.names)}
-                      category={toCategoryCode(item.category)}
-                      image={item.imageUrl ?? undefined}
-                      orientation="portrait"
-                      onPress={() => openTopic('topics', item)}
-                    />
-                  </View>
+                <View style={{ paddingLeft: left, paddingBottom: GAP_Y }}>
+                  <TopicTile
+                    style={{ width: tile }}
+                    title={topicName(item.names)}
+                    category={toCategoryCode(item.category)}
+                    pictogram={item.pictogramUrl ?? undefined}
+                    image={item.imageUrl ?? item.bannerUrl ?? undefined}
+                    onPress={() => openTopic('topics', item)}
+                  />
                 </View>
               )
             }}

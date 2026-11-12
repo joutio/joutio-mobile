@@ -45,6 +45,8 @@ export const authoringService = {
 
   updateImageUrl: (topicId: string, imageUrl: string | null) => api.put<void>(ENDPOINTS.topics.imageUrl(topicId), { imageUrl }),
 
+  updatePictogramUrl: (topicId: string, pictogramUrl: string | null) => api.put<void>(ENDPOINTS.topics.pictogramUrl(topicId), { pictogramUrl }),
+
   publish: (topicId: string) => api.post<void>(ENDPOINTS.topics.publish(topicId)),
 
   /** Toutes les questions du sujet (150 au plus) : recherche et filtres se font dans l'app, le BFF n'en a pas. */

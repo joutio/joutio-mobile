@@ -103,7 +103,7 @@ export function useCreatePrivateRoom() {
       const transaction = await optimisticUpdate(client, [queryKeys.rooms()], () => {
         const room: RoomView = {
           roomId: tempId,
-          topic: { topicId: topic.topicId, names: { fr: topic.name }, category: topic.category ?? null, imageUrl: null },
+          topic: { topicId: topic.topicId, names: { fr: topic.name }, category: topic.category ?? null, imageUrl: null, pictogramUrl: null },
           status: 'WAITING_PLAYERS',
           vsBot: false,
           canCancel: true,
@@ -142,7 +142,7 @@ export function useChallengePlayer() {
       const transaction = await optimisticUpdate(client, [queryKeys.challenges()], () => {
         const challenge: ChallengeView = {
           challengeId: tempId,
-          topic: { topicId: topic.topicId, names: { fr: topic.name }, category: topic.category ?? null, imageUrl: null },
+          topic: { topicId: topic.topicId, names: { fr: topic.name }, category: topic.category ?? null, imageUrl: null, pictogramUrl: null },
           challenger: { userId: me.data?.userId ?? '', pseudonym: me.data?.pseudonym ?? '', avatarOptions: me.data?.avatarOptions ?? null, suspended: false },
           opponent: { ...opponent, avatarOptions: null, suspended: false },
           status: 'PENDING',

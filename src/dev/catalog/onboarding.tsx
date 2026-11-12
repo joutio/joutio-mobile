@@ -11,6 +11,7 @@ import {
   SplashLogo,
   tokens,
   TopicCard,
+  TopicTile,
   TopicRow,
   useTheme,
   type CategoryCode,
@@ -152,6 +153,18 @@ export function TopicRowDemo() {
         </View>
       </Specimen>
     </>
+  )
+}
+
+/** Repli du visuel : pictogramme, bannière recadrée, univers ; une source en échec passe à la suivante. */
+export function TopicTileDemo() {
+  return (
+    <Specimen label="pictogramme, bannière, univers, échec" row>
+      <TopicTile title="Harry Potter" category="LITERATURE" pictogram="https://media.joutio.com/pictogrammes/harry-potter.svg" style={{ width: 96 }} />
+      <TopicTile title="L'Olympia" category="MUSIC" image={SAMPLE_BANNER} style={{ width: 96 }} />
+      <TopicTile title="Échecs et stratégie" category="GAMES" style={{ width: 96 }} />
+      <TopicTile title="Lien cassé" category="SCIENCE" pictogram="https://invalid.joutio.test/x.png" style={{ width: 96 }} />
+    </Specimen>
   )
 }
 

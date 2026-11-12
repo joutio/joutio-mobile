@@ -73,5 +73,8 @@ export function mix(a: string, b: string, weight: number): string {
 /** Teinte de fond légère dérivée d'une couleur de token (`tint` du lab : 16 %). */
 export const tint = (color: string) => mix(color, 'transparent', 0.16)
 
-/** Couleur d'univers assez contrastée pour du texte (`categoryInk` du lab : 70 % vers le texte). */
-export const categoryInk = (category: string, text: string) => mix(category, text, 0.7)
+/**
+ * Couleur d'univers assez contrastée pour du texte (`categoryInk` du lab) : 70 % de la couleur en sombre, 50 % en
+ * clair (`--jo-category-ink-strength`).
+ */
+export const categoryInk = (category: string, text: string, scheme: 'dark' | 'light' = 'dark') => mix(category, text, scheme === 'light' ? 0.5 : 0.7)

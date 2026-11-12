@@ -52,87 +52,104 @@
   "category": {
     "SPORTS": {
       "label": "Sport",
-      "color": "#46C6CD",
+      "color": "#EF8B7B",
+      "colorLight": "#D47263",
       "icon": "volleyball"
     },
     "EDUCATION": {
       "label": "Éducation",
-      "color": "#4DC3DD",
+      "color": "#8CAFD3",
+      "colorLight": "#7496B9",
       "icon": "graduation-cap"
     },
     "SCIENCE": {
       "label": "Science",
-      "color": "#5DBEE9",
+      "color": "#67D2CC",
+      "colorLight": "#4AB9B2",
       "icon": "flask"
     },
     "TECHNOLOGY": {
       "label": "Technologie",
-      "color": "#79B6F4",
+      "color": "#3D9DCE",
+      "colorLight": "#1B84B4",
       "icon": "cpu"
     },
     "ENTERTAINMENT": {
       "label": "Divertissement",
-      "color": "#96AEF7",
+      "color": "#C3B0FD",
+      "colorLight": "#A996E2",
       "icon": "star"
     },
     "LITERATURE": {
       "label": "Littérature",
-      "color": "#B0A5F2",
+      "color": "#AC7AB7",
+      "colorLight": "#93629E",
       "icon": "book-open-text"
     },
     "ARTS": {
       "label": "Arts",
-      "color": "#C79DE6",
+      "color": "#DC81BF",
+      "colorLight": "#C169A6",
       "icon": "palette"
     },
     "MUSIC": {
       "label": "Musique",
-      "color": "#D997D2",
+      "color": "#FBABB6",
+      "colorLight": "#DF929D",
       "icon": "headphones"
     },
     "MOVIES": {
       "label": "Cinéma",
-      "color": "#E694BB",
+      "color": "#918DDF",
+      "colorLight": "#7974C5",
       "icon": "film-slate"
     },
     "TELEVISION": {
       "label": "Télévision",
-      "color": "#EC93A8",
+      "color": "#C6C6F1",
+      "colorLight": "#ACACD6",
       "icon": "television-simple"
     },
     "FOOD_AND_DRINK": {
       "label": "Gastronomie",
-      "color": "#ED997B",
+      "color": "#F5BA81",
+      "colorLight": "#DAA168",
       "icon": "pizza"
     },
     "HISTORY": {
       "label": "Histoire",
-      "color": "#E79E6B",
+      "color": "#B89E66",
+      "colorLight": "#9F864E",
       "icon": "bank"
     },
     "GAMES": {
       "label": "Jeux",
-      "color": "#BBB55E",
+      "color": "#BBC76D",
+      "colorLight": "#A2AD54",
       "icon": "game-controller"
     },
     "NATURE": {
       "label": "Nature",
-      "color": "#A1BD6E",
+      "color": "#7BAF6F",
+      "colorLight": "#639658",
       "icon": "leaf"
     },
     "BUSINESS": {
       "label": "Business",
-      "color": "#5FC8A6",
+      "color": "#7A909B",
+      "colorLight": "#637883",
       "icon": "briefcase"
     },
     "WORLD": {
       "label": "Monde",
-      "color": "#4DC8BA",
+      "color": "#B2E3BB",
+      "colorLight": "#98C9A1",
       "icon": "globe-hemisphere-west"
     },
     "GENERAL": {
       "label": "Culture générale",
-      "color": "#B1B1B1",
+      "color": "#BAB4A6",
+      "colorLight": "#A19B8E",
       "icon": "lightbulb"
     }
   },

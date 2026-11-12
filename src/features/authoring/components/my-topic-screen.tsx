@@ -20,6 +20,7 @@ import {
   SectionHeader,
   ShieldCheckIcon,
   SquaresFourIcon,
+  StickerIcon,
   Text,
   toCategoryCode,
   tokens,
@@ -43,6 +44,7 @@ import {
   useTopicQuestions,
   useUpdateTopicCategory,
   useUpdateTopicImage,
+  useUpdateTopicPictogram,
   useUpdateTopicNames,
 } from '../hooks/use-authoring'
 import { LocalizedFieldSheet, UniverseSheet, universeLabel } from './topic-sheets'
@@ -51,7 +53,7 @@ import { useRefreshActive } from '@/shared/hooks/use-refresh-active'
 /** Vignette d'un sujet : paysage, comme `TopicCard`. */
 const THUMBNAIL_ASPECT: [number, number] = [16, 9]
 
-type TopicSheet = 'name' | 'universe' | 'image'
+type TopicSheet = 'name' | 'universe' | 'image' | 'pictogram'
 
 export interface MyTopicRouteParams {
   id: string
@@ -83,6 +85,7 @@ export function MyTopicScreen() {
   const names = useUpdateTopicNames(topicId)
   const category = useUpdateTopicCategory(topicId)
   const image = useUpdateTopicImage(topicId)
+  const pictogram = useUpdateTopicPictogram(topicId)
   const publish = usePublishTopic(topicId)
   const [sheet, setSheet] = useState<TopicSheet>()
   const [uploading, setUploading] = useState(false)
@@ -92,6 +95,7 @@ export function MyTopicScreen() {
   const englishName = topic?.names.en ?? ''
   const code: CategoryCode = toCategoryCode(topic?.category ?? params.category)
   const imageUrl = topic ? (topic.imageUrl ?? undefined) : params.image || undefined
+  const pictogramUrl = topic?.pictogramUrl ?? undefined
   const draft = (topic?.status ?? 'DRAFT') === 'DRAFT'
   const list = questions.data ?? []
   const approved = questions.data ? list.filter((question) => questionStatus(question) === 'approved').length : (topic?.questionsCount ?? 0)
@@ -111,6 +115,26 @@ export function MyTopicScreen() {
       close()
     } catch {
       toast.error("La vignette n'a pas pu être envoyée", { description: 'JPG ou PNG, 5 Mo au plus.' })
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  // Pictogramme : PNG carré seulement (transparence conservée) ; les SVG sont réservés au seed.
+  const pickPictogram = async () => {
+    const asset = await pickImage([1, 1], { crop: false })
+    if (!asset) return
+    if (asset.mimeType && asset.mimeType !== 'image/png') {
+      toast.error('Le pictogramme doit être un PNG', { description: 'Carré, 5 Mo au plus.' })
+      return
+    }
+    setUploading(true)
+    try {
+      const media = await uploadImage(asset)
+      await pictogram.mutateAsync(media.url)
+      close()
+    } catch {
+      toast.error("Le pictogramme n'a pas pu être envoyé", { description: 'PNG carré, 5 Mo au plus.' })
     } finally {
       setUploading(false)
     }
@@ -240,6 +264,13 @@ export function MyTopicScreen() {
                   control="chevron"
                   value={imageUrl ? 'Modifier' : 'Ajouter'}
                   onPress={permissions?.canManage ? () => setSheet('image') : undefined}
+                />
+                <ListRow
+                  icon={StickerIcon}
+                  label="Pictogramme"
+                  control="chevron"
+                  value={pictogramUrl ? 'Modifier' : 'Ajouter'}
+                  onPress={permissions?.canManage ? () => setSheet('pictogram') : undefined}
                   last
                 />
               </ListGroup>
@@ -310,6 +341,15 @@ export function MyTopicScreen() {
           busy={uploading || image.isPending}
           onPick={() => void pickThumbnail()}
           onRemove={() => image.mutate(null, { onSuccess: close })}
+        />
+      </MobileSheet>
+      <MobileSheet open={sheet === 'pictogram'} onClose={close} title="Pictogramme" subtitle="Facultatif, affiché dans la grille des sujets">
+        <ImagePicker
+          image={pictogramUrl}
+          hint="PNG carré, 5 Mo"
+          busy={uploading || pictogram.isPending}
+          onPick={() => void pickPictogram()}
+          onRemove={() => pictogram.mutate(null, { onSuccess: close })}
         />
       </MobileSheet>
     </View>

@@ -1,7 +1,7 @@
 import { StatusBar } from 'expo-status-bar'
 import { createContext, useContext, type ReactNode } from 'react'
 import { useColorScheme } from 'react-native'
-import { tokens, type ThemeName } from '../tokens.generated'
+import { tokens, type CategoryCode, type ThemeName } from '../tokens.generated'
 import { useThemeStore } from './theme-store'
 
 export type ThemeColors = { [K in keyof typeof tokens.color.dark]: string }
@@ -15,6 +15,8 @@ export interface Theme {
   motion: typeof tokens.motion
   category: typeof tokens.category
   tier: typeof tokens.tier
+  /** Couleur d'univers du thème : `color` en sombre, `colorLight` en clair (palettes du 2026-11-11). */
+  categoryColor: (category: CategoryCode) => string
 }
 
 const buildTheme = (scheme: ThemeName): Theme => ({
@@ -26,6 +28,7 @@ const buildTheme = (scheme: ThemeName): Theme => ({
   motion: tokens.motion,
   category: tokens.category,
   tier: tokens.tier,
+  categoryColor: (category) => (scheme === 'light' ? tokens.category[category].colorLight : tokens.category[category].color),
 })
 
 const THEMES: Record<ThemeName, Theme> = { dark: buildTheme('dark'), light: buildTheme('light') }

@@ -43,7 +43,7 @@ export function TopicRow({
   badge,
   style,
 }: TopicRowProps) {
-  const { colors, radius } = useTheme()
+  const { colors, radius, categoryColor, scheme } = useTheme()
   const radio = control === 'radio'
   const SelectIcon = on ? RadioButtonIcon : CircleIcon
   return (
@@ -77,7 +77,7 @@ export function TopicRow({
             width: 44,
             height: 44,
             borderRadius: radius.md,
-            backgroundColor: tokens.category[category].color,
+            backgroundColor: categoryColor(category),
             alignItems: 'center',
             justifyContent: 'center',
           }}

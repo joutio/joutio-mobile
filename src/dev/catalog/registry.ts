@@ -17,7 +17,17 @@ import {
   SwitchDemo,
 } from './row3'
 import { BannerDemo, DialogDemo, NoticeDemo, MenuDemo, MobileSheetDemo, MobileSheetInputDemo, SheetHeaderDemo, ToastDemo } from './row4'
-import { CategoryTileDemo, CodeInputDemo, LogoDemo, PageDotsDemo, SocialButtonDemo, SplashLogoDemo, TopicCardDemo, TopicRowDemo } from './onboarding'
+import {
+  CategoryTileDemo,
+  CodeInputDemo,
+  LogoDemo,
+  PageDotsDemo,
+  SocialButtonDemo,
+  SplashLogoDemo,
+  TopicCardDemo,
+  TopicRowDemo,
+  TopicTileDemo,
+} from './onboarding'
 import { BadgeFamilyRowDemo, RankLadderDemo, RewardCardDemo, StreakCalendarDemo, StreakDemo, TopicsDonutDemo } from './profile'
 import { ChallengeListRowDemo, NotificationRowDemo } from './inbox'
 import { UnlockSequenceDemo } from './result'
@@ -81,6 +91,7 @@ export const CATALOG: CatalogEntry[] = [
   { id: 'page-dots', title: 'PageDots', row: 6, spec: 'components/feedback.md', Demo: PageDotsDemo },
   { id: 'topic-row', title: 'TopicRow', row: 6, spec: 'components/contenu.md', Demo: TopicRowDemo },
   { id: 'topic-card', title: 'TopicCard', row: 6, spec: 'components/contenu.md', Demo: TopicCardDemo },
+  { id: 'topic-tile', title: 'TopicTile', row: 6, spec: 'components/contenu.md', Demo: TopicTileDemo },
   { id: 'unlock-sequence', title: 'UnlockSequence (rang, titre, badge)', row: 7, spec: 'screens/resultat.md', Demo: UnlockSequenceDemo, fullscreen: true },
   { id: 'streak', title: 'Streak', row: 8, spec: 'screens/profil.md', Demo: StreakDemo },
   { id: 'streak-calendar', title: 'StreakCalendar', row: 8, spec: 'screens/profil.md', Demo: StreakCalendarDemo },

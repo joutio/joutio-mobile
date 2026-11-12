@@ -100,7 +100,7 @@ export function useSendRematch({
     const transaction = await optimisticUpdate(client, [queryKeys.challenges()], () => {
       const pending: ChallengeView = {
         challengeId: tempId,
-        topic: { topicId: topic.topicId, names: { fr: topic.name }, category: topic.category ?? null, imageUrl: null },
+        topic: { topicId: topic.topicId, names: { fr: topic.name }, category: topic.category ?? null, imageUrl: null, pictogramUrl: null },
         challenger: { userId: userId ?? '', pseudonym: me?.pseudonym ?? '', avatarOptions: me?.avatarOptions ?? null, suspended: false },
         opponent: { userId: opponentId, pseudonym: opponent?.pseudonym ?? 'Adversaire', avatarOptions: opponent?.avatarOptions ?? null, suspended: false },
         status: 'PENDING',

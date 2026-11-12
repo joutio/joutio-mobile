@@ -115,7 +115,7 @@ function Panel({ player, side, t, height }: { player: VersusPlayer; side: 'top' 
 }
 
 function Body({ me, opponent, topic, category, rounds, animated = false, duration = 4000, elapsedMs, onComplete }: VersusIntroProps) {
-  const { colors, radius } = useTheme()
+  const { colors, radius, categoryColor } = useTheme()
   const reduced = useReducedMotion()
   const { height } = useWindowDimensions()
   // État tenu : volets fermés, joueurs, VS et puce visibles (≈ 45 % de la séquence).
@@ -245,7 +245,7 @@ function Body({ me, opponent, topic, category, rounds, animated = false, duratio
               borderRadius: radius.full,
               alignItems: 'center',
               justifyContent: 'center',
-              backgroundColor: tokens.category[category].color,
+              backgroundColor: categoryColor(category),
             }}
           >
             <CategoryIcon category={category} size={12} weight="fill" color={colors.onAccent} />

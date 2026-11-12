@@ -34,6 +34,7 @@ export const ENDPOINTS = {
     name: (topicId: string) => `/api/topics/${topicId}/name`,
     category: (topicId: string) => `/api/topics/${topicId}/category`,
     imageUrl: (topicId: string) => `/api/topics/${topicId}/image-url`,
+    pictogramUrl: (topicId: string) => `/api/topics/${topicId}/pictogram-url`,
     publish: (topicId: string) => `/api/topics/${topicId}/publish`,
     questions: (topicId: string) => `/api/topics/${topicId}/questions`,
   },

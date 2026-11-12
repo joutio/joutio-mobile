@@ -24,7 +24,7 @@ export interface RoundIntroProps {
 }
 
 function Body({ round, total, topic, category, results, bonus = false, animated = false, duration = 1900, elapsedMs, onComplete }: RoundIntroProps) {
-  const { colors, radius } = useTheme()
+  const { colors, radius, categoryColor, scheme } = useTheme()
   const reduced = useReducedMotion()
   const t = useTimeline({ duration, elapsedMs, animated: animated && !reduced, held: 0.5, onComplete })
 
@@ -109,7 +109,7 @@ function Body({ round, total, topic, category, results, bonus = false, animated 
             borderRadius: radius.sm,
             alignItems: 'center',
             justifyContent: 'center',
-            backgroundColor: tokens.category[category].color,
+            backgroundColor: categoryColor(category),
           }}
         >
           <CategoryIcon category={category} size={14} weight="fill" color={colors.onAccent} />
