@@ -1,3 +1,9 @@
+## [1.37.0](https://github.com/joutio/joutio-mobile/compare/v1.36.0...v1.37.0) (2026-11-12)
+
+### Features
+
+* **authoring:** publish progress counts questions in one language ([0a99e2c](https://github.com/joutio/joutio-mobile/commit/0a99e2cfdf8d102c1de8ebaf4d70563ee600617e))
+
 ## [1.36.0](https://github.com/joutio/joutio-mobile/compare/v1.35.0...v1.36.0) (2026-11-12)
 
 ### Features
