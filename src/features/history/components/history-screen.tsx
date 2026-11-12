@@ -23,6 +23,7 @@ import {
   tokens,
   WarningCircleIcon,
   type MatchOutcome,
+  tabBarScrollInsets,
   useTabBarInset,
 } from '@/design-system'
 import { dayLabel, formatNumber } from '@/features/topic/lib/format'
@@ -200,7 +201,8 @@ export function HistoryScreen() {
             data={groups}
             keyExtractor={(group) => group.day}
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingTop: tokens.space[3], paddingBottom: tokens.space[7] + tabInset }}
+            {...tabBarScrollInsets(tabInset)}
+            contentContainerStyle={{ paddingTop: tokens.space[3], paddingBottom: tokens.space[7] }}
             ListHeaderComponent={
               <View
                 style={{

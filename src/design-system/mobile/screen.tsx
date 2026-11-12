@@ -1,6 +1,6 @@
 import { ScrollEdgeContext } from './scroll-edge'
 import { scrollEdgeProgress } from './header-geometry'
-import { withBottomInset } from './tab-bar-inset'
+import { tabBarScrollInsets, withBottomInset } from './tab-bar-inset'
 import { useContext, useMemo, type ReactNode, type Ref } from 'react'
 import { RefreshControl, ScrollView, View, type ScrollViewInstance, type ScrollViewProps, type StyleProp, type ViewStyle } from 'react-native'
 import { HeaderHeightContext } from 'expo-router/react-navigation'
@@ -85,7 +85,10 @@ export function Screen({
   // Dans un onglet, seule la `JoTabBar` d'Android porte la zone sûre du bas ; la tab bar native iOS flotte sur le
   // contenu, qui garde la marge de la zone sûre de l'onglet (barre comprise).
   const tabBarOwnsBottom = inTabs && Platform.OS !== 'ios'
-  const bottom = tabBarOwnsBottom || bottomBar ? 0 : insets.bottom
+  // Sous la tab bar native : marge en `contentInset` (connue du natif : loader de fin de liste, indicateur) ;
+  // ailleurs, un padding.
+  const underTabBar = inTabs && Platform.OS === 'ios' && !bottomBar
+  const bottom = tabBarOwnsBottom || bottomBar || underTabBar ? 0 : insets.bottom
   const stickyTabs = useSharedValue(0)
   const ownOffset = useSharedValue(0)
   const headerOffset = scrollOffset ?? ownOffset
@@ -116,6 +119,7 @@ export function Screen({
         scrollProps?.onScroll?.(event)
       }}
       style={{ flex: 1, backgroundColor: colors.bg }}
+      {...tabBarScrollInsets(underTabBar ? insets.bottom : 0)}
       contentContainerStyle={withBottomInset([{ paddingBottom: 0 }, contentStyle], bottom)}
     >
       {children}

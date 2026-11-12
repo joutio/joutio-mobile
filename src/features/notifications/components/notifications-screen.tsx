@@ -20,6 +20,7 @@ import {
   TrashIcon,
   useTheme,
   WarningCircleIcon,
+  tabBarScrollInsets,
   useTabBarInset,
 } from '@/design-system'
 import { useMyChallenges } from '@/features/challenges/hooks/use-challenges'
@@ -104,7 +105,8 @@ export function NotificationsScreen() {
         onLoadMore={() => list.fetchNextPage()}
       >
         <LoadMoreScrollView
-          contentContainerStyle={{ flexGrow: 1, paddingBottom: tokens.space[7] + tabInset }}
+          {...tabBarScrollInsets(tabInset)}
+          contentContainerStyle={{ flexGrow: 1, paddingBottom: tokens.space[7] }}
           refreshControl={<RefreshControl refreshing={list.isRefetching && !list.isFetchingNextPage} onRefresh={refresh} tintColor={colors.muted} />}
         >
           {list.isPending ? (

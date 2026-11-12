@@ -60,7 +60,10 @@ final class BottomLoadView: ExpoView {
       }
       ancestor = parent.superview
     }
-    spinner.center = CGPoint(x: viewport.midX, y: viewport.maxY - node.adjustedContentInset.bottom - 32)
+    // Au-dessus de ce qui recouvre le bas de la liste : son inset de contenu, ou la zone sûre (tab bar native
+    // flottante, indicateur d'accueil) quand la marge de fin est un padding que UIKit ne connaît pas (2026-11-12).
+    let covered = max(node.adjustedContentInset.bottom, node.safeAreaInsets.bottom)
+    spinner.center = CGPoint(x: viewport.midX, y: viewport.maxY - covered - 32)
     if !busy {
       spinner.isHidden = !enabled || pull <= 0
       spinner.alpha = min(1, pull/64)

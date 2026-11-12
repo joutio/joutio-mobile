@@ -20,6 +20,7 @@ import {
   TrophyIcon,
   useTheme,
   WarningCircleIcon,
+  tabBarScrollInsets,
   useTabBarInset,
 } from '@/design-system'
 import { useMe } from '@/features/me'
@@ -185,7 +186,8 @@ export function RankingsScreen() {
             data={rest}
             keyExtractor={(entry) => entry.userId}
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingTop: tokens.space[3], paddingBottom: tokens.space[7] + tabInset }}
+            {...tabBarScrollInsets(tabInset)}
+            contentContainerStyle={{ paddingTop: tokens.space[3], paddingBottom: tokens.space[7] }}
             ListHeaderComponent={
               <View style={{ gap: tokens.space[4], paddingHorizontal: GUTTER, paddingBottom: tokens.space[3] }}>
                 <Text variant="caption" color="muted">

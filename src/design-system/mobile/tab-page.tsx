@@ -16,6 +16,7 @@ export function withActivePageScrollsToTop<P extends { scrollsToTop?: boolean }>
   const Wrapped = (props: P) => {
     const active = useContext(TabPageActiveContext)
     const inset = useTabBarInset()
+    // Padding, pas `contentInset` : la bibliothèque des onglets repliables gère elle-même l'inset bas de ses pages.
     const contentContainerStyle = withBottomInset((props as { contentContainerStyle?: StyleProp<ViewStyle> }).contentContainerStyle, inset)
     return <List {...props} contentContainerStyle={contentContainerStyle} scrollsToTop={active && props.scrollsToTop !== false} />
   }

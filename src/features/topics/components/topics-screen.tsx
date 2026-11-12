@@ -34,6 +34,7 @@ import {
   useTheme,
   WarningCircleIcon,
   type CategoryCode,
+  tabBarScrollInsets,
   useTabBarInset,
 } from '@/design-system'
 import { openTopic } from '@/features/topic'
@@ -314,7 +315,8 @@ export function TopicsScreen() {
             data={items}
             keyExtractor={(topic) => topic.topicId}
             numColumns={columns}
-            contentContainerStyle={{ paddingTop: tokens.space[3], paddingBottom: tokens.space[7] + tabInset }}
+            {...tabBarScrollInsets(tabInset)}
+            contentContainerStyle={{ paddingTop: tokens.space[3], paddingBottom: tokens.space[7] }}
             showsVerticalScrollIndicator={false}
             keyboardDismissMode="on-drag"
             keyboardShouldPersistTaps="handled"

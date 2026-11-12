@@ -338,7 +338,10 @@ Expo change à chaque SDK. Avant de toucher une API Expo, EAS ou React Native : 
   à chargement natif) ne reçoivent pas l'ajustement automatique d'iOS ; tout contenu défilant finit par
   `useTabBarInset()` (zone sûre de l'onglet sur iOS, 0 sur Android). Déjà compté par `Screen`, `ParallaxScreen`,
   `CollapsibleTabsScreen` et les listes de page d'onglets (`withActivePageScrollsToTop`) ; à ajouter à la main sur
-  une liste posée directement (`withBottomInset` ou `paddingBottom: … + tabInset`).
+  une liste posée directement : `{...tabBarScrollInsets(tabInset)}` (`contentInset` iOS, connu du natif : le loader
+  de `DragToLoadMore` et l'indicateur restent au-dessus de la barre). Les pages d'onglets repliables gardent un padding
+  (la bibliothèque gère leur inset bas) ; le loader natif s'y place au-dessus de la zone sûre (`modules/bottom-load`,
+  **nouveau dev build requis**).
 - **Bottom bar (règle, 2026-11-10, standard iOS HIG — remplace « barre sur les racines seules »)** : la barre reste
   visible sur toute la navigation de consultation, poussée dans la pile de l'onglet (`(tabs)/*` : fiches sujet et
   joueur, recherche, notifications, classements, historique, sujets joués, série, titres, Réglages, Mes sujets).

@@ -25,6 +25,7 @@ import {
   tokens,
   useGuardedRefresh,
   WarningCircleIcon,
+  tabBarScrollInsets,
   useTabBarInset,
 } from '@/design-system'
 import { useMyTitles, useWearTitle } from '@/features/topic/hooks/use-topic'
@@ -222,12 +223,13 @@ export function TitlesScreen() {
           refreshing={refreshing}
           onRefresh={refresh}
           keyExtractor={(group) => group.topicId}
+          {...tabBarScrollInsets(tabInset)}
           contentContainerStyle={{
             flexGrow: 1,
             gap: tokens.space[5],
             paddingHorizontal: GUTTER,
             paddingTop: tokens.space[2],
-            paddingBottom: tokens.space[7] + tabInset,
+            paddingBottom: tokens.space[7],
           }}
           ListHeaderComponent={
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: tokens.space[3] }}>
