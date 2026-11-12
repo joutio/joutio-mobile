@@ -93,6 +93,7 @@ export const ENDPOINTS = {
   },
   profiles: {
     profile: (userId: string) => `/api/profiles/${userId}`,
+    pseudonymAvailability: '/api/profiles/pseudonym-availability',
     follow: (userId: string) => `/api/profiles/${userId}/follow`,
     following: (userId: string) => `/api/profiles/${userId}/following`,
     followers: (userId: string) => `/api/profiles/${userId}/followers`,

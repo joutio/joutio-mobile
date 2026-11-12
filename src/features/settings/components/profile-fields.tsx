@@ -26,14 +26,15 @@ import {
 } from '@/design-system'
 import { useMyAvatar } from '@/features/avatar/lib/avatar-preview'
 import { pickImage, uploadImage } from '@/features/media/media-service'
-import { useUpdateMe } from '@/features/profile/hooks/use-profile'
+import { PSEUDONYM_RULES, usePseudonymCheck, useUpdateMe, type PseudonymCheck } from '@/features/profile/hooks/use-profile'
+import { MAX_PSEUDONYM } from '@joutio/client-domain/profile'
 import type { MeView } from '@joutio/client-domain/api-types'
 import type { ApiError } from '@joutio/client-domain/api-types'
 import { COUNTRY_CODES, countryFlag, countryLabel } from '@/shared/utils/country'
 
 type FieldId = 'pseudonym' | 'bio' | 'country' | 'interests' | 'banner'
 
-export const MAX_PSEUDONYM = 40
+export { MAX_PSEUDONYM }
 export const MAX_BIO = 160
 const MAX_INTERESTS = 3
 const UNIVERSES = Object.keys(tokens.category) as CategoryCode[]
@@ -54,6 +55,7 @@ export function useProfileFields(me: MeView | undefined) {
   const [uploading, setUploading] = useState(false)
   const [query, setQuery] = useState('')
   const savePseudonym = useUpdateMe('pseudonym')
+  const pseudonymCheck = usePseudonymCheck(field === 'pseudonym' ? pseudonym : (me?.pseudonym ?? ''), me?.pseudonym)
   const saveBio = useUpdateMe('bio')
   const saveCountry = useUpdateMe('country')
   const saveInterests = useUpdateMe('interests')
@@ -149,14 +151,15 @@ export function useProfileFields(me: MeView | undefined) {
         open={field === 'pseudonym'}
         onClose={close}
         title="Pseudonyme"
-        footer={save(pseudonym.trim() === '' || pseudonym.trim() === me?.pseudonym, () => savePseudonym.mutateAsync(pseudonym.trim()))}
+        footer={save(pseudonymCheck.state !== 'available', () => savePseudonym.mutateAsync(pseudonym.trim()))}
       >
         <Field
           label="Pseudonyme"
           value={pseudonym}
           maxLength={MAX_PSEUDONYM}
           counter={`${pseudonym.length} / ${MAX_PSEUDONYM}`}
-          hint="Visible par tous les joueurs."
+          hint={pseudonymHint(pseudonymCheck)}
+          error={pseudonymError(pseudonymCheck)}
           autoCapitalize="none"
           autoCorrect={false}
           onChangeText={setPseudonym}
@@ -253,4 +256,23 @@ export function useProfileFields(me: MeView | undefined) {
   )
 
   return { rows, sheets }
+}
+
+const ISSUE_MESSAGES = {
+  tooShort: 'Au moins 3 caractères.',
+  tooLong: '20 caractères au plus.',
+  firstLetter: 'Commence par une lettre sans accent.',
+  characters: 'Uniquement des lettres sans accent, des chiffres ou _.',
+} as const
+
+function pseudonymError(check: PseudonymCheck): string | undefined {
+  if (check.state === 'invalid') return ISSUE_MESSAGES[check.issue]
+  if (check.state === 'taken') return 'Ce pseudonyme est déjà pris.'
+  return undefined
+}
+
+function pseudonymHint(check: PseudonymCheck): string {
+  if (check.state === 'checking') return 'Vérification de la disponibilité…'
+  if (check.state === 'available') return 'Disponible.'
+  return PSEUDONYM_RULES
 }

@@ -1,9 +1,12 @@
+import { PSEUDONYM_PROBLEMS, pseudonymIssue, pseudonymKey, type PseudonymIssue } from '@joutio/client-domain/profile'
 import { useMutation, useQuery, useQueryClient, type InfiniteData } from '@tanstack/react-query'
+import { useEffect, useState } from 'react'
 import { toast } from '@/design-system'
 import { useMe } from '@/features/me'
 import { optimisticUpdate } from '@/lib/optimistic-cache'
 import { queryKeys } from '@/lib/query-keys'
 import type {
+  ApiError,
   MeView,
   PlayerProfileView,
   PageResponse,
@@ -101,8 +104,17 @@ export function useUpdateMe<K extends MeField>(field: K) {
           )
         }
       }),
-    onError: (_error, _value, context) => {
+    onError: (error, _value, context) => {
       context?.rollback()
+      const type = (error as ApiError | undefined)?.type
+      if (field === 'pseudonym' && type === PSEUDONYM_PROBLEMS.taken) {
+        toast.error('Ce pseudonyme est déjà pris.')
+        return
+      }
+      if (field === 'pseudonym' && type === PSEUDONYM_PROBLEMS.invalid) {
+        toast.error(PSEUDONYM_RULES)
+        return
+      }
       toast.error("La modification n'a pas été enregistrée", { description: 'Vérifie ta connexion, puis réessaie.' })
     },
   })
@@ -140,4 +152,37 @@ export function useRequestDeletionCode() {
 /** Suppression définitive du compte (code à 6 chiffres). */
 export function useDeleteAccount() {
   return useMutation({ mutationFn: (code: string) => profileService.deleteAccount(code) })
+}
+
+export const PSEUDONYM_RULES = '3 à 20 caractères : lettres sans accent, chiffres ou _, en commençant par une lettre.'
+
+/** État de saisie du pseudonyme : règles locales immédiates, unicité vérifiée par le BFF après une courte pause. */
+export type PseudonymCheck =
+  | { state: 'unchanged' | 'checking' | 'available' | 'taken' }
+  | { state: 'invalid'; issue: PseudonymIssue }
+
+const PSEUDONYM_CHECK_DELAY_MS = 350
+
+export function usePseudonymCheck(value: string, current: string | undefined): PseudonymCheck {
+  const trimmed = value.trim()
+  const unchanged = trimmed === (current ?? '')
+  const issue = unchanged ? null : pseudonymIssue(trimmed)
+  const [debounced, setDebounced] = useState(trimmed)
+  useEffect(() => {
+    const timer = setTimeout(() => setDebounced(trimmed), PSEUDONYM_CHECK_DELAY_MS)
+    return () => clearTimeout(timer)
+  }, [trimmed])
+  const settled = debounced === trimmed
+  const query = useQuery({
+    queryKey: queryKeys.pseudonymAvailability(pseudonymKey(debounced)),
+    queryFn: () => profileService.pseudonymAvailability(debounced),
+    enabled: !unchanged && issue === null && settled,
+    staleTime: 10_000,
+  })
+  if (unchanged) return { state: 'unchanged' }
+  if (issue) return { state: 'invalid', issue }
+  if (!settled || query.isPending || query.isFetching) return { state: 'checking' }
+  if (query.data && !query.data.valid) return { state: 'invalid', issue: 'characters' }
+  // Vérification indisponible : le serveur tranche à l'enregistrement.
+  return query.data?.available === false ? { state: 'taken' } : { state: 'available' }
 }

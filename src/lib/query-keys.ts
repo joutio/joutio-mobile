@@ -1,6 +1,7 @@
 /** Clés de requête hiérarchiques (cache React Query). */
 export const queryKeys = {
   me: () => ['me'] as const,
+  pseudonymAvailability: (key: string) => ['me', 'pseudonym-availability', key] as const,
   serverTime: () => ['server-time'] as const,
   home: () => ['home'] as const,
   topics: {
