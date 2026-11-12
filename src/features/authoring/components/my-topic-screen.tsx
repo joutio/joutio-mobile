@@ -32,7 +32,7 @@ import { pickImage, uploadImage } from '@/features/media/media-service'
 import { toast } from '@/design-system'
 import { topicName } from '@/shared/utils/topic-name'
 import { questionStatus, workshopRole } from '@joutio/client-domain/authoring'
-import { MAX_NAME, MIN_QUESTIONS } from '@joutio/client-domain/authoring'
+import { MAX_NAME, MIN_QUESTIONS, playableCount } from '@joutio/client-domain/authoring'
 
 import {
   useDeleteTopic,
@@ -100,7 +100,8 @@ export function MyTopicScreen() {
   const pictogramUrl = topic?.pictogramUrl ?? undefined
   const draft = (topic?.status ?? 'DRAFT') === 'DRAFT'
   const list = questions.data ?? []
-  const approved = questions.data ? list.filter((question) => questionStatus(question) === 'approved').length : (topic?.questionsCount ?? 0)
+  // Questions jouables (approuvées dans une même langue) : c'est ce que la publication exige.
+  const approved = questions.data ? playableCount(list) : (topic?.questionsCount ?? 0)
   const pending = list.filter((question) => questionStatus(question) === 'pending').length
   const reported = list.filter((question) => question.openReportCount > 0).length
   const ready = approved >= MIN_QUESTIONS
@@ -181,7 +182,7 @@ export function MyTopicScreen() {
               ) : (
                 <ProgressBar
                   style={{ paddingVertical: tokens.space[2] }}
-                  label={`${approved} / ${MIN_QUESTIONS} minimum pour publier`}
+                  label={`${approved} / ${MIN_QUESTIONS} questions dans une même langue pour publier`}
                   value={Math.min(100, (approved * 100) / MIN_QUESTIONS)}
                 />
               )}
