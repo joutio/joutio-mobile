@@ -1,3 +1,9 @@
+## [1.33.1](https://github.com/joutio/joutio-mobile/compare/v1.33.0...v1.33.1) (2026-11-12)
+
+### Bug Fixes
+
+* **result:** no Iron frame for an unranked opponent ([6d88c26](https://github.com/joutio/joutio-mobile/commit/6d88c26b9a7a6461d5b10aaedabb29782edeb7da))
+
 ## [1.33.0](https://github.com/joutio/joutio-mobile/compare/v1.32.2...v1.33.0) (2026-11-12)
 
 ### Features
