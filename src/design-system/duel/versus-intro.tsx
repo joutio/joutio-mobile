@@ -3,6 +3,7 @@ import Animated, { useAnimatedStyle } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { CategoryIcon } from '../brand/category-icon'
 import { useReducedMotion } from '../motion'
+import { PlayerName } from '../primitives/player-name'
 import { Avatar } from '../primitives/avatar'
 import { Text } from '../primitives/text'
 import { alpha } from '../theme/color'
@@ -12,6 +13,7 @@ import { tokens, type CategoryCode, type TierCode } from '../tokens.generated'
 
 export interface VersusPlayer {
   name: string
+  premium?: boolean
   tier?: TierCode
   src?: string
   /** Titre porté. */
@@ -95,9 +97,7 @@ function Panel({ player, side, t, height }: { player: VersusPlayer; side: 'top' 
       >
         <Avatar name={player.name} src={player.src} tier={player.tier} size="xxl" decorative />
         <View style={{ flexShrink: 1, minWidth: 0, gap: tokens.space[2], alignItems: top ? 'flex-start' : 'flex-end' }}>
-          <Text variant="title2" weight="700" numberOfLines={1}>
-            {player.name}
-          </Text>
+          <PlayerName name={player.name} premium={player.premium} badgeSize={22} variant="title2" weight="700" justify={top ? 'flex-start' : 'flex-end'} />
           {player.title && (
             <Text variant="caption" color="muted" numberOfLines={1}>
               {player.title}

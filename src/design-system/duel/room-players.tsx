@@ -1,5 +1,6 @@
 import { View, type StyleProp, type ViewStyle } from 'react-native'
 import { ClockIcon, LightningIcon, UserPlusIcon } from '../icons'
+import { PlayerName } from '../primitives/player-name'
 import { Avatar } from '../primitives/avatar'
 import { Text } from '../primitives/text'
 import { useTheme } from '../theme/theme-provider'
@@ -7,6 +8,7 @@ import { tokens, type TierCode } from '../tokens.generated'
 
 export interface RoomPlayer {
   name: string
+  premium?: boolean
   tier?: TierCode
   src?: string
   /** État sous le nom ; « Dans le salon » (présent) ou « Pas encore là » (absent) par défaut. */
@@ -48,9 +50,7 @@ function Seat({ player }: { player: RoomPlayer }) {
           {away ? <ClockIcon size={14} weight="bold" color={colors.muted} /> : <LightningIcon size={14} weight="fill" color={colors.bg} />}
         </View>
       </View>
-      <Text variant="headline" numberOfLines={1}>
-        {player.name}
-      </Text>
+      <PlayerName name={player.name} premium={player.premium} justify="center" />
       <Text variant="caption" weight="600" color={away ? 'muted' : 'correct'} accessibilityLiveRegion="polite">
         {player.status ?? (away ? 'Pas encore là' : 'Dans le salon')}
       </Text>

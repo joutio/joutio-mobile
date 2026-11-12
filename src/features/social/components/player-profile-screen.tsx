@@ -41,7 +41,7 @@ import {
 } from '@/design-system'
 import { ReportPlayerSheet } from '@/features/duel/components/report-sheets'
 import { useHistoryGames } from '@/features/history/hooks/use-history'
-import { useMe } from '@/features/me'
+import { useMe, usePlayerIdentity } from '@/features/me'
 import { useTopicOverview } from '@/features/topic/hooks/use-topic'
 import { dayLabel, formatNumber, tierLabel } from '@/features/topic/lib/format'
 import type { GameOutcome, PlayerCardView } from '@joutio/client-domain/api-types'
@@ -76,6 +76,7 @@ function Loading() {
  * dans le lab.
  */
 export function PlayerProfileScreen() {
+  const identity = usePlayerIdentity()
   const params = useLocalSearchParams<{ id: string }>()
   const id = params.id ?? ''
   const me = useMe(true)
@@ -175,6 +176,7 @@ export function PlayerProfileScreen() {
         heroHeight={HERO_HEIGHT + AVATAR_SIZES.xxl - AVATAR_SIZES.xl}
         image={data?.bannerUrl ?? undefined}
         title={data?.pseudonym ?? 'Joueur'}
+        premium={identity.premium(data)}
         eyebrow={data ? <Avatar name={data.pseudonym} src={userAvatar(data)} tier={tier} size="xxl" /> : undefined}
         centered
         barTitleStart

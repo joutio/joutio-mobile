@@ -22,6 +22,8 @@ export interface RewardCardProps {
   rule?: string
   state?: RewardState
   image?: string
+  /** Nom de l'avatar sans image (avatar de base) : ses initiales. Par défaut, le titre. */
+  avatarName?: string
   /** Avancement vers le déblocage, de 0 à 100. */
   progress?: number
   progressLabel?: string
@@ -32,7 +34,7 @@ export interface RewardCardProps {
 }
 
 /** Style d'avatar à débloquer : aperçu, état, condition et avancement. */
-export function RewardCard({ title, rule, state = 'unlocked', image, progress, progressLabel, cta, onSelect, style }: RewardCardProps) {
+export function RewardCard({ title, rule, state = 'unlocked', image, avatarName, progress, progressLabel, cta, onSelect, style }: RewardCardProps) {
   const { colors, radius } = useTheme()
   const { variant, label } = STATES[state]
   const cardStyle: StyleProp<ViewStyle> = [
@@ -50,7 +52,7 @@ export function RewardCard({ title, rule, state = 'unlocked', image, progress, p
   ]
   const content = (
     <>
-      <Avatar name={title} src={image} size="xl" locked={state === 'locked' || state === 'premium'} />
+      <Avatar name={avatarName ?? title} src={image} size="xl" locked={state === 'locked' || state === 'premium'} />
       <View style={{ flex: 1, minWidth: 0, gap: tokens.space[2] }}>
         <View accessible style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: tokens.space[3] }}>
           <Text variant="headline">{title}</Text>

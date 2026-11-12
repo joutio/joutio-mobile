@@ -21,14 +21,13 @@ import { usePremiumSheet } from '@/features/premium/premium-store'
 import { useMyBadges, useMyRewards, useUpdateMe } from '@/features/profile/hooks/use-profile'
 import { t } from '@/shared/avatar/i18n'
 import { defaultOptionsFor, getAvatarStyle, humanizeVariant, NONE_LABEL_KEY, type AvatarStyleSection } from '@/shared/avatar/styles'
-import { avatarSvg, BACKGROUND_COLORS, parseAvatarConfig, type AvatarConfig } from '@/shared/utils/avatar'
+import { avatarSvg, parseAvatarConfig, type AvatarConfig } from '@/shared/utils/avatar'
 import { tierOf } from '@/shared/utils/tier'
 import { withStyle } from '../lib/avatar-preview'
 import { avatarStylesFor, styleOf, type AvatarStyleId } from '../lib/avatar-styles'
 
 const PAGE = { gap: tokens.space[6], paddingHorizontal: tokens.space[5], paddingTop: tokens.space[2], paddingBottom: tokens.space[7] }
 const TILE = { width: '23%' } as const
-const BASE_BACKGROUND_TAB = 'fond'
 
 /** Libellé d'une variante : traduction du web, sinon « Variante 3 », sinon l'identifiant. */
 function variantLabel(section: AvatarStyleSection, variant: string) {
@@ -51,7 +50,7 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
  * Éditeur d'avatar (`avatar.md`), aligné sur `joutio-web` : onglet Style, puis les groupes du style choisi (Micah :
  * Visage, Cheveux, Accessoires, Vêtements, Couleurs ; Lorelei et Notionists : les leurs), chaque section avec ses
  * variantes (« Aucun » si l'élément est facultatif) et sa palette.
- * L'avatar de base n'a qu'un fond. Aperçu fixe avec le cadre du rang ; Enregistrer s'active au premier changement.
+ * L'avatar de base est celui du Profil : les initiales, sans aucun réglage (seul l'onglet Style reste, 2026-11-12). Aperçu fixe avec le cadre du rang ; Enregistrer s'active au premier changement.
  */
 export function AvatarEditorScreen() {
   const { colors } = useTheme()
@@ -63,7 +62,10 @@ export function AvatarEditorScreen() {
   const save = useUpdateMe('avatarOptions')
   const showPremium = usePremiumSheet((state) => state.show)
   const initial = useMemo<AvatarConfig>(
-    () => parseAvatarConfig(data?.avatarOptions) ?? { style: 'base', backgroundColor: BACKGROUND_COLORS[0] },
+    () => {
+      const parsed = parseAvatarConfig(data?.avatarOptions)
+      return parsed && parsed.style !== 'base' ? parsed : { style: 'base' }
+    },
     [data?.avatarOptions],
   )
   const [choice, setChoice] = useState<AvatarConfig>(initial)
@@ -147,6 +149,7 @@ export function AvatarEditorScreen() {
                 progressLabel={entry.progressLabel}
                 state={active ? 'active' : entry.usable ? 'unlocked' : entry.state}
                 image={render(withStyle(choice, entry.id as AvatarStyleId))}
+                avatarName={data?.pseudonym}
                 onSelect={entry.usable ? () => setChoice(withStyle(choice, entry.id)) : undefined}
                 cta={entry.state === 'premium' ? { label: 'Découvrir Premium', onPress: () => showPremium() } : undefined}
               />
@@ -163,23 +166,7 @@ export function AvatarEditorScreen() {
         label: t(group.labelKey),
         content: <TabScrollView contentContainerStyle={PAGE}>{visited.includes(group.id) ? group.sections.map(section) : null}</TabScrollView>,
       }))
-    : [
-        {
-          value: BASE_BACKGROUND_TAB,
-          label: t('avatar.sections.background'),
-          content: (
-            <TabScrollView contentContainerStyle={PAGE}>
-              {section({
-                id: 'background',
-                labelKey: 'avatar.sections.background',
-                colorField: 'backgroundColor',
-                colors: BACKGROUND_COLORS,
-                colorLabelKey: 'avatar.colors.background',
-              })}
-            </TabScrollView>
-          ),
-        },
-      ]
+    : []
   const pages = [stylePage, ...groupPages]
   const current = pages.some((page) => page.value === tab) ? tab : 'style'
 

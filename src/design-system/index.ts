@@ -20,6 +20,7 @@ export * from './brand/tier-medal'
 export * from './brand/title-ribbon'
 
 export * from './primitives/avatar'
+export * from './primitives/player-name'
 export * from './primitives/badge'
 export * from './primitives/banner'
 export * from './primitives/notice'

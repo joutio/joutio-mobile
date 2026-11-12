@@ -23,7 +23,7 @@ import {
   tabBarScrollInsets,
   useTabBarInset,
 } from '@/design-system'
-import { useMe } from '@/features/me'
+import { useMe, usePlayerIdentity } from '@/features/me'
 import { countryLabel } from '@/shared/utils/country'
 import { tierOf } from '@/shared/utils/tier'
 import type { LeaderboardEntryView } from '@joutio/client-domain/api-types'
@@ -59,6 +59,7 @@ function Loading() {
 
 /** Page complète des classements d'un sujet (`classements.md`) : podium, pagination de 20, filtres période/portée. */
 export function RankingsScreen() {
+  const identity = usePlayerIdentity()
   // Fin de liste au-dessus de la tab bar native iOS (`useTabBarInset`).
   const tabInset = useTabBarInset()
   const params = useLocalSearchParams<RankingsRouteParams>()
@@ -200,6 +201,8 @@ export function RankingsScreen() {
                       src: userAvatar(entry),
                       tier: entry.provisional ? undefined : tierOf(entry.rating),
                       value: formatNumber(scoreOf(entry)),
+                      premium: identity.premium(entry),
+                      onPress: identity.open(entry.userId),
                     }))}
                   />
                 )}
@@ -226,6 +229,9 @@ export function RankingsScreen() {
                   <PlayerRow
                     rank={entry.rank}
                     name={entry.pseudonym}
+                    premium={identity.premium(entry)}
+                    onPress={identity.open(entry.userId)}
+                    chevron
                     src={userAvatar(entry)}
                     tier={entry.provisional ? undefined : tierOf(entry.rating)}
                     sub={boardSub(entry)}

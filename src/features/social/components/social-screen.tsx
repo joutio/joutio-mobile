@@ -23,7 +23,7 @@ import {
   UsersThreeIcon,
   WarningCircleIcon,
 } from '@/design-system'
-import { useMe } from '@/features/me'
+import { useMe, usePlayerIdentity } from '@/features/me'
 import { useContacts } from '@/features/play/hooks/use-play'
 import { formatNumber } from '@/features/topic/lib/format'
 import type { PeopleSort, PlayerCardView } from '@joutio/client-domain/api-types'
@@ -59,6 +59,7 @@ function PeopleList({
   sort: PeopleSort
   onSort: () => void
 }) {
+  const identity = usePlayerIdentity()
   const players = list.data?.pages.flatMap((page) => page.content) ?? []
   const emptyTitle = query
     ? direction === 'following'
@@ -146,6 +147,7 @@ function PeopleList({
                 <PlayerRow
                   key={player.userId}
                   name={player.pseudonym}
+                  premium={identity.premium(player)}
                   src={userAvatar(player)}
                   tier={player.provisional ? undefined : tierOf(player.rating)}
                   presence={presenceOf(player.presence)}

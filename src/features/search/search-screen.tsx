@@ -22,6 +22,7 @@ import {
   tabBarScrollInsets,
   useTabBarInset,
 } from '@/design-system'
+import { usePlayerIdentity } from '@/features/me'
 import { openTopic } from '@/features/topic'
 import { useOnline } from '@/shared/hooks/use-online'
 import type { SuggestionView } from '@joutio/client-domain/api-types'
@@ -39,6 +40,7 @@ const PLAYER_PATH = { home: '/home/player/[id]', social: '/social/player/[id]' }
  * fiche dans la pile de l'onglet (Accueil ou Social).
  */
 export function SearchScreen({ stack }: { stack: SearchStack }) {
+  const identity = usePlayerIdentity()
   // Fin de liste au-dessus de la tab bar native iOS (`useTabBarInset`).
   const tabInset = useTabBarInset()
   const { colors } = useTheme()
@@ -145,6 +147,7 @@ export function SearchScreen({ stack }: { stack: SearchStack }) {
                 <PlayerRow
                   key={item.id}
                   name={item.label}
+                  premium={identity.premium(item, item.id)}
                   sub={item.suspended ? 'Compte suspendu' : (item.subtitle ?? undefined)}
                   src={avatarSvg(item.avatarOptions, item.id) ?? undefined}
                   chevron

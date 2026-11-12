@@ -9,7 +9,7 @@ import { RematchPrompt, toast, tokens, useTheme, useToastStore } from '@/design-
 import { useMe } from '@/features/me'
 import { usePersonalNotifications, type NotificationView } from '@/lib/realtime/personal-notifications'
 import { rematchService, roomOfChallenge, useSecondsUntil } from '../hooks/use-rematch'
-import { usePlayerAvatar } from '@/features/social/hooks/use-player-avatar'
+import { usePlayerAvatar, usePlayerPremium } from '@/features/social/hooks/use-player-avatar'
 
 /**
  * Demandes de revanche reçues (`CHALLENGE_RECEIVED` avec la partie d'origine) : `RematchPrompt` sur un voile, par
@@ -26,6 +26,7 @@ export function RematchHost() {
   const seconds = useSecondsUntil(request?.expiresAt ?? null)
   const opponent = useOpponent(request?.actorId ?? null, request?.sourceId ?? null)
   const opponentAvatar = usePlayerAvatar(request?.actorId ?? null)
+  const opponentPremium = usePlayerPremium(request?.actorId ?? null)
 
   usePersonalNotifications(me.data?.userId, (notification, deleted) => {
     if (deleted) {
@@ -86,6 +87,7 @@ export function RematchHost() {
     >
       <RematchPrompt
         name={opponent.name}
+        premium={opponentPremium}
         src={opponentAvatar}
         topic={opponent.topic}
         seconds={seconds}

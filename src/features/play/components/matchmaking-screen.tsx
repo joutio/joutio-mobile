@@ -3,24 +3,8 @@ import { router, useLocalSearchParams } from 'expo-router'
 import { useEffect, useRef, useState } from 'react'
 import { useWindowDimensions, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import {
-  Avatar,
-  Notice,
-  Button,
-  CheckCircleIcon,
-  EmptyState,
-  ForceDark,
-  haptic,
-  MatchmakingMap,
-  ReconnectCountdown,
-  RobotIcon,
-  Text,
-  toast,
-  tokens,
-  useTheme,
-  useToastSuppression,
-  type MapPlayer,
-} from '@/design-system'
+import { Avatar, Notice, Button, CheckCircleIcon, EmptyState, ForceDark, haptic, MatchmakingMap, ReconnectCountdown, RobotIcon, Text, toast, tokens, useTheme, useToastSuppression, type MapPlayer, PlayerName } from '@/design-system'
+import { usePlayerIdentity } from '@/features/me'
 import { PlayerPickerSheet } from '@/features/topic/components/duel-sheet'
 import { formatNumber } from '@/features/topic/lib/format'
 import { readServerNow, useServerClock } from '@/lib/realtime/server-clock'
@@ -87,6 +71,7 @@ export function MatchmakingScreen() {
 }
 
 function MatchmakingScreenContent() {
+  const identity = usePlayerIdentity()
   useToastSuppression()
   const params = useLocalSearchParams<MatchmakingRouteParams>()
   const topic: PlayTopic = { topicId: params.topicId, name: params.topicName, category: params.category }
@@ -241,9 +226,7 @@ function MatchmakingScreenContent() {
             <Text variant="caption" weight="600" color="correct">
               Adversaire trouvé
             </Text>
-            <Text variant="headline" numberOfLines={1}>
-              {opponent?.pseudonym ?? '…'}
-            </Text>
+            <PlayerName name={opponent?.pseudonym ?? '…'} premium={identity.premium(opponent)} />
             <Text variant="caption" color="muted" numberOfLines={1}>
               {opponentMeta}
             </Text>

@@ -42,7 +42,8 @@ import { ResultPages } from './result-pages'
 import { DuelReview, reviewRoundsOf } from './duel-review'
 import { ReportPlayerSheet } from './report-sheets'
 import { useMyAvatar } from '@/features/avatar/lib/avatar-preview'
-import { usePlayerAvatar } from '@/features/social/hooks/use-player-avatar'
+import { usePlayerAvatar, usePlayerPremium } from '@/features/social/hooks/use-player-avatar'
+import { usePlayerIdentity } from '@/features/me'
 
 const ORDER = Object.keys(tokens.tier) as TierCode[]
 const masteryOf = (xp: number): MasteryTier => MASTERY_TIERS.reduce<MasteryTier>((best, tier) => (xp >= MASTERY_XP[tier] ? tier : best), 'FER')
@@ -150,6 +151,8 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
   const rematch = useSendRematch({ userId, opponentId, topic: playTopic, gameId })
   const myAvatar = useMyAvatar()
   const opponentAvatar = usePlayerAvatar(opponentId, !bot)
+  const opponentPremium = usePlayerPremium(opponentId, !bot)
+  const identity = usePlayerIdentity()
   // Elo à l'instant de la partie (snapshot du bilan) : une partie consultée plus tard ne doit pas afficher l'Elo
   // courant du profil. Le repli sur `/api/me` ne sert qu'avant l'arrivée du bilan.
   const gameProgression = data?.progression
@@ -263,6 +266,8 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
                       score: myScore,
                       streak: streakOf(game, userId),
                       meta: bot ? `Elo ${formatNumber(rating)} · non classé` : undefined,
+                      premium: identity.myPremium,
+                      onOpen: identity.open(userId),
                     }}
                     opponent={{
                       name: opponentName,
@@ -271,6 +276,9 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
                       score: theirScore,
                       streak: streakOf(game, opponentId),
                       meta: bot ? (BOT_LEVEL[data?.botDifficulty ?? game.botDifficulty ?? ''] ?? 'Robot') : undefined,
+                      premium: !bot && opponentPremium,
+                      // Le robot et un compte supprimé n'ont pas de fiche.
+                      onOpen: bot || data?.opponentDeleted ? undefined : identity.open(opponentId),
                     }}
                   />
                   {bot || cancelled ? (

@@ -2,6 +2,7 @@ import { View, type StyleProp, type ViewStyle } from 'react-native'
 import { HAIRLINE } from '../theme/hairline'
 import { useTheme } from '../theme/theme-provider'
 import { tokens, type TierCode } from '../tokens.generated'
+import { PlayerName } from './player-name'
 import { Avatar, type Presence } from './avatar'
 import { Button } from './button'
 import { PressableScale } from './pressable-scale'
@@ -16,6 +17,8 @@ export interface ChallengeAction {
 
 export interface ChallengeListRowProps {
   name: string
+  /** `PremiumBadge` après le pseudonyme. */
+  premium?: boolean
   /** Sujet et délai restant, lus en entier : ils décident de la réponse. */
   sub?: string
   src?: string
@@ -36,6 +39,7 @@ export interface ChallengeListRowProps {
 /** Défi en attente : le joueur, puis deux actions sur toute la largeur. */
 export function ChallengeListRow({
   name,
+  premium = false,
   sub,
   src,
   tier,
@@ -70,9 +74,7 @@ export function ChallengeListRow({
       >
         <Avatar name={name} src={src} tier={tier} presence={presence} size="list" decorative />
         <View style={{ flex: 1, minWidth: 0 }}>
-          <Text variant="headline" numberOfLines={1}>
-            {name}
-          </Text>
+          <PlayerName name={name} premium={premium} />
           {sub && (
             <Text variant="caption" color="muted">
               {sub}

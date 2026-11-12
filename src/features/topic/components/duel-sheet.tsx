@@ -30,6 +30,7 @@ import {
   useStartTraining,
   type PlayTopic,
 } from '@/features/play/hooks/use-play'
+import { usePlayerIdentity } from '@/features/me'
 import { tierOf } from '@/shared/utils/tier'
 import { userAvatar } from '@/shared/utils/avatar'
 import { feedFooterProps, loadMoreOptions, pagedQuery } from '@/shared/utils/paging'
@@ -61,6 +62,7 @@ const CONTACTS = [
  * matchmaking). Grande feuille paginée au geste (`loadMore`).
  */
 export function PlayerPickerSheet({ open, onClose, topic, onSent }: { open: boolean; onClose: () => void; topic: PlayTopic; onSent: () => void }) {
+  const identity = usePlayerIdentity()
   const [contacts, setContacts] = useState<Contacts>('following')
   const [query, setQuery] = useState('')
   const list = useContacts(contacts, query.trim(), open)
@@ -88,6 +90,7 @@ export function PlayerPickerSheet({ open, onClose, topic, onSent }: { open: bool
                   loading={challenge.isPending && challenge.variables?.opponent.userId === player.userId}
                   disabled={challenge.isPending}
                   name={player.pseudonym}
+                  premium={identity.premium(player)}
                   src={userAvatar(player)}
                   tier={player.provisional ? undefined : tierOf(player.rating)}
                   presence={player.presence?.status === 'ONLINE' ? 'online' : 'offline'}

@@ -98,6 +98,7 @@ export function ProfileScreen() {
         centered
         image={data?.bannerUrl ?? undefined}
         title={name}
+        premium={data?.premium === true}
         eyebrow={data ? <Avatar name={name} src={avatar} tier={tier} provisional={progression?.provisional} size="xxl" /> : undefined}
         right={
           <>

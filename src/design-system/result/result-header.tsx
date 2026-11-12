@@ -2,6 +2,7 @@ import { View, type StyleProp, type ViewStyle } from 'react-native'
 import { RoundDots, type RoundResult } from '../duel/round-dots'
 import { LightningIcon } from '../icons'
 import { Avatar } from '../primitives/avatar'
+import { PlayerLink, PlayerName } from '../primitives/player-name'
 import type { MatchOutcome } from '../primitives/match-row'
 import { Text } from '../primitives/text'
 import { useTheme, type ThemeColors } from '../theme/theme-provider'
@@ -24,6 +25,10 @@ export interface ResultPlayer {
   streak: readonly RoundResult[]
   /** Sous le nom, par exemple `Elo 856 · non classé`. */
   meta?: string
+  /** `PremiumBadge` après le pseudonyme. */
+  premium?: boolean
+  /** Avatar et pseudonyme ouvrent la fiche du joueur. */
+  onOpen?: () => void
 }
 
 export interface ResultHeaderProps {
@@ -34,12 +39,12 @@ export interface ResultHeaderProps {
   style?: StyleProp<ViewStyle>
 }
 
-function PlayerName({ player }: { player: ResultPlayer }) {
+function PlayerLabel({ player }: { player: ResultPlayer }) {
   return (
     <View style={{ flex: 1, minWidth: 0, alignItems: 'center', gap: tokens.space[2] }}>
-      <Text variant="headline" numberOfLines={1}>
-        {player.name}
-      </Text>
+      <PlayerLink onOpen={player.onOpen} name={player.name} style={{ maxWidth: '100%' }}>
+        <PlayerName name={player.name} premium={player.premium} justify="center" />
+      </PlayerLink>
       {player.meta && (
         <Text variant="caption" color="muted" numberOfLines={1}>
           {player.meta}
@@ -68,7 +73,9 @@ export function ResultHeader({ outcome, topic, me, opponent, style }: ResultHead
         </Text>
       </View>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: tokens.space[4] }}>
-        <Avatar name={me.name} src={me.src} tier={me.tier} size="xl" decorative />
+        <PlayerLink onOpen={me.onOpen} name={me.name}>
+          <Avatar name={me.name} src={me.src} tier={me.tier} size="xl" decorative />
+        </PlayerLink>
         <View
           accessible
           accessibilityRole="image"
@@ -83,14 +90,16 @@ export function ResultHeader({ outcome, topic, me, opponent, style }: ResultHead
             {opponent.score}
           </Text>
         </View>
-        <Avatar name={opponent.name} src={opponent.src} tier={opponent.tier} size="xl" decorative />
+        <PlayerLink onOpen={opponent.onOpen} name={opponent.name}>
+          <Avatar name={opponent.name} src={opponent.src} tier={opponent.tier} size="xl" decorative />
+        </PlayerLink>
       </View>
       <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: tokens.space[3] }}>
-        <PlayerName player={me} />
+        <PlayerLabel player={me} />
         <Text variant="caption" weight="600" color="muted" style={{ paddingTop: tokens.space[2] }}>
           vs
         </Text>
-        <PlayerName player={opponent} />
+        <PlayerLabel player={opponent} />
       </View>
     </View>
   )

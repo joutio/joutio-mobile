@@ -3,6 +3,7 @@ import { CrownSimpleIcon } from '../icons'
 import { tint } from '../theme/color'
 import { useTheme } from '../theme/theme-provider'
 import { tokens, type TierCode } from '../tokens.generated'
+import { PlayerName } from './player-name'
 import { Avatar } from './avatar'
 import { PressableScale } from './pressable-scale'
 import { Text } from './text'
@@ -16,6 +17,7 @@ const STEPS: { tier: TierCode; height: number }[] = [
 
 export interface PodiumPlayer {
   name: string
+  premium?: boolean
   tier?: TierCode
   src?: string
   /** Score, en mono sous le nom. */
@@ -43,9 +45,15 @@ function Step({ player, rank }: { player: PodiumPlayer; rank: number }) {
     >
       <CrownSimpleIcon size={20} weight="fill" color={color} />
       <Avatar name={player.name} src={player.src} tier={player.tier} size="lg" decorative />
-      <Text variant="callout" weight="600" numberOfLines={1} style={{ marginTop: tokens.space[2], maxWidth: '100%' }}>
-        {player.name}
-      </Text>
+      <PlayerName
+        name={player.name}
+        premium={player.premium}
+        badgeSize={16}
+        variant="callout"
+        weight="600"
+        justify="center"
+        style={{ marginTop: tokens.space[2] }}
+      />
       <Text variant="caption" color="muted" mono>
         {player.value}
       </Text>

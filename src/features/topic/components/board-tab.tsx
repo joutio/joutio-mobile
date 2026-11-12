@@ -14,6 +14,7 @@ import {
   WarningCircleIcon,
 } from '@/design-system'
 import type { LeaderboardEntryView } from '@joutio/client-domain/api-types'
+import { usePlayerIdentity } from '@/features/me'
 import { tierOf } from '@/shared/utils/tier'
 import { useTopicLeaderboard } from '../hooks/use-topic'
 import { formatNumber, tierLabel } from '../lib/format'
@@ -34,12 +35,15 @@ export function MyBoardRow({
   sub?: string
   trail?: string
 }) {
+  const identity = usePlayerIdentity()
   return (
     <PlayerRow
       highlight
       last
       rank={entry.rank}
       name={entry.pseudonym}
+      premium={identity.premium(entry)}
+      onPress={identity.open(entry.userId)}
       src={userAvatar(entry)}
       tier={entry.provisional ? undefined : tierOf(entry.rating)}
       sub={sub}
@@ -60,6 +64,7 @@ export function BoardTab({
   rankingsPath: '/home/rankings' | '/topics/rankings' | '/profile/rankings' | '/social/rankings'
   bottomInset: number
 }) {
+  const identity = usePlayerIdentity()
   const board = useTopicLeaderboard(topicId)
   const entries = board.data?.entries.content ?? []
   const [first, second, third, ...rest] = entries
@@ -113,6 +118,8 @@ export function BoardTab({
               src: userAvatar(entry),
               tier: entry.provisional ? undefined : tierOf(entry.rating),
               value: formatNumber(entry.totalXp),
+              premium: identity.premium(entry),
+              onPress: identity.open(entry.userId),
             }))}
           />
           {rest.length > 0 && (
@@ -122,6 +129,8 @@ export function BoardTab({
                   key={entry.userId}
                   rank={entry.rank}
                   name={entry.pseudonym}
+                  premium={identity.premium(entry)}
+                  onPress={identity.open(entry.userId)}
                   src={userAvatar(entry)}
                   tier={entry.provisional ? undefined : tierOf(entry.rating)}
                   sub={boardSub(entry)}

@@ -24,7 +24,7 @@ import {
   useTheme,
   WarningCircleIcon,
 } from '@/design-system'
-import { useMe } from '@/features/me'
+import { useMe, usePlayerIdentity } from '@/features/me'
 import { useCreatePrivateRoom } from '@/features/play/hooks/use-play'
 import { readServerNow } from '@/lib/realtime/server-clock'
 import { queryKeys } from '@/lib/query-keys'
@@ -67,6 +67,7 @@ function Loading() {
  * Salons privés. Rafraîchi par le flux personnel STOMP et au tiré.
  */
 export function ChallengesScreen() {
+  const identity = usePlayerIdentity()
   const { colors } = useTheme()
   const client = useQueryClient()
   const me = useMe(true)
@@ -123,6 +124,8 @@ export function ChallengesScreen() {
       <ChallengeListRow
         key={challenge.challengeId}
         name={player.pseudonym}
+        premium={identity.premium(player)}
+        onPress={identity.open(player.userId)}
         src={avatarSvg(player.avatarOptions, player.userId) ?? undefined}
         sub={`${topic} · ${status}`}
         last={index === total - 1}

@@ -1,7 +1,7 @@
 import { useCallback } from 'react'
 import { useMe } from '@/features/me'
 import { defaultOptionsFor } from '@/shared/avatar/styles'
-import { avatarSvg, BACKGROUND_COLORS, parseAvatarConfig, type AvatarConfig } from '@/shared/utils/avatar'
+import { avatarSvg, parseAvatarConfig, type AvatarConfig } from '@/shared/utils/avatar'
 import type { AvatarStyleId } from './avatar-styles'
 
 /** Réglages par défaut d'un Micah neuf (lab, `DEFAULT_AVATAR`). */
@@ -23,7 +23,8 @@ export function withStyle(config: AvatarConfig | null, style: AvatarStyleId): Av
   const current = config?.style ?? (config ? 'micah' : 'base')
   if (config && current === style) return config
   const background = config?.backgroundColor ? { backgroundColor: config.backgroundColor } : {}
-  if (style === 'base') return { style: 'base', backgroundColor: config?.backgroundColor ?? BACKGROUND_COLORS[0] }
+  // L'avatar de base est celui du Profil : les initiales, sans aucun réglage (2026-11-12).
+  if (style === 'base') return { style: 'base' }
   // Un autre style part de ses réglages de référence (`defaults` du web), fond conservé.
   return { ...defaultOptionsFor(style), ...background }
 }

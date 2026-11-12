@@ -22,7 +22,7 @@ import {
   type RoomPlayer,
 } from '@/design-system'
 import { useCloseRoom } from '@/features/challenges/hooks/use-challenges'
-import { useMe } from '@/features/me'
+import { useMe, usePlayerIdentity } from '@/features/me'
 import { config } from '@/lib/config'
 import { readServerNow, useServerClock } from '@/lib/realtime/server-clock'
 import { tierOf } from '@/shared/utils/tier'
@@ -78,6 +78,7 @@ function countdownOf(expiresAt: string | null, now: number) {
  * fermer ; la préparation continue après le retour, suivie par le bandeau global.
  */
 export function RoomScreen() {
+  const identity = usePlayerIdentity()
   const params = useLocalSearchParams<RoomRouteParams>()
   const roomId = params.roomId
   useServerClock()
@@ -161,12 +162,13 @@ export function RoomScreen() {
 
   const myName = me.data?.pseudonym ?? ''
   const myTier = me.data?.progression && !me.data.progression.provisional ? tierOf(me.data.progression.rating) : undefined
-  const meSeat: RoomPlayer = { name: myName, src: myAvatar, tier: myTier, away: !myPresent, status: myPresent ? 'Dans le salon' : 'Connexion…' }
+  const meSeat: RoomPlayer = { name: myName, src: myAvatar, tier: myTier, premium: identity.myPremium, away: !myPresent, status: myPresent ? 'Dans le salon' : 'Connexion…' }
   const opponentSeat: RoomPlayer | undefined = vsBot
     ? { name: 'Robot', status: 'Prêt' }
     : opponentId
       ? {
           name: opponentName ?? 'Adversaire',
+          premium: identity.premium(opponentView ?? fetched.data, opponentId),
           src: userAvatar(opponentView ?? fetched.data ?? undefined),
           tier: opponentView?.rating != null && !opponentView.provisional ? tierOf(opponentView.rating) : undefined,
           away: !opponentPresent,

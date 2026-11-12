@@ -49,7 +49,8 @@ import { gameService } from '../lib/game-service'
 import { DuelCancelled } from './duel-cancelled'
 import { DuelResult } from './duel-result'
 import { useMyAvatar } from '@/features/avatar/lib/avatar-preview'
-import { usePlayerAvatar } from '@/features/social/hooks/use-player-avatar'
+import { usePlayerAvatar, usePlayerPremium } from '@/features/social/hooks/use-player-avatar'
+import { usePlayerIdentity } from '@/features/me'
 
 export interface DuelRouteParams {
   gameId: string
@@ -106,6 +107,8 @@ function DuelScreenContent() {
   const myAvatar = useMyAvatar()
   const opponentId = game ? (game.player1Id === userId ? game.player2Id : game.player1Id) : null
   const opponentAvatar = usePlayerAvatar(opponentId, game?.player2Type !== 'BOT')
+  const opponentPremium = usePlayerPremium(opponentId, game?.player2Type !== 'BOT')
+  const { myPremium } = usePlayerIdentity()
   usePrefetchQuestionImages(game?.questionImageUrls ?? [])
   const arena = useDuelArena({
     gameId,
@@ -251,6 +254,7 @@ function DuelScreenContent() {
               me={{
                 name: myName,
                 src: myAvatar,
+                premium: myPremium,
                 score: arena.myScore,
                 tier: myTier,
                 scoreState: arena.gauge.you === 'idle' ? 'rest' : arena.gauge.you,
@@ -258,6 +262,7 @@ function DuelScreenContent() {
               opponent={{
                 name: opponentName,
                 src: opponentAvatar,
+                premium: opponentPremium,
                 score: arena.theirScore,
                 scoreState: arena.gauge.them === 'idle' ? 'rest' : arena.gauge.them,
               }}
@@ -317,10 +322,11 @@ function DuelScreenContent() {
             me={{
               name: myName,
               src: myAvatar,
+              premium: myPremium,
               tier: myTier,
               detail: myTier ? `${tokens.tier[myTier].label} · ${me.data?.progression?.rating ?? ''}` : undefined,
             }}
-            opponent={{ name: opponentName, src: opponentAvatar, detail: game.player2Type === 'BOT' ? 'Entraînement' : undefined }}
+            opponent={{ name: opponentName, src: opponentAvatar, premium: opponentPremium, detail: game.player2Type === 'BOT' ? 'Entraînement' : undefined }}
             topic={topic}
             category={category}
             rounds={ROUNDS}

@@ -1,4 +1,5 @@
 import { View, type StyleProp, type ViewStyle } from 'react-native'
+import { PlayerName } from '../primitives/player-name'
 import { Avatar } from '../primitives/avatar'
 import { Text } from '../primitives/text'
 import { tokens, type TierCode } from '../tokens.generated'
@@ -6,6 +7,7 @@ import { isTimerUrgent, type TimerState } from './timer-bar'
 
 export interface DuelPlayer {
   name: string
+  premium?: boolean
   score: number
   tier?: TierCode
   src?: string
@@ -30,9 +32,7 @@ function Side({ player, end }: { player: DuelPlayer; end?: boolean }) {
     <View style={{ flex: 1, minWidth: 0, flexDirection: end ? 'row-reverse' : 'row', alignItems: 'center', gap: tokens.space[4] }}>
       <Avatar name={player.name} src={player.src} tier={player.tier} size="list" decorative />
       <View style={{ flexShrink: 1, minWidth: 0, alignItems: end ? 'flex-end' : 'flex-start' }}>
-        <Text variant="callout" weight="600" numberOfLines={1}>
-          {player.name}
-        </Text>
+        <PlayerName name={player.name} premium={player.premium} badgeSize={16} variant="callout" weight="600" justify={end ? 'flex-end' : 'flex-start'} />
         <Text
           variant="numericMedium"
           color={SCORE[player.scoreState ?? 'rest']}

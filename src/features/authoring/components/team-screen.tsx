@@ -20,6 +20,7 @@ import {
   TrashIcon,
   UserPlusIcon,
 } from '@/design-system'
+import { usePlayerIdentity } from '@/features/me'
 import { useSuggestions } from '@/features/search/use-search'
 import { useCreationLimits, useMyTopic, useTeam, useTeamChange } from '../hooks/use-authoring'
 import type { TeamMember } from '@joutio/client-domain/authoring'
@@ -27,6 +28,7 @@ import { topicName } from '@/shared/utils/topic-name'
 import { avatarSvg } from '@/shared/utils/avatar'
 
 export function TeamScreen() {
+  const identity = usePlayerIdentity()
   const { id } = useLocalSearchParams<{ id: string }>()
   const workshop = useMyTopic(id)
   const { askPremium } = useCreationLimits()
@@ -115,6 +117,7 @@ export function TeamScreen() {
                   <PlayerRow
                     key={player.id}
                     name={player.label}
+                    premium={identity.premium(player, player.id)}
                     chevron
                     last={index === candidates.length - 1}
                     disabled={change.isPending}
@@ -156,6 +159,7 @@ export function TeamScreen() {
                       <PlayerRow
                         key={member.userId}
                         name={member.pseudonym}
+                        premium={identity.premium(member)}
                         src={avatarSvg(member.avatarOptions, member.userId) ?? undefined}
                         sub={
                           member.role === 'CREATOR'

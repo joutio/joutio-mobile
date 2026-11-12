@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useReducedMotion } from '../motion'
 import { JoutioTabs } from '../primitives/joutio-tabs'
 import { Text } from '../primitives/text'
+import { PlayerName } from '../primitives/player-name'
 import { alpha } from '../theme/color'
 import { HAIRLINE } from '../theme/hairline'
 import { useTheme } from '../theme/theme-provider'
@@ -64,6 +65,8 @@ export interface CollapsibleTabsScreenProps<T extends string> {
   /** Absente : fond uni, pour une bannière facultative. */
   image?: string | number
   title: string
+  /** Joueur Premium (Profil, Fiche joueur) : `PremiumBadge` après le titre, sur l'image et dans la barre compacte. */
+  premium?: boolean
   /** Au-dessus du titre, par exemple la catégorie. */
   eyebrow?: ReactNode
   /** Titre centré sur l'image, pour une identité plutôt qu'un sujet. */
@@ -102,6 +105,7 @@ interface HeroProps {
   heroHeight: number
   image?: string | number
   title: string
+  premium?: boolean
   eyebrow?: ReactNode
   centered?: boolean
   intro?: ReactNode
@@ -116,7 +120,7 @@ interface HeroProps {
 }
 
 /** Image en parallaxe et titre qui s'efface : l'en-tête que le natif replie. */
-function Hero({ heroHeight, image, title, eyebrow, centered, intro, scroll, pull, titleStart, titleLength, barHeight }: HeroProps) {
+function Hero({ heroHeight, image, title, premium = false, eyebrow, centered, intro, scroll, pull, titleStart, titleLength, barHeight }: HeroProps) {
   const { colors } = useTheme()
   const reduced = useReducedMotion()
   const imageStyle = useAnimatedStyle(() => ({ transform: heroImageTransform(scroll.value - pull.value, reduced, heroHeight) }))
@@ -157,9 +161,13 @@ function Hero({ heroHeight, image, title, eyebrow, centered, intro, scroll, pull
             ]}
           >
             {eyebrow}
-            <Text variant="title1" align={centered ? 'center' : 'left'}>
-              {title}
-            </Text>
+            {premium ? (
+              <PlayerName name={title} premium badgeSize={22} variant="title1" justify={centered ? 'center' : 'flex-start'} />
+            ) : (
+              <Text variant="title1" align={centered ? 'center' : 'left'}>
+                {title}
+              </Text>
+            )}
           </Animated.View>
         </View>
       </View>
@@ -363,7 +371,7 @@ export function CollapsibleTabsScreen<T extends string>({
         >
           <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: colors.bg }, opaque]} />
           <HeaderSeparator progress={topSeparator} />
-          <CompactBarRow title={title} back={back} onBack={onBack} right={rightContent} titleStart={barTitleStart} titleStyle={opaque} />
+          <CompactBarRow title={title} premium={hero.premium} back={back} onBack={onBack} right={rightContent} titleStart={barTitleStart} titleStyle={opaque} />
         </View>
       </ParallaxProgressProvider>
 

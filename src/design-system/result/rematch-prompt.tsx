@@ -2,6 +2,7 @@ import { View, type StyleProp, type ViewStyle } from 'react-native'
 import Svg, { Circle } from 'react-native-svg'
 import { isTimerUrgent } from '../duel/timer-bar'
 import { Avatar } from '../primitives/avatar'
+import { PlayerName } from '../primitives/player-name'
 import { Button } from '../primitives/button'
 import { Text } from '../primitives/text'
 import { useTheme } from '../theme/theme-provider'
@@ -9,6 +10,7 @@ import { tokens, type TierCode } from '../tokens.generated'
 
 export interface RematchPromptProps {
   name: string
+  premium?: boolean
   tier?: TierCode
   src?: string
   topic: string
@@ -32,6 +34,7 @@ const C = 2 * Math.PI * R
 /** Proposition de revanche, posée par l'écran au-dessus d'un voile : anneau du délai autour de l'avatar. */
 export function RematchPrompt({
   name,
+  premium = false,
   tier,
   src,
   topic,
@@ -92,9 +95,12 @@ export function RematchPrompt({
       >
         {seconds} s
       </Text>
-      <Text variant="title2" align="center">
-        {name} veut sa revanche
-      </Text>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: tokens.space[2] }}>
+        <PlayerName name={name} premium={premium} badgeSize={22} variant="title2" />
+        <Text variant="title2" align="center">
+          veut sa revanche
+        </Text>
+      </View>
       <Text variant="callout" color="muted" align="center">
         Même sujet : {topic}
       </Text>

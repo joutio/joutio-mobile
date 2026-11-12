@@ -8,6 +8,7 @@ import { tokens, type TierCode } from '../tokens.generated'
 import { Avatar, type Presence } from './avatar'
 import { Button, type ButtonProps } from './button'
 import { IconButton } from './icon-button'
+import { PlayerName } from './player-name'
 import { PressableScale } from './pressable-scale'
 import { Spinner } from './spinner'
 import { Text } from './text'
@@ -16,6 +17,8 @@ const PODIUM: Record<number, TierCode> = { 1: 'OR', 2: 'ARGENT', 3: 'BRONZE' }
 
 export interface PlayerRowProps {
   name: string
+  /** `PremiumBadge` après le pseudonyme. */
+  premium?: boolean
   sub?: string
   src?: string
   tier?: TierCode
@@ -44,6 +47,7 @@ const withName = (label: string, name: string) => (label.includes(name) ? label 
 /** Ligne de joueur (classement, contacts) : toute la ligne ouvre sa fiche, l'action reste à part. */
 export function PlayerRow({
   name,
+  premium = false,
   sub,
   src,
   tier,
@@ -114,9 +118,7 @@ export function PlayerRow({
           )}
           <Avatar name={name} src={src} tier={tier} presence={presence} size="list" decorative />
           <View style={{ flex: 1, minWidth: 0 }}>
-            <Text variant="headline" numberOfLines={1}>
-              {name}
-            </Text>
+            <PlayerName name={name} premium={premium} />
             {sub && (
               <Text variant="caption" color="muted" numberOfLines={1}>
                 {sub}

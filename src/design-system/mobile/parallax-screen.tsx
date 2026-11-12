@@ -22,6 +22,7 @@ import { CaretLeftIcon, type Icon } from '../icons'
 import { useReducedMotion } from '../motion'
 import { PressableScale } from '../primitives/pressable-scale'
 import { Text } from '../primitives/text'
+import { PlayerName } from '../primitives/player-name'
 import { alpha } from '../theme/color'
 import { useTheme } from '../theme/theme-provider'
 import { tokens } from '../tokens.generated'
@@ -135,6 +136,8 @@ export function ParallaxIconButton({ icon: IconComponent, label, onPress, filled
 
 export interface CompactBarRowProps {
   title: string
+  /** Joueur Premium (Profil, Fiche joueur) : `PremiumBadge` après le titre. */
+  premium?: boolean
   back?: boolean
   onBack?: () => void
   right?: ReactNode
@@ -148,10 +151,12 @@ export interface CompactBarRowProps {
  * Rangée de la barre compacte : retour, titre, actions. Le titre est **centré sur l'écran** (comme une barre
  * native), avec une marge égale à la plus large des deux zones d'actions, mesurées.
  */
-export function CompactBarRow({ title, back = true, onBack, right, titleStart = false, titleStyle }: CompactBarRowProps) {
+export function CompactBarRow({ title, premium = false, back = true, onBack, right, titleStart = false, titleStyle }: CompactBarRowProps) {
   const [sides, setSides] = useState({ left: 44, right: 0 })
   const inset = Math.max(sides.left, sides.right) + tokens.space[4] + tokens.space[3]
-  const label = (
+  const label = premium ? (
+    <PlayerName name={title} premium justify={titleStart ? 'flex-start' : 'center'} />
+  ) : (
     <Text variant="headline" numberOfLines={1}>
       {title}
     </Text>
@@ -207,6 +212,8 @@ export interface ParallaxScreenProps {
   /** Absente : fond uni, pour une bannière facultative. */
   image?: string | number
   title: string
+  /** Joueur Premium (Fiche joueur) : `PremiumBadge` après le titre, sur l'image et dans la barre. */
+  premium?: boolean
   /** Au-dessus du titre, par exemple la catégorie. */
   eyebrow?: ReactNode
   /** Titre centré sur l'image, pour une identité plutôt qu'un sujet. */
@@ -247,6 +254,7 @@ export function ParallaxScreen({
   heroHeight = HERO_HEIGHT,
   image,
   title,
+  premium = false,
   eyebrow,
   centered = false,
   barTitleStart = false,
@@ -355,9 +363,13 @@ export function ParallaxScreen({
                   ]}
                 >
                   {eyebrow}
-                  <Text variant="title1" align={centered ? 'center' : 'left'}>
-                    {title}
-                  </Text>
+                  {premium ? (
+                    <PlayerName name={title} premium badgeSize={22} variant="title1" justify={centered ? 'center' : 'flex-start'} />
+                  ) : (
+                    <Text variant="title1" align={centered ? 'center' : 'left'}>
+                      {title}
+                    </Text>
+                  )}
                 </Animated.View>
               </View>
             </View>
@@ -399,7 +411,7 @@ export function ParallaxScreen({
         <View pointerEvents="box-none" style={{ position: 'absolute', left: 0, right: 0, top: 0, height: barHeight, zIndex: 20 }}>
           <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: colors.bg }, barStyle]} />
           <HeaderSeparator progress={separator} />
-          <CompactBarRow title={title} back={back} onBack={onBack} right={rightContent} titleStart={barTitleStart} titleStyle={barStyle} />
+          <CompactBarRow title={title} premium={premium} back={back} onBack={onBack} right={rightContent} titleStart={barTitleStart} titleStyle={barStyle} />
         </View>
 
         {bottomBar && (
