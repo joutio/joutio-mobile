@@ -151,6 +151,8 @@ purge jamais la session, un refus définitif ou `403 accountSuspended` l'affiche
 
 ## 3. Commandes
 
+Guide pas à pas (prérequis macOS, simulateur iOS, émulateur Android, builds locaux, dépannage) : [`README.md`](README.md).
+
 ```bash
 npm install
 npm run ios             # expo run:ios (dev build, simulateur ou appareil)
@@ -164,8 +166,8 @@ npm run assets:sync     # reprend design/public : logo et carte en SVG, cadres/m
 npm run format          # prettier (src, scripts)
 ```
 
-Sans `.env.local`, l'app cible la **production** (`api.joutio.com`, `identity.joutio.com`) ; modèle dans
-`.env.example`. Les `EXPO_PUBLIC_*` sont figées dans le bundle : relancer `npx expo start -c` après un changement.
+Sans `.env.local`, l'app cible la **production** (`api.joutio.com`, `identity.joutio.com`) ; modèle commenté dans
+`.env`. Les `EXPO_PUBLIC_*` sont figées dans le bundle : relancer `npx expo start -c` après un changement.
 
 `ios/` et `android/` sont générés (CNG) et ignorés par git : configurer dans `app.config.ts` et les plugins.
 

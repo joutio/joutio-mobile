@@ -5,9 +5,16 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-export ANDROID_HOME="${ANDROID_HOME:-$HOME/Android/Sdk}"
+# SDK : emplacement d'Android Studio (macOS) ou de l'installation Linux documentée dans le README.
+if [[ -z "${ANDROID_HOME:-}" ]]; then
+  if [[ "$(uname)" == Darwin ]]; then ANDROID_HOME="$HOME/Library/Android/sdk"; else ANDROID_HOME="$HOME/Android/Sdk"; fi
+fi
+export ANDROID_HOME
 export PATH="$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$PATH"
 # Un JDK complet (javac) : un paquet `*-jre-headless` ne suffit pas aux toolchains Gradle.
+if [[ -z "${JAVA_HOME:-}" || ! -x "$JAVA_HOME/bin/javac" ]] && [[ "$(uname)" == Darwin ]]; then
+  JAVA_HOME="$(/usr/libexec/java_home 2>/dev/null || true)" && export JAVA_HOME
+fi
 if [[ -z "${JAVA_HOME:-}" || ! -x "$JAVA_HOME/bin/javac" ]]; then
   for jdk in /usr/lib/jvm/java-17-openjdk-amd64 /usr/lib/jvm/java-21-openjdk-amd64 /usr/lib/jvm/java-25-openjdk-amd64; do
     [[ -x "$jdk/bin/javac" ]] && export JAVA_HOME="$jdk" && break
