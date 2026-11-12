@@ -27,7 +27,7 @@ import { config } from '@/lib/config'
 import { readServerNow, useServerClock } from '@/lib/realtime/server-clock'
 import { tierOf } from '@/shared/utils/tier'
 import { topicName } from '@/shared/utils/topic-name'
-import { PREPARATION_STEPS, preparationComplete, preparationStep, waitingStatusLabel, wizzState } from '@joutio/client-domain/rooms'
+import { PREPARATION_STEPS, preparationComplete, preparationStep, roomFailureKind, waitingStatusLabel, wizzState, type RoomFailureKind } from '@joutio/client-domain/rooms'
 import { useRoom, useRoomPresence, useWizzRoom } from '../hooks/use-play'
 import { playService } from '../lib/play-service'
 import { usePlayerProfile } from '@/features/social/hooks/use-social'
@@ -48,6 +48,14 @@ const TERMINAL = {
   EXPIRED: { title: 'Le salon a expiré', description: "Personne ne l'a rejoint à temps." },
   FAILED: { title: "Le duel n'a pas pu être préparé", description: 'Relance un duel depuis la fiche du sujet.' },
 } as const
+
+/** Explication d'un échec selon le motif serveur (`ROOM_FAILED.reason`) ; repli générique. */
+const FAILURE_DESCRIPTION: Record<RoomFailureKind, string> = {
+  language: "Ce sujet n'a pas encore assez de questions dans ta langue pour un duel.",
+  topic: "Ce sujet n'est plus disponible pour jouer.",
+  timeout: 'Le serveur a mis trop de temps à répondre. Réessaie dans un instant.',
+  unknown: TERMINAL.FAILED.description,
+}
 
 /** Lien public du salon (`joutio-landing` `/join/{roomId}` ouvre l'app). */
 export const roomLink = (roomId: string) => `${config.siteUrl}/join/${roomId}`
@@ -152,7 +160,9 @@ export function RoomScreen() {
     const copy =
       status?.terminalError && !(roomStatus in TERMINAL)
         ? { title: 'Salon introuvable', description: 'Il a peut-être expiré.' }
-        : TERMINAL[roomStatus as keyof typeof TERMINAL]
+        : roomStatus === 'FAILED'
+          ? { title: TERMINAL.FAILED.title, description: FAILURE_DESCRIPTION[roomFailureKind(room?.failureReason)] }
+          : TERMINAL[roomStatus as keyof typeof TERMINAL]
     return (
       <Screen header={<MobileTopBar variant="inline" back="Retour" title="Salon" onBack={close} />} scroll={false}>
         <Terminal title={copy.title} description={copy.description} onBack={close} />
