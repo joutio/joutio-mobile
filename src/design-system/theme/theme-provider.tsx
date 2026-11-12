@@ -1,6 +1,6 @@
 import { StatusBar } from 'expo-status-bar'
-import { createContext, useContext, type ReactNode } from 'react'
-import { useColorScheme } from 'react-native'
+import { createContext, useContext, useEffect, type ReactNode } from 'react'
+import { Appearance, useColorScheme } from 'react-native'
 import { tokens, type CategoryCode, type ThemeName } from '../tokens.generated'
 import { useThemeStore } from './theme-store'
 
@@ -40,6 +40,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const system = useColorScheme()
   const preference = useThemeStore((state) => state.preference)
   const scheme: ThemeName = preference === 'system' ? (system === 'light' ? 'light' : 'dark') : preference
+  // Le réglage manuel s'applique aussi au natif (tab bar iOS, en-têtes, feuilles, alertes), qui suivrait sinon le
+  // système ; « Système » rend la main à iOS / Android.
+  useEffect(() => {
+    Appearance.setColorScheme(preference === 'system' ? 'unspecified' : preference)
+  }, [preference])
   return <ThemeContext.Provider value={THEMES[scheme]}>{children}</ThemeContext.Provider>
 }
 

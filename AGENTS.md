@@ -329,6 +329,11 @@ Expo change à chaque SDK. Avant de toucher une API Expo, EAS ou React Native : 
 - Social : pas de loupe globale en en-tête. Recherche de contacts vide → bouton « Rechercher globalement », avec `q` repris dans la recherche globale. Onglets sans chiffres ; total de la liste active et puce du tri courant dans une rangée sous les onglets, comme Sujets.
 - Pager / refresh Android : le patch `react-native-collapsible-tabs-native` arbitre la direction dès `dispatchTouchEvent`, avant `SwipeRefreshLayout`. Le refresh attend une direction verticale ; un geste horizontal reste horizontal jusqu’au relâchement, y compris sur une page vide. Ce correctif partagé couvre Social, Accueil, Profil, fiche sujet, modération et avatar. Ne pas désactiver le pager par un état React en cours de geste.
 
+- **Tab bar par plateforme (2026-11-12)** : **iOS** = tab bar **native** (`NativeTabs` d'`expo-router/native-tabs`,
+  `UITabBarController`, Liquid Glass, SF Symbols, badge Défis natif) ; chaque onglet a son `SafeAreaProvider` dont la
+  marge basse compte la barre, et la première liste de l'écran s'y ajuste seule (le contenu passe sous la barre).
+  **Android** = `JoTabBar` de Joutio (`Tabs` d'`expo-router/js-tabs`). Le réglage d'apparence de l'app est propagé au
+  natif (`Appearance.setColorScheme` dans `ThemeProvider`) : sinon la barre native suit le système.
 - **Bottom bar (règle, 2026-11-10, standard iOS HIG — remplace « barre sur les racines seules »)** : la barre reste
   visible sur toute la navigation de consultation, poussée dans la pile de l'onglet (`(tabs)/*` : fiches sujet et
   joueur, recherche, notifications, classements, historique, sujets joués, série, titres, Réglages, Mes sujets).
