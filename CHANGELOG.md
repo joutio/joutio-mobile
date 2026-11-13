@@ -1,3 +1,13 @@
+## [1.39.0](https://github.com/joutio/joutio-mobile/compare/v1.38.0...v1.39.0) (2026-11-13)
+
+### Features
+
+* **home:** creation tab, interests rail, topic titles and launch fixes ([4429337](https://github.com/joutio/joutio-mobile/commit/44293377460681cfdcae18c5ccce74f7fe309527))
+
+### Bug Fixes
+
+* **nav:** ignore double taps that opened a screen twice ([71899bd](https://github.com/joutio/joutio-mobile/commit/71899bddae3f4a6e108fe30e7ce699602ab59621))
+
 ## [1.38.0](https://github.com/joutio/joutio-mobile/compare/v1.37.0...v1.38.0) (2026-11-13)
 
 ### Features
