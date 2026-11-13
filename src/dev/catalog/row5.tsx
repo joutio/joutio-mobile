@@ -1,4 +1,5 @@
-import { router, useLocalSearchParams } from 'expo-router'
+import { useLocalSearchParams } from 'expo-router'
+import { router } from '@/shared/navigation/router'
 import { useEffect, useRef } from 'react'
 import { type FlatList } from 'react-native'
 import Animated, { useAnimatedRef } from 'react-native-reanimated'

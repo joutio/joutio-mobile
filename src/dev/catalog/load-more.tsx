@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { View } from 'react-native'
 import { Button, DragToLoadMore, FeedFooter, ListRow, LoadMoreScrollView, MobileSheet, MobileTopBar, Screen, Text, tokens } from '@/design-system'
-import { router } from 'expo-router'
+import { router } from '@/shared/navigation/router'
 
 /** Real native control in both surfaces; a fixed row number makes anchor movement obvious. */
 export function LoadMoreDemo() {

@@ -1,6 +1,7 @@
 import { countryName } from '@joutio/client-domain/geo'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { router, useLocalSearchParams } from 'expo-router'
+import { useLocalSearchParams } from 'expo-router'
+import { router } from '@/shared/navigation/router'
 import { useEffect, useRef, useState } from 'react'
 import { useWindowDimensions, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'

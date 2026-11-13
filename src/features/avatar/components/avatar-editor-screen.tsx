@@ -1,4 +1,4 @@
-import { router } from 'expo-router'
+import { router } from '@/shared/navigation/router'
 import { useMemo, useState, type ReactNode } from 'react'
 import { View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'

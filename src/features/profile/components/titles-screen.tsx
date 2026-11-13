@@ -1,4 +1,4 @@
-import { router } from 'expo-router'
+import { router } from '@/shared/navigation/router'
 import { useMemo, useState } from 'react'
 import { FlatList, View } from 'react-native'
 import {

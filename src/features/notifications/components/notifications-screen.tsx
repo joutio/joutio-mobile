@@ -1,5 +1,5 @@
 import { useGuardedRefresh } from '@/design-system/mobile/guarded-refresh'
-import { router } from 'expo-router'
+import { router } from '@/shared/navigation/router'
 import { RefreshControl, View } from 'react-native'
 import {
   BellIcon,

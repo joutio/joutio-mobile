@@ -1,5 +1,5 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { router } from 'expo-router'
+import { router } from '@/shared/navigation/router'
 import { useEffect, useState } from 'react'
 import { create } from 'zustand'
 import { haptic, toast } from '@/design-system'

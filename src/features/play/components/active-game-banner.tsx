@@ -1,4 +1,5 @@
-import { router, usePathname } from 'expo-router'
+import { usePathname } from 'expo-router'
+import { router } from '@/shared/navigation/router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Banner } from '@/design-system'
 import { usePlaySession } from '../hooks/play-session'

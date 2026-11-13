@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
-import { router, useLocalSearchParams } from 'expo-router'
+import { useLocalSearchParams } from 'expo-router'
+import { router } from '@/shared/navigation/router'
 import { View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Avatar, Button, CATEGORY_ICONS, EmptyState, LightningIcon, LinkIcon, Pill, Skeleton, Text, toCategoryCode, tokens, useTheme } from '@/design-system'

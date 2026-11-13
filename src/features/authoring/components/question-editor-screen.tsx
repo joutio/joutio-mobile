@@ -1,5 +1,6 @@
 import { getUserId } from '@/lib/auth'
-import { router, useLocalSearchParams } from 'expo-router'
+import { useLocalSearchParams } from 'expo-router'
+import { router } from '@/shared/navigation/router'
 import { useEffect, useState } from 'react'
 import { View } from 'react-native'
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller'

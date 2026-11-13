@@ -1,4 +1,5 @@
-import { router, useSegments } from 'expo-router'
+import { useSegments } from 'expo-router'
+import { router } from '@/shared/navigation/router'
 import { useCallback } from 'react'
 import { useMe } from './use-me'
 

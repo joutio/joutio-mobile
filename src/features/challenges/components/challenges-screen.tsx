@@ -1,6 +1,6 @@
 import { NotificationButton } from '@/features/notifications/components/notification-button'
 import { useQueryClient } from '@tanstack/react-query'
-import { router } from 'expo-router'
+import { router } from '@/shared/navigation/router'
 import { useState } from 'react'
 import { RefreshControl, ScrollView, View } from 'react-native'
 import {

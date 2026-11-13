@@ -1,6 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query'
 import * as Notifications from 'expo-notifications'
-import { router, useRootNavigationState, useSegments } from 'expo-router'
+import { useRootNavigationState, useSegments } from 'expo-router'
+import { router } from '@/shared/navigation/router'
 import { useEffect, useRef, useState } from 'react'
 import { AppState } from 'react-native'
 import { useSessionStore } from '@/features/auth/session-store'

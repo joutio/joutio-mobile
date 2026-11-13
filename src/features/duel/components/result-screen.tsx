@@ -1,4 +1,5 @@
-import { router, useLocalSearchParams } from 'expo-router'
+import { useLocalSearchParams } from 'expo-router'
+import { router } from '@/shared/navigation/router'
 import { View } from 'react-native'
 import { Button, EmptyState, SplashLogo, tokens, useTheme, WarningCircleIcon } from '@/design-system'
 import { topicName } from '@/shared/utils/topic-name'

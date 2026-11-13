@@ -1,4 +1,5 @@
-import { router, useSegments } from 'expo-router'
+import { useSegments } from 'expo-router'
+import { router } from '@/shared/navigation/router'
 import type { ReactNode } from 'react'
 import { View } from 'react-native'
 import { ListGroup, MobileTopBar, Screen, SectionHeader, Text, tokens } from '@/design-system'

@@ -1,4 +1,4 @@
-import { router } from 'expo-router'
+import { router } from '@/shared/navigation/router'
 import { LightningIcon, showDialog } from '@/design-system'
 import { usePremiumSheet } from '@/features/premium/premium-store'
 import type { MeView } from '@joutio/client-domain/api-types'

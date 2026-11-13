@@ -1,6 +1,7 @@
 import { countryName } from '@joutio/client-domain/geo'
 import { FlashList, type FlashListRef } from '@shopify/flash-list'
-import { router, useLocalSearchParams } from 'expo-router'
+import { useLocalSearchParams } from 'expo-router'
+import { router } from '@/shared/navigation/router'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { View } from 'react-native'
 import {

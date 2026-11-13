@@ -1,4 +1,4 @@
-import { router } from 'expo-router'
+import { router } from '@/shared/navigation/router'
 import { useState } from 'react'
 
 const close = () => (router.canGoBack() ? router.back() : router.replace('/catalog'))

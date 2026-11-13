@@ -1,5 +1,5 @@
 import { useShare } from '@/features/share'
-import { router } from 'expo-router'
+import { router } from '@/shared/navigation/router'
 import { useMemo, useState } from 'react'
 import { Pressable, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'

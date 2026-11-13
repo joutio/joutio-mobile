@@ -1,4 +1,4 @@
-import { router } from 'expo-router'
+import { router } from '@/shared/navigation/router'
 import { useCallback } from 'react'
 import { toast } from '@/design-system'
 import { clearSession, getUserId } from '@/lib/auth'

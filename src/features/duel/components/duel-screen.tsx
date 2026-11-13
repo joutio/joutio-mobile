@@ -1,6 +1,7 @@
 import { useMutation } from '@tanstack/react-query'
 import { usePlaySession } from '@/features/play/hooks/play-session'
-import { router, useLocalSearchParams, usePreventRemove } from 'expo-router'
+import { useLocalSearchParams, usePreventRemove } from 'expo-router'
+import { router } from '@/shared/navigation/router'
 import { useEffect, useRef, useState } from 'react'
 import { View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'

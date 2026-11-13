@@ -1,7 +1,7 @@
 import { useReferral } from '@/features/me'
 import { useShare } from '@/features/share'
 import { NotificationButton } from '@/features/notifications/components/notification-button'
-import { router } from 'expo-router'
+import { router } from '@/shared/navigation/router'
 import { useState } from 'react'
 import { View } from 'react-native'
 import {

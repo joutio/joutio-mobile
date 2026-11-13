@@ -1,4 +1,5 @@
-import { router, useLocalSearchParams } from 'expo-router'
+import { useLocalSearchParams } from 'expo-router'
+import { router } from '@/shared/navigation/router'
 import { DuelChat } from '@/features/duel/components/duel-chat'
 
 export interface ResultChatRouteParams {

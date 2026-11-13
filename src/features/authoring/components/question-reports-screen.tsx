@@ -1,5 +1,6 @@
 import PagerView, { type PagerViewRef } from '@expo/ui/community/pager-view'
-import { router, useLocalSearchParams } from 'expo-router'
+import { useLocalSearchParams } from 'expo-router'
+import { router } from '@/shared/navigation/router'
 import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import { View } from 'react-native'
 import {

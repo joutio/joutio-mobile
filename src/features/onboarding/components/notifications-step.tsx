@@ -1,5 +1,5 @@
 import { requestPushPermission } from '@/features/notifications/lib/expo-push'
-import { router } from 'expo-router'
+import { router } from '@/shared/navigation/router'
 import { useState } from 'react'
 import { View } from 'react-native'
 import { ArrowCounterClockwiseIcon, BellRingingIcon, Button, LightningIcon, ListRow, MedalIcon, Text, tokens, useTheme } from '@/design-system'

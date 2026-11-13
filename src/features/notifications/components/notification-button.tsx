@@ -1,4 +1,4 @@
-import { router } from 'expo-router'
+import { router } from '@/shared/navigation/router'
 import { NotificationBell } from '@/design-system'
 import { useUnreadCount } from '@/features/home/hooks/use-home'
 

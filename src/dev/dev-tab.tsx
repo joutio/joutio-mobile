@@ -1,4 +1,5 @@
-import { router, useScrollToTop } from 'expo-router'
+import { useScrollToTop } from 'expo-router'
+import { router } from '@/shared/navigation/router'
 import { useRef } from 'react'
 import type { ScrollViewInstance } from 'react-native'
 import { ListRow, MobileTopBar, Screen } from '@/design-system'

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
-import { router } from 'expo-router'
+import { router } from '@/shared/navigation/router'
 import { toast } from '@/design-system'
 import { useMe } from '@/features/me'
 import type { RoomView } from '@joutio/client-domain/rooms'

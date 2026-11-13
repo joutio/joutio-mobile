@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { router } from 'expo-router'
+import { router } from '@/shared/navigation/router'
 import { useMemo, useState } from 'react'
 import { countryFlag, countryName } from '@joutio/client-domain/geo'
 import { ScrollView, View } from 'react-native'

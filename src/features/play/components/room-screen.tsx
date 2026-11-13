@@ -1,7 +1,8 @@
 import { buildShareUrl } from '@joutio/client-domain/share'
 import { useShare } from '@/features/share'
 import { toast } from '@/design-system'
-import { router, useLocalSearchParams, useIsFocused } from 'expo-router'
+import { useLocalSearchParams, useIsFocused } from 'expo-router'
+import { router } from '@/shared/navigation/router'
 import { useEffect, useRef, useState } from 'react'
 import { View } from 'react-native'
 import {

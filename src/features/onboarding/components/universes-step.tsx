@@ -1,4 +1,4 @@
-import { router } from 'expo-router'
+import { router } from '@/shared/navigation/router'
 import { useState } from 'react'
 import { View } from 'react-native'
 import { Notice, Button, CategoryTile, Text, tokens, type CategoryCode } from '@/design-system'

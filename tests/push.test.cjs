@@ -9,6 +9,8 @@ function load(path, mocks = {}, fetch) {
   const mod = { exports: {} }
   new Function('require', 'module', 'exports', 'fetch', source)(
     (id) => {
+      // `router` protégé contre le double appui : relaie le mock d'expo-router.
+      if (id === '@/shared/navigation/router' && !(id in mocks) && 'expo-router' in mocks) return mocks['expo-router']
       if (!(id in mocks)) throw new Error(`Unexpected dependency: ${id}`)
       return mocks[id]
     },

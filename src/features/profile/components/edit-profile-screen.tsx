@@ -1,7 +1,8 @@
 import { countryFlag, countryName } from '@joutio/client-domain/geo'
 import { MAX_PSEUDONYM } from '@joutio/client-domain/profile'
 import type { ApiError } from '@joutio/client-domain/api-types'
-import { router, useNavigation, usePreventRemove } from 'expo-router'
+import { useNavigation, usePreventRemove } from 'expo-router'
+import { router } from '@/shared/navigation/router'
 import { useState } from 'react'
 import { View } from 'react-native'
 import {
