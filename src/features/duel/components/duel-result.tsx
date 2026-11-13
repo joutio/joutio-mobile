@@ -5,11 +5,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import {
   Notice,
   Button,
-  CaretUpIcon,
   ChatCircleIcon,
   EloSummary,
   FlagIcon,
-  ForceDark,
+  AppTheme,
   IconButton,
   LightningIcon,
   MasteryRing,
@@ -93,7 +92,7 @@ const BOT_LEVEL: Record<string, string> = { EASY: 'Niveau facile', NORMAL: 'Nive
 
 /**
  * Résultat d'un duel (`resultat.md`) : la séquence de déblocages d'abord (rang, titres), puis le résultat classé
- * (issue, Elo, maîtrise, revanche, nouvel adversaire, détails) ou d'entraînement. Toujours sombre.
+ * (issue, Elo, maîtrise, revanche, nouvel adversaire, détails) ou d'entraînement.
  */
 interface DuelResultProps {
   gameId: string
@@ -106,14 +105,14 @@ interface DuelResultProps {
 }
 
 /**
- * Le résultat est un écran immersif : le contenu consomme le thème **dans** `ForceDark`, sinon les couleurs seraient
- * calculées avec le thème système (fond clair en mode clair) avant même d'entrer dans le sous-arbre sombre.
+ * Le résultat suit le thème du joueur (décision du 2026-11-13), y compris quand il s'affiche dans l'arène, toujours
+ * sombre : `AppTheme` lui rend le thème de l'app. Seule la séquence de déblocages reste sombre (`UnlockSequence`).
  */
 export function DuelResult(props: DuelResultProps) {
   return (
-    <ForceDark>
+    <AppTheme>
       <DuelResultContent {...props} />
-    </ForceDark>
+    </AppTheme>
   )
 }
 
@@ -366,7 +365,6 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
                       paddingHorizontal: tokens.space[5],
                     }}
                   >
-                    <CaretUpIcon size={20} color={colors.muted} />
                     <Text variant="headline">Détails du duel</Text>
                     <Text variant="caption" color="muted" numberOfLines={1}>
                       Glisse vers le haut pour revoir les questions

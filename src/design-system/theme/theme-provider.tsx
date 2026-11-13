@@ -34,6 +34,8 @@ const buildTheme = (scheme: ThemeName): Theme => ({
 const THEMES: Record<ThemeName, Theme> = { dark: buildTheme('dark'), light: buildTheme('light') }
 
 const ThemeContext = createContext<Theme | null>(null)
+/** Thème de l'app (réglage ou système), conservé sous un `ForceDark` pour qu'un sous-écran puisse le retrouver. */
+const AppThemeContext = createContext<Theme | null>(null)
 
 /** Thème de l'app : suit le système, sauf réglage manuel. */
 export function ThemeProvider({ children }: { children: ReactNode }) {
@@ -45,7 +47,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     Appearance.setColorScheme(preference === 'system' ? 'unspecified' : preference)
   }, [preference])
-  return <ThemeContext.Provider value={THEMES[scheme]}>{children}</ThemeContext.Provider>
+  return (
+    <AppThemeContext.Provider value={THEMES[scheme]}>
+      <ThemeContext.Provider value={THEMES[scheme]}>{children}</ThemeContext.Provider>
+    </AppThemeContext.Provider>
+  )
 }
 
 /**
@@ -66,6 +72,21 @@ export const ForceDark = ({ children }: { children: ReactNode }) => (
     {children}
   </ThemeScope>
 )
+
+/**
+ * Rend le thème de l'app à un sous-arbre, même sous un `ForceDark` : le résultat d'un duel s'affiche dans l'arène
+ * (toujours sombre) mais suit le thème clair ou sombre du joueur (décision du 2026-11-13).
+ */
+export function AppTheme({ children }: { children: ReactNode }) {
+  const app = useContext(AppThemeContext)
+  if (!app) throw new Error('<AppTheme> hors de <ThemeProvider>.')
+  return (
+    <ThemeContext.Provider value={app}>
+      <StatusBar style={app.scheme === 'dark' ? 'light' : 'dark'} />
+      {children}
+    </ThemeContext.Provider>
+  )
+}
 
 export function useTheme(): Theme {
   const theme = useContext(ThemeContext)

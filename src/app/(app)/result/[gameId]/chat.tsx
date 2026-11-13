@@ -1,5 +1,4 @@
 import { router, useLocalSearchParams } from 'expo-router'
-import { ForceDark } from '@/design-system'
 import { DuelChat } from '@/features/duel/components/duel-chat'
 
 export interface ResultChatRouteParams {
@@ -16,8 +15,6 @@ export interface ResultChatRouteParams {
 export default function ResultChatScreen() {
   const params = useLocalSearchParams<ResultChatRouteParams>()
   return (
-    <ForceDark>
-      <DuelChat gameId={params.gameId} opponentName={params.opponentName ?? 'Adversaire'} recap={params.recap ?? 'Duel terminé'} onBack={() => router.back()} />
-    </ForceDark>
+    <DuelChat gameId={params.gameId} opponentName={params.opponentName ?? 'Adversaire'} recap={params.recap ?? 'Duel terminé'} onBack={() => router.back()} />
   )
 }
