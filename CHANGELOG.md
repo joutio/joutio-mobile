@@ -1,3 +1,9 @@
+## [1.40.0](https://github.com/joutio/joutio-mobile/compare/v1.39.0...v1.40.0) (2026-11-13)
+
+### Features
+
+* non-immersive result, edge haptics, streak unlock and topic description ([a36d143](https://github.com/joutio/joutio-mobile/commit/a36d1439ca2dcfc5164a5c9f5eea2222951249b4))
+
 ## [1.39.0](https://github.com/joutio/joutio-mobile/compare/v1.38.0...v1.39.0) (2026-11-13)
 
 ### Features
