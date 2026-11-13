@@ -125,9 +125,12 @@ export const toast = {
   dismiss: (id?: string) => useToastStore.getState().dismiss(id),
 }
 
-/** À appeler dans un écran immersif (duel, intros) : aucun toast tant qu'il est monté. */
-export function useToastSuppression() {
-  useEffect(() => useToastStore.getState().suspend(), [])
+/**
+ * À appeler dans un écran immersif (duel, intros) : aucun toast tant qu'il est monté et `active`. Le duel la lève
+ * dès le résultat, pour que les toasts et la proposition de revanche (`RematchHost`) y réapparaissent.
+ */
+export function useToastSuppression(active = true) {
+  useEffect(() => (active ? useToastStore.getState().suspend() : undefined), [active])
 }
 
 /** Rubber band asymptotique : `overflow` pt de traction donnent au plus `dim` pt de course (Reacticx). */

@@ -69,19 +69,11 @@ type Tab = (typeof TABS)[number]['value']
 const imageOf = (topic: TopicCardView) => topic.imageUrl ?? undefined
 const remainingFollowed = (count: number) => `${count} ${count > 1 ? 'autres sujets suivis' : 'autre sujet suivi'}`
 
-/** Rail de cartes paysage avec « Tout voir ». */
-function TopicRail({ title, topics, onSeeAll }: { title: string; topics: TopicCardView[]; onSeeAll: () => void }) {
+/** Rail de cartes paysage, sans « Tout voir » (2026-11-13 : la sélection est courte, le catalogue est dans Sujets). */
+function TopicRail({ title, topics }: { title: string; topics: TopicCardView[] }) {
   return (
     <View style={{ gap: tokens.space[4] }}>
-      <SectionHeader
-        title={title}
-        style={{ paddingHorizontal: GUTTER }}
-        action={
-          <Button variant="plain" size="S" style={{ marginRight: -tokens.space[4] }} onPress={onSeeAll}>
-            Tout voir
-          </Button>
-        }
-      />
+      <SectionHeader title={title} style={{ paddingHorizontal: GUTTER }} />
       <Rail itemWidth={LANDSCAPE_WIDTH} label={title}>
         {topics.map((topic) => (
           <TopicCard
@@ -145,9 +137,9 @@ function ForYou({
           onSeeAll={seeAll}
         />
       )}
-      {fresh.length > 0 && <TopicRail title="Nouveaux thèmes" topics={fresh} onSeeAll={seeAll} />}
+      {fresh.length > 0 && <TopicRail title="Fraîchement mis à jour" topics={fresh} />}
       {/* Sélection du BFF (`recommendedTopics`, intérêts enregistrés, sujets suivis exclus) ; rien si elle est vide. */}
-      {hasInterests ? recommended.length > 0 && <TopicRail title="Selon tes centres d'intérêt" topics={recommended} onSeeAll={seeAll} /> : <InterestsInvite />}
+      {hasInterests ? recommended.length > 0 && <TopicRail title="Selon tes centres d'intérêt" topics={recommended} /> : <InterestsInvite />}
     </>
   )
 }
@@ -210,6 +202,7 @@ function Followed({ list, selected, onSelect }: { list: ReturnType<typeof useTop
               key={topic.topicId}
               title={topicName(topic.names)}
               category={toCategoryCode(topic.category)}
+              pictogram={topic.pictogramUrl ?? undefined}
               image={imageOf(topic)}
               onPress={() => openTopic('home', topic)}
               last={index === topics.length - 1}

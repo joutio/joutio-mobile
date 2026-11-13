@@ -96,6 +96,7 @@ export function TopicPickerSheet({
                   key={topic.topicId}
                   title={name}
                   category={toCategoryCode(topic.category)}
+                  pictogram={topic.pictogramUrl ?? undefined}
                   image={topic.imageUrl ?? undefined}
                   last={index === list.length - 1}
                   onPress={busy ? undefined : () => onPick({ topicId: topic.topicId, name, category: topic.category ?? undefined })}

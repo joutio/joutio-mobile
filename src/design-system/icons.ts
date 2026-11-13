@@ -154,3 +154,4 @@ export { EnvelopeSimpleIcon } from 'phosphor-react-native/src/icons/EnvelopeSimp
 export { DatabaseIcon } from 'phosphor-react-native/src/icons/Database'
 export { LifebuoyIcon } from 'phosphor-react-native/src/icons/Lifebuoy'
 export { CameraIcon } from 'phosphor-react-native/src/icons/Camera'
+export { TextAlignLeftIcon } from 'phosphor-react-native/src/icons/TextAlignLeft'

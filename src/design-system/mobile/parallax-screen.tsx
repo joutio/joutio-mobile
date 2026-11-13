@@ -1,3 +1,5 @@
+import { arrivedEdge, scrollEdgeOf, type ScrollEdge } from './edge-haptics'
+import { haptic } from '../haptics'
 import { compactHeaderEdge } from './header-geometry'
 import { HeaderSeparator } from './header-separator'
 import { Image } from 'expo-image'
@@ -288,10 +290,27 @@ export function ParallaxScreen({
   const titleStart = useSharedValue(heroHeight - barHeight)
   const titleLength = useSharedValue(56)
 
-  const onScroll = useAnimatedScrollHandler((event) => {
-    scroll.value = event.contentOffset.y
-    progress.value = compactBarProgress(event.contentOffset.y, titleStart.value, titleLength.value)
-    scheduleOnRN(setDocked, event.contentOffset.y > (dockAt ?? heroHeight - barHeight))
+  // Haut et bas de page : retour haptique pendant un geste du joueur (`edge-haptics.ts`).
+  const edge = useSharedValue<ScrollEdge>('top')
+  const userScrolling = useSharedValue(false)
+  const onScroll = useAnimatedScrollHandler({
+    onBeginDrag: () => {
+      userScrolling.value = true
+    },
+    onEndDrag: (event) => {
+      if (Math.abs(event.velocity?.y ?? 0) < 0.01) userScrolling.value = false
+    },
+    onMomentumEnd: () => {
+      userScrolling.value = false
+    },
+    onScroll: (event) => {
+      scroll.value = event.contentOffset.y
+      progress.value = compactBarProgress(event.contentOffset.y, titleStart.value, titleLength.value)
+      scheduleOnRN(setDocked, event.contentOffset.y > (dockAt ?? heroHeight - barHeight))
+      const next = scrollEdgeOf(event)
+      if (arrivedEdge(edge.value, next, userScrolling.value)) scheduleOnRN(haptic, 'light')
+      edge.value = next
+    },
   })
   const rightContent = typeof right === 'function' ? right(docked) : right
 

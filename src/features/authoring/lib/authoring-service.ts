@@ -49,6 +49,9 @@ export const authoringService = {
   updateImageUrl: (topicId: string, imageUrl: string | null) => api.put<void>(ENDPOINTS.topics.imageUrl(topicId), { imageUrl }),
 
   updatePictogramUrl: (topicId: string, pictogramUrl: string | null) => api.put<void>(ENDPOINTS.topics.pictogramUrl(topicId), { pictogramUrl }),
+  /** Description du sujet, affichée sous le titre de la fiche ; `null` l'efface. */
+  updateDescription: (topicId: string, description: string | null, language: 'fr' | 'en') =>
+    api.put<void>(ENDPOINTS.topics.description(topicId), { description, language: language.toUpperCase() }),
 
   /** Titres par palier (`PUT /api/topics/{id}/titles`) ; `null` efface tout (repli « Or · Sujet »). */
   updateTitles: (topicId: string, titles: TopicTitles | null) => api.put<void>(ENDPOINTS.topics.titles(topicId), { titles }),

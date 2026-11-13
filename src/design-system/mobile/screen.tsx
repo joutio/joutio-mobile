@@ -1,8 +1,10 @@
+import { useEdgeHaptics } from './edge-haptics'
 import { ScrollEdgeContext } from './scroll-edge'
 import { scrollEdgeProgress } from './header-geometry'
 import { tabBarScrollInsets, withBottomInset } from './tab-bar-inset'
-import { useContext, useMemo, type ReactNode, type Ref } from 'react'
-import { RefreshControl, ScrollView, View, type ScrollViewInstance, type ScrollViewProps, type StyleProp, type ViewStyle } from 'react-native'
+import { useCallback, useContext, useMemo, useRef, type ReactNode, type Ref } from 'react'
+import { FieldRevealContext } from './field-reveal'
+import { Keyboard, RefreshControl, ScrollView, View, type ScrollViewInstance, type ScrollViewProps, type ViewInstance, type StyleProp, type ViewStyle } from 'react-native'
 import { HeaderHeightContext } from 'expo-router/react-navigation'
 import { Platform } from 'react-native'
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller'
@@ -104,20 +106,51 @@ export function Screen({
   // En-tête natif iOS : un ScrollView simple, premier enfant de l'écran (repli du grand titre).
   const Scroller = nativeHeader ? RefreshScrollView : loadMore ? LoadMoreScrollView : RefreshKeyboardAwareScrollView
   const keyboardProps = Scroller === RefreshKeyboardAwareScrollView ? { bottomOffset: KEYBOARD_GAP, keyboardShouldPersistTaps: 'handled' as const } : {}
+  // Haut et bas de page : retour haptique (`edge-haptics.ts`) ; `LoadMoreScrollView` le porte déjà lui-même.
+  const edgeHaptics = useEdgeHaptics(
+    {
+      onScroll: (event) => {
+        headerOffset.value = event.nativeEvent.contentOffset.y + event.nativeEvent.contentInset.top
+        scrollProps?.onScroll?.(event)
+      },
+      onScrollBeginDrag: scrollProps?.onScrollBeginDrag,
+      onScrollEndDrag: scrollProps?.onScrollEndDrag,
+      onMomentumScrollEnd: scrollProps?.onMomentumScrollEnd,
+    },
+    Scroller !== LoadMoreScrollView,
+  )
+  // Champ touché entier au-dessus du clavier (`field-reveal.ts`) : la bibliothèque ne cale que le curseur.
+  const ownScroll = useRef<ScrollViewInstance | null>(null)
+  const setScrollRef = useCallback(
+    (node: ScrollViewInstance | null) => {
+      ownScroll.current = node
+      if (typeof scrollRef === 'function') scrollRef(node)
+      else if (scrollRef) (scrollRef as { current: ScrollViewInstance | null }).current = node
+    },
+    [scrollRef],
+  )
+  const revealField = useCallback(
+    (node: ViewInstance) => {
+      const keyboard = Keyboard.metrics()
+      if (!keyboard) return
+      node.measureInWindow((_x, y, _width, height) => {
+        const overflow = y + height - (keyboard.screenY - KEYBOARD_GAP)
+        if (overflow > 0) ownScroll.current?.scrollTo({ y: headerOffset.value + overflow, animated: true })
+      })
+    },
+    [headerOffset],
+  )
   const list = (
     <Scroller
       // Le ref de keyboard-controller étend celui d'un ScrollView (scrollTo, scrollToEnd…).
-      ref={scrollRef as Ref<never>}
+      ref={setScrollRef as Ref<never>}
       {...keyboardProps}
       showsVerticalScrollIndicator={false}
       contentInsetAdjustmentBehavior={underHeader ? 'automatic' : 'never'}
       refreshControl={refreshControl}
       {...scrollProps}
       scrollEventThrottle={scrollProps?.scrollEventThrottle ?? 16}
-      onScroll={(event) => {
-        headerOffset.value = event.nativeEvent.contentOffset.y + event.nativeEvent.contentInset.top
-        scrollProps?.onScroll?.(event)
-      }}
+      {...edgeHaptics}
       style={{ flex: 1, backgroundColor: colors.bg }}
       {...tabBarScrollInsets(underTabBar ? insets.bottom : 0)}
       contentContainerStyle={withBottomInset([{ paddingBottom: 0 }, contentStyle], bottom)}
@@ -125,13 +158,14 @@ export function Screen({
       {children}
     </Scroller>
   )
+  const revealable = <FieldRevealContext.Provider value={revealField}>{list}</FieldRevealContext.Provider>
   const scroller =
     loadMore && !nativeHeader ? (
       <DragToLoadMore resetKey={loadMore.resetKey} enabled={loadMore.enabled} loading={loadMore.loading} onLoadMore={loadMore.onLoadMore}>
-        {list}
+        {revealable}
       </DragToLoadMore>
     ) : (
-      list
+      revealable
     )
   const extras = (
     <>

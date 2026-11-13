@@ -71,7 +71,7 @@ export function Avatar({ name, src, size = 'md', tier, provisional = false, lock
         width: '100%',
         height: '100%',
         borderRadius: radius.full,
-        filter: locked ? [{ brightness: 0.55 }, { grayscale: 1 }] : provisional ? [{ saturate: 0.6 }] : undefined,
+        filter: locked ? [{ brightness: 0.55 }, { grayscale: 1 }] : undefined,
       }}
     />
   ) : (

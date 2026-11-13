@@ -95,6 +95,7 @@ export function MyTopicsList({ gutter }: { gutter: number }) {
             disabled={topic.topicId.startsWith('pending-')}
             title={topicName(topic.names)}
             category={toCategoryCode(topic.category)}
+            pictogram={topic.pictogramUrl ?? undefined}
             image={topic.imageUrl ?? undefined}
             sub={topicSub(topic)}
             badge={pending(topic)}

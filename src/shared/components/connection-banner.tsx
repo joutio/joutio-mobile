@@ -1,4 +1,5 @@
-import Animated, { FadeIn, FadeOut } from 'react-native-reanimated'
+import Animated from 'react-native-reanimated'
+import { BANNER_ENTER, BANNER_EXIT } from './banner-motion'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Banner } from '@/design-system'
 import type { ConnectionBannerState } from '@/shared/hooks/use-connection-banner'
@@ -12,7 +13,7 @@ export function ConnectionBanner({ state, onRetry }: { state: ConnectionBannerSt
   const insets = useSafeAreaInsets()
   if (state === 'hidden') return null
   return (
-    <Animated.View entering={FadeIn} exiting={FadeOut}>
+    <Animated.View entering={BANNER_ENTER} exiting={BANNER_EXIT}>
       <Banner connection={state} onRetry={onRetry} safeTop={insets.top} />
     </Animated.View>
   )

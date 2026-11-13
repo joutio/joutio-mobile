@@ -1,3 +1,4 @@
+import { descriptionsDraft, topicDescription } from '@joutio/client-domain/authoring'
 import { useLocalSearchParams } from 'expo-router'
 import { router } from '@/shared/navigation/router'
 import { useState } from 'react'
@@ -23,6 +24,7 @@ import {
   ShieldCheckIcon,
   SquaresFourIcon,
   StickerIcon,
+  TextAlignLeftIcon,
   Text,
   toCategoryCode,
   tokens,
@@ -47,19 +49,20 @@ import {
   usePublishTopic,
   useTopicQuestions,
   useUpdateTopicCategory,
+  useUpdateTopicDescription,
   useUpdateTopicImage,
   useUpdateTopicPictogram,
   useUpdateTopicTitles,
   useUpdateTopicNames,
 } from '../hooks/use-authoring'
 import { FrozenNotice } from './frozen-notice'
-import { LocalizedFieldSheet, UniverseSheet, universeLabel } from './topic-sheets'
+import { DescriptionSheet, LocalizedFieldSheet, UniverseSheet, universeLabel } from './topic-sheets'
 import { useRefreshActive } from '@/shared/hooks/use-refresh-active'
 
 /** Vignette d'un sujet : paysage, comme `TopicCard`. */
 const THUMBNAIL_ASPECT: [number, number] = [16, 9]
 
-type TopicSheet = 'name' | 'universe' | 'image' | 'pictogram' | 'titles'
+type TopicSheet = 'name' | 'description' | 'universe' | 'image' | 'pictogram' | 'titles'
 
 export interface MyTopicRouteParams {
   id: string
@@ -90,6 +93,7 @@ export function MyTopicScreen() {
   const { frozen, published, locks } = useFrozen()
   const names = useUpdateTopicNames(topicId)
   const category = useUpdateTopicCategory(topicId)
+  const description = useUpdateTopicDescription(topicId)
   const image = useUpdateTopicImage(topicId)
   const pictogram = useUpdateTopicPictogram(topicId)
   const updateTitles = useUpdateTopicTitles(topicId)
@@ -265,6 +269,15 @@ export function MyTopicScreen() {
                   onPress={permissions?.canManage && !locked ? () => setSheet('name') : undefined}
                 />
                 <ListRow
+                  icon={TextAlignLeftIcon}
+                  label="Description"
+                  control={locked ? 'none' : 'chevron'}
+                  disabled={locked}
+                  value={topic && topicDescription(topic) ? 'Modifier' : 'Ajouter'}
+                  sub={(topic && topicDescription(topic)) ?? 'Facultative, sous le titre de la fiche'}
+                  onPress={permissions?.canManage && !locked ? () => setSheet('description') : undefined}
+                />
+                <ListRow
                   icon={SquaresFourIcon}
                   label="Univers"
                   control={locked ? 'none' : 'chevron'}
@@ -350,6 +363,18 @@ export function MyTopicScreen() {
           const changes = { ...(fr !== name ? { fr } : null), ...(en && en !== englishName ? { en } : null) }
           if (Object.keys(changes).length === 0) return close()
           names.mutate(changes, { onSuccess: close })
+        }}
+      />
+      <DescriptionSheet
+        open={sheet === 'description'}
+        initial={topic ? descriptionsDraft(topic) : { fr: '', en: '' }}
+        busy={description.isPending}
+        onClose={close}
+        onSave={(changes) => {
+          if (changes.length === 0) return close()
+          void Promise.all(changes.map((change) => description.mutateAsync(change)))
+            .then(close)
+            .catch(() => undefined)
         }}
       />
       <UniverseSheet

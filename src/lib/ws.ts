@@ -119,16 +119,34 @@ function deactivateIfIdle() {
   }, IDLE_GRACE_MS)
 }
 
+/**
+ * Arrière-plan : la connexion est coupée **de force** (2026-11-13). Une fermeture propre attend la réponse du serveur ;
+ * l'OS suspend l'app ou tue le socket avant, la promesse restait pendante et la reprise l'attendait — perte de
+ * connexion après un choix d'image (Android : le sélecteur est une autre activité) ou l'ouverture du navigateur.
+ */
+function suspendConnection() {
+  if (!client.active) return
+  deactivating = client.deactivate({ force: true }).finally(() => {
+    deactivating = null
+  })
+}
+
 AppState.addEventListener('change', (state) => {
   if (state === 'background') {
     suspended = true
-    if (client.active)
-      deactivating = client.deactivate().finally(() => {
-        deactivating = null
-      })
+    suspendConnection()
   } else if (state === 'active' && suspended) {
     suspended = false
-    if (active) activate()
+    if (!active) return
+    // Une fermeture encore pendante (socket mort pendant la suspension) est abandonnée : on repart tout de suite.
+    if (deactivating) {
+      void client.deactivate({ force: true }).finally(() => {
+        deactivating = null
+        if (active && !suspended && !client.active) client.activate()
+      })
+      return
+    }
+    activate()
   }
 })
 
@@ -139,7 +157,7 @@ AppState.addEventListener('change', (state) => {
 export async function reconnectStomp(): Promise<void> {
   if (!active || suspended) return
   if (client.connected) return
-  await (deactivating ?? client.deactivate())
+  await (deactivating ?? client.deactivate({ force: true }))
   if (active && !suspended && !client.active) client.activate()
 }
 

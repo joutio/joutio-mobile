@@ -16,6 +16,7 @@ import {
   RankPromotion,
   ResultHeader,
   Text,
+  StreakUnlock,
   TitleUnlock,
   tokens,
   UnlockSequence,
@@ -37,7 +38,8 @@ import { sortedRounds } from '@joutio/client-domain/game'
 import { isBonusRound, ROUNDS } from '@joutio/client-domain/game'
 import type { GameState } from '@joutio/client-domain/game'
 import type { GameResultView } from '@joutio/client-domain/game'
-import { useGameResult } from '../hooks/use-game'
+import { useGameResult, useStreakUnlock } from '../hooks/use-game'
+import { nextStreakMilestone } from '@joutio/client-domain/profile'
 import { ResultPages } from './result-pages'
 import { DuelReview, reviewRoundsOf } from './duel-review'
 import { ReportPlayerSheet } from './report-sheets'
@@ -45,19 +47,23 @@ import { useMyAvatar } from '@/features/avatar/lib/avatar-preview'
 import { usePlayerAvatar, usePlayerPremium, usePlayerRanked } from '@/features/social/hooks/use-player-avatar'
 import { usePlayerIdentity } from '@/features/me'
 
+/** Chat d'après-duel (écran mocké, le BFF n'a pas de messagerie) : masqué jusqu'à une prochaine itération (2026-11-13). */
+const RESULT_CHAT_ENABLED = false
+
 const ORDER = Object.keys(tokens.tier) as TierCode[]
 const masteryOf = (xp: number): MasteryTier => MASTERY_TIERS.reduce<MasteryTier>((best, tier) => (xp >= MASTERY_XP[tier] ? tier : best), 'FER')
 
-type Unlock = { kind: 'rank'; from: TierCode; tier: TierCode } | { kind: 'title'; tier: MasteryTier }
+type Unlock = { kind: 'streak'; days: number } | { kind: 'rank'; from: TierCode; tier: TierCode } | { kind: 'title'; tier: MasteryTier }
 
 /**
- * Déblocages de la partie, dans l'ordre de la spec (rang, puis titres) : déduits du bilan, faute d'événements
- * rattachés à la partie. Rang : palier d'Elo avant / après. Titres : chaque palier de maîtrise franchi. Les badges
- * attendent que le BFF les rattache à la partie (`resultat.md` § 8).
+ * Déblocages de la partie, dans l'ordre de la spec (série, rang, puis titres) : déduits du bilan, faute d'événements
+ * rattachés à la partie. Série : première partie classée du jour (2026-11-13). Rang : palier d'Elo avant / après.
+ * Titres : chaque palier de maîtrise franchi. Les badges attendent que le BFF les rattache à la partie
+ * (`resultat.md` § 8).
  */
-function unlocksOf(result: GameResultView): Unlock[] {
+function unlocksOf(result: GameResultView, streakDays: number | null): Unlock[] {
   if (result.botGame) return []
-  const unlocks: Unlock[] = []
+  const unlocks: Unlock[] = streakDays ? [{ kind: 'streak', days: streakDays }] : []
   const delta = result.eloDelta ?? 0
   // Rang provisoire : pas encore de palier acquis, donc pas de promotion à célébrer.
   if (result.rated && delta > 0 && !result.progression.provisional) {
@@ -170,7 +176,10 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
   // attend un rang acquis (profil non provisoire), comme le mien. Sinon, avatar sans cadre (lab), jamais le Fer.
   const opponentRanked = usePlayerRanked(opponentId, !bot)
   const opponentTier = data && data.opponentRated && data.opponentRating != null && opponentRanked ? tierOf(data.opponentRating) : undefined
-  const unlocks = celebrate && data && !sequenceDone ? unlocksOf(data) : []
+  // La série est lue avant d'ouvrir la séquence : son écran vient en premier et ne doit pas s'insérer en cours de route.
+  const streak = useStreakUnlock(gameId, userId, celebrate && !bot)
+  const streakPending = celebrate && !sequenceDone && !bot && !streak.isFetched
+  const unlocks = celebrate && data && !sequenceDone && !streakPending ? unlocksOf(data, streak.data ?? null) : []
 
   // ─── Séquence de déblocages : une page par déblocage, balayables ───
   if (unlocks.length > 0 && data) {
@@ -180,9 +189,16 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
       shareLink({
         kind: 'topic',
         id: resolvedTopicId,
-        message: current.kind === 'rank' ? `Je viens de passer ${tierLabel(current.tier)} sur Joutio !` : `Nouveau titre sur Joutio : ${topic}`,
+        message:
+          current.kind === 'streak'
+            ? `${current.days} jours de série sur Joutio !`
+            : current.kind === 'rank'
+              ? `Je viens de passer ${tierLabel(current.tier)} sur Joutio !`
+              : `Nouveau titre sur Joutio : ${topic}`,
       })
     const pages = unlocks.map((unlock) => {
+      if (unlock.kind === 'streak')
+        return <StreakUnlock key="streak" days={unlock.days} nextRule={nextStreakMilestone(unlock.days) === 7 ? 'débloque Micah.' : undefined} />
       if (unlock.kind === 'rank') {
         const nextTier = ORDER[ORDER.indexOf(unlock.tier) + 1]
         return (
@@ -238,17 +254,19 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
           <View style={{ flexDirection: 'row', gap: tokens.space[2] }}>
             {!bot && !cancelled && (
               <>
-                <IconButton
-                  icon={ChatCircleIcon}
-                  label={`Message à ${opponentName}`}
-                  badge="dot"
-                  onPress={() =>
-                    router.push({
-                      pathname: '/result/[gameId]/chat',
-                      params: { gameId, opponentName, recap: chatRecap },
-                    })
-                  }
-                />
+                {RESULT_CHAT_ENABLED && (
+                  <IconButton
+                    icon={ChatCircleIcon}
+                    label={`Message à ${opponentName}`}
+                    badge="dot"
+                    onPress={() =>
+                      router.push({
+                        pathname: '/result/[gameId]/chat',
+                        params: { gameId, opponentName, recap: chatRecap },
+                      })
+                    }
+                  />
+                )}
                 {opponentId && !data?.opponentDeleted && <IconButton icon={FlagIcon} label={`Signaler ${opponentName}`} onPress={() => setReportOpen(true)} />}
               </>
             )}

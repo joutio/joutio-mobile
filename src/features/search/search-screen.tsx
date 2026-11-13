@@ -131,6 +131,7 @@ export function SearchScreen({ stack }: { stack: SearchStack }) {
                   key={item.id}
                   title={item.names ? topicName(item.names) : item.label}
                   category={toCategoryCode(item.category ?? undefined)}
+                  pictogram={item.pictogramUrl ?? undefined}
                   image={item.imageUrl ?? undefined}
                   sub={item.subtitle ?? undefined}
                   onPress={() => openItem(item)}

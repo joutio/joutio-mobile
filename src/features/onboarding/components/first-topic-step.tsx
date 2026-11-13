@@ -102,6 +102,7 @@ export function FirstTopicStep() {
                     key={topic.topicId}
                     title={topicName(topic.names)}
                     category={toCategoryCode(topic.category)}
+                    pictogram={topic.pictogramUrl ?? undefined}
                     image={imageOf(topic)}
                     control="radio"
                     on={topic.topicId === picked.topicId}

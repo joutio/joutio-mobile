@@ -477,3 +477,13 @@ Décision utilisateur : supprimer l’ancien dépôt GitHub `joutio/joutio-mobil
 - **Feuille en liste virtualisée** : `MobileSheet.renderList` rend une `FlashList` dont le défilement reste l'enfant
   direct de TrueSheet (`scrollableRef`) ; `stickyHeader` passe sous l'en-tête. Feuille Pays : pages de 30.
 - **Avatar de base** : fond `raised` relevé vers le texte + filet `border`, lisible dans les lignes des feuilles.
+- **Lot du 2026-11-13 (soir)** : résultat non immersif (`useToastSuppression(!finished)` dans le duel : toasts et
+  `RematchHost` y réapparaissent) ; chat d'après-duel masqué (`RESULT_CHAT_ENABLED`) ; **haptique de bord**
+  (`edge-haptics.ts`, `test:edge-haptics`) ; **champ entier au-dessus du clavier** (`field-reveal.ts` : `Screen` fournit
+  `reveal`, `Field` s'en sert au focus et quand il grandit) ; Éditer le profil : `ListRow` « Modifier l'avatar » ;
+  Réglages : « Affichage et langue » sans valeur ; Accueil : « Fraîchement mis à jour », rails sans « Tout voir » ;
+  `TopicRow` au visuel de `TopicTile` (pictogramme, couleur d'univers) ; description **localisée** du sujet (atelier,
+  fiche) ; `StreakUnlock` en tête de la séquence (`useStreakUnlock`, `streakDayUnlocked`) ; bandes du haut animées
+  (`banner-motion.ts`) ; STOMP coupé **de force** en arrière-plan (perte de connexion après un upload ou le navigateur) ;
+  avatar provisionnel sans désaturation. À valider sur appareil : décalage du pied d'une feuille au clavier et
+  pictogramme Cinéma qui déborde (non reproduits). Internationalisation du mobile : lot à part.

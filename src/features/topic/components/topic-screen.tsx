@@ -1,3 +1,4 @@
+import { topicDescription } from '@joutio/client-domain/authoring'
 import { useShare } from '@/features/share'
 import { useQueryClient } from '@tanstack/react-query'
 import { useLocalSearchParams } from 'expo-router'
@@ -113,6 +114,8 @@ export function TopicScreen({ stack = 'home' }: { stack?: TopicStack }) {
 
   const data = overview.data
   const topic = data?.topic
+  // Description dans la langue du joueur, sinon la française (2026-11-13).
+  const description = topic ? topicDescription(topic, me.data?.language ?? 'fr') : null
   const name = topic ? topicName(topic.names) : (params.name ?? '')
   const category = toCategoryCode(topic?.category ?? params.category)
   const image = topic?.bannerUrl ?? topic?.imageUrl ?? params.image ?? undefined
@@ -198,6 +201,8 @@ export function TopicScreen({ stack = 'home' }: { stack?: TopicStack }) {
         )}
         intro={
           <View style={{ gap: tokens.space[4] }}>
+            {/* Description du sujet, sous le titre de l'image (2026-11-13), saisie dans l'atelier. */}
+            {!!description && <Text color="muted">{description}</Text>}
             <View
               onLayout={(event) => setActionsHeight(event.nativeEvent.layout.y + event.nativeEvent.layout.height)}
               style={{ flexDirection: 'row', gap: tokens.space[3] }}

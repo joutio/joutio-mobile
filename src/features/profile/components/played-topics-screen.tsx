@@ -74,6 +74,7 @@ export function PlayedTopicsScreen() {
                 key={topic.topicId}
                 title={name}
                 category={toCategoryCode(undefined)}
+                pictogram={topic.pictogramUrl ?? undefined}
                 image={topic.imageUrl ?? undefined}
                 sub={`${gamesLabel(topic.games)} · ${tierLabel(masteryOf(topic.xp))} · ${formatNumber(topic.xp)} XP`}
                 onPress={() => openTopic('profile', { topicId: topic.topicId, names: topic.names, bannerUrl: null, imageUrl: topic.imageUrl, category: null })}

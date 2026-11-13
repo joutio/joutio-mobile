@@ -7,14 +7,12 @@ import { useState } from 'react'
 import { View } from 'react-native'
 import {
   Avatar,
-  Button,
   Field,
   GlobeHemisphereWestIcon,
   ImagePicker,
   ListGroup,
   ListRow,
   MobileTopBar,
-  PencilSimpleIcon,
   Screen,
   showDialog,
   toast,
@@ -138,12 +136,15 @@ export function EditProfileScreen() {
         onPick={() => void pickBanner()}
         onRemove={() => setDraft({ ...draft, bannerUrl: null })}
       />
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: tokens.space[3] }}>
-        <Avatar name={draft.pseudonym || 'Moi'} src={avatar} size="xl" decorative />
-        <Button variant="tinted" size="S" icon={PencilSimpleIcon} onPress={() => router.push('/avatar')}>
-          Modifier l'avatar
-        </Button>
-      </View>
+      <ListGroup surface="surface">
+        <ListRow
+          leading={<Avatar name={draft.pseudonym || 'Moi'} src={avatar} size="md" decorative />}
+          label="Modifier l'avatar"
+          control="chevron"
+          onPress={() => router.push('/avatar')}
+          last
+        />
+      </ListGroup>
       <View style={{ gap: tokens.space[4] }}>
         <Field
           label="Pseudonyme"

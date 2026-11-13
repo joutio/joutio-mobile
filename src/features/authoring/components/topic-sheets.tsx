@@ -1,3 +1,4 @@
+import { MAX_DESCRIPTION } from '@joutio/client-domain/authoring'
 import { useEffect, useState } from 'react'
 import { View } from 'react-native'
 import { Button, Field, ListGroup, ListRow, MobileSheet, RadioGroup, Segmented, Text, tokens, type CategoryCode } from '@/design-system'
@@ -162,6 +163,65 @@ export function LocalizedFieldSheet({
           value={value}
           maxLength={max}
           counter={`${value.length} / ${max}`}
+          onChangeText={(next) => setDraft({ ...draft, [language]: next })}
+        />
+      </View>
+    </MobileSheet>
+  )
+}
+
+/**
+ * Description du sujet (2026-11-13) : quelques phrases sous le titre de la fiche, une par langue comme le nom.
+ * Facultative ; vide, celle de la langue est effacée. Seules les langues modifiées sont envoyées.
+ */
+export function DescriptionSheet({
+  open,
+  initial,
+  busy,
+  onClose,
+  onSave,
+}: {
+  open: boolean
+  initial: Localized
+  busy?: boolean
+  onClose: () => void
+  onSave: (changes: { language: Language; description: string | null }[]) => void
+}) {
+  const [language, setLanguage] = useState<Language>('fr')
+  const [draft, setDraft] = useState<Localized>(initial)
+  useEffect(() => {
+    if (!open) return
+    setLanguage('fr')
+    setDraft(initial)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open])
+  const value = draft[language]
+  const changes = (['fr', 'en'] as const)
+    .filter((code) => draft[code].trim() !== initial[code].trim())
+    .map((code) => ({ language: code, description: draft[code].trim() === '' ? null : draft[code].trim() }))
+  return (
+    <MobileSheet
+      open={open}
+      onClose={onClose}
+      title="Description"
+      subtitle="Facultative, affichée sous le titre de la fiche"
+      footer={
+        <Button full loading={busy} disabled={changes.length === 0} onPress={() => onSave(changes)}>
+          Enregistrer
+        </Button>
+      }
+    >
+      <View style={{ gap: tokens.space[4] }}>
+        <Segmented<Language> label="Langue" options={LANGUAGES} value={language} onChange={setLanguage} />
+        <Field
+          key={language}
+          label={language === 'fr' ? 'Description' : 'Description en anglais'}
+          placeholder={language === 'fr' ? 'Ce que les joueurs vont trouver dans ce sujet' : 'What players will find in this topic'}
+          hint={language === 'en' ? 'Facultative. Sans elle, les joueurs anglophones lisent la française.' : undefined}
+          multiline
+          value={value}
+          maxLength={MAX_DESCRIPTION}
+          counter={`${value.length} / ${MAX_DESCRIPTION}`}
           onChangeText={(next) => setDraft({ ...draft, [language]: next })}
         />
       </View>

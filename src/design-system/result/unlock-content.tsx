@@ -23,12 +23,13 @@ const bezier = (name: 'base' | 'celebration') => {
  */
 export const UnlockActiveContext = createContext(true)
 
-export type HeroMotion = 'celebrate' | 'unroll' | 'drop'
+export type HeroMotion = 'celebrate' | 'unroll' | 'drop' | 'ignite'
 
 /**
  * Arrivée du héros : `jo-celebrate` (fondu et échelle 0,7 → 1, 700 ms, easing `celebration`) ou `jo-unroll` (le
  * ruban se déroule depuis le centre, `clip-path: inset(0 50%)` → `inset(0)`, 500 ms, easing `base`) ou `jo-drop` (le
- * badge tombe de 96 px en fondu et ressort, 700 ms, easing `celebration`).
+ * badge tombe de 96 px en fondu et ressort, 700 ms, easing `celebration`) ou `jo-ignite` (la flamme s'allume :
+ * échelle 0,4 → 1 depuis le bas en remontant de 24 px, fondu sur les 60 premiers %, 700 ms, easing `celebration`).
  */
 function Hero({ motion, children }: { motion: HeroMotion; children: ReactNode }) {
   const reduced = useReducedMotion()
@@ -46,11 +47,16 @@ function Hero({ motion, children }: { motion: HeroMotion; children: ReactNode })
 
   const celebrate = useAnimatedStyle(() => ({ opacity: Math.min(1, progress.value), transform: [{ scale: 0.7 + 0.3 * progress.value }] }))
   const drop = useAnimatedStyle(() => ({ opacity: Math.min(1, progress.value), transform: [{ translateY: -96 * (1 - progress.value) }] }))
+  const ignite = useAnimatedStyle(() => ({
+    opacity: Math.min(1, progress.value / 0.6),
+    transform: [{ translateY: 24 * (1 - progress.value) }, { scale: 0.4 + 0.6 * progress.value }],
+  }))
   const unrollMask = useAnimatedStyle(() => ({ transform: [{ scaleX: progress.value }] }))
   const unrollFade = useAnimatedStyle(() => ({ opacity: progress.value }))
 
   if (motion === 'celebrate') return <Animated.View style={celebrate}>{children}</Animated.View>
   if (motion === 'drop') return <Animated.View style={drop}>{children}</Animated.View>
+  if (motion === 'ignite') return <Animated.View style={[ignite, { transformOrigin: '50% 80%' }]}>{children}</Animated.View>
   return (
     <MaskedView maskElement={<Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: '#000' }, unrollMask]} />}>
       <Animated.View style={unrollFade}>{children}</Animated.View>
@@ -58,8 +64,17 @@ function Hero({ motion, children }: { motion: HeroMotion; children: ReactNode })
   )
 }
 
+/** Couleur d'un déblocage sans rang (série) : halo, fil et mot d'appel. */
+export interface UnlockAccent {
+  glow: string
+  ink: string
+  label: string
+}
+
 export interface UnlockContentProps {
-  tier: TierCode
+  /** Rang du déblocage ; sans rang, `accent` donne la couleur et le bout du fil. */
+  tier?: TierCode
+  accent?: UnlockAccent
   /** Devant le fil : avatar ou icône de famille. */
   crumbLead?: ReactNode
   crumbFrom: string
@@ -70,14 +85,16 @@ export interface UnlockContentProps {
   text: string
   /** Action secondaire ou son état, sous la phrase. */
   extra?: ReactNode
-  next?: { tier: TierCode; preview: ReactNode; rule: string }
+  /** Palier suivant : `tier` (son nom en couleur), ou `label` libre pour un déblocage sans rang. */
+  next?: { tier?: TierCode; label?: string; preview: ReactNode; rule: string }
 }
 
 /** Contenu commun d'un déblocage : halo du rang, fil, héros, titre, texte, action et palier suivant. */
-export function UnlockContent({ tier, crumbLead, crumbFrom, hero, heroMotion, eyebrow, headline, text, extra, next }: UnlockContentProps) {
+export function UnlockContent({ tier, accent, crumbLead, crumbFrom, hero, heroMotion, eyebrow, headline, text, extra, next }: UnlockContentProps) {
   const { colors, radius } = useTheme()
-  const glow = tokens.tier[tier].hex
-  const ink = mix(glow, colors.text, 0.6)
+  const glow = tier ? tokens.tier[tier].hex : (accent?.glow ?? colors.accent)
+  const ink = tier ? mix(glow, colors.text, 0.6) : (accent?.ink ?? colors.accentInk)
+  const crumbTo = tier ? tokens.tier[tier].label : (accent?.label ?? '')
   return (
     <View style={{ flexGrow: 1, alignItems: 'center', gap: tokens.space[4], paddingHorizontal: tokens.space[6], paddingTop: tokens.space[5] }}>
       <View
@@ -99,7 +116,7 @@ export function UnlockContent({ tier, crumbLead, crumbFrom, hero, heroMotion, ey
         </Text>
         <ArrowRightIcon size={14} color={colors.muted} />
         <Text variant="caption" weight="600" color={ink}>
-          {tokens.tier[tier].label}
+          {crumbTo}
         </Text>
       </View>
       <View style={{ height: 236, alignItems: 'center', justifyContent: 'center' }}>
@@ -132,8 +149,8 @@ export function UnlockContent({ tier, crumbLead, crumbFrom, hero, heroMotion, ey
           <View style={{ width: 96, height: 56, alignItems: 'center', justifyContent: 'center' }}>{next.preview}</View>
           <Text variant="caption" color="muted" style={{ flex: 1 }}>
             Prochain :{' '}
-            <Text variant="caption" weight="600" color={mix(tokens.tier[next.tier].hex, colors.text, 0.6)}>
-              {tokens.tier[next.tier].label}
+            <Text variant="caption" weight="600" color={next.tier ? mix(tokens.tier[next.tier].hex, colors.text, 0.6) : ink}>
+              {next.tier ? tokens.tier[next.tier].label : next.label}
             </Text>{' '}
             {next.rule}
           </Text>

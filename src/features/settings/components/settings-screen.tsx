@@ -12,14 +12,12 @@ import {
   showDialog,
   SignOutIcon,
   SquaresFourIcon,
-  useThemeStore,
   UserCircleIcon,
 } from '@/design-system'
 import { useLogout } from '@/features/auth'
 import { useCatalogAccess } from '@/features/auth/hooks/use-catalog-access'
 import { useMe } from '@/features/me'
 import { usePremiumSheet } from '@/features/premium/premium-store'
-import { APPEARANCE, LANGUAGES } from '../lib/settings-options'
 import { Group, openSettingsPage, SettingsFrame, useSettingsOrigin } from './settings-frame'
 
 /**
@@ -32,10 +30,8 @@ export function SettingsScreen() {
   const catalogAccess = useCatalogAccess()
   const data = useMe(true).data
   const logout = useLogout()
-  const appearance = useThemeStore((state) => state.preference)
   const showPremium = usePremiumSheet((state) => state.show)
   const open = (page: Parameters<typeof openSettingsPage>[1]) => () => openSettingsPage(origin, page)
-  const display = `${APPEARANCE.find((option) => option.value === appearance)?.label ?? 'Système'} · ${LANGUAGES.find((option) => option.value === (data?.language ?? 'fr'))?.label}`
 
   const confirmLogout = () =>
     showDialog({
@@ -63,7 +59,7 @@ export function SettingsScreen() {
         <ListRow icon={ShieldCheckIcon} label="Confidentialité et sécurité" control="chevron" onPress={open('privacy')} />
         <ListRow icon={BellIcon} label="Notifications" control="chevron" onPress={open('notifications')} />
         <ListRow icon={GameControllerIcon} label="Jeu" sub="Duel, entraînement, centres d'intérêt" control="chevron" onPress={open('game')} />
-        <ListRow icon={PaletteIcon} label="Affichage et langue" value={display} control="chevron" onPress={open('display')} last />
+        <ListRow icon={PaletteIcon} label="Affichage et langue" control="chevron" onPress={open('display')} last />
       </Group>
       <Group>
         <ListRow icon={GiftIcon} label="Inviter des amis" sub="Ton lien de parrainage" control="chevron" onPress={open('invite')} last />

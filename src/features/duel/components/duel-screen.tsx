@@ -92,7 +92,6 @@ export function DuelScreen() {
 function DuelScreenContent() {
   const params = useLocalSearchParams<DuelRouteParams>()
   const gameId = params.gameId
-  useToastSuppression()
   useServerClock()
   const { colors } = useTheme()
   const insets = useSafeAreaInsets()
@@ -124,6 +123,8 @@ function DuelScreenContent() {
   // Fin de partie : la scène décide (`sceneAt`). `GAME_ENDED` arrive avec la clôture de la dernière manche, dont la
   // révélation reste affichée `RESULT_DELAY_MS` pour que le joueur voie son verdict ; abandon ou annulation : tout de suite.
   const finished = scene.kind === 'result'
+  // Le résultat n'est plus immersif : toasts et proposition de revanche y sont de nouveau affichés.
+  useToastSuppression(!finished)
 
   // Rattrapage : une transition serveur attendue tarde, ou l'écho de ma réponse : on rejoue l'historique.
   const overdue = 'overdue' in scene && scene.overdue

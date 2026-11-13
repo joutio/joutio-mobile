@@ -1,5 +1,6 @@
+import { EdgeHapticsClaimed, useEdgeHaptics } from './edge-haptics'
 import { createContext, useContext, type ComponentType } from 'react'
-import type { StyleProp, ViewStyle } from 'react-native'
+import type { ScrollViewProps, StyleProp, ViewStyle } from 'react-native'
 import { useTabBarInset, withBottomInset } from './tab-bar-inset'
 
 /**
@@ -18,7 +19,13 @@ export function withActivePageScrollsToTop<P extends { scrollsToTop?: boolean }>
     const inset = useTabBarInset()
     // Padding, pas `contentInset` : la bibliothèque des onglets repliables gère elle-même l'inset bas de ses pages.
     const contentContainerStyle = withBottomInset((props as { contentContainerStyle?: StyleProp<ViewStyle> }).contentContainerStyle, inset)
-    return <List {...props} contentContainerStyle={contentContainerStyle} scrollsToTop={active && props.scrollsToTop !== false} />
+    // Haut et bas de la page active : retour haptique, posé ici une fois pour les défilements internes.
+    const handlers = useEdgeHaptics(props as ScrollViewProps, active)
+    return (
+      <EdgeHapticsClaimed.Provider value>
+        <List {...props} {...handlers} contentContainerStyle={contentContainerStyle} scrollsToTop={active && props.scrollsToTop !== false} />
+      </EdgeHapticsClaimed.Provider>
+    )
   }
   Wrapped.displayName = `ActivePage(${List.displayName ?? List.name ?? 'List'})`
   return Wrapped as ComponentType<P>

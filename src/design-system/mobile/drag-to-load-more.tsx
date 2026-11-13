@@ -1,3 +1,4 @@
+import { useEdgeHaptics } from './edge-haptics'
 import { ScrollEdgeContext } from './scroll-edge'
 import { haptic } from '../haptics'
 import { requireNativeViewManager } from 'expo-modules-core'
@@ -141,20 +142,17 @@ export function LoadMoreScrollView({ ref, ...props }: ScrollViewProps & { ref?: 
     },
     [ref, register],
   )
-  return (
-    <ScrollView
-      {...props}
-      ref={setRef}
-      scrollEventThrottle={props.scrollEventThrottle ?? 16}
-      onScroll={
-        edge
-          ? (event) => {
-              edge.value = event.nativeEvent.contentOffset.y + event.nativeEvent.contentInset.top
-              props.onScroll?.(event)
-            }
-          : props.onScroll
-      }
-    />
-  )
+  const handlers = useEdgeHaptics({
+    onScroll: edge
+      ? (event) => {
+          edge.value = event.nativeEvent.contentOffset.y + event.nativeEvent.contentInset.top
+          props.onScroll?.(event)
+        }
+      : props.onScroll,
+    onScrollBeginDrag: props.onScrollBeginDrag,
+    onScrollEndDrag: props.onScrollEndDrag,
+    onMomentumScrollEnd: props.onMomentumScrollEnd,
+  })
+  return <ScrollView {...props} ref={setRef} scrollEventThrottle={props.scrollEventThrottle ?? 16} {...handlers} />
 }
 export const TabLoadMoreScrollView = withActivePageScrollsToTop(createTabList(LoadMoreScrollView))

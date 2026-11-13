@@ -1,3 +1,5 @@
+import Animated from 'react-native-reanimated'
+import { BANNER_ENTER, BANNER_EXIT } from '@/shared/components/banner-motion'
 import { usePathname } from 'expo-router'
 import { router } from '@/shared/navigation/router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -19,19 +21,21 @@ export function ActiveGameBanner({ hidden }: { hidden: boolean }) {
   const insets = useSafeAreaInsets()
   if (!game || hidden) return null
   return (
-    <Banner
-      safeTop={insets.top}
-      tone="live"
-      title="Partie en cours"
-      message={game.topicName}
-      action={{
-        label: 'Rejoindre',
-        onPress: () =>
-          router.push({
-            pathname: '/duel/[gameId]',
-            params: { gameId: game.gameId, topicId: game.topicId, topicName: game.topicName, category: game.category },
-          }),
-      }}
-    />
+    <Animated.View entering={BANNER_ENTER} exiting={BANNER_EXIT}>
+      <Banner
+        safeTop={insets.top}
+        tone="live"
+        title="Partie en cours"
+        message={game.topicName}
+        action={{
+          label: 'Rejoindre',
+          onPress: () =>
+            router.push({
+              pathname: '/duel/[gameId]',
+              params: { gameId: game.gameId, topicId: game.topicId, topicName: game.topicName, category: game.category },
+            }),
+        }}
+      />
+    </Animated.View>
   )
 }

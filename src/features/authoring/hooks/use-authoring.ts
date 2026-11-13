@@ -1,3 +1,4 @@
+import { descriptionsDraft } from '@joutio/client-domain/authoring'
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { toast, type CategoryCode } from '@/design-system'
 import { useMe } from '@/features/me'
@@ -282,6 +283,32 @@ export function useUpdateTopicPictogram(topicId: string) {
       context?.rollback()
       if (limitHit(client, error)) return
       toast.error('Le pictogramme n’a pas pu être enregistré', retryHint)
+    },
+  })
+}
+
+/**
+ * Description dans une langue : l'atelier, les listes et la fiche sujet (sous le titre) changent tout de suite. Le
+ * champ `description` historique suit la française.
+ */
+export function useUpdateTopicDescription(topicId: string) {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: ({ description, language }: { description: string | null; language: 'fr' | 'en' }) =>
+      authoringService.updateDescription(topicId, description, language),
+    onMutate: ({ description, language }: { description: string | null; language: 'fr' | 'en' }) =>
+      optimisticUpdate(client, [['authoring'], ['topic', topicId], ['topics'], queryKeys.home()], () =>
+        patchTopic(client, topicId, (topic) => {
+          const descriptions = { ...descriptionsDraft(topic), [language]: description ?? '' }
+          const kept = Object.fromEntries(Object.entries(descriptions).filter(([, value]) => value !== ''))
+          return { ...topic, descriptions: kept, description: kept.fr ?? null }
+        }),
+      ),
+    onSuccess: () => toast.success('Description enregistrée'),
+    onError: (error, _variables, context) => {
+      context?.rollback()
+      if (limitHit(client, error)) return
+      toast.error("La description n'a pas pu être enregistrée", retryHint)
     },
   })
 }

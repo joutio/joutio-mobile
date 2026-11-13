@@ -6,6 +6,7 @@ import { tokens } from '../tokens.generated'
 import { PressableScale } from './pressable-scale'
 import { inputStyle, MAX_FONT_SCALE, Text } from './text'
 import { hairlineRing } from '../theme/hairline'
+import { useFieldReveal } from '../mobile/field-reveal'
 
 export interface FieldProps extends Omit<TextInputProps, 'style' | 'editable'> {
   label?: string
@@ -49,13 +50,14 @@ export function Field({
   const input = useRef<TextInputInstance>(null)
   const [focused, setFocused] = useState(false)
   const nativeId = useId()
+  const reveal = useFieldReveal()
   useAnnounce(error)
 
   const ring = error ? `inset 0 0 0 2px ${colors.wrong}` : focused || forceFocus ? `inset 0 0 0 2px ${colors.accent}` : hairlineRing(colors.border)
   const message = error ?? hint
 
   return (
-    <View style={[{ alignSelf: 'stretch', gap: tokens.space[3], opacity: disabled ? 0.4 : 1 }, style]}>
+    <View ref={reveal.container} collapsable={false} style={[{ alignSelf: 'stretch', gap: tokens.space[3], opacity: disabled ? 0.4 : 1 }, style]}>
       {(label || counter) && (
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: tokens.space[3] }}>
           <Text variant="callout" nativeID={`${nativeId}-label`}>
@@ -97,11 +99,17 @@ export function Field({
           cursorColor={colors.accent}
           onFocus={(event) => {
             setFocused(true)
+            reveal.onFocus()
             onFocus?.(event)
           }}
           onBlur={(event) => {
             setFocused(false)
+            reveal.onBlur()
             onBlur?.(event)
+          }}
+          onContentSizeChange={(event) => {
+            if (multiline) reveal.onGrow()
+            props.onContentSizeChange?.(event)
           }}
           maxFontSizeMultiplier={MAX_FONT_SCALE}
           style={[inputStyle('body', multiline), { flex: 1, minWidth: 0, paddingHorizontal: 0, color: colors.text }, multiline && { minHeight: 72 }]}
