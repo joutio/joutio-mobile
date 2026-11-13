@@ -7,6 +7,7 @@ import { optimisticUpdate } from '@/lib/optimistic-cache'
 import { queryKeys } from '@/lib/query-keys'
 import type {
   ApiError,
+  HomeView,
   MeView,
   PlayerProfileView,
   PageResponse,
@@ -79,8 +80,18 @@ export function useUpdateMe<K extends MeField>(field: K) {
   return useMutation({
     mutationFn: (value: MeView[K]) => SAVERS[field](userId, value as never),
     onMutate: (value) =>
-      optimisticUpdate(client, [queryKeys.me(), queryKeys.profiles.profile(userId), ['contacts'], queryKeys.challenges()], () => {
+      optimisticUpdate(client, [queryKeys.me(), queryKeys.profiles.profile(userId), ['contacts'], queryKeys.challenges(), queryKeys.home()], () => {
         client.setQueryData<MeView>(queryKeys.me(), (me) => (me ? { ...me, [field]: value } : me))
+        // Rail « Selon tes centres d'intérêt » de l'Accueil : un univers retiré sort aussitôt de la sélection. Les sujets
+        // d'un univers ajouté sont calculés par le BFF et arrivent avec la relecture suivante de l'Accueil.
+        if (field === 'interests') {
+          const interests = (value as string[] | null) ?? []
+          client.setQueryData<HomeView>(queryKeys.home(), (home) =>
+            home
+              ? { ...home, recommendedTopics: (home.recommendedTopics ?? []).filter((topic) => topic.category !== null && interests.includes(topic.category)) }
+              : home,
+          )
+        }
         if (field !== 'interests')
           client.setQueryData<PlayerProfileView>(queryKeys.profiles.profile(userId), (profile) => (profile ? { ...profile, [field]: value } : profile))
         if (field === 'pseudonym' || field === 'avatarOptions') {

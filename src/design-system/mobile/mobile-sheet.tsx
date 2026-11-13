@@ -1,6 +1,6 @@
 import { TrueSheet } from '@lodev09/react-native-true-sheet'
-import { Fragment, useEffect, useRef, type ReactNode, type RefObject } from 'react'
-import { Platform, useWindowDimensions, View, type ScrollViewInstance } from 'react-native'
+import { Fragment, useEffect, useMemo, useRef, type ReactElement, type ReactNode, type Ref, type RefObject } from 'react'
+import { Platform, ScrollView, useWindowDimensions, View, type ScrollViewInstance, type ScrollViewProps } from 'react-native'
 import Animated, { useAnimatedScrollHandler, useSharedValue } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useModalFocus, type ViewRef } from '../a11y'
@@ -10,6 +10,20 @@ import { DragToLoadMore, LoadMoreScrollView } from './drag-to-load-more'
 import type { LoadMoreOptions } from './screen'
 import { ScrollToTopPill } from './scroll-to-top-pill'
 import { SheetHeader } from './sheet-header'
+
+/**
+ * Ce que la feuille fournit à une liste virtualisée (`renderList`) : la poser telle quelle sur la `FlashList`
+ * (`renderScrollComponent`, `contentContainerStyle`, `onScroll`). Le défilement rendu reste l'enfant direct de la
+ * feuille et son instance native est celle que TrueSheet suit (`scrollableRef`).
+ */
+export interface SheetListProps {
+  renderScrollComponent: (props: ScrollViewProps & { ref?: Ref<ScrollViewInstance | null> }) => ReactElement
+  contentContainerStyle: { paddingHorizontal: number; paddingBottom: number }
+  onScroll: NonNullable<ScrollViewProps['onScroll']>
+  showsVerticalScrollIndicator: false
+  keyboardShouldPersistTaps: 'handled'
+  keyboardDismissMode: 'on-drag'
+}
 
 /** Hauteur maximale d'une feuille ajustée à son contenu, et hauteur fixe d'une grande feuille. */
 const MAX_HEIGHT = 0.8
@@ -34,6 +48,12 @@ export interface MobileSheetProps {
    * feuille se ferme vers le bas : les deux gestes ne se croisent pas.
    */
   loadMore?: LoadMoreOptions
+  /**
+   * Longue liste (2026-11-13, feuille Pays) : la feuille rend une liste virtualisée (`FlashList`) au lieu de
+   * `children`. `stickyHeader` passe alors sous l'en-tête, hors du défilement. À combiner avec `loadMore` pour
+   * une pagination locale. Réservé aux feuilles `tall`.
+   */
+  renderList?: (list: SheetListProps) => ReactElement
   /** Rend le focus à l'élément qui a ouvert la feuille. */
   returnFocusTo?: RefObject<ViewRef | null>
   /** Feuille effectivement présentée : permet de monter son contenu lourd après l'ouverture native. */
@@ -43,7 +63,7 @@ export interface MobileSheetProps {
    * la fermeture — présentés depuis une feuille qui se retire, ils plantent sur iOS.
    */
   onDismissed?: () => void
-  children: ReactNode
+  children?: ReactNode
 }
 
 /** Feuille flottante (iOS 26) : détachée du bas de l'écran, sans safe area basse à réserver. */
@@ -70,6 +90,7 @@ export function MobileSheet({
   footer,
   stickyHeader,
   loadMore,
+  renderList,
   returnFocusTo,
   onDidPresent,
   onDismissed,
@@ -121,6 +142,39 @@ export function MobileSheet({
     <Fragment key="content">{children}</Fragment>,
   ]
 
+  // Défilement d'une liste virtualisée : le même que sans liste (chargement natif ou simple), dont l'instance est
+  // aussi confiée à TrueSheet. Identité stable : FlashList remonterait son défilement à chaque rendu.
+  const hasLoadMore = Boolean(loadMore)
+  const ListScroll = useMemo(() => {
+    const Scroll = hasLoadMore ? LoadMoreScrollView : ScrollView
+    function SheetListScroll({ ref, ...props }: ScrollViewProps & { ref?: Ref<ScrollViewInstance | null> }) {
+      return (
+        <Scroll
+          {...props}
+          nestedScrollEnabled
+          style={[{ flexGrow: 0, flexShrink: 1 }, props.style]}
+          ref={(instance: ScrollViewInstance | null) => {
+            scroller.current = instance
+            if (typeof ref === 'function') ref(instance)
+            else if (ref) (ref as { current: ScrollViewInstance | null }).current = instance
+          }}
+        />
+      )
+    }
+    return SheetListScroll
+  }, [hasLoadMore])
+  const list = renderList?.({
+    renderScrollComponent: ListScroll,
+    contentContainerStyle: scrollProps.contentContainerStyle,
+    onScroll: (event) => {
+      offset.value = event.nativeEvent.contentOffset.y
+    },
+    showsVerticalScrollIndicator: false,
+    keyboardShouldPersistTaps: 'handled',
+    keyboardDismissMode: 'on-drag',
+  })
+  const sheetHeader = <SheetHeader title={title} subtitle={subtitle} onBack={onBack} action={action} onClose={onClose} titleRef={titleRef} handle={false} />
+
   return (
     <TrueSheet
       ref={sheet}
@@ -139,7 +193,16 @@ export function MobileSheet({
       // Contenu plus haut que la feuille (grand texte, petit écran) : la vue de contenu et le défilement rétrécissent à
       // la hauteur plafonnée, sinon ils gardent leur hauteur naturelle, ne défilent pas et poussent le pied hors écran.
       style={{ flexShrink: 1, minHeight: 0 }}
-      header={<SheetHeader title={title} subtitle={subtitle} onBack={onBack} action={action} onClose={onClose} titleRef={titleRef} handle={false} />}
+      header={
+        list && stickyHeader ? (
+          <View style={{ backgroundColor: colors.surface }}>
+            {sheetHeader}
+            <View style={{ paddingHorizontal: tokens.space[5], paddingBottom: tokens.space[4] }}>{stickyHeader}</View>
+          </View>
+        ) : (
+          sheetHeader
+        )
+      }
       // Actions dans leur propre zone, collée au bas de la feuille, comme l'en-tête en haut. Pied `absolute` (2026-11-06) :
       // un pied `relative` reste derrière le clavier, le bouton d'enregistrement disparaissait pendant la saisie ; en
       // `absolute`, il remonte au-dessus du clavier, et le défilement réserve sa hauteur (`contentInsetAdjustment`
@@ -179,7 +242,13 @@ export function MobileSheet({
         onDismissed?.()
       }}
     >
-      {loadMore ? (
+      {list && loadMore ? (
+        <DragToLoadMore resetKey={loadMore.resetKey} enabled={loadMore.enabled} loading={loadMore.loading} onLoadMore={loadMore.onLoadMore} overlay>
+          {list}
+        </DragToLoadMore>
+      ) : list ? (
+        list
+      ) : loadMore ? (
         <DragToLoadMore
           resetKey={loadMore.resetKey}
           enabled={loadMore.enabled}

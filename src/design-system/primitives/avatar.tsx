@@ -2,6 +2,8 @@ import { SvgXml } from 'react-native-svg'
 import { Image } from 'expo-image'
 import { View, type StyleProp, type ViewStyle } from 'react-native'
 import { RankFrame } from '../brand/rank-frame'
+import { mix } from '../theme/color'
+import { HAIRLINE } from '../theme/hairline'
 import { LockSimpleIcon } from '../icons'
 import { useTheme } from '../theme/theme-provider'
 import { tokens, type TierCode } from '../tokens.generated'
@@ -79,7 +81,11 @@ export function Avatar({ name, src, size = 'md', tier, provisional = false, lock
         alignItems: 'center',
         justifyContent: 'center',
         borderRadius: radius.full,
-        backgroundColor: colors.raised,
+        // Avatar de base lisible sur toute surface (2026-11-13) : `raised` seul se fondait dans les lignes des
+        // feuilles (`ListGroup` en `raised`). Fond relevé vers le texte + filet `border`.
+        backgroundColor: mix(colors.raised, colors.text, 0.88),
+        borderWidth: HAIRLINE,
+        borderColor: colors.border,
         opacity: locked ? 0.55 : 1,
       }}
     >

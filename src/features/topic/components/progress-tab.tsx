@@ -1,8 +1,9 @@
 import { ListGroup, TabScrollView, TitleRow, tokens } from '@/design-system'
 import type { TopicOverviewView } from '@joutio/client-domain/api-types'
 import { topicName } from '@/shared/utils/topic-name'
+import { titleLabel } from '@joutio/client-domain/authoring'
 import { useMyTitles, useWearTitle } from '../hooks/use-topic'
-import { formatNumber, MASTERY_TIERS, MASTERY_XP, tierLabel } from '../lib/format'
+import { formatNumber, MASTERY_TIERS, MASTERY_XP } from '../lib/format'
 
 /** Onglet Progression : tous les titres du sujet et leurs conditions. Un seul porté. */
 export function ProgressTab({ overview }: { overview: TopicOverviewView }) {
@@ -13,7 +14,7 @@ export function ProgressTab({ overview }: { overview: TopicOverviewView }) {
   const reached = progress ? MASTERY_TIERS.indexOf(progress.tier) : -1
   // Le premier titre demande au moins une partie humaine terminée (`ProfileUpdateService.updateEquippedTitle`).
   const played = (progress?.games ?? 0) > 0
-  const label = (tier: (typeof MASTERY_TIERS)[number]) => overview.titles?.fr?.[tier] ?? `${tierLabel(tier)} · ${name}`
+  const label = (tier: (typeof MASTERY_TIERS)[number]) => titleLabel(overview.titles, tier, name)
 
   return (
     <TabScrollView

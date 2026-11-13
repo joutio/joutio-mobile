@@ -1,4 +1,4 @@
-import { router } from 'expo-router'
+import { router } from '@/shared/navigation/router'
 import {
   BellIcon,
   CrownSimpleIcon,
@@ -8,7 +8,6 @@ import {
   ListRow,
   Notice,
   PaletteIcon,
-  PencilSimpleIcon,
   ShieldCheckIcon,
   showDialog,
   SignOutIcon,
@@ -67,7 +66,6 @@ export function SettingsScreen() {
         <ListRow icon={PaletteIcon} label="Affichage et langue" value={display} control="chevron" onPress={open('display')} last />
       </Group>
       <Group>
-        <ListRow icon={PencilSimpleIcon} label="Mes sujets" control="chevron" onPress={() => router.push('/profile/topics')} />
         <ListRow icon={GiftIcon} label="Inviter des amis" sub="Ton lien de parrainage" control="chevron" onPress={open('invite')} last />
       </Group>
       <Group>

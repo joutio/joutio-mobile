@@ -2,6 +2,7 @@ import { tokens, type TierCode } from '@/design-system'
 import { formatNumber, MASTERY_TIERS, MASTERY_XP, tierLabel } from '@/features/topic/lib/format'
 import type { MasteryTier, TitleView } from '@joutio/client-domain/api-types'
 import { topicName } from '@/shared/utils/topic-name'
+import { titleLabel as sharedTitleLabel } from '@joutio/client-domain/authoring'
 
 export const RANKS = Object.keys(tokens.tier) as TierCode[]
 
@@ -9,7 +10,7 @@ export const RANKS = Object.keys(tokens.tier) as TierCode[]
 export const masteryOf = (xp: number): MasteryTier => MASTERY_TIERS.reduce<MasteryTier>((best, tier) => (xp >= MASTERY_XP[tier] ? tier : best), 'FER')
 
 /** Libellé d'un titre : nom thématique du sujet s'il existe, sinon « palier · sujet » (composé côté client). */
-export const titleLabel = (title: TitleView) => title.topic.titles?.fr?.[title.tier] ?? `${tierLabel(title.tier)} · ${topicName(title.topic.names)}`
+export const titleLabel = (title: TitleView) => sharedTitleLabel(title.topic.titles, title.tier, topicName(title.topic.names))
 
 /** Condition d'un rang : « Moins de 400 Elo », « Dès 600 Elo ». */
 export function rankRule(tier: TierCode) {

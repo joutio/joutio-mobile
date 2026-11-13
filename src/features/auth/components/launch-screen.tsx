@@ -10,7 +10,7 @@ function Body() {
   )
 }
 
-/** Lancement, toujours sombre : affiché le temps de restaurer la session (1,2 s au plus en pratique). */
+/** Lancement, toujours sombre : au moins 1,2 s (`LAUNCH_MIN_MS`), puis le temps de restaurer la session. */
 export function LaunchScreen() {
   return (
     <ForceDark>

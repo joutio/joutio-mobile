@@ -1,15 +1,12 @@
-import { router } from 'expo-router'
+import { router } from '@/shared/navigation/router'
 import { useState } from 'react'
 import { View } from 'react-native'
 import {
   Button,
   EmptyState,
-  IconButton,
   ListGroup,
-  MobileTopBar,
   PencilSimpleIcon,
   PlusIcon,
-  Screen,
   SectionHeader,
   Skeleton,
   toCategoryCode,
@@ -24,7 +21,6 @@ import { todoTotal } from '@joutio/client-domain/authoring'
 import { useCreateTopic, useCreationLimits, useFrozen, useMyTopics, useTopicTodo } from '../hooks/use-authoring'
 import { FrozenNotice } from './frozen-notice'
 import { CreateTopicSheet } from './topic-sheets'
-import { useRefreshActive } from '@/shared/hooks/use-refresh-active'
 
 const topicSub = (topic: TopicCardView) =>
   topic.status === 'DRAFT' ? `Brouillon · ${topic.questionsCount} / ${MIN_QUESTIONS} questions` : `Publié · ${questionsLabel(topic.questionsCount)}`
@@ -35,14 +31,14 @@ export function openMyTopic(topicId: string, name: string, category: string | nu
 }
 
 /**
- * Mes sujets (`creation.md` § 1) : brouillons et publiés, + pour créer. Entrée unique par Réglages, avec la barre
- * d'onglets. Les sujets où une action est requise remontent dans « À traiter », avec une pastille ; comme les
- * autres, ils s'ouvrent sur Mon sujet.
+ * Mes sujets (`creation.md` § 1), onglet **Création** de l'Accueil (2026-11-13, remplace l'entrée par Réglages) :
+ * « Créer un sujet », puis brouillons et publiés. Les sujets où une action est requise remontent dans « À traiter »,
+ * avec une pastille ; comme les autres, ils s'ouvrent sur Mon sujet (`(app)/workshop/[id]`, hors onglets : le retour
+ * ramène à l'Accueil).
  */
-export function MyTopicsScreen() {
+export function MyTopicsList({ gutter }: { gutter: number }) {
   const topics = useMyTopics()
   const todo = useTopicTodo()
-  const pageRefresh = useRefreshActive()
   const create = useCreateTopic()
   const { premium, limits, askPremium } = useCreationLimits()
   const { frozen, published } = useFrozen()
@@ -110,6 +106,9 @@ export function MyTopicsScreen() {
     )
     return (
       <View style={{ gap: tokens.space[6] }}>
+        <Button icon={PlusIcon} full onPress={startCreate}>
+          Créer un sujet
+        </Button>
         {frozen && <FrozenNotice published={published} limit={limits.publishedTopics} />}
         {toHandle.length > 0 && (
           <View style={{ gap: tokens.space[3] }}>
@@ -128,39 +127,24 @@ export function MyTopicsScreen() {
   }
 
   return (
-    <Screen
-      onRefresh={pageRefresh.refresh}
-      inTabs
-      header={
-        <MobileTopBar
-          variant="inline"
-          back="Réglages"
-          onBack={() => router.back()}
-          title="Mes sujets"
-          right={<IconButton icon={PlusIcon} label="Créer un sujet" variant="plain" tone="accent" onPress={startCreate} />}
-        />
-      }
-      overlay={
-        <CreateTopicSheet
-          open={createOpen}
-          busy={create.isPending}
-          onClose={() => setCreateOpen(false)}
-          onCreate={({ name, category }) =>
-            create.mutate(
-              { name, category },
-              {
-                onSuccess: ({ id }) => {
-                  setCreateOpen(false)
-                  openMyTopic(id, name, category, null)
-                },
-              },
-            )
-          }
-        />
-      }
-      contentStyle={{ paddingHorizontal: tokens.space[5], paddingTop: tokens.space[1], paddingBottom: tokens.space[7] }}
-    >
+    <View style={{ paddingHorizontal: gutter }}>
       {content()}
-    </Screen>
+      <CreateTopicSheet
+        open={createOpen}
+        busy={create.isPending}
+        onClose={() => setCreateOpen(false)}
+        onCreate={({ name, category }) =>
+          create.mutate(
+            { name, category },
+            {
+              onSuccess: ({ id }) => {
+                setCreateOpen(false)
+                openMyTopic(id, name, category, null)
+              },
+            },
+          )
+        }
+      />
+    </View>
   )
 }

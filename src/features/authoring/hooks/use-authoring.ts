@@ -9,7 +9,15 @@ import type { Language, PageResponse, TopicCardView, TopicOverviewView, HomeView
 import type { InfiniteData } from '@tanstack/react-query'
 import type { TopicPage } from '@/features/topics/lib/topics-service'
 
-import type { OwnerQuestionReport, ReportDetail, QuestionEditorView, ReportedQuestion, TopicTodo } from '@joutio/client-domain/authoring'
+import type {
+  OwnerQuestionReport,
+  ReportDetail,
+  QuestionEditorView,
+  ReportedQuestion,
+  TopicTitles,
+  TopicTodo,
+  TopicWorkshop,
+} from '@joutio/client-domain/authoring'
 import type { MeView } from '@joutio/client-domain/api-types'
 import { isFrozen, planLimits, premiumReasonOf, quotaProblemOf, type PremiumReason } from '@joutio/client-domain/premium'
 import type { QuestionOperation } from '@joutio/client-domain/authoring'
@@ -85,7 +93,7 @@ export function useMyTopics(enabled = true) {
 /** Un de mes sujets, lu dans la liste Mes sujets (le BFF n'a pas de vue auteur d'un sujet seul). */
 export function useMyTopic(topicId: string) {
   const workshop = useQuery({ queryKey: ['authoring', topicId, 'workshop'], queryFn: () => authoringService.workshop(topicId), enabled: Boolean(topicId) })
-  return { ...workshop, topic: workshop.data?.topic, permissions: workshop.data?.permissions }
+  return { ...workshop, topic: workshop.data?.topic, permissions: workshop.data?.permissions, titles: workshop.data?.titles ?? null }
 }
 
 /** Limites du plan lues dans `MeView.limits` (appliquées par le BFF) et feuille Premium avec l'accroche dédiée. */
@@ -274,6 +282,25 @@ export function useUpdateTopicPictogram(topicId: string) {
       context?.rollback()
       if (limitHit(client, error)) return
       toast.error('Le pictogramme n’a pas pu être enregistré', retryHint)
+    },
+  })
+}
+
+/** Titres par palier : l'atelier et la fiche sujet (onglet Progression) changent tout de suite. */
+export function useUpdateTopicTitles(topicId: string) {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (titles: TopicTitles | null) => authoringService.updateTitles(topicId, titles),
+    onMutate: (titles: TopicTitles | null) =>
+      optimisticUpdate(client, [['authoring', topicId, 'workshop'], queryKeys.topic.overview(topicId)], () => {
+        client.setQueryData<TopicWorkshop>(['authoring', topicId, 'workshop'], (workshop) => (workshop ? { ...workshop, titles } : workshop))
+        client.setQueryData<TopicOverviewView>(queryKeys.topic.overview(topicId), (overview) => (overview ? { ...overview, titles } : overview))
+      }),
+    onSuccess: () => toast.success('Titres enregistrés'),
+    onError: (error, _variables, context) => {
+      context?.rollback()
+      if (limitHit(client, error)) return
+      toast.error("Les titres n'ont pas pu être enregistrés", retryHint)
     },
   })
 }

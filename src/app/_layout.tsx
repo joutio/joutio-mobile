@@ -22,6 +22,24 @@ SplashScreen.preventAutoHideAsync().catch(() => undefined)
 // Le splash natif s'efface sur `LaunchScreen` (même logo, même fond) au lieu de couper net.
 SplashScreen.setOptions({ fade: true, duration: 250 })
 
+/**
+ * Durée minimale du lancement (`onboarding.md`, étape Lancement) : un splash qui disparaît en une frame
+ * passe pour un bug. Comptée depuis le chargement du module, splash natif et `LaunchScreen` compris.
+ */
+const LAUNCH_MIN_MS = 1200
+const launchStartedAt = Date.now()
+
+/** Vrai une fois `LAUNCH_MIN_MS` écoulées depuis le démarrage de l'app. */
+function useLaunchMinElapsed(): boolean {
+  const [elapsed, setElapsed] = useState(() => Date.now() - launchStartedAt >= LAUNCH_MIN_MS)
+  useEffect(() => {
+    if (elapsed) return
+    const timer = setTimeout(() => setElapsed(true), Math.max(0, LAUNCH_MIN_MS - (Date.now() - launchStartedAt)))
+    return () => clearTimeout(timer)
+  }, [elapsed])
+  return elapsed
+}
+
 /** `GET /api/me` a échoué au démarrage : réessayer, ou se déconnecter. */
 function BootError({ onRetry }: { onRetry: () => void }) {
   const { colors } = useTheme()
@@ -45,8 +63,9 @@ function Navigation() {
   const authenticated = useSessionStore((state) => state.authenticated)
   const me = useMe(ready && authenticated)
   const catalogAccess = useCatalogAccess()
+  const launchMinElapsed = useLaunchMinElapsed()
 
-  if (!ready || (authenticated && me.isPending)) return <LaunchScreen />
+  if (!launchMinElapsed || !ready || (authenticated && me.isPending)) return <LaunchScreen />
   if (authenticated && me.isError && !me.data) return <BootError onRetry={() => void me.refetch()} />
 
   // Compte récent sans date de naissance : demandée une fois avant tout le reste (`onboarding.md`).

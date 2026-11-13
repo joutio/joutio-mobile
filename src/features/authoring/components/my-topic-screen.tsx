@@ -1,8 +1,10 @@
-import { router, useLocalSearchParams } from 'expo-router'
+import { useLocalSearchParams } from 'expo-router'
+import { router } from '@/shared/navigation/router'
 import { useState } from 'react'
 import { View } from 'react-native'
 import {
   Button,
+  CrownSimpleIcon,
   FileDashedIcon,
   TrashIcon,
   Screen,
@@ -32,7 +34,8 @@ import { pickImage, uploadImage } from '@/features/media/media-service'
 import { toast } from '@/design-system'
 import { topicName } from '@/shared/utils/topic-name'
 import { questionStatus, workshopRole } from '@joutio/client-domain/authoring'
-import { MAX_NAME, MIN_QUESTIONS, playableCount } from '@joutio/client-domain/authoring'
+import { customizedTierCount, MASTERY_TIERS, MAX_NAME, MIN_QUESTIONS, playableCount } from '@joutio/client-domain/authoring'
+import { TopicTitlesSheet } from './topic-titles-sheet'
 
 import {
   useDeleteTopic,
@@ -46,6 +49,7 @@ import {
   useUpdateTopicCategory,
   useUpdateTopicImage,
   useUpdateTopicPictogram,
+  useUpdateTopicTitles,
   useUpdateTopicNames,
 } from '../hooks/use-authoring'
 import { FrozenNotice } from './frozen-notice'
@@ -55,7 +59,7 @@ import { useRefreshActive } from '@/shared/hooks/use-refresh-active'
 /** Vignette d'un sujet : paysage, comme `TopicCard`. */
 const THUMBNAIL_ASPECT: [number, number] = [16, 9]
 
-type TopicSheet = 'name' | 'universe' | 'image' | 'pictogram'
+type TopicSheet = 'name' | 'universe' | 'image' | 'pictogram' | 'titles'
 
 export interface MyTopicRouteParams {
   id: string
@@ -74,7 +78,7 @@ export function MyTopicScreen() {
   const base = '/workshop/[id]' as const
   const params = useLocalSearchParams<MyTopicRouteParams>()
   const topicId = params.id
-  const { topic, permissions, isError, refetch } = useMyTopic(topicId)
+  const { topic, permissions, titles, isError, refetch } = useMyTopic(topicId)
   const draftTopic = useDraftTopic(topicId)
   const deleteTopic = useDeleteTopic(topicId)
   const role = workshopRole(permissions)
@@ -88,6 +92,7 @@ export function MyTopicScreen() {
   const category = useUpdateTopicCategory(topicId)
   const image = useUpdateTopicImage(topicId)
   const pictogram = useUpdateTopicPictogram(topicId)
+  const updateTitles = useUpdateTopicTitles(topicId)
   const publish = usePublishTopic(topicId)
   const [sheet, setSheet] = useState<TopicSheet>()
   const [uploading, setUploading] = useState(false)
@@ -282,6 +287,15 @@ export function MyTopicScreen() {
                   disabled={locked}
                   value={pictogramUrl ? 'Modifier' : 'Ajouter'}
                   onPress={permissions?.canManage && !locked ? () => setSheet('pictogram') : undefined}
+                />
+                <ListRow
+                  icon={CrownSimpleIcon}
+                  label="Titres"
+                  control={locked ? 'none' : 'chevron'}
+                  disabled={locked}
+                  value={`${customizedTierCount(titles)} / ${MASTERY_TIERS.length}`}
+                  sub="Un titre par palier de maîtrise"
+                  onPress={permissions?.canManage && !locked ? () => setSheet('titles') : undefined}
                   last
                 />
               </ListGroup>
@@ -363,6 +377,14 @@ export function MyTopicScreen() {
           onRemove={() => pictogram.mutate(null, { onSuccess: close })}
         />
       </MobileSheet>
+      <TopicTitlesSheet
+        open={sheet === 'titles'}
+        topicName={name}
+        titles={titles}
+        busy={updateTitles.isPending}
+        onClose={close}
+        onSave={(next) => updateTitles.mutate(next, { onSuccess: close })}
+      />
     </View>
   )
 }

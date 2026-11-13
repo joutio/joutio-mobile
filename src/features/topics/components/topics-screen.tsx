@@ -11,7 +11,10 @@ import {
   Chip,
   DragToLoadMore,
   EmptyState,
-  EyeSlashIcon,
+  SquaresFourIcon,
+  type ListRowProps,
+  HeartIcon,
+  PencilSimpleIcon,
   FeedFooter,
   useGuardedRefresh,
   ListGroup,
@@ -38,7 +41,7 @@ import {
   useTabBarInset,
 } from '@/design-system'
 import { openTopic } from '@/features/topic'
-import { DEFAULT_TOPIC_SORT, pageSizeFor } from '../lib/topics-service'
+import { DEFAULT_TOPIC_SORT, pageSizeFor, type TopicScope } from '../lib/topics-service'
 import { useDebounced } from '@/shared/hooks/use-debounced'
 import type { TopicCardView, TopicSort } from '@joutio/client-domain/api-types'
 import { topicName } from '@/shared/utils/topic-name'
@@ -60,6 +63,12 @@ const SORTS: { value: TopicSort; label: string }[] = [
   { value: 'RECENT', label: 'Nouveautés' },
 ]
 const DEFAULT_SORT: TopicSort = DEFAULT_TOPIC_SORT
+/** « Mes thèmes » (`sujets.md` § 2, 2026-11-13, remplace « Masquer les sujets suivis »). */
+const SCOPES: { value: TopicScope; label: string; icon: NonNullable<ListRowProps['icon']> }[] = [
+  { value: 'ALL', label: 'Tous les sujets', icon: SquaresFourIcon },
+  { value: 'FOLLOWED', label: 'Sujets suivis', icon: HeartIcon },
+  { value: 'MINE', label: 'Mes sujets', icon: PencilSimpleIcon },
+]
 
 const countLabel = (count: number) => `${count} ${count > 1 ? 'sujets' : 'sujet'}`
 const toggle = (list: readonly CategoryCode[], category: CategoryCode) =>
@@ -107,16 +116,19 @@ export function TopicsScreen() {
   const [query, setQuery] = useState('')
   const [categories, setCategories] = useState<CategoryCode[]>([])
   const [sort, setSort] = useState<TopicSort>(DEFAULT_SORT)
-  const [hideFollowed, setHideFollowed] = useState(false)
+  const [scope, setScope] = useState<TopicScope>('ALL')
   const [sheetOpen, setSheetOpen] = useState(false)
   const offset = useSharedValue(0)
 
   const search = useDebounced(query.trim())
   const size = pageSizeFor(columns)
-  const filters = useMemo(() => ({ query: search, categories, sort, hideFollowed, size }), [search, categories, sort, hideFollowed, size])
+  const filters = useMemo(
+    () => ({ query: search, categories, sort, hideFollowed: false, followed: scope === 'FOLLOWED', mine: scope === 'MINE', size }),
+    [search, categories, sort, scope, size],
+  )
   const topics = useTopics(filters)
   const online = useOnline()
-  const facets = useTopicFacets(search)
+  const facets = useTopicFacets(search, scope)
 
   // Un changement de recherche, de filtre ou de tri ramène au seuil de collage (ici, le haut de la grille) : tout de
   // suite, puis à l'arrivée des nouveaux résultats (l'ancienne page reste affichée en attendant, `keepPreviousData`).
@@ -136,7 +148,7 @@ export function TopicsScreen() {
     () => [...new Map((topics.data?.pages.flatMap((page) => page.topics) ?? []).map((topic) => [topic.topicId, topic])).values()],
     [topics.data],
   )
-  // Compteur : effectifs des facettes, qui ne connaissent pas « Masquer les sujets suivis » (`sujets.md` § 5).
+  // Compteur : effectifs des facettes, dans la portée « Mes thèmes ».
   const count = facets.data
     ? categories.length === 0
       ? facets.data.total
@@ -147,13 +159,13 @@ export function TopicsScreen() {
   const reset = () => {
     setCategories([])
     setSort(DEFAULT_SORT)
-    setHideFollowed(false)
+    setScope('ALL')
   }
   // Tiré vers le bas en haut de la grille : catalogue, univers et cloche se rechargent.
   const { refreshing, refresh } = useGuardedRefresh(() => Promise.all([topics.refetch(), facets.refetch(), unread.refetch()]))
 
-  // Ce qui reste à charger : connu par les facettes, qui ignorent « Masquer les sujets suivis » (alors rien).
-  const remaining = facets.data && !hideFollowed ? count - items.length : 0
+  // Ce qui reste à charger : connu par les facettes de la même portée.
+  const remaining = facets.data ? count - items.length : 0
   const remainingLabel = remaining > 0 ? `${remaining} ${remaining > 1 ? 'autres sujets' : 'autre sujet'}` : undefined
   const sortLabel = SORTS.find((option) => option.value === sort)?.label ?? ''
 
@@ -231,7 +243,7 @@ export function TopicsScreen() {
           onChange={setQuery}
           placeholder="Chercher un sujet"
           onFilter={() => setSheetOpen(true)}
-          filterDot={categories.length > 0 || sort !== DEFAULT_SORT || hideFollowed}
+          filterDot={categories.length > 0 || sort !== DEFAULT_SORT || scope !== 'ALL'}
           notifications={<NotificationButton />}
         />
       }
@@ -280,9 +292,21 @@ export function TopicsScreen() {
               </ListGroup>
             </View>
             <View style={{ gap: tokens.space[4] }}>
-              <SectionHeader title="Affichage" />
+              <SectionHeader title="Mes thèmes" />
               <ListGroup>
-                <ListRow icon={EyeSlashIcon} label="Masquer les sujets suivis" control="toggle" on={hideFollowed} onToggle={setHideFollowed} last />
+                <RadioGroup label="Mes thèmes">
+                  {SCOPES.map((option, index) => (
+                    <ListRow
+                      key={option.value}
+                      icon={option.icon}
+                      label={option.label}
+                      control="radio"
+                      on={scope === option.value}
+                      onToggle={() => setScope(option.value)}
+                      last={index === SCOPES.length - 1}
+                    />
+                  ))}
+                </RadioGroup>
               </ListGroup>
             </View>
           </View>

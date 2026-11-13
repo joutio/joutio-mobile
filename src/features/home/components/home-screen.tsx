@@ -1,5 +1,6 @@
 import { NotificationButton } from '@/features/notifications/components/notification-button'
-import { router, useScrollToTop } from 'expo-router'
+import { useScrollToTop } from 'expo-router'
+import { router } from '@/shared/navigation/router'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { ScrollView, View } from 'react-native'
 import Animated, { interpolate, useAnimatedStyle, useDerivedValue, useSharedValue } from 'react-native-reanimated'
@@ -34,6 +35,7 @@ import {
   useHorizontalGesture,
   useTheme,
   WarningCircleIcon,
+  HeartIcon,
   compactBarProgress,
   useReducedMotion,
   type CategoryCode,
@@ -41,6 +43,8 @@ import {
   TOP_BAR_HEIGHT,
 } from '@/design-system'
 import { useMe } from '@/features/me'
+import { MyTopicsList } from '@/features/authoring'
+import { openSettingsPage } from '@/features/settings/components/settings-frame'
 import { useMyActivity } from '@/features/profile/hooks/use-profile'
 import type { TopicCardView } from '@joutio/client-domain/api-types'
 import { tierOf } from '@/shared/utils/tier'
@@ -57,6 +61,7 @@ const GUTTER = tokens.space[5]
 const TABS = [
   { value: 'for-you', label: 'Pour toi' },
   { value: 'followed', label: 'Suivis' },
+  { value: 'creation', label: 'Création' },
 ] as const
 
 type Tab = (typeof TABS)[number]['value']
@@ -92,7 +97,36 @@ function TopicRail({ title, topics, onSeeAll }: { title: string; topics: TopicCa
   )
 }
 
-function ForYou({ trending, fresh }: { trending: TopicCardView[]; fresh: TopicCardView[] }) {
+/**
+ * Invitation à choisir ses centres d'intérêt (`accueil.md` § 3) : sans intérêt, la sélection « Pour toi » est vide.
+ * Ouvre Réglages › Jeu dans la pile de l'Accueil.
+ */
+function InterestsInvite() {
+  const { colors, radius } = useTheme()
+  return (
+    <View style={{ marginHorizontal: GUTTER, padding: tokens.space[5], gap: tokens.space[3], borderRadius: radius.lg, backgroundColor: colors.surface }}>
+      <Text variant="headline">Choisis tes centres d'intérêt</Text>
+      <Text variant="callout" color="muted">
+        Jusqu'à 3 univers pour recevoir une sélection de sujets faite pour toi.
+      </Text>
+      <Button style={{ alignSelf: 'flex-start' }} icon={HeartIcon} onPress={() => openSettingsPage('home', 'game')}>
+        Choisir
+      </Button>
+    </View>
+  )
+}
+
+function ForYou({
+  trending,
+  fresh,
+  recommended,
+  hasInterests,
+}: {
+  trending: TopicCardView[]
+  fresh: TopicCardView[]
+  recommended: TopicCardView[]
+  hasInterests: boolean
+}) {
   const seeAll = () => router.navigate('/topics')
   return (
     <>
@@ -112,6 +146,8 @@ function ForYou({ trending, fresh }: { trending: TopicCardView[]; fresh: TopicCa
         />
       )}
       {fresh.length > 0 && <TopicRail title="Nouveaux thèmes" topics={fresh} onSeeAll={seeAll} />}
+      {/* Sélection du BFF (`recommendedTopics`, intérêts enregistrés, sujets suivis exclus) ; rien si elle est vide. */}
+      {hasInterests ? recommended.length > 0 && <TopicRail title="Selon tes centres d'intérêt" topics={recommended} onSeeAll={seeAll} /> : <InterestsInvite />}
     </>
   )
 }
@@ -216,6 +252,22 @@ function Loading() {
 
 /** Contenu d'un onglet selon l'état des données : chargement, erreur, vide, ou la page. */
 function TabPage({ tab, home }: { tab: Tab; home: ReturnType<typeof useHome> }) {
+  if (tab === 'creation') return <CreationPage />
+  return <FeedPage tab={tab} home={home} />
+}
+
+/** Onglet Création : Mes sujets (`creation.md` § 1), entrée unique depuis le 2026-11-13. */
+function CreationPage() {
+  return (
+    <TabLoadMoreScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingTop: tokens.space[5], paddingBottom: tokens.space[7] }}>
+      <MyTopicsList gutter={GUTTER} />
+    </TabLoadMoreScrollView>
+  )
+}
+
+function FeedPage({ tab, home }: { tab: Exclude<Tab, 'creation'>; home: ReturnType<typeof useHome> }) {
+  const me = useMe()
+  const hasInterests = (me.data?.interests ?? []).length > 0
   const followed = tab === 'followed'
   const data = home.data
   const [selected, setSelected] = useState<CategoryCode[]>([])
@@ -258,7 +310,11 @@ function TabPage({ tab, home }: { tab: Tab; home: ReturnType<typeof useHome> }) 
         )}
         {data &&
           !empty &&
-          (followed ? <Followed list={list} selected={selected} onSelect={setSelected} /> : <ForYou trending={data.trendingTopics} fresh={data.newTopics} />)}
+          (followed ? (
+            <Followed list={list} selected={selected} onSelect={setSelected} />
+          ) : (
+            <ForYou trending={data.trendingTopics} fresh={data.newTopics} recommended={data.recommendedTopics ?? []} hasInterests={hasInterests} />
+          ))}
       </TabLoadMoreScrollView>
     </DragToLoadMore>
   )

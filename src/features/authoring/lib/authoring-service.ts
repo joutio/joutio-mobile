@@ -3,6 +3,7 @@ import { ENDPOINTS } from '@/lib/endpoints'
 import type { IdResponse, Language, PageResponse, TopicCardView } from '@joutio/client-domain/api-types'
 import type { CategoryCode } from '@/design-system'
 import type {
+  TopicTitles,
   TopicWorkshop,
   TeamMember,
   TeamRole,
@@ -48,6 +49,9 @@ export const authoringService = {
   updateImageUrl: (topicId: string, imageUrl: string | null) => api.put<void>(ENDPOINTS.topics.imageUrl(topicId), { imageUrl }),
 
   updatePictogramUrl: (topicId: string, pictogramUrl: string | null) => api.put<void>(ENDPOINTS.topics.pictogramUrl(topicId), { pictogramUrl }),
+
+  /** Titres par palier (`PUT /api/topics/{id}/titles`) ; `null` efface tout (repli « Or · Sujet »). */
+  updateTitles: (topicId: string, titles: TopicTitles | null) => api.put<void>(ENDPOINTS.topics.titles(topicId), { titles }),
 
   publish: (topicId: string) => api.post<void>(ENDPOINTS.topics.publish(topicId)),
 

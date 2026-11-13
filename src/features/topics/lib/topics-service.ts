@@ -8,6 +8,9 @@ export const PAGE_SIZE = 20
 /** Page en rangées pleines : environ 20 sujets, arrondis au multiple du nombre de colonnes (`sujets.md`). */
 export const pageSizeFor = (columns: number) => columns * Math.ceil(PAGE_SIZE / columns)
 
+/** Portée « Mes thèmes » de la feuille Filtres de Sujets (`sujets.md` § 2). */
+export type TopicScope = 'ALL' | 'FOLLOWED' | 'MINE'
+
 /** Tri par défaut du catalogue (Sujets, feuille de défi). */
 export const DEFAULT_TOPIC_SORT: TopicSort = 'POPULAR'
 
@@ -17,8 +20,10 @@ export interface TopicFilters {
   categories: readonly CategoryCode[]
   sort: TopicSort
   hideFollowed: boolean
-  /** Uniquement les sujets suivis (onglet Suivis de l'Accueil) : `GET /api/topics?followed=true`. */
+  /** Uniquement les sujets suivis (onglet Suivis de l'Accueil, « Mes thèmes › Suivis ») : `followed=true`. */
   followed?: boolean
+  /** Uniquement les sujets que j'ai créés (« Mes thèmes › Mes sujets ») : `mine=true`, exclusif de `followed`. */
+  mine?: boolean
   /** Taille de page envoyée au BFF ; 20 par défaut. */
   size?: number
 }
@@ -29,6 +34,7 @@ const page = (filters: TopicFilters, category: CategoryCode | undefined, index: 
       q: filters.query || undefined,
       category,
       followed: filters.followed || undefined,
+      mine: filters.mine || undefined,
       sort: filters.sort,
       page: index,
       size: filters.size ?? PAGE_SIZE,
@@ -61,6 +67,8 @@ export const topicsService = {
     return { topics, last: pages.every((result) => result.last) }
   },
 
-  facets: (query: string, followed = false): Promise<TopicFacetsView> =>
-    api.get<TopicFacetsView>(ENDPOINTS.topics.facets, { params: { q: query || undefined, followed: followed || undefined } }),
+  facets: (query: string, scope: TopicScope = 'ALL'): Promise<TopicFacetsView> =>
+    api.get<TopicFacetsView>(ENDPOINTS.topics.facets, {
+      params: { q: query || undefined, followed: scope === 'FOLLOWED' || undefined, mine: scope === 'MINE' || undefined },
+    }),
 }

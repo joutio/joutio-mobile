@@ -1,4 +1,4 @@
-export { MyTopicsScreen } from './components/my-topics-screen'
+export { MyTopicsList } from './components/my-topics-list'
 export { MyTopicScreen } from './components/my-topic-screen'
 export { QuestionsScreen } from './components/questions-screen'
 export { QuestionEditorScreen } from './components/question-editor-screen'

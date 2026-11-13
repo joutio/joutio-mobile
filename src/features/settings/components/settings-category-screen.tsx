@@ -1,5 +1,6 @@
 import { nextRecruiterTier, RECRUITER_TIERS } from '@joutio/client-domain/share'
-import { Redirect, router, useLocalSearchParams } from 'expo-router'
+import { Redirect, useLocalSearchParams } from 'expo-router'
+import { router } from '@/shared/navigation/router'
 import * as WebBrowser from 'expo-web-browser'
 import { useState } from 'react'
 import { Linking, View } from 'react-native'
@@ -54,7 +55,7 @@ import { config } from '@/lib/config'
 import { appVersion } from '@/shared/utils/app-info'
 import { BirthDatePicker, birthDateError, formatBirthDate } from '@/shared/components/birth-date-picker'
 import { APPEARANCE, LANGUAGES } from '../lib/settings-options'
-import { Group, SettingsFrame, type SettingsPage } from './settings-frame'
+import { Group, SettingsFrame, useSettingsOrigin, type SettingsPage } from './settings-frame'
 
 const PAGES: readonly SettingsPage[] = ['account', 'privacy', 'notifications', 'game', 'display', 'invite', 'help']
 const SUPPORT = 'mailto:contact@joutio.com'
@@ -66,7 +67,9 @@ const openPage = (path: string) => () => void WebBrowser.openBrowserAsync(`${con
 /** Une catégorie des Réglages (`reglages.md` § 1, Pages), retour « Réglages ». */
 export function SettingsCategoryScreen() {
   const { page } = useLocalSearchParams<{ page: SettingsPage }>()
-  if (!PAGES.includes(page)) return <Redirect href="/profile/settings" />
+  const origin = useSettingsOrigin()
+  // Page inconnue : retour à la racine des Réglages **de la même pile** (Accueil ou Profil).
+  if (!PAGES.includes(page)) return <Redirect href={origin === 'home' ? '/home/settings' : '/profile/settings'} />
   switch (page) {
     case 'account':
       return <AccountPage />
