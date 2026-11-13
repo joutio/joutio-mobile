@@ -13,6 +13,8 @@ import { LaunchScreen, SessionRuntime, useLogout, useSessionStore } from '@/feat
 import { useMe } from '@/features/me'
 import { ExpoPushRuntime } from '@/features/notifications/components/expo-push-runtime'
 import { useCatalogAccess } from '@/features/auth/hooks/use-catalog-access'
+import { BirthDateScreen } from '@/features/onboarding/components/birth-date-screen'
+import { ReferralRuntime } from '@/features/share'
 import { createQueryClient } from '@/lib/query-client'
 import { useNetworkBridge } from '@/shared/hooks/use-online'
 
@@ -47,6 +49,9 @@ function Navigation() {
   if (!ready || (authenticated && me.isPending)) return <LaunchScreen />
   if (authenticated && me.isError && !me.data) return <BootError onRetry={() => void me.refetch()} />
 
+  // Compte récent sans date de naissance : demandée une fois avant tout le reste (`onboarding.md`).
+  if (authenticated && me.data?.birthDateRequired) return <BirthDateScreen />
+
   const onboarded = me.data?.onboardingCompleted ?? false
   return (
     <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg } }}>
@@ -62,6 +67,11 @@ function Navigation() {
       </Stack.Protected>
       {/* Lien de salon partagé : ouvert avec ou sans session. */}
       <Stack.Screen name="join/[roomId]" />
+      {/* Liens universels go.joutio.com (partage.md § 2), avec ou sans session. */}
+      <Stack.Screen name="p/[id]" />
+      <Stack.Screen name="t/[id]" />
+      <Stack.Screen name="j/[id]" />
+      <Stack.Screen name="i/[id]" />
       <Stack.Protected guard={authenticated && onboarded && catalogAccess}>
         <Stack.Screen name="(dev)" />
       </Stack.Protected>
@@ -94,6 +104,7 @@ function Root() {
       <SessionRuntime />
       <Navigation />
       <ExpoPushRuntime />
+      <ReferralRuntime />
       <ToastHost />
       <DialogHost />
     </NavigationThemeProvider>

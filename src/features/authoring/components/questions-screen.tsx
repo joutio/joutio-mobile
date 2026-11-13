@@ -324,7 +324,11 @@ export function QuestionsScreen() {
           {!draft && <ProgressBar label={`${count} / ${limits.questionsPerTopic} questions`} value={Math.min(100, (count * 100) / limits.questionsPerTopic)} />}
           {locked && <FrozenNotice published={published} limit={limits.publishedTopics} />}
           {atCeiling && (
-            <Notice tone="info" title="Sujet complet" message={`${limits.questionsPerTopic} questions au maximum. Retire une question pour en ajouter une autre.`} />
+            <Notice
+              tone="info"
+              title="Sujet complet"
+              message={`${limits.questionsPerTopic} questions au maximum. Retire une question pour en ajouter une autre.`}
+            />
           )}
         </View>
       ) : null}

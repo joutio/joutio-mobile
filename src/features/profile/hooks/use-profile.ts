@@ -157,9 +157,7 @@ export function useDeleteAccount() {
 export const PSEUDONYM_RULES = '3 à 20 caractères : lettres sans accent, chiffres ou _, en commençant par une lettre.'
 
 /** État de saisie du pseudonyme : règles locales immédiates, unicité vérifiée par le BFF après une courte pause. */
-export type PseudonymCheck =
-  | { state: 'unchanged' | 'checking' | 'available' | 'taken' }
-  | { state: 'invalid'; issue: PseudonymIssue }
+export type PseudonymCheck = { state: 'unchanged' | 'checking' | 'available' | 'taken' } | { state: 'invalid'; issue: PseudonymIssue }
 
 const PSEUDONYM_CHECK_DELAY_MS = 350
 

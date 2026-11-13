@@ -27,6 +27,19 @@
 | 2.12 États système | fait, à valider sur appareil (2026-11-06) : **Hors connexion et reconnexion** (`expo-network`, `useNetworkBridge` → `onlineManager` de React Query, état relu au premier plan ; **`ConnectionBanner` globale** (2026-11-07) dans le layout `(app)`, au-dessus de la barre du haut — bande `Banner` pleine largeur depuis le 2026-11-12 (`feedback.md` : ni rayon ni marge, filet bas, safe area portée par la bande, une seule bande à la fois, la connexion l'emporte sur « Partie en cours ») ; l'ancienne carte s'appelle `Notice` et reste dans le flux des écrans — la safe area haute est retirée aux écrans dessous —, réseau + STOMP, grâce 2,5 s, Réessayer avec tentative, échec et « Connexion rétablie », absente des parcours de jeu ; squelettes fixes) — module natif chargé sans planter : **nouveau dev build requis** pour l'activer ; **Adversaire absent / Partie expirée** (`DuelCancelled` sur `GAME_CANCELLED` `GAME_EXPIRED`, selon `firstRoundAt`) ; `AdSlot` au catalogue seulement (pas de régie ni d'alerte de suivi en V1) ; Compte suspendu, Session expirée et Reconnexion déjà faits — `etats-systeme.md` |
 | 2.13 Recherche globale | fait, à valider sur appareil (2026-11-07) : `(tabs)/home/search` et `(tabs)/social/search`, ouvertes par la loupe de l'Accueil et de l'en-tête Social, même écran dans chaque pile (`features/search`, `SearchScreen` `stack`) — `SearchField` autofocus « Sujets et joueurs » et « Annuler », **récentes** sur l'appareil (5 au plus, `joutio.search.recents` en SecureStore, « Effacer »), sections Sujets (`TopicRow`) et Joueurs (`PlayerRow`, « Compte suspendu ») sur `GET /api/suggestions?q&limit=10` (attente 250 ms, 2 caractères, `staleTime` 60 s), squelettes, « Aucun résultat pour « … » » et hors connexion ; un résultat entre dans les récentes et ouvre sa fiche dans la pile de l'onglet — piles Social complétées (`social/topic/[id]`, `social/rankings`, `social/history`) — `recherche.md` |
 
+**Profil, Réglages et partage (2026-11-13, `design/specs/screens/{profil,editer-profil,reglages,partage}.md`)** :
+boutons Éditer le profil / Partager (65 / 35, avant les compteurs) ; **Éditer le profil** en tâche ciblée
+`(app)/edit-profile` (bannière, avatar, pseudonyme, bio, pays ISO avec `CountryPicker`, un seul Enregistrer, garde
+`usePreventRemove`) ; **Réglages** = racine de catégories + une page par catégorie (`settings/[page]`), dans les piles
+Profil **et** Accueil (roue dentée de l'Accueil), retour selon la pile ; date de naissance (privée, 15 ans) seulement
+dans Compte, sélecteur natif `@expo/ui/community/datetime-picker` ; **étape Date de naissance** avant tout le reste si
+`MeView.birthDateRequired` (layout racine). **Partage** : `useShare` (feuille du système, lien
+`go.joutio.com/{p|t|j|i}/…?ref=`), routes `p|t|j|i/[id]` (liens universels, `associatedDomains` et `intentFilters`
+dans `app.config.ts` — **nouveau build natif requis**), code de parrainage en attente (`pending-referral-store`, lien,
+saisie à l'onboarding, Play Install Referrer via `expo-application` lu de façon optionnelle) appliqué une fois après
+la connexion (`ReferralRuntime`). Pays : `@joutio/client-domain/geo` (noms FR/EN embarqués, Hermes). Résultat et chat
+d'après-duel suivent le thème de l'app (`AppTheme`), la séquence de déblocages reste sombre.
+
 **Identité d'un joueur** (2026-11-12, `design/specs/components/primitives.md` § Identité d'un joueur) : avatar de base =
 initiales du Profil, sans réglage (style `base` et ancien fond ignorés par `avatarSvg`, éditeur réduit à l'onglet Style) ;
 avatar stylé sur tous les écrans ; `PremiumBadge` après chaque pseudonyme (`PlayerName`, `premium` lu par

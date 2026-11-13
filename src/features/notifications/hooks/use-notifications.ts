@@ -28,30 +28,34 @@ export function useNotifications() {
 export function useNotificationsRealtime(onCreated?: (notification: NotificationView) => void) {
   const client = useQueryClient()
   const userId = useMe(true).data?.userId
-  usePersonalNotifications(userId, (notification, deleted) => {
-    if (!deleted) {
-      onCreated?.(notification)
-      void client.invalidateQueries({ queryKey: queryKeys.notifications.all() })
-      return
-    }
-    const data = client.getQueryData<Pages>(queryKeys.notifications.list())
-    const existing = data?.pages.flatMap((page) => page.content).find((item) => item.notificationId === notification.notificationId)
-    if (!existing) return // Already removed locally, or outside the loaded pages.
-    client.setQueryData<Pages>(queryKeys.notifications.list(), (data) =>
-      data
-        ? {
-            ...data,
-            pages: data.pages.map((page) => ({
-              ...page,
-              content: page.content.filter((item) => item.notificationId !== notification.notificationId),
-              totalElements: Math.max(0, page.totalElements - 1),
-            })),
-          }
-        : data,
-    )
-    if (existing.readAt === null)
-      client.setQueryData<{ count: number }>(queryKeys.notifications.unreadCount(), (count) => (count ? { count: Math.max(0, count.count - 1) } : count))
-  }, () => void client.invalidateQueries({ queryKey: queryKeys.notifications.all() }))
+  usePersonalNotifications(
+    userId,
+    (notification, deleted) => {
+      if (!deleted) {
+        onCreated?.(notification)
+        void client.invalidateQueries({ queryKey: queryKeys.notifications.all() })
+        return
+      }
+      const data = client.getQueryData<Pages>(queryKeys.notifications.list())
+      const existing = data?.pages.flatMap((page) => page.content).find((item) => item.notificationId === notification.notificationId)
+      if (!existing) return // Already removed locally, or outside the loaded pages.
+      client.setQueryData<Pages>(queryKeys.notifications.list(), (data) =>
+        data
+          ? {
+              ...data,
+              pages: data.pages.map((page) => ({
+                ...page,
+                content: page.content.filter((item) => item.notificationId !== notification.notificationId),
+                totalElements: Math.max(0, page.totalElements - 1),
+              })),
+            }
+          : data,
+      )
+      if (existing.readAt === null)
+        client.setQueryData<{ count: number }>(queryKeys.notifications.unreadCount(), (count) => (count ? { count: Math.max(0, count.count - 1) } : count))
+    },
+    () => void client.invalidateQueries({ queryKey: queryKeys.notifications.all() }),
+  )
 }
 
 /** Applique un changement à la liste et au compteur en cache, restaurés si le BFF refuse. */

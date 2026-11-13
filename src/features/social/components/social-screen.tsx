@@ -1,7 +1,9 @@
+import { useReferral } from '@/features/me'
+import { useShare } from '@/features/share'
 import { NotificationButton } from '@/features/notifications/components/notification-button'
 import { router } from 'expo-router'
 import { useState } from 'react'
-import { Share, View } from 'react-native'
+import { View } from 'react-native'
 import {
   Button,
   Chip,
@@ -187,9 +189,12 @@ export function SocialScreen() {
   const following = useContacts('following', query, true, sort)
   const followers = useContacts('followers', query, true, sort)
 
-  const invite = () => {
-    void Share.share({ message: `${me.data?.pseudonym ?? 'Un joueur'} t’invite sur Joutio : https://joutio.com` })
-  }
+  const share = useShare()
+  const referral = useReferral().data
+  /** Inviter un ami : lien de parrainage (`partage.md` § 6). */
+  const invite = () =>
+    referral &&
+    share({ kind: 'invite', id: referral.code, message: `${me.data?.pseudonym ?? 'Un joueur'} t’invite sur Joutio, le jeu de duels de culture générale.` })
   const openPlayer = (player: PlayerCardView) => {
     router.push({ pathname: '/social/player/[id]', params: { id: player.userId } })
   }

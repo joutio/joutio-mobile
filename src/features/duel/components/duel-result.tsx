@@ -1,6 +1,7 @@
+import { useShare } from '@/features/share'
 import { router } from 'expo-router'
 import { useMemo, useState } from 'react'
-import { Pressable, Share, View } from 'react-native'
+import { Pressable, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import {
   Notice,
@@ -150,6 +151,7 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
   const playTopic = { topicId: resolvedTopicId, name: topic, category }
   const rematch = useSendRematch({ userId, opponentId, topic: playTopic, gameId })
   const myAvatar = useMyAvatar()
+  const shareLink = useShare()
   const opponentAvatar = usePlayerAvatar(opponentId, !bot)
   const opponentPremium = usePlayerPremium(opponentId, !bot)
   const identity = usePlayerIdentity()
@@ -175,7 +177,9 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
     const current = unlocks[Math.min(step, unlocks.length - 1)]
     const share = () =>
       current &&
-      void Share.share({
+      shareLink({
+        kind: 'topic',
+        id: resolvedTopicId,
         message: current.kind === 'rank' ? `Je viens de passer ${tierLabel(current.tier)} sur Joutio !` : `Nouveau titre sur Joutio : ${topic}`,
       })
     const pages = unlocks.map((unlock) => {
@@ -255,9 +259,7 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
           {pageHeight > 0 && (
             <ResultPages height={pageHeight} page={page} onPageChange={setPage} enabled={hasReview}>
               {/* Page 1 : le résultat. */}
-              <View
-                style={{ flex: 1, paddingBottom: hasReview ? 0 : insets.bottom + tokens.space[3] }}
-              >
+              <View style={{ flex: 1, paddingBottom: hasReview ? 0 : insets.bottom + tokens.space[3] }}>
                 <View style={{ flex: 1, justifyContent: 'space-between', gap: tokens.space[5], paddingHorizontal: tokens.space[5] }}>
                   <ResultHeader
                     outcome={cancelled ? 'draw' : outcome}

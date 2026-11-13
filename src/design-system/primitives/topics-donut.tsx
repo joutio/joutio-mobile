@@ -1,6 +1,15 @@
 import { memo, useEffect, useMemo, useState } from 'react'
 import { View, type StyleProp, type ViewStyle } from 'react-native'
-import Animated, { Easing, ReduceMotion, useAnimatedProps, useAnimatedStyle, useDerivedValue, useSharedValue, withTiming, type SharedValue } from 'react-native-reanimated'
+import Animated, {
+  Easing,
+  ReduceMotion,
+  useAnimatedProps,
+  useAnimatedStyle,
+  useDerivedValue,
+  useSharedValue,
+  withTiming,
+  type SharedValue,
+} from 'react-native-reanimated'
 import Svg, { Circle, G, Line, Text as SvgText } from 'react-native-svg'
 import { useReducedMotion } from '../motion'
 import { useTheme } from '../theme/theme-provider'

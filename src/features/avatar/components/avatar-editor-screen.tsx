@@ -61,13 +61,10 @@ export function AvatarEditorScreen() {
   const badges = useMyBadges()
   const save = useUpdateMe('avatarOptions')
   const showPremium = usePremiumSheet((state) => state.show)
-  const initial = useMemo<AvatarConfig>(
-    () => {
-      const parsed = parseAvatarConfig(data?.avatarOptions)
-      return parsed && parsed.style !== 'base' ? parsed : { style: 'base' }
-    },
-    [data?.avatarOptions],
-  )
+  const initial = useMemo<AvatarConfig>(() => {
+    const parsed = parseAvatarConfig(data?.avatarOptions)
+    return parsed && parsed.style !== 'base' ? parsed : { style: 'base' }
+  }, [data?.avatarOptions])
   const [choice, setChoice] = useState<AvatarConfig>(initial)
   const [tab, setTab] = useState<string>('style')
   // Un onglet n'est rendu qu'une fois ouvert : chaque vignette est un rendu DiceBear.

@@ -1,3 +1,4 @@
+import { countryFlag, countryName } from '@joutio/client-domain/geo'
 import { useQueryClient } from '@tanstack/react-query'
 import { router, useLocalSearchParams } from 'expo-router'
 import { useState } from 'react'
@@ -17,7 +18,6 @@ import {
   HeartIcon,
   LightningIcon,
   ListGroup,
-  MapPinIcon,
   MatchRow,
   Menu,
   OutcomeBar,
@@ -45,7 +45,6 @@ import { useMe, usePlayerIdentity } from '@/features/me'
 import { useTopicOverview } from '@/features/topic/hooks/use-topic'
 import { dayLabel, formatNumber, tierLabel } from '@/features/topic/lib/format'
 import type { GameOutcome, PlayerCardView } from '@joutio/client-domain/api-types'
-import { countryLabel } from '@/shared/utils/country'
 import { tierOf } from '@/shared/utils/tier'
 import { topicName } from '@/shared/utils/topic-name'
 import type { TierCode } from '@/design-system'
@@ -221,7 +220,7 @@ export function PlayerProfileScreen() {
                 )}
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: tokens.space[2] }}>
                   {tier ? <Badge variant="tier" tier={tier}>{`${tierLabel(tier)} · ${formatNumber(rating ?? 0)}`}</Badge> : <Pill>Non classé</Pill>}
-                  {data.country && <Pill icon={MapPinIcon}>{countryLabel(data.country)}</Pill>}
+                  {data.country && <Pill>{`${countryFlag(data.country)} ${countryName(data.country)}`}</Pill>}
                   {data.suspended && <Pill tone="suspended">Compte suspendu</Pill>}
                   {blocked && <Pill tone="wrong">Bloqué</Pill>}
                 </View>

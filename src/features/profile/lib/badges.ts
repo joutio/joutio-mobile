@@ -9,6 +9,7 @@ import {
   MegaphoneIcon,
   SparkleIcon,
   StackIcon,
+  HandshakeIcon,
   SwordIcon,
   TargetIcon,
   tokens,
@@ -37,6 +38,7 @@ export const FAMILIES: Record<BadgeFamily, { name: string; icon: Icon; descripti
   SPEED: { name: 'Rapidité', icon: GaugeIcon, description: 'Bonnes réponses en moins de 3 s, cumulées sur tes duels entre joueurs.' },
   EXPLORATION: { name: 'Exploration', icon: CompassIcon, description: 'Sujets différents joués.' },
   COLLECTION: { name: 'Collection', icon: StackIcon, description: 'Badges acquis au total.' },
+  RECRUITER: { name: 'Recruteur', icon: HandshakeIcon, description: 'Amis parrainés qui ont terminé leur premier duel.' },
 }
 
 /** Unité d'un compteur, au singulier puis au pluriel, en toutes lettres (« point d'expérience »). */
@@ -49,6 +51,7 @@ const UNITS: Record<string, readonly [string, string]> = {
   DAILY_STREAK: ["jour d'affilée", "jours d'affilée"],
   FOLLOWERS_GAINED: ['abonné', 'abonnés'],
   CHALLENGES_SENT: ['défi lancé', 'défis lancés'],
+  REFERRALS_QUALIFIED: ['ami parrainé', 'amis parrainés'],
   IMAGE_CORRECT: ['question illustrée', 'questions illustrées'],
   TOPIC_MASTERY: ["point d'expérience", "points d'expérience"],
   DISTINCT_TOPICS: ['sujet', 'sujets'],

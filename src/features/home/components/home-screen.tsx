@@ -12,6 +12,7 @@ import {
   FireIcon,
   IconButton,
   Logo,
+  GearSixIcon,
   MagnifyingGlassIcon,
   Pill,
   PremiumBadge,
@@ -340,6 +341,7 @@ export function HomeScreen() {
           onPress={() => router.push('/home/search')}
         />
         <NotificationButton />
+        <IconButton icon={GearSixIcon} label="Réglages" variant="plain" tone="neutral" onPress={() => router.push('/home/settings')} />
       </View>
     </View>
   )

@@ -14,10 +14,7 @@ export function HeaderSeparator({ progress, inverse = false }: { progress?: Shar
     <Animated.View
       pointerEvents="none"
       accessible={false}
-      style={[
-        { position: 'absolute', left: 0, right: 0, bottom: 0, height: HAIRLINE, backgroundColor: colors.border },
-        opacity,
-      ]}
+      style={[{ position: 'absolute', left: 0, right: 0, bottom: 0, height: HAIRLINE, backgroundColor: colors.border }, opacity]}
     />
   )
 }

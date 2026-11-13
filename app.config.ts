@@ -2,6 +2,9 @@ import type { ConfigContext, ExpoConfig } from 'expo/config'
 import packageJson from './package.json'
 import tokens from './src/design-system/tokens.generated.json'
 
+/** Domaine des liens universels de partage (Universal Links, App Links). */
+const SHARE_HOST = 'go.joutio.com'
+
 /** Identifiant définitif côté stores, conservé lors du remplacement de l’ancienne app. */
 const APP_ID = 'com.joutio.app'
 
@@ -62,6 +65,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ios: {
     bundleIdentifier: APP_ID,
     supportsTablet: false,
+    // Liens universels go.joutio.com (design/specs/screens/partage.md) : l'app installée ouvre les liens partagés.
+    associatedDomains: [`applinks:${SHARE_HOST}`],
   },
   android: {
     package: APP_ID,
@@ -74,6 +79,15 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       monochromeImage: './assets/android-icon-monochrome.png',
     },
     predictiveBackGestureEnabled: true,
+    // App Links vérifiés (assetlinks.json servi par le BFF sur go.joutio.com).
+    intentFilters: [
+      {
+        action: 'VIEW',
+        autoVerify: true,
+        data: ['/p', '/t', '/j', '/i'].map((pathPrefix) => ({ scheme: 'https', host: SHARE_HOST, pathPrefix })),
+        category: ['BROWSABLE', 'DEFAULT'],
+      },
+    ],
     // La fenêtre se redimensionne sous le clavier (keyboard-controller gère ensuite les écrans bord à bord).
     softwareKeyboardLayoutMode: 'resize',
   },

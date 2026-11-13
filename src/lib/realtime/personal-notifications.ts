@@ -45,15 +45,19 @@ export function usePersonalNotifications(
       if (connected) resync.current?.()
       connected = true
     }
-    return subscribeStomp(`/topic/notifications/${userId}`, (message) => {
-      let envelope: Envelope
-      try {
-        envelope = JSON.parse(message.body) as Envelope
-      } catch {
-        return
-      }
-      if (!envelope.payload?.notificationId) return
-      ref.current(envelope.payload, envelope.eventType === 'NOTIFICATION_DELETED')
-    }, wantsResync ? onConnect : undefined)
+    return subscribeStomp(
+      `/topic/notifications/${userId}`,
+      (message) => {
+        let envelope: Envelope
+        try {
+          envelope = JSON.parse(message.body) as Envelope
+        } catch {
+          return
+        }
+        if (!envelope.payload?.notificationId) return
+        ref.current(envelope.payload, envelope.eventType === 'NOTIFICATION_DELETED')
+      },
+      wantsResync ? onConnect : undefined,
+    )
   }, [userId, wantsResync])
 }

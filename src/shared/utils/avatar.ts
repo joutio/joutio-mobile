@@ -7,7 +7,6 @@ export type AvatarConfig = { style?: string } & Record<string, string | undefine
 
 export { BACKGROUND_COLORS }
 
-
 const cache = new Map<string, string>()
 const CACHE_LIMIT = 600
 
@@ -20,7 +19,6 @@ export function parseAvatarConfig(json: string | null | undefined): AvatarConfig
     return null
   }
 }
-
 
 /**
  * SVG d'un avatar stylé ; `null` sans options ou avec le style `base` : l'avatar s'affiche en initiales, celles du

@@ -1,7 +1,8 @@
+import { useShare } from '@/features/share'
 import { useQueryClient } from '@tanstack/react-query'
 import { router, useLocalSearchParams } from 'expo-router'
 import { useState } from 'react'
-import { Share, View } from 'react-native'
+import { View } from 'react-native'
 import {
   Button,
   CheckIcon,
@@ -136,7 +137,8 @@ export function TopicScreen({ stack = 'home' }: { stack?: TopicStack }) {
       ],
     })
   }
-  const share = () => void Share.share({ message: `${name} sur Joutio : viens me défier !` })
+  const shareLink = useShare()
+  const share = () => shareLink({ kind: 'topic', id: topicId, message: `${name} sur Joutio : viens me défier !`, title: 'Partager le sujet' })
 
   if (overview.isError && !data) {
     return (

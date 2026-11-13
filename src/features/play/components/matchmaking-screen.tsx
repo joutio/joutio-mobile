@@ -1,15 +1,33 @@
+import { countryName } from '@joutio/client-domain/geo'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { router, useLocalSearchParams } from 'expo-router'
 import { useEffect, useRef, useState } from 'react'
 import { useWindowDimensions, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { Avatar, Notice, Button, CheckCircleIcon, EmptyState, ForceDark, haptic, MatchmakingMap, ReconnectCountdown, RobotIcon, Text, toast, tokens, useTheme, useToastSuppression, type MapPlayer, PlayerName } from '@/design-system'
+import {
+  Avatar,
+  Notice,
+  Button,
+  CheckCircleIcon,
+  EmptyState,
+  ForceDark,
+  haptic,
+  MatchmakingMap,
+  ReconnectCountdown,
+  RobotIcon,
+  Text,
+  toast,
+  tokens,
+  useTheme,
+  useToastSuppression,
+  type MapPlayer,
+  PlayerName,
+} from '@/design-system'
 import { usePlayerIdentity } from '@/features/me'
 import { PlayerPickerSheet } from '@/features/topic/components/duel-sheet'
 import { formatNumber } from '@/features/topic/lib/format'
 import { readServerNow, useServerClock } from '@/lib/realtime/server-clock'
 import { useConnectionStore } from '@/lib/ws'
-import { countryLabel } from '@/shared/utils/country'
 import { tierOf } from '@/shared/utils/tier'
 import { useAutoTrain, useBotDifficulty, useTicket, useTicketPresence, type PlayTopic } from '../hooks/use-play'
 import { playService } from '../lib/play-service'
@@ -96,7 +114,7 @@ function MatchmakingScreenContent() {
   const opponentMeta = [
     opponentTier ? tokens.tier[opponentTier].label : undefined,
     opponentRating !== null ? formatNumber(opponentRating) : undefined,
-    opponent?.country ? countryLabel(opponent.country) : undefined,
+    opponent?.country ? countryName(opponent.country) : undefined,
     'Le duel commence',
   ]
     .filter(Boolean)

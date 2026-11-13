@@ -118,50 +118,54 @@ export function SearchHeader({
       <Animated.View layout={reduced ? undefined : LAYOUT} style={{ overflow: 'hidden' }}>
         {!searching && (
           <Animated.View entering={reduced ? undefined : TITLE_IN} exiting={reduced ? undefined : TITLE_OUT} pointerEvents={searching ? 'none' : 'auto'}>
-            {titleBar ?? <MobileTopBar
-              title={title}
-              right={
-                <>
-                  {onGlobalSearch && (
-                    <IconButton icon={MagnifyingGlassIcon} label="Rechercher un sujet ou un joueur" variant="plain" tone="neutral" onPress={onGlobalSearch} />
-                  )}
-                  {notifications}
-                </>
-              }
-            />}
+            {titleBar ?? (
+              <MobileTopBar
+                title={title}
+                right={
+                  <>
+                    {onGlobalSearch && (
+                      <IconButton icon={MagnifyingGlassIcon} label="Rechercher un sujet ou un joueur" variant="plain" tone="neutral" onPress={onGlobalSearch} />
+                    )}
+                    {notifications}
+                  </>
+                }
+              />
+            )}
           </Animated.View>
         )}
       </Animated.View>
-      {searchVisible && <Animated.View
-        layout={reduced ? undefined : LAYOUT}
-        style={{ flexDirection: 'row', alignItems: 'center', gap: tokens.space[3], paddingHorizontal: tokens.space[5], paddingVertical: tokens.space[3] }}
-      >
-        <SearchField
-          style={{ flex: 1 }}
-          value={value}
-          onChange={onChange}
-          placeholder={placeholder}
-          label={placeholder}
-          inputRef={input}
-          onFocus={begin}
-          onBlur={blur}
-          onCancel={cancel}
-          active={searching}
-          cancelVisible={searching}
-        />
-        {!searching && (
-          <Animated.View entering={reduced ? undefined : FILTER_IN} exiting={reduced ? undefined : FILTER_OUT}>
-            <IconButton
-              icon={SlidersHorizontalIcon}
-              label={filterLabel}
-              variant="gray"
-              tone="neutral"
-              badge={filterDot ? 'dot' : undefined}
-              onPress={onFilter}
-            />
-          </Animated.View>
-        )}
-      </Animated.View>}
+      {searchVisible && (
+        <Animated.View
+          layout={reduced ? undefined : LAYOUT}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: tokens.space[3], paddingHorizontal: tokens.space[5], paddingVertical: tokens.space[3] }}
+        >
+          <SearchField
+            style={{ flex: 1 }}
+            value={value}
+            onChange={onChange}
+            placeholder={placeholder}
+            label={placeholder}
+            inputRef={input}
+            onFocus={begin}
+            onBlur={blur}
+            onCancel={cancel}
+            active={searching}
+            cancelVisible={searching}
+          />
+          {!searching && (
+            <Animated.View entering={reduced ? undefined : FILTER_IN} exiting={reduced ? undefined : FILTER_OUT}>
+              <IconButton
+                icon={SlidersHorizontalIcon}
+                label={filterLabel}
+                variant="gray"
+                tone="neutral"
+                badge={filterDot ? 'dot' : undefined}
+                onPress={onFilter}
+              />
+            </Animated.View>
+          )}
+        </Animated.View>
+      )}
     </Animated.View>
   )
 }

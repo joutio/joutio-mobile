@@ -73,19 +73,11 @@ export function ResultPages({ height, page, onPageChange, enabled, children }: R
     <GestureDetector gesture={pan}>
       <View collapsable={false} style={{ flex: 1, overflow: 'hidden' }}>
         <Animated.View style={[{ height: height * (enabled ? 2 : 1) }, style]}>
-          <View
-            style={{ height }}
-            accessibilityElementsHidden={page !== 0}
-            importantForAccessibility={page !== 0 ? 'no-hide-descendants' : 'auto'}
-          >
+          <View style={{ height }} accessibilityElementsHidden={page !== 0} importantForAccessibility={page !== 0 ? 'no-hide-descendants' : 'auto'}>
             {first}
           </View>
           {enabled && (
-            <View
-              style={{ height }}
-              accessibilityElementsHidden={page !== 1}
-              importantForAccessibility={page !== 1 ? 'no-hide-descendants' : 'auto'}
-            >
+            <View style={{ height }} accessibilityElementsHidden={page !== 1} importantForAccessibility={page !== 1 ? 'no-hide-descendants' : 'auto'}>
               {second}
             </View>
           )}

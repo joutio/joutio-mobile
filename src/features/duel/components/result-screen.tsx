@@ -26,38 +26,38 @@ export function ResultScreen() {
 
   if (!gameId || game.isPending || result.isPending) {
     return (
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bg }}>
-          <SplashLogo variant="loading" />
-        </View>
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bg }}>
+        <SplashLogo variant="loading" />
+      </View>
     )
   }
 
   if (game.isError || result.isError || !game.data || !result.data) {
     return (
-        <View style={{ flex: 1, backgroundColor: colors.bg, padding: tokens.space[5], justifyContent: 'center' }}>
-          <EmptyState
-            icon={WarningCircleIcon}
-            title="Impossible de charger cette partie"
-            description="Vérifie ta connexion, puis réessaie."
-            action={
-              <View style={{ gap: tokens.space[3], alignSelf: 'stretch' }}>
-                <Button
-                  style={{ alignSelf: 'center' }}
-                  loading={game.isRefetching || result.isRefetching}
-                  onPress={() => {
-                    void game.refetch()
-                    void result.refetch()
-                  }}
-                >
-                  Réessayer
-                </Button>
-                <Button variant="plain" tone="neutral" onPress={() => router.back()}>
-                  Fermer
-                </Button>
-              </View>
-            }
-          />
-        </View>
+      <View style={{ flex: 1, backgroundColor: colors.bg, padding: tokens.space[5], justifyContent: 'center' }}>
+        <EmptyState
+          icon={WarningCircleIcon}
+          title="Impossible de charger cette partie"
+          description="Vérifie ta connexion, puis réessaie."
+          action={
+            <View style={{ gap: tokens.space[3], alignSelf: 'stretch' }}>
+              <Button
+                style={{ alignSelf: 'center' }}
+                loading={game.isRefetching || result.isRefetching}
+                onPress={() => {
+                  void game.refetch()
+                  void result.refetch()
+                }}
+              >
+                Réessayer
+              </Button>
+              <Button variant="plain" tone="neutral" onPress={() => router.back()}>
+                Fermer
+              </Button>
+            </View>
+          }
+        />
+      </View>
     )
   }
 

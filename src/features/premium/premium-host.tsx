@@ -42,9 +42,7 @@ export function PremiumHost() {
   const set = useDeviceSettings((state) => state.set)
   const limits = planLimits(useMe(true).data)
   const pitch =
-    context === 'offer'
-      ? 'Premium arrive bientôt. Il ne change rien aux duels : même chrono, mêmes questions, même Elo.'
-      : limitReason(context, limits)
+    context === 'offer' ? 'Premium arrive bientôt. Il ne change rien aux duels : même chrono, mêmes questions, même Elo.' : limitReason(context, limits)
   return (
     <MobileSheet
       open={open}

@@ -1,7 +1,8 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { router } from 'expo-router'
 import { useMemo, useState } from 'react'
-import { ScrollView, Share, View } from 'react-native'
+import { countryFlag, countryName } from '@joutio/client-domain/geo'
+import { ScrollView, View } from 'react-native'
 import {
   Avatar,
   AVATAR_SIZES,
@@ -11,7 +12,7 @@ import {
   CollapsibleTabsScreen,
   EmptyState,
   GearSixIcon,
-  MapPinIcon,
+  PencilSimpleIcon,
   ParallaxIconButton,
   Pill,
   ShareNetworkIcon,
@@ -28,7 +29,7 @@ import { DEFAULT_HISTORY_FILTERS } from '@/features/history/lib/history-service'
 import { useMe } from '@/features/me'
 import { useMyTitles } from '@/features/topic/hooks/use-topic'
 import { formatNumber, tierLabel } from '@/features/topic/lib/format'
-import { countryLabel } from '@/shared/utils/country'
+import { useShare } from '@/features/share'
 import { tierOf } from '@/shared/utils/tier'
 import { useMyActivity, useMyBadges, useMyTopics } from '../hooks/use-profile'
 import { badgesSummary, familiesOf, type BadgeFamilySummary } from '../lib/badges'
@@ -84,6 +85,7 @@ export function ProfileScreen() {
     )
   }
 
+  const share = useShare()
   const counters = [
     { label: 'Parties', value: stats ? formatNumber(stats.played) : '—' },
     { label: 'Abonnés', value: data ? formatNumber(data.followersCount) : '—' },
@@ -102,11 +104,6 @@ export function ProfileScreen() {
         eyebrow={data ? <Avatar name={name} src={avatar} tier={tier} provisional={progression?.provisional} size="xxl" /> : undefined}
         right={
           <>
-            <ParallaxIconButton
-              icon={ShareNetworkIcon}
-              label="Partager mon profil"
-              onPress={() => void Share.share({ message: `${name} sur Joutio : viens me défier !` })}
-            />
             <ParallaxIconButton icon={GearSixIcon} label="Réglages" onPress={() => router.push('/profile/settings')} />
           </>
         }
@@ -133,8 +130,24 @@ export function ProfileScreen() {
                 ) : (
                   <Pill>Non classé</Pill>
                 )}
-                {data?.country && <Pill icon={MapPinIcon}>{countryLabel(data.country)}</Pill>}
+                {data?.country && <Pill>{`${countryFlag(data.country)} ${countryName(data.country)}`}</Pill>}
               </View>
+            </View>
+            {/* Même gabarit que Défier / Suivre de la Fiche joueur : 65 / 35, avant les compteurs (`profil.md` § 1). */}
+            <View style={{ flexDirection: 'row', gap: tokens.space[2] }}>
+              <Button full style={{ flex: 65 }} icon={PencilSimpleIcon} variant="tinted" disabled={!data} onPress={() => router.push('/edit-profile')}>
+                Éditer le profil
+              </Button>
+              <Button
+                full
+                style={{ flex: 35 }}
+                icon={ShareNetworkIcon}
+                variant="gray"
+                disabled={!data}
+                onPress={() => data && share({ kind: 'profile', id: data.userId, message: 'Viens me défier sur Joutio !', title: 'Partager mon profil' })}
+              >
+                Partager
+              </Button>
             </View>
             <View style={{ flexDirection: 'row', gap: tokens.space[3] }}>
               {counters.map((counter) => (

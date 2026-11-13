@@ -1,3 +1,4 @@
+import { countryName } from '@joutio/client-domain/geo'
 import { FlashList, type FlashListRef } from '@shopify/flash-list'
 import { router, useLocalSearchParams } from 'expo-router'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -24,7 +25,6 @@ import {
   useTabBarInset,
 } from '@/design-system'
 import { useMe, usePlayerIdentity } from '@/features/me'
-import { countryLabel } from '@/shared/utils/country'
 import { tierOf } from '@/shared/utils/tier'
 import type { LeaderboardEntryView } from '@joutio/client-domain/api-types'
 import { useTopicLeaderboardPage } from '../hooks/use-topic'
@@ -90,7 +90,8 @@ export function RankingsScreen() {
   const rest = entries.slice(3)
   const showMeBar = Boolean(meEntry && !entries.some((entry) => entry.userId === meEntry.userId))
   const scoreOf = (entry: LeaderboardEntryView) => (filterState.period === 'MONTHLY' ? entry.monthlyXp : entry.totalXp)
-  const scopeLabel = filterState.scope === 'WORLD' ? 'Mondial' : filterState.scope === 'FOLLOWING' ? 'Suivis' : countryLabel(me.data?.country)
+  const scopeLabel =
+    filterState.scope === 'WORLD' ? 'Mondial' : filterState.scope === 'FOLLOWING' ? 'Suivis' : me.data?.country ? countryName(me.data.country) : ''
   const legend =
     filterState.period === 'MONTHLY' && filterState.scope === 'WORLD'
       ? monthlyLegend()

@@ -1,7 +1,9 @@
+import { buildShareUrl } from '@joutio/client-domain/share'
+import { useShare } from '@/features/share'
 import { toast } from '@/design-system'
 import { router, useLocalSearchParams, useIsFocused } from 'expo-router'
 import { useEffect, useRef, useState } from 'react'
-import { Share, View } from 'react-native'
+import { View } from 'react-native'
 import {
   Button,
   EmptyState,
@@ -27,7 +29,15 @@ import { config } from '@/lib/config'
 import { readServerNow, useServerClock } from '@/lib/realtime/server-clock'
 import { tierOf } from '@/shared/utils/tier'
 import { topicName } from '@/shared/utils/topic-name'
-import { PREPARATION_STEPS, preparationComplete, preparationStep, roomFailureKind, waitingStatusLabel, wizzState, type RoomFailureKind } from '@joutio/client-domain/rooms'
+import {
+  PREPARATION_STEPS,
+  preparationComplete,
+  preparationStep,
+  roomFailureKind,
+  waitingStatusLabel,
+  wizzState,
+  type RoomFailureKind,
+} from '@joutio/client-domain/rooms'
 import { useRoom, useRoomPresence, useWizzRoom } from '../hooks/use-play'
 import { playService } from '../lib/play-service'
 import { usePlayerProfile } from '@/features/social/hooks/use-social'
@@ -58,7 +68,8 @@ const FAILURE_DESCRIPTION: Record<RoomFailureKind, string> = {
 }
 
 /** Lien public du salon (`joutio-landing` `/join/{roomId}` ouvre l'app). */
-export const roomLink = (roomId: string) => `${config.siteUrl}/join/${roomId}`
+/** Lien universel du salon (`partage.md` § 2), sans code de parrainage. */
+export const roomLink = (roomId: string) => buildShareUrl({ kind: 'room', id: roomId })
 
 /** Horloge serveur, relue chaque seconde (décompte d'expiration, cadence de la relance). */
 function useServerNow() {
@@ -172,7 +183,14 @@ export function RoomScreen() {
 
   const myName = me.data?.pseudonym ?? ''
   const myTier = me.data?.progression && !me.data.progression.provisional ? tierOf(me.data.progression.rating) : undefined
-  const meSeat: RoomPlayer = { name: myName, src: myAvatar, tier: myTier, premium: identity.myPremium, away: !myPresent, status: myPresent ? 'Dans le salon' : 'Connexion…' }
+  const meSeat: RoomPlayer = {
+    name: myName,
+    src: myAvatar,
+    tier: myTier,
+    premium: identity.myPremium,
+    away: !myPresent,
+    status: myPresent ? 'Dans le salon' : 'Connexion…',
+  }
   const opponentSeat: RoomPlayer | undefined = vsBot
     ? { name: 'Robot', status: 'Prêt' }
     : opponentId
@@ -191,6 +209,7 @@ export function RoomScreen() {
   const kind = vsBot ? { icon: RobotIcon, label: 'Entraînement' } : nominative ? { icon: SwordIcon, label: 'Défi' } : { icon: LinkIcon, label: 'Salon privé' }
   const cancelLabel = vsBot ? 'Annuler le duel' : nominative ? 'Annuler le défi' : 'Fermer le salon'
   const link = roomLink(roomId)
+  const shareLink = useShare()
 
   return (
     <>
@@ -251,7 +270,7 @@ export function RoomScreen() {
               full
               icon={ShareNetworkIcon}
               variant="tinted"
-              onPress={() => void Share.share({ message: `Viens me défier sur Joutio : ${topic}\n${link}` })}
+              onPress={() => shareLink({ kind: 'room', id: roomId, message: `Viens me défier sur Joutio : ${topic}` })}
             >
               Partager le lien
             </Button>

@@ -55,6 +55,8 @@ function AppNavigation() {
           <Stack.Screen name="result/[gameId]/chat" options={{ headerShown: false, animation: 'slide_from_right' }} />
           {/* Éditeur d'avatar : modale plein écran, sans barre d'onglets (Annuler / Enregistrer). */}
           <Stack.Screen name="avatar" options={{ headerShown: false, presentation: 'fullScreenModal' }} />
+          {/* Éditer le profil (editer-profil.md) : tâche ciblée, Annuler / Enregistrer, sans barre d'onglets. */}
+          <Stack.Screen name="edit-profile" options={{ headerShown: false, presentation: 'fullScreenModal' }} />
           {/* Éditeur de question (Mes sujets) : modale plein écran, Annuler / Enregistrer. */}
           <Stack.Screen name="question-editor" options={{ headerShown: false, presentation: 'fullScreenModal' }} />
         </Stack>
