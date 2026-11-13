@@ -1,3 +1,13 @@
+## [1.38.0](https://github.com/joutio/joutio-mobile/compare/v1.37.0...v1.38.0) (2026-11-13)
+
+### Features
+
+* **profile:** edit profile, settings tree and universal sharing ([bdde96c](https://github.com/joutio/joutio-mobile/commit/bdde96c259ae3d30898f1a4eecdad84b24e4045c))
+
+### Bug Fixes
+
+* **duel:** result follows the app theme ([8397329](https://github.com/joutio/joutio-mobile/commit/8397329f75ca58137c2c0cefef343a81addd85a5))
+
 ## [1.37.0](https://github.com/joutio/joutio-mobile/compare/v1.36.0...v1.37.0) (2026-11-12)
 
 ### Features
