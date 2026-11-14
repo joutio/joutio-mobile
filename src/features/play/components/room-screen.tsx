@@ -27,7 +27,7 @@ import {
 import { useCloseRoom } from '@/features/challenges/hooks/use-challenges'
 import { useMe, usePlayerIdentity } from '@/features/me'
 import { config } from '@/lib/config'
-import { readServerNow, useServerClock } from '@/lib/realtime/server-clock'
+import { useServerClock } from '@/lib/realtime/server-clock'
 import { tierOf } from '@/shared/utils/tier'
 import { topicName } from '@/shared/utils/topic-name'
 import {
@@ -45,6 +45,7 @@ import { usePlayerProfile } from '@/features/social/hooks/use-social'
 import { userAvatar } from '@/shared/utils/avatar'
 import { usePlaySession } from '../hooks/play-session'
 import { useMyAvatar } from '@/features/avatar/lib/avatar-preview'
+import { countdownOf, useServerNow } from '../lib/countdown'
 
 export interface RoomRouteParams {
   roomId: string
@@ -70,24 +71,6 @@ const FAILURE_DESCRIPTION: Record<RoomFailureKind, string> = {
 
 /** Lien universel du salon (`partage.md` § 2). */
 export const roomLink = (roomId: string) => buildShareUrl({ kind: 'room', id: roomId })
-
-/** Horloge serveur, relue chaque seconde (décompte d'expiration, cadence de la relance). */
-function useServerNow() {
-  const [now, setNow] = useState(readServerNow)
-  useEffect(() => {
-    const timer = setInterval(() => setNow(readServerNow()), 1000)
-    return () => clearInterval(timer)
-  }, [])
-  return now
-}
-
-function countdownOf(expiresAt: string | null, now: number) {
-  if (!expiresAt) return null
-  const left = Math.max(0, Math.round((Date.parse(expiresAt) - now) / 1000))
-  // Au-delà d'une heure (salon de 24 h) : heures et minutes ; dans la dernière heure : minutes et secondes.
-  if (left >= 3600) return `${Math.floor(left / 3600)} h ${String(Math.floor((left % 3600) / 60)).padStart(2, '0')}`
-  return `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`
-}
 
 /**
  * Salon de préparation (`defis.md` § 2, `lancer-partie.md`, 2026-11-07 à l'image de joutio-web) : **un seul écran pour

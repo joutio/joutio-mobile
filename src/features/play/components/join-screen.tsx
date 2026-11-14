@@ -3,35 +3,101 @@ import { useLocalSearchParams } from 'expo-router'
 import { router } from '@/shared/navigation/router'
 import { View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { Avatar, Button, CATEGORY_ICONS, EmptyState, LightningIcon, LinkIcon, Pill, Skeleton, Text, toCategoryCode, tokens, useTheme } from '@/design-system'
+import {
+  Avatar,
+  Badge,
+  Button,
+  ClockCountdownIcon,
+  EmptyState,
+  IconButton,
+  LightningIcon,
+  LinkIcon,
+  ListGroup,
+  ListRow,
+  NumberCircleTwoIcon,
+  PlayerName,
+  QuestionIcon,
+  Screen,
+  Skeleton,
+  Text,
+  TimerIcon,
+  TopicCard,
+  toCategoryCode,
+  tokens,
+  useTheme,
+  XIcon,
+  type Icon,
+  type TierCode,
+} from '@/design-system'
 import { useSessionStore } from '@/features/auth'
-import { useMe } from '@/features/me'
+import { useMe, usePlayerIdentity } from '@/features/me'
+import { useMyAvatar } from '@/features/avatar/lib/avatar-preview'
 import { usePendingJoin } from '@/shared/stores/pending-join-store'
+import { tierOf } from '@/shared/utils/tier'
 import { topicName } from '@/shared/utils/topic-name'
-import { playService } from '../lib/play-service'
 import { userAvatar } from '@/shared/utils/avatar'
+import { countdownOf, useServerNow } from '../lib/countdown'
+import { playService } from '../lib/play-service'
 
-const RULES = '7 manches de 10 secondes, la dernière compte double. Le plus rapide à bien répondre marque le plus de points.'
+/** Conditions du duel, en `ListRow` informatives (`lancer-partie.md` § 2). */
+const RULES: readonly { icon: Icon; label: string }[] = [
+  { icon: TimerIcon, label: '7 manches de 10 secondes' },
+  { icon: LightningIcon, label: 'Plus tu réponds vite, plus tu marques' },
+  { icon: NumberCircleTwoIcon, label: 'La dernière manche compte double' },
+]
 
-function Unavailable() {
+/** Colonne de 370 pt au plus (face-à-face, sujet, conditions, bouton) : sur un grand écran, la page garde une taille de téléphone. */
+const COLUMN = { width: '100%', maxWidth: 370, alignSelf: 'center' } as const
+const SEAT = 88
+
+type SeatProps = { name: string; src?: string; rating?: number | null; provisional?: boolean | null; premium?: boolean; guest?: string }
+
+/** Une place du face-à-face : avatar, nom, rang et Elo ; sans compte, une place à prendre (`guest` : son indication). */
+function Seat({ name, src, rating, provisional, premium, guest }: SeatProps) {
+  const { colors, radius } = useTheme()
+  const tier: TierCode | undefined = rating != null && !provisional ? tierOf(rating) : undefined
   return (
-    <EmptyState
-      fill
-      icon={LinkIcon}
-      title="Ce salon n'est plus disponible"
-      description="Il a expiré, ou un autre joueur l'a déjà rejoint."
-      action={
-        <Button full onPress={() => router.replace('/topics')}>
-          Explorer les sujets
-        </Button>
-      }
-    />
+    <View style={{ flex: 1, minWidth: 0, alignItems: 'center', gap: tokens.space[3] }}>
+      {guest ? (
+        <View
+          style={{
+            width: SEAT,
+            height: SEAT,
+            borderRadius: radius.full,
+            borderWidth: 2,
+            borderStyle: 'dashed',
+            borderColor: colors.border,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <QuestionIcon size={30} color={colors.muted} />
+        </View>
+      ) : (
+        <Avatar name={name} src={src} tier={tier} size="xxl" decorative />
+      )}
+      <PlayerName name={name} premium={premium} variant="headline" color={guest ? 'muted' : 'text'} justify="center" />
+      {guest ? (
+        <Text variant="caption" color="muted" align="center">
+          {guest}
+        </Text>
+      ) : tier && rating != null ? (
+        <Badge variant="tier" tier={tier}>{`${tokens.tier[tier].label} · ${rating.toLocaleString('fr-FR')}`}</Badge>
+      ) : null}
+    </View>
   )
 }
 
+function close() {
+  if (router.canGoBack()) router.back()
+  else router.replace('/home')
+}
+
 /**
- * Rejoindre un salon (`lancer-partie.md` § 2), ouvert par un lien partagé (`joutio://join/{roomId}`), hors onglets.
- * Sans compte : même invitation, la connexion ramène ici.
+ * Rejoindre un salon (`lancer-partie.md` § 2, lab `rejoindre.tsx`, refonte face-à-face du 2026-11-14), ouvert par un
+ * lien partagé (`joutio://join/{roomId}`), hors onglets : Fermer et échéance en haut, invitation, face-à-face de l'hôte
+ * et du joueur (place à prendre sans compte), `TopicCard` du sujet (240 pt), conditions en `ListRow`, « Rejoindre le
+ * duel » en bas. Sans compte, la connexion ramène ici.
  */
 export function JoinScreen() {
   const { roomId } = useLocalSearchParams<{ roomId: string }>()
@@ -39,13 +105,16 @@ export function JoinScreen() {
   const insets = useSafeAreaInsets()
   const authenticated = useSessionStore((state) => state.authenticated)
   const me = useMe(authenticated)
+  const identity = usePlayerIdentity()
+  const myAvatar = useMyAvatar()
+  const now = useServerNow()
   const setPending = usePendingJoin((state) => state.set)
   const room = useQuery({ queryKey: ['rooms', roomId], queryFn: () => playService.room(roomId), enabled: authenticated, retry: 1 })
 
   const view = room.data
   const unavailable = room.isError || (view && (view.status !== 'WAITING_PLAYERS' || view.gameId !== null))
-  const host = view?.opponent?.pseudonym
-  const category = toCategoryCode(view?.topic.category)
+  const host = view?.opponent
+  const countdown = countdownOf(view?.expiresAt, now)
   const join = () => {
     if (!authenticated) {
       setPending(roomId)
@@ -59,46 +128,97 @@ export function JoinScreen() {
     })
   }
 
+  const header = (
+    <View style={{ height: 52, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingLeft: tokens.space[3], paddingRight: tokens.space[5] }}>
+      <IconButton icon={XIcon} label="Fermer" variant="plain" tone="neutral" onPress={close} />
+      {countdown && !unavailable && (
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: tokens.space[2] }}>
+          <ClockCountdownIcon size={16} color={colors.muted} />
+          <Text variant="callout" color="muted">
+            Expire dans{' '}
+            <Text variant="callout" mono weight="600">
+              {countdown}
+            </Text>
+          </Text>
+        </View>
+      )}
+    </View>
+  )
+
+  if (unavailable)
+    return (
+      <Screen header={header} contentStyle={{ flexGrow: 1, paddingHorizontal: tokens.space[5] }}>
+        <EmptyState
+          fill
+          icon={LinkIcon}
+          title="Ce salon n'est plus disponible"
+          description="Il a expiré, ou un autre joueur l'a déjà rejoint."
+          action={
+            <Button full onPress={() => router.replace('/topics')}>
+              Explorer les sujets
+            </Button>
+          }
+        />
+      </Screen>
+    )
+
+  const loading = authenticated && room.isPending
+  const progression = me.data?.progression
   return (
-    <View
-      style={{
-        flex: 1,
-        backgroundColor: colors.bg,
-        paddingTop: insets.top + tokens.space[7],
-        paddingBottom: insets.bottom + tokens.space[6],
-        paddingHorizontal: tokens.space[5],
-      }}
-    >
-      {unavailable ? (
-        <Unavailable />
-      ) : (
-        <>
-          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: tokens.space[5] }}>
-            {authenticated && room.isPending ? (
-              <Skeleton shape="circle" width={140} />
-            ) : (
-              <Avatar name={host ?? 'Joutio'} src={userAvatar(view?.opponent)} size="preview" decorative />
-            )}
-            <Text variant="title1" align="center" accessibilityRole="header">
-              {host ? `${host} t'invite à un duel` : 'Tu es invité à un duel'}
-            </Text>
-            {view && <Pill icon={CATEGORY_ICONS[tokens.category[category].icon]}>{topicName(view.topic.names)}</Pill>}
-            <Text color="muted" align="center" style={{ maxWidth: 320 }}>
-              {RULES}
-            </Text>
-          </View>
-          <View style={{ gap: tokens.space[3] }}>
+    <Screen
+      header={header}
+      contentStyle={{ gap: tokens.space[6], paddingHorizontal: tokens.space[5], paddingTop: tokens.space[2], paddingBottom: tokens.space[6] }}
+      bottomBar={
+        // 370 pt de bouton, centré : la colonne de la page.
+        <View style={[COLUMN, { gap: tokens.space[3], paddingTop: tokens.space[3], paddingBottom: Math.max(0, tokens.space[3] - insets.bottom) }]}>
+          <View style={{ paddingHorizontal: tokens.space[5] }}>
             <Button full icon={LightningIcon} disabled={authenticated && (room.isPending || (me.data ? !me.data.onboardingCompleted : false))} onPress={join}>
               {authenticated ? 'Rejoindre le duel' : 'Se connecter pour rejoindre'}
             </Button>
-            {!authenticated && (
-              <Text variant="caption" color="muted" align="center">
-                Pas encore de compte ? Tu le crées en 20 secondes.
-              </Text>
-            )}
           </View>
-        </>
+          {!authenticated && (
+            <Text variant="caption" color="muted" align="center">
+              Pas encore de compte ? Tu le crées en 20 secondes.
+            </Text>
+          )}
+        </View>
+      }
+    >
+      <Text variant="title1" align="center" accessibilityRole="header">
+        {host ? `${host.pseudonym} t'invite à un duel` : 'Tu es invité à un duel'}
+      </Text>
+      <View style={[COLUMN, { flexDirection: 'row', alignItems: 'flex-start', gap: tokens.space[3] }]}>
+        {loading || !host ? (
+          <View style={{ flex: 1, alignItems: 'center' }}>
+            <Skeleton shape="circle" width={SEAT} />
+          </View>
+        ) : (
+          <Seat name={host.pseudonym} src={userAvatar(host)} rating={host.rating} provisional={host.provisional} premium={identity.premium(host)} />
+        )}
+        <View style={{ marginTop: 30, width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accent }}>
+          <LightningIcon size={14} weight="fill" color={colors.onAccent} />
+        </View>
+        {authenticated && me.data ? (
+          <Seat name={me.data.pseudonym} src={myAvatar} rating={progression?.rating} provisional={progression?.provisional} premium={identity.myPremium} />
+        ) : (
+          <Seat name="Toi" guest="Connecte-toi pour jouer" />
+        )}
+      </View>
+      {view && (
+        // Même largeur que les cartes paysage des rails de l'Accueil (240 pt), centrée.
+        <TopicCard
+          title={topicName(view.topic.names)}
+          category={toCategoryCode(view.topic.category)}
+          image={view.topic.imageUrl ?? undefined}
+          style={{ width: '100%', maxWidth: 240, alignSelf: 'center' }}
+        />
       )}
-    </View>
+      {/* Conditions du duel : lignes informatives, comme les autorisations de l'onboarding. */}
+      <ListGroup surface="surface" style={COLUMN}>
+        {RULES.map(({ icon, label }, index) => (
+          <ListRow key={label} icon={icon} label={label} control="none" last={index === RULES.length - 1} />
+        ))}
+      </ListGroup>
+    </Screen>
   )
 }

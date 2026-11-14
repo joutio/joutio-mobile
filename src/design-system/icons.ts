@@ -155,3 +155,8 @@ export { DatabaseIcon } from 'phosphor-react-native/src/icons/Database'
 export { LifebuoyIcon } from 'phosphor-react-native/src/icons/Lifebuoy'
 export { CameraIcon } from 'phosphor-react-native/src/icons/Camera'
 export { TextAlignLeftIcon } from 'phosphor-react-native/src/icons/TextAlignLeft'
+// Rejoindre un salon (`lancer-partie.md` § 2, 2026-11-14) : échéance, conditions du duel, place à prendre.
+export { ClockCountdownIcon } from 'phosphor-react-native/src/icons/ClockCountdown'
+export { TimerIcon } from 'phosphor-react-native/src/icons/Timer'
+export { NumberCircleTwoIcon } from 'phosphor-react-native/src/icons/NumberCircleTwo'
+export { QuestionIcon } from 'phosphor-react-native/src/icons/Question'
