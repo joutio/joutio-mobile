@@ -1,3 +1,9 @@
+## [1.42.0](https://github.com/joutio/joutio-mobile/compare/v1.41.1...v1.42.0) (2026-11-14)
+
+### Features
+
+* **mobile:** align with the design lab, remove referral and ReconnectCountdown ([ecb2788](https://github.com/joutio/joutio-mobile/commit/ecb27884f81215c85ad2092ce0aae5dd81f4ec33))
+
 ## [1.41.1](https://github.com/joutio/joutio-mobile/compare/v1.41.0...v1.41.1) (2026-11-14)
 
 ### Bug Fixes
