@@ -1,3 +1,17 @@
+## [1.44.0](https://github.com/joutio/joutio-mobile/compare/v1.43.1...v1.44.0) (2026-11-14)
+
+### Features
+
+* **mobile:** avatar editor with one tab per part, adaptive tiles and lazy pages ([998b4c2](https://github.com/joutio/joutio-mobile/commit/998b4c2ede5a03050095cc2aba3f25474eda4a90))
+* **mobile:** challenges tabs instead of chips, notifications open the right tab ([d27fe49](https://github.com/joutio/joutio-mobile/commit/d27fe496ee4bb2bba0c82b9c6c6902197efa8de4))
+* **mobile:** compact result on short screens, ring labels never off-screen ([707a8af](https://github.com/joutio/joutio-mobile/commit/707a8af576bd404a0c39fc80ccefcbfb228d28a4))
+* **mobile:** result without the next-rank line under the Elo ([4bfc8bc](https://github.com/joutio/joutio-mobile/commit/4bfc8bcfa74a1906c908a16fcf7d9cfcbcd6eec6))
+
+### Bug Fixes
+
+* **mobile:** next-rank line hidden only on the compact result ([7a64cb1](https://github.com/joutio/joutio-mobile/commit/7a64cb154bc8c025bb570438f834327c41c2956e))
+* **mobile:** top banner no longer pushes the screen up before sliding it down ([ccc5b05](https://github.com/joutio/joutio-mobile/commit/ccc5b05f306b496eb2815796154b5268f3b4d78c))
+
 ## [1.43.1](https://github.com/joutio/joutio-mobile/compare/v1.43.0...v1.43.1) (2026-11-14)
 
 ### Bug Fixes
