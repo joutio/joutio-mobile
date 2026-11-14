@@ -244,10 +244,6 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
   // ─── Résultat ───
   const outcomeLabel = { win: 'victoire', loss: 'défaite', draw: 'égalité', forfeit: 'abandon' }[outcome]
   const chatRecap = `${topic} · ${outcomeLabel} ${myScore} à ${theirScore}`
-  const nextTier = myTier ? ORDER[ORDER.indexOf(myTier) + 1] : undefined
-  const nextElo = nextTier
-    ? `${tierLabel(nextTier)} à ${formatNumber(tokens.tier[nextTier].minElo)}${tokens.tier[nextTier].minElo > rating ? ` · encore ${formatNumber(tokens.tier[nextTier].minElo - rating)}` : ''}`
-    : undefined
   const mastery = data?.topicMastery
   const pendingReward = !data || data.reward === null
   const eloSummary = (
@@ -255,7 +251,7 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
       compact={compact}
       elo={rating}
       delta={data?.rated ? (data.eloDelta ?? 0) : 0}
-      next={nextElo}
+      // Sans le prochain rang (2026-11-14) : inutile ici, la place sert aux écrans courts.
       style={compact ? { flex: 1 } : undefined}
     />
   )
