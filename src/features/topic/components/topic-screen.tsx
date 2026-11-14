@@ -143,7 +143,7 @@ export function TopicScreen({ stack = 'home' }: { stack?: TopicStack }) {
   const shareLink = useShare()
   const share = () => shareLink({ kind: 'topic', id: topicId, message: `${name} sur Joutio : viens me défier !`, title: 'Partager le sujet' })
 
-  if (overview.isError && !data) {
+  if (overview.isError) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', padding: tokens.space[5] }}>
         <EmptyState

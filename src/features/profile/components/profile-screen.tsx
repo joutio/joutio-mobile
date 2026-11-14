@@ -69,7 +69,7 @@ export function ProfileScreen() {
   const stats = data?.stats
   const name = data?.pseudonym ?? 'Profil'
 
-  if (me.isError && !data) {
+  if (me.isError) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', padding: tokens.space[5] }}>
         <EmptyState

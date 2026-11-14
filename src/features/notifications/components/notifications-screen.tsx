@@ -130,7 +130,7 @@ export function NotificationsScreen() {
                 <Skeleton key={index} shape="row" style={{ height: 64 }} />
               ))}
             </View>
-          ) : list.isError && !list.data ? (
+          ) : list.isError && !list.isFetchNextPageError ? (
             <View style={{ flex: 1, justifyContent: 'center', paddingHorizontal: GUTTER }}>
               <EmptyState
                 icon={WarningCircleIcon}

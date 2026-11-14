@@ -13,7 +13,7 @@ export function useSessionLifecycle() {
   const authenticated = useSessionStore((state) => state.authenticated)
   const queryClient = useQueryClient()
 
-  useEffect(() => onSessionEnded(endSession), [endSession])
+  useEffect(() => onSessionEnded((reason, suspension) => endSession(reason, suspension)), [endSession])
 
   useEffect(() => {
     if (ready && !authenticated) queryClient.clear()

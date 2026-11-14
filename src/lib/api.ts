@@ -10,7 +10,8 @@ export const api = createApiClient({
   getAuthToken: () => getAccessToken(),
   onError: (error) => {
     if (error.statusCode === 403 && error.type === ACCOUNT_SUSPENDED_TYPE) {
-      void clearSession('suspended')
+      const body = error as { suspendedUntil?: string; suspensionReason?: string }
+      void clearSession('suspended', { until: body.suspendedUntil, reason: body.suspensionReason })
       return
     }
     if (error.statusCode === 401 && error.type === UNKNOWN_USER_TYPE) {

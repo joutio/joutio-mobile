@@ -68,7 +68,7 @@ export function GamesTab({
           <Skeleton shape="row" />
           <Skeleton shape="row" />
         </>
-      ) : games.isError && !games.data ? (
+      ) : games.isError ? (
         <EmptyState
           icon={WarningCircleIcon}
           title="Impossible de charger tes parties"

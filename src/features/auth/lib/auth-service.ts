@@ -1,4 +1,5 @@
 import { ENDPOINTS } from '@/lib/endpoints'
+import type { SuspensionInfo } from '@/shared/types/session'
 import type { FacebookCredential } from './facebook'
 
 /** Session mobile retournée par identity (mêmes JWT que le flux OIDC web). */
@@ -16,18 +17,23 @@ interface ProblemDetail {
   title?: string
   status?: number
   detail?: string
+  suspendedUntil?: string
+  suspensionReason?: string
 }
 
 /** Erreur d'authentification identity, avec un message prêt à afficher. */
 export class IdentityAuthError extends Error {
   readonly status?: number
   readonly type?: string
+  /** Compte suspendu (`403`) : fin et motif annoncés par identity. */
+  readonly suspension?: SuspensionInfo
 
-  constructor(message: string, status?: number, type?: string) {
+  constructor(message: string, status?: number, type?: string, suspension?: SuspensionInfo) {
     super(message)
     this.name = 'IdentityAuthError'
     this.status = status
     this.type = type
+    this.suspension = suspension
   }
 }
 
@@ -43,7 +49,8 @@ async function postJson(url: string, body: unknown): Promise<Response> {
 
 async function readError(response: Response, fallback: string): Promise<IdentityAuthError> {
   const problem = (await response.json().catch(() => null)) as ProblemDetail | null
-  return new IdentityAuthError(problem?.detail ?? problem?.title ?? fallback, response.status, problem?.type)
+  const suspension = response.status === 403 ? { until: problem?.suspendedUntil, reason: problem?.suspensionReason } : undefined
+  return new IdentityAuthError(problem?.detail ?? problem?.title ?? fallback, response.status, problem?.type, suspension)
 }
 
 /** Identity répond toujours 202 (anti-énumération) : on passe au code même sans compte existant. */

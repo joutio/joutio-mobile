@@ -158,7 +158,7 @@ export function HistoryScreen() {
     >
       {list.isPending ? (
         <Loading />
-      ) : list.isError && !list.data ? (
+      ) : list.isError && !list.isFetchNextPageError ? (
         <View style={{ flex: 1, justifyContent: 'center', padding: GUTTER }}>
           <EmptyState
             icon={WarningCircleIcon}

@@ -265,7 +265,9 @@ function FeedPage({ tab, home }: { tab: Exclude<Tab, 'creation'>; home: ReturnTy
   const data = home.data
   const [selected, setSelected] = useState<CategoryCode[]>([])
   const list = useTopics(followedFilters(selected), followed)
-  const empty = data && (followed ? data.followedTopics.length === 0 : data.trendingTopics.length === 0 && data.newTopics.length === 0)
+  // Un échec (rafraîchissement compris) remplace la vue : jamais le message d'erreur au-dessus d'anciennes sections.
+  const failed = home.isError
+  const empty = !failed && data && (followed ? data.followedTopics.length === 0 : data.trendingTopics.length === 0 && data.newTopics.length === 0)
   return (
     <DragToLoadMore
       enabled={followed && Boolean(list.hasNextPage) && !list.isFetchNextPageError}
@@ -302,6 +304,7 @@ function FeedPage({ tab, home }: { tab: Exclude<Tab, 'creation'>; home: ReturnTy
           />
         )}
         {data &&
+          !failed &&
           !empty &&
           (followed ? (
             <Followed list={list} selected={selected} onSelect={setSelected} />

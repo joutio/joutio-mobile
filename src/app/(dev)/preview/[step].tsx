@@ -22,7 +22,7 @@ export default function Preview() {
     case 'first-topic':
       return <FirstTopicStep />
     case 'suspended':
-      return <SessionEndedScreen reason="suspended" onLogin={() => undefined} />
+      return <SessionEndedScreen reason="suspended" suspension={{ until: new Date(Date.now() + 7 * 86_400_000).toISOString(), reason: 'HARASSMENT' }} onLogin={() => undefined} />
     default:
       return <SessionEndedScreen reason="expired" onLogin={() => undefined} />
   }

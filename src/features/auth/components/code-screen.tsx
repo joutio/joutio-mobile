@@ -3,6 +3,8 @@ import { View } from 'react-native'
 import { Button, CodeInput, haptic, Screen, Text, tokens } from '@/design-system'
 import { useOnboardingStore } from '@/features/onboarding/onboarding-store'
 import { useLoginWithCode, useRequestLoginCode } from '../hooks/use-login'
+import { useSessionStore } from '../session-store'
+import { SessionEndedScreen } from './session-ended-screen'
 
 const CODE_LENGTH = 6
 const RESEND_SECONDS = 60
@@ -16,6 +18,10 @@ export function CodeScreen() {
   const [wait, setWait] = useState(RESEND_SECONDS)
   const login = useLoginWithCode()
   const resend = useRequestLoginCode()
+  // Compte suspendu : identity refuse le code, l'écran dédié (fin et motif) remplace la saisie.
+  const endReason = useSessionStore((state) => state.endReason)
+  const suspension = useSessionStore((state) => state.suspension)
+  const acknowledgeEnd = useSessionStore((state) => state.acknowledgeEnd)
 
   useEffect(() => {
     if (wait === 0) return
@@ -30,6 +36,8 @@ export function CodeScreen() {
   }
 
   const error = login.error?.message
+
+  if (endReason) return <SessionEndedScreen reason={endReason} suspension={suspension} onLogin={acknowledgeEnd} />
 
   return (
     <Screen

@@ -1,4 +1,4 @@
-import type { SessionEndReason } from '@/shared/types/session'
+import type { SessionEndReason, SuspensionInfo } from '@/shared/types/session'
 import { config } from './config'
 import { ENDPOINTS } from './endpoints'
 import { deleteItem, getItem, setItem } from './storage'
@@ -14,7 +14,7 @@ let userId: string | null = null
 let refreshPromise: Promise<void> | null = null
 let restorePromise: Promise<SessionRestoreResult> | null = null
 
-type SessionEndedListener = (reason: SessionEndReason) => void
+type SessionEndedListener = (reason: SessionEndReason, suspension?: SuspensionInfo) => void
 const beforeSessionClear = new Set<(reason?: SessionEndReason) => Promise<void>>()
 export function onBeforeSessionClear(listener: (reason?: SessionEndReason) => Promise<void>): () => void {
   beforeSessionClear.add(listener)
@@ -79,9 +79,9 @@ export function onSessionEnded(listener: SessionEndedListener): () => void {
   }
 }
 
-function emitSessionEnded(reason: SessionEndReason): void {
+function emitSessionEnded(reason: SessionEndReason, suspension?: SuspensionInfo): void {
   for (const listener of [...sessionEndedListeners]) {
-    listener(reason)
+    listener(reason, suspension)
   }
 }
 
@@ -347,7 +347,7 @@ export function restoreSession(): Promise<SessionRestoreResult> {
  * Purge la session locale. Avec une `reason`, émet un événement pour que l'UI termine
  * la session (compte suspendu, session expirée, compte inconnu).
  */
-export async function clearSession(reason?: SessionEndReason): Promise<void> {
+export async function clearSession(reason?: SessionEndReason, suspension?: SuspensionInfo): Promise<void> {
   const hadSession = Boolean(accessToken || refreshToken || userId)
 
   refreshToken = null // Interdit à un refresh en vol de restaurer la session pendant la révocation push.
@@ -363,7 +363,7 @@ export async function clearSession(reason?: SessionEndReason): Promise<void> {
   await deleteItem(EXPIRES_AT_KEY)
 
   if (reason && hadSession) {
-    emitSessionEnded(reason)
+    emitSessionEnded(reason, suspension)
   }
 }
 

@@ -97,7 +97,7 @@ export function BoardTab({
           <Skeleton shape="row" />
           <Skeleton shape="row" />
         </>
-      ) : board.isError && !board.data ? (
+      ) : board.isError ? (
         <EmptyState
           icon={WarningCircleIcon}
           title="Impossible de charger le classement"

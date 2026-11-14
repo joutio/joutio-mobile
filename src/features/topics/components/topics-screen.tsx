@@ -145,9 +145,12 @@ export function TopicsScreen() {
   }, [topics.data, topics.isPlaceholderData, topics.isPending])
 
   // Un tri à égalité (abonnés, parties) peut renvoyer un même sujet sur deux pages : une seule carte par sujet.
+  // Un échec de chargement ou de rafraîchissement remplace la vue (jamais l'ancienne grille sous le message d'erreur) ;
+  // seul l'échec de la page suivante garde la liste, avec son pied « Réessayer ».
+  const failed = topics.isError && !topics.isFetchNextPageError
   const items = useMemo(
-    () => [...new Map((topics.data?.pages.flatMap((page) => page.topics) ?? []).map((topic) => [topic.topicId, topic])).values()],
-    [topics.data],
+    () => (failed ? [] : [...new Map((topics.data?.pages.flatMap((page) => page.topics) ?? []).map((topic) => [topic.topicId, topic])).values()]),
+    [topics.data, failed],
   )
   // Compteur : effectifs des facettes, dans la portée « Mes thèmes ».
   const count = facets.data
@@ -190,7 +193,7 @@ export function TopicsScreen() {
       {/* Hors connexion (`etats-systeme.md`) : la bannière remplace le compteur et le tri, squelettes fixes dessous. */}
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: tokens.space[3], paddingHorizontal: GUTTER }}>
         <Text variant="callout" color="muted">
-          {online ? countLabel(topics.isError ? 0 : count) : ' '}
+          {online ? countLabel(failed ? 0 : count) : ' '}
         </Text>
         <Chip icon={ArrowsDownUpIcon} onPress={() => setSheetOpen(true)}>
           {sortLabel}
@@ -202,7 +205,7 @@ export function TopicsScreen() {
   const emptyState =
     topics.isPending || !online ? (
       <Loading animated={online} columns={columns} tile={tile} />
-    ) : topics.isError ? (
+    ) : failed ? (
       <EmptyState
         icon={WarningCircleIcon}
         title="Impossible de charger les sujets"
