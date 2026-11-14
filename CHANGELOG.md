@@ -1,3 +1,9 @@
+## [1.43.1](https://github.com/joutio/joutio-mobile/compare/v1.43.0...v1.43.1) (2026-11-14)
+
+### Bug Fixes
+
+* **mobile:** country sheet no longer empty, bot duel from onboarding opens the room directly, neutral VersusIntro halo ([2882909](https://github.com/joutio/joutio-mobile/commit/2882909678735c17d2cb9bf3cd6868f2d8f9d5da))
+
 ## [1.43.0](https://github.com/joutio/joutio-mobile/compare/v1.42.0...v1.43.0) (2026-11-14)
 
 ### Features
