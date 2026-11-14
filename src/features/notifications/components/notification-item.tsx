@@ -21,6 +21,7 @@ import { topicName } from '@/shared/utils/topic-name'
 import { useMyTopics } from '@/features/authoring/hooks/use-authoring'
 import { notificationTitle } from '../lib/notification-presentation'
 import { useOpenNotification } from '../hooks/use-open-notification'
+import { opensScreen } from '../lib/notification-target'
 import { isExpired, isUnread, relativeTime } from '../lib/notifications-service'
 import { useDeleteNotification } from '../hooks/use-notifications'
 
@@ -75,6 +76,7 @@ export function NotificationItem({ notification, challenge, last }: { notificati
           : undefined
       }
       unread={unread}
+      chevron={opensScreen(notification.type)}
       onPress={() => {
         void open(notification)
       }}

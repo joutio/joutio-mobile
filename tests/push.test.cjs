@@ -35,9 +35,9 @@ test('validates payloads and routes only known notification types', () => {
   assert.equal(targets.parsePushNotice({ url: 'https://untrusted.test' }), null)
   assert.equal(targets.parsePushNotice({ ...notice, type: 'UNKNOWN' }), null)
   assert.equal(targets.parsePushNotice({ ...notice, expiresAt: 'bad' }), null)
-  assert.deepEqual(policy.notificationTarget(notice), { kind: 'challenges' })
+  assert.deepEqual(policy.notificationTarget(notice), { kind: 'challenges', tab: 'received' })
   assert.deepEqual(policy.notificationTarget({ ...notice, type: 'WIZZ' }), { kind: 'room', id: 's' })
-  assert.deepEqual(policy.notificationTarget(notice, Date.parse(notice.expiresAt) + 1), { kind: 'fallback', challenges: true, expired: true })
+  assert.deepEqual(policy.notificationTarget(notice, Date.parse(notice.expiresAt) + 1), { kind: 'fallback', challenges: 'received', expired: true })
 })
 function runtime({ granted = true, configured = true } = {}) {
   let user = 'u',
@@ -193,20 +193,20 @@ test('every inbox type resolves to its action screen', () => {
   const base = { ...notice, actorId: 'player', topicId: 'topic' }
   for (const [type, target] of [
     ['FOLLOW', { kind: 'player', id: 'player' }],
-    ['CHALLENGE_DECLINED', { kind: 'player', id: 'player' }],
-    ['CHALLENGE_RECEIVED', { kind: 'challenges' }],
-    ['ROOM_ACCEPTED', { kind: 'room', id: 's' }],
+    ['CHALLENGE_DECLINED', { kind: 'none' }],
+    ['CHALLENGE_RECEIVED', { kind: 'challenges', tab: 'received' }],
+    ['ROOM_ACCEPTED', { kind: 'none' }],
     ['WIZZ', { kind: 'room', id: 's' }],
     ['QUESTION_REPORTED', { kind: 'moderation', id: 'topic', reportId: 's' }],
     ['TOPIC_DRAFTED', { kind: 'edit-topic', id: 'topic' }],
     ['ACCOUNT_SUSPENDED', { kind: 'suspended' }],
   ])
     assert.deepEqual(policy.notificationTarget({ ...base, type }), target)
-  // A gameId on an acceptance never bypasses the room lifecycle.
-  assert.deepEqual(policy.notificationTarget({ ...base, type: 'ROOM_ACCEPTED', gameId: 'game' }), { kind: 'room', id: 's' })
-  assert.deepEqual(policy.notificationTarget({ ...base, gameId: 'previous-game' }), { kind: 'challenges' })
-  assert.deepEqual(policy.notificationTarget({ ...base, type: 'WIZZ', sourceId: null }), { kind: 'fallback', challenges: true, expired: false })
-  assert.deepEqual(policy.notificationTarget({ ...base, type: 'TOPIC_DRAFTED', topicId: null }), { kind: 'fallback', challenges: false, expired: false })
+  // Accepted and declined challenges only inform (2026-11-14), even with a game id.
+  assert.deepEqual(policy.notificationTarget({ ...base, type: 'ROOM_ACCEPTED', gameId: 'game' }), { kind: 'none' })
+  assert.deepEqual(policy.notificationTarget({ ...base, gameId: 'previous-game' }), { kind: 'challenges', tab: 'received' })
+  assert.deepEqual(policy.notificationTarget({ ...base, type: 'WIZZ', sourceId: null }), { kind: 'fallback', challenges: 'received', expired: false })
+  assert.deepEqual(policy.notificationTarget({ ...base, type: 'TOPIC_DRAFTED', topicId: null }), { kind: 'fallback', challenges: null, expired: false })
 })
 
 test('toasts only show fresh unread foreground notifications outside immersive screens', () => {
@@ -453,7 +453,7 @@ test('opening a notification marks read, routes correctly, and falls back for un
   })
   const open = mod.useOpenNotification()
   await open(notice)
-  assert.deepEqual(routes, ['/challenges'])
+  assert.deepEqual(routes, [{ pathname: '/challenges', params: { tab: 'received' } }])
   assert.deepEqual(reads, ['n'])
   await open({ ...notice, type: 'WIZZ' })
   assert.deepEqual(routes.at(-1), { pathname: '/room/[roomId]', params: { roomId: 's', fromPush: '1' } })

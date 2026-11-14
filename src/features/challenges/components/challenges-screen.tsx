@@ -2,13 +2,14 @@ import { NotificationButton } from '@/features/notifications/components/notifica
 import { SettingsButton } from '@/features/settings/components/settings-button'
 import { useQueryClient } from '@tanstack/react-query'
 import { router } from '@/shared/navigation/router'
-import { useState } from 'react'
-import { RefreshControl, ScrollView, View } from 'react-native'
+import { useLocalSearchParams } from 'expo-router'
+import { useEffect, useState, type ReactNode } from 'react'
+import { RefreshControl, View } from 'react-native'
 import {
   Button,
   ChallengeListRow,
-  Chip,
   DoorOpenIcon,
+  DragToLoadMore,
   EmptyState,
   FeedFooter,
   IconButton,
@@ -20,6 +21,9 @@ import {
   SectionHeader,
   showDialog,
   Skeleton,
+  TabLoadMoreScrollView,
+  TabScrollView,
+  TabsScrollView,
   tokens,
   useGuardedRefresh,
   useTheme,
@@ -43,14 +47,18 @@ import {
   useMyRooms,
 } from '../hooks/use-challenges'
 import { duration } from '../lib/challenges-service'
-import { clientSource, feedFooterProps, loadMoreOptions } from '@/shared/utils/paging'
-
-type Filter = 'all' | 'received' | 'sent' | 'rooms'
+import { clientSource, feedFooterProps } from '@/shared/utils/paging'
+import type { ChallengesTab } from '@/features/notifications/lib/notification-target'
 
 const GUTTER = tokens.space[5]
-/** Reçus affichés dans « Tous » ; la liste complète est sous la puce Reçus, 10 par page. */
-const RECEIVED_PREVIEW = 3
+/** Reçus : liste paginée, 10 par page. */
 const RECEIVED_PAGE = 10
+const TABS: readonly { value: ChallengesTab; label: string }[] = [
+  { value: 'received', label: 'Reçus' },
+  { value: 'sent', label: 'Envoyés' },
+  { value: 'rooms', label: 'Salons' },
+]
+const PAGE = { gap: tokens.space[6], paddingHorizontal: GUTTER, paddingTop: tokens.space[4], paddingBottom: tokens.space[7] }
 
 function Loading() {
   return (
@@ -63,9 +71,9 @@ function Loading() {
 }
 
 /**
- * Défis (`design/specs/screens/defis.md`) : barre « Défis » (quota en sous-titre), puces Tous / Reçus / Envoyés /
- * Salons, puis Reçus (aperçu de 3, « Tout voir » ; sous la puce Reçus, liste paginée et « Tout refuser »), Envoyés et
- * Salons privés. Rafraîchi par le flux personnel STOMP et au tiré.
+ * Défis (`design/specs/screens/defis.md`) : barre « Défis » (cloche, Réglages), puis onglets Reçus / Envoyés / Salons
+ * balayables comme l'Accueil (2026-11-14), leur nombre dans le libellé. Reçus (par défaut) : liste paginée et « Tout
+ * refuser ». Une notification ouvre l'onglet voulu (`?tab=`). Rafraîchi par le flux personnel STOMP et au tiré.
  */
 export function ChallengesScreen() {
   const identity = usePlayerIdentity()
@@ -79,7 +87,15 @@ export function ChallengesScreen() {
   const decline = useDeclineChallenges()
   const cancel = useCancelChallenge()
   const createRoom = useCreatePrivateRoom()
-  const [filter, setFilter] = useState<Filter>('all')
+  const [tab, setTab] = useState<ChallengesTab>('received')
+  // Onglet demandé par une notification : appliqué puis effacé, pour qu'une même demande rejoue plus tard.
+  const params = useLocalSearchParams<{ tab?: string }>()
+  useEffect(() => {
+    const requested = TABS.find((item) => item.value === params.tab)?.value
+    if (!requested) return
+    setTab(requested)
+    router.setParams({ tab: undefined })
+  }, [params.tab])
   const [receivedPages, setReceivedPages] = useState(1)
   const [pickerOpen, setPickerOpen] = useState(false)
 
@@ -89,10 +105,9 @@ export function ChallengesScreen() {
   const loading = challenges.isPending || rooms.isPending
   const failed = challenges.isError || rooms.isError
   const empty = !loading && !failed && received.length + sent.length + salons.length === 0
-  const shows = (section: Filter) => filter === 'all' || filter === section
-  const receivedRows = filter === 'all' ? received.slice(0, RECEIVED_PREVIEW) : received.slice(0, receivedPages * RECEIVED_PAGE)
-  const receivedSource = clientSource(receivedPages, setReceivedPages, filter === 'received' && receivedRows.length < received.length)
-  const counts: Record<Filter, number | undefined> = { all: undefined, received: received.length, sent: sent.length, rooms: salons.length }
+  const receivedRows = received.slice(0, receivedPages * RECEIVED_PAGE)
+  const receivedSource = clientSource(receivedPages, setReceivedPages, receivedRows.length < received.length)
+  const counts: Record<ChallengesTab, number> = { received: received.length, sent: sent.length, rooms: salons.length }
 
   const { refreshing, refresh } = useGuardedRefresh(() =>
     Promise.all([client.refetchQueries({ queryKey: queryKeys.challenges() }), client.refetchQueries({ queryKey: queryKeys.rooms() })]),
@@ -160,170 +175,170 @@ export function ChallengesScreen() {
   }
 
   const header = (
-    <View>
-      <MobileTopBar title="Défis" right={
-          <>
-            <NotificationButton />
-            <SettingsButton />
-          </>
-        }
-      />
-      {!empty && !failed && (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          scrollsToTop={false}
-          contentContainerStyle={{ gap: tokens.space[3], paddingHorizontal: GUTTER, paddingTop: tokens.space[2], paddingBottom: tokens.space[4] }}
-        >
-          {(
-            [
-              ['all', 'Tous'],
-              ['received', 'Reçus'],
-              ['sent', 'Envoyés'],
-              ['rooms', 'Salons'],
-            ] as const
-          ).map(([value, label]) => (
-            <Chip key={value} selected={filter === value} count={counts[value]} onPress={() => setFilter(value)}>
-              {label}
-            </Chip>
-          ))}
-        </ScrollView>
-      )}
-    </View>
+    <MobileTopBar
+      title="Défis"
+      right={
+        <>
+          <NotificationButton />
+          <SettingsButton />
+        </>
+      }
+    />
   )
 
-  return (
-    <Screen
-      inTabs
-      header={header}
-      scrollProps={{ refreshControl: <RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={colors.muted} /> }}
-      loadMore={loadMoreOptions(receivedSource)}
-      contentStyle={{ flexGrow: 1, paddingBottom: tokens.space[7] }}
-      overlay={
-        <TopicPickerSheet
-          open={pickerOpen}
-          onClose={() => setPickerOpen(false)}
-          title="Créer un salon privé"
-          busy={createRoom.isPending}
-          onPick={(topic) => {
-            setPickerOpen(false)
-            createRoom.mutate(topic)
-          }}
-        />
-      }
-    >
-      {loading ? (
-        <Loading />
-      ) : failed ? (
-        <View style={{ flex: 1, justifyContent: 'center', paddingHorizontal: GUTTER }}>
-          <EmptyState
-            icon={WarningCircleIcon}
-            title="Impossible de charger les défis"
-            description="Vérifie ta connexion, puis réessaie."
-            action={
-              <Button style={{ alignSelf: 'center' }} loading={refreshing} onPress={refresh}>
-                Réessayer
-              </Button>
-            }
-          />
-        </View>
-      ) : empty ? (
-        <View style={{ flex: 1, justifyContent: 'center', paddingHorizontal: GUTTER }}>
-          <EmptyState
-            icon={LightningIcon}
-            title="Aucun défi en cours"
-            description="Défie un joueur depuis sa fiche, ou crée un salon privé et partage son lien."
-            action={
-              <View style={{ alignSelf: 'stretch', gap: tokens.space[3] }}>
-                <Button full loading={createRoom.isPending} onPress={() => setPickerOpen(true)}>
-                  Créer un salon privé
-                </Button>
-                <Button full variant="tinted" onPress={() => router.navigate('/social')}>
-                  Défier un abonné
-                </Button>
-              </View>
-            }
-          />
-        </View>
-      ) : (
-        <View style={{ gap: tokens.space[6], paddingHorizontal: GUTTER, paddingTop: tokens.space[2] }}>
-          {filter === 'received' && received.length === 0 && (
-            <EmptyState icon={LightningIcon} title="Aucun défi reçu" description="Les défis que d'autres joueurs t'envoient apparaîtront ici." />
-          )}
-          {shows('received') && received.length > 0 && (
-            <View style={{ gap: tokens.space[4] }}>
-              <SectionHeader
-                title="Reçus"
-                action={
-                  filter === 'all' ? (
-                    received.length > RECEIVED_PREVIEW ? (
-                      <Button variant="plain" size="S" onPress={() => setFilter('received')}>
-                        Tout voir
-                      </Button>
-                    ) : undefined
-                  ) : (
-                    <Button variant="plain" tone="destructive" size="S" loading={decline.isPending} onPress={refuseAll}>
-                      Tout refuser
-                    </Button>
-                  )
-                }
-              />
-              <ListGroup surface="surface">{receivedRows.map((challenge, index) => row(challenge, 'received', index, receivedRows.length))}</ListGroup>
-              {filter === 'received' && <FeedFooter {...feedFooterProps(receivedSource)} endLabel="Tu as vu tous les défis reçus" />}
-            </View>
-          )}
-          {shows('sent') && sent.length > 0 && (
-            <View style={{ gap: tokens.space[4] }}>
-              <SectionHeader title="Envoyés" />
-              <ListGroup surface="surface">{sent.map((challenge, index) => row(challenge, 'sent', index, sent.length))}</ListGroup>
-            </View>
-          )}
-          {filter === 'sent' && sent.length === 0 && (
-            <EmptyState icon={LightningIcon} title="Aucun défi envoyé" description="Défie un joueur depuis sa fiche ou depuis Social." />
-          )}
-          {shows('rooms') && salons.length > 0 && (
-            <View style={{ gap: tokens.space[4] }}>
-              <SectionHeader title="Salons ouverts" />
-              <ListGroup surface="surface">
-                {salons.map((room, index) => (
-                  <ListRow
-                    key={room.roomId}
-                    icon={DoorOpenIcon}
-                    label={topicName(room.topic.names)}
-                    sub={`${room.opponent ? `Avec ${room.opponent.pseudonym}` : 'En attente d’un joueur'}${room.expiresAt ? ` · expire dans ${duration(Date.parse(room.expiresAt) - now)}` : ''}`}
-                    control="chevron"
-                    disabled={room.roomId.startsWith('pending-')}
-                    onPress={() =>
-                      router.push({
-                        pathname: '/room/[roomId]',
-                        params: {
-                          roomId: room.roomId,
-                          topicId: room.topic.topicId,
-                          topicName: topicName(room.topic.names),
-                          category: room.topic.category ?? '',
-                        },
-                      })
-                    }
-                    last={index === salons.length - 1}
-                  />
-                ))}
-              </ListGroup>
-            </View>
-          )}
-          {filter === 'rooms' && salons.length === 0 && (
+  const overlay = (
+    <TopicPickerSheet
+      open={pickerOpen}
+      onClose={() => setPickerOpen(false)}
+      title="Créer un salon privé"
+      busy={createRoom.isPending}
+      onPick={(topic) => {
+        setPickerOpen(false)
+        createRoom.mutate(topic)
+      }}
+    />
+  )
+
+  // Chargement, erreur ou aucun défi : un seul écran, sans onglets.
+  if (loading || failed || empty)
+    return (
+      <Screen
+        inTabs
+        header={header}
+        scrollProps={{ refreshControl: <RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={colors.muted} /> }}
+        contentStyle={{ flexGrow: 1, paddingBottom: tokens.space[7] }}
+        overlay={overlay}
+      >
+        {loading ? (
+          <Loading />
+        ) : failed ? (
+          <View style={{ flex: 1, justifyContent: 'center', paddingHorizontal: GUTTER }}>
             <EmptyState
-              icon={DoorOpenIcon}
-              title="Aucun salon ouvert"
-              description="Crée un salon privé et partage son lien."
+              icon={WarningCircleIcon}
+              title="Impossible de charger les défis"
+              description="Vérifie ta connexion, puis réessaie."
               action={
-                <Button style={{ alignSelf: 'center' }} onPress={() => setPickerOpen(true)}>
-                  Créer un salon privé
+                <Button style={{ alignSelf: 'center' }} loading={refreshing} onPress={refresh}>
+                  Réessayer
                 </Button>
               }
             />
-          )}
+          </View>
+        ) : (
+          <View style={{ flex: 1, justifyContent: 'center', paddingHorizontal: GUTTER }}>
+            <EmptyState
+              icon={LightningIcon}
+              title="Aucun défi en cours"
+              description="Défie un joueur depuis sa fiche, ou crée un salon privé et partage son lien."
+              action={
+                <View style={{ alignSelf: 'stretch', gap: tokens.space[3] }}>
+                  <Button full loading={createRoom.isPending} onPress={() => setPickerOpen(true)}>
+                    Créer un salon privé
+                  </Button>
+                  <Button full variant="tinted" onPress={() => router.navigate('/social')}>
+                    Défier un abonné
+                  </Button>
+                </View>
+              }
+            />
+          </View>
+        )}
+      </Screen>
+    )
+
+  const receivedPage = (
+    <DragToLoadMore enabled={receivedSource.hasNextPage} loading={false} onLoadMore={() => receivedSource.fetchNextPage()}>
+      <TabLoadMoreScrollView showsVerticalScrollIndicator={false} contentContainerStyle={PAGE}>
+        {received.length === 0 ? (
+          <EmptyState icon={LightningIcon} title="Aucun défi reçu" description="Les défis que d'autres joueurs t'envoient apparaîtront ici." />
+        ) : (
+          <View style={{ gap: tokens.space[4] }}>
+            <SectionHeader
+              title="Reçus"
+              action={
+                <Button variant="plain" tone="destructive" size="S" loading={decline.isPending} onPress={refuseAll}>
+                  Tout refuser
+                </Button>
+              }
+            />
+            <ListGroup surface="surface">{receivedRows.map((challenge, index) => row(challenge, 'received', index, receivedRows.length))}</ListGroup>
+            <FeedFooter {...feedFooterProps(receivedSource)} endLabel="Tu as vu tous les défis reçus" />
+          </View>
+        )}
+      </TabLoadMoreScrollView>
+    </DragToLoadMore>
+  )
+
+  const sentPage = (
+    <TabScrollView showsVerticalScrollIndicator={false} contentContainerStyle={PAGE}>
+      {sent.length === 0 ? (
+        <EmptyState icon={LightningIcon} title="Aucun défi envoyé" description="Défie un joueur depuis sa fiche ou depuis Social." />
+      ) : (
+        <View style={{ gap: tokens.space[4] }}>
+          <SectionHeader title="Envoyés" />
+          <ListGroup surface="surface">{sent.map((challenge, index) => row(challenge, 'sent', index, sent.length))}</ListGroup>
         </View>
       )}
+    </TabScrollView>
+  )
+
+  const roomsPage = (
+    <TabScrollView showsVerticalScrollIndicator={false} contentContainerStyle={PAGE}>
+      {salons.length === 0 ? (
+        <EmptyState
+          icon={DoorOpenIcon}
+          title="Aucun salon ouvert"
+          description="Crée un salon privé et partage son lien."
+          action={
+            <Button style={{ alignSelf: 'center' }} onPress={() => setPickerOpen(true)}>
+              Créer un salon privé
+            </Button>
+          }
+        />
+      ) : (
+        <View style={{ gap: tokens.space[4] }}>
+          <SectionHeader title="Salons ouverts" />
+          <ListGroup surface="surface">
+            {salons.map((room, index) => (
+              <ListRow
+                key={room.roomId}
+                icon={DoorOpenIcon}
+                label={topicName(room.topic.names)}
+                sub={`${room.opponent ? `Avec ${room.opponent.pseudonym}` : 'En attente d’un joueur'}${room.expiresAt ? ` · expire dans ${duration(Date.parse(room.expiresAt) - now)}` : ''}`}
+                control="chevron"
+                disabled={room.roomId.startsWith('pending-')}
+                onPress={() =>
+                  router.push({
+                    pathname: '/room/[roomId]',
+                    params: {
+                      roomId: room.roomId,
+                      topicId: room.topic.topicId,
+                      topicName: topicName(room.topic.names),
+                      category: room.topic.category ?? '',
+                    },
+                  })
+                }
+                last={index === salons.length - 1}
+              />
+            ))}
+          </ListGroup>
+        </View>
+      )}
+    </TabScrollView>
+  )
+
+  const content: Record<ChallengesTab, ReactNode> = { received: receivedPage, sent: sentPage, rooms: roomsPage }
+
+  return (
+    <Screen inTabs scroll={false} header={header} overlay={overlay}>
+      <TabsScrollView
+        label="Défis"
+        value={tab}
+        onChange={setTab}
+        onRefresh={refresh}
+        // Le nombre suit le libellé (« Reçus · 5 ») ; sans élément, le libellé seul.
+        pages={TABS.map((item) => ({ value: item.value, label: counts[item.value] > 0 ? `${item.label} · ${counts[item.value]}` : item.label, content: content[item.value] }))}
+      />
     </Screen>
   )
 }

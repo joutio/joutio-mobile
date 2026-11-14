@@ -20,6 +20,8 @@ export interface NotificationRowProps {
   player?: { name: string; src?: string; tier?: TierCode; presence?: Presence }
   unread?: boolean
   onPress?: () => void
+  /** `false` : notification informative, le toucher ne fait que la marquer lue (pas de chevron). */
+  chevron?: boolean
   /** Révélée en balayant vers la gauche ; aussi proposée aux lecteurs d'écran (action « Supprimer »). */
   onDelete?: () => void
   last?: boolean
@@ -30,7 +32,7 @@ export interface NotificationRowProps {
  * Ligne de la boîte de réception : toucher ouvre l'écran qui propose l'action (défis, salon, fiche joueur), balayer
  * révèle Supprimer. **Aucun bouton d'action dans la ligne** (2026-11-07) : la notification ne fait que rediriger.
  */
-export function NotificationRow({ title, sub, icon: IconComponent, player, unread = false, onPress, onDelete, last = false, style }: NotificationRowProps) {
+export function NotificationRow({ title, sub, icon: IconComponent, player, unread = false, onPress, chevron = true, onDelete, last = false, style }: NotificationRowProps) {
   const { colors, radius } = useTheme()
   const [pressed, setPressed] = useState(false)
   const dimmed = pressed && Platform.OS !== 'android'
@@ -79,7 +81,7 @@ export function NotificationRow({ title, sub, icon: IconComponent, player, unrea
           </View>
           {unread && <View style={{ width: 8, height: 8, borderRadius: radius.full, backgroundColor: colors.accent }} />}
         </View>
-        <CaretRightIcon size={16} color={colors.muted} style={{ alignSelf: 'center' }} />
+        {chevron && <CaretRightIcon size={16} color={colors.muted} style={{ alignSelf: 'center' }} />}
       </View>
       {!last && <View pointerEvents="none" style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: HAIRLINE, backgroundColor: colors.border }} />}
     </View>

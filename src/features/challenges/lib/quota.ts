@@ -23,7 +23,7 @@ export function showQuotaDialog(error: unknown, me?: Pick<MeView, 'premium' | 'l
     icon: LightningIcon,
     tone: 'accent',
     actions: [
-      { label: 'Voir mes défis', variant: 'filled', tone: 'accent', onPress: () => router.navigate('/challenges') },
+      { label: 'Voir mes défis', variant: 'filled', tone: 'accent', onPress: () => router.navigate({ pathname: '/challenges', params: { tab: 'sent' } }) },
       ...(me?.premium
         ? []
         : [{ label: 'Passer Premium', variant: 'tinted' as const, tone: 'accent' as const, onPress: () => usePremiumSheet.getState().show('quota') }]),

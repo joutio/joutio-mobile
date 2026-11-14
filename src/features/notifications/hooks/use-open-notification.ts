@@ -16,9 +16,10 @@ export function useOpenNotification() {
       if (!recipient || recipient !== getUserId() || !useSessionStore.getState().authenticated) return
       const target = notificationTarget(notice)
       markRead(notice.notificationId)
+      if (target.kind === 'none') return
       const fallback = (message: string) => {
-        const challenges = ['CHALLENGE_RECEIVED', 'CHALLENGE_DECLINED', 'ROOM_ACCEPTED', 'WIZZ'].includes(notice.type)
-        router.navigate(challenges ? '/challenges' : '/home/notifications')
+        if (target.kind === 'fallback' && target.challenges) router.navigate({ pathname: '/challenges', params: { tab: target.challenges } })
+        else router.navigate('/home/notifications')
         toast.info(message)
       }
       let resolved: { questionId?: string } = {}
@@ -40,7 +41,7 @@ export function useOpenNotification() {
           router.push({ pathname: '/home/player/[id]', params: { id: target.id } })
           break
         case 'challenges':
-          router.navigate('/challenges')
+          router.navigate({ pathname: '/challenges', params: { tab: target.tab } })
           break
         case 'room':
           router.push({ pathname: '/room/[roomId]', params: { roomId: target.id, fromPush: '1' } })
