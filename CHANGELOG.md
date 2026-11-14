@@ -1,3 +1,9 @@
+## [1.41.1](https://github.com/joutio/joutio-mobile/compare/v1.41.0...v1.41.1) (2026-11-14)
+
+### Bug Fixes
+
+* **mobile:** remove the haptic feedback when a page reaches its top or bottom ([08e9195](https://github.com/joutio/joutio-mobile/commit/08e919529a4892f73e1ad8d08ce284f0e9a29014))
+
 ## [1.41.0](https://github.com/joutio/joutio-mobile/compare/v1.40.0...v1.41.0) (2026-11-14)
 
 ### Features
