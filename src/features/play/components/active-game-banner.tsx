@@ -1,5 +1,4 @@
-import Animated from 'react-native-reanimated'
-import { BANNER_ENTER, BANNER_EXIT } from '@/shared/components/banner-motion'
+import { useRef } from 'react'
 import { usePathname } from 'expo-router'
 import { router } from '@/shared/navigation/router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -14,14 +13,16 @@ export function useBannerGame() {
 
 /**
  * Bande « Partie en cours » (`feedback.md`) : même place que la bannière de connexion, en haut de la fenêtre. Une seule
- * bande à la fois : la connexion l'emporte (`hidden`).
+ * bande à la fois, la connexion l'emporte (choix de `TopBannerHost`). Garde la dernière partie pendant sa sortie.
  */
-export function ActiveGameBanner({ hidden }: { hidden: boolean }) {
-  const game = useBannerGame()
+export function ActiveGameBanner() {
+  const current = useBannerGame()
+  const last = useRef(current)
+  if (current) last.current = current
+  const game = current ?? last.current
   const insets = useSafeAreaInsets()
-  if (!game || hidden) return null
+  if (!game) return null
   return (
-    <Animated.View entering={BANNER_ENTER} exiting={BANNER_EXIT}>
       <Banner
         safeTop={insets.top}
         tone="live"
@@ -36,6 +37,5 @@ export function ActiveGameBanner({ hidden }: { hidden: boolean }) {
             }),
         }}
       />
-    </Animated.View>
   )
 }

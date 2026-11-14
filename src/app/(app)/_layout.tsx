@@ -2,11 +2,9 @@ import { useMe } from '@/features/me'
 import { PlaySessionProvider } from '@/features/play/hooks/play-session'
 import { ActiveGameBanner, useBannerGame } from '@/features/play/components/active-game-banner'
 import { Stack } from 'expo-router'
-import { useEffect, useMemo, useState } from 'react'
+import { useRef } from 'react'
 import { View } from 'react-native'
-import Animated from 'react-native-reanimated'
-import { BANNER_MS, bannerLayout } from '@/shared/components/banner-motion'
-import { SafeAreaInsetsContext, useSafeAreaInsets } from 'react-native-safe-area-context'
+import { TopBannerHost } from '@/shared/components/top-banner-host'
 import { nativeHeaderOptions, useTheme } from '@/design-system'
 import { NotificationsRuntime } from '@/features/notifications/components/notifications-runtime'
 import { RematchHost } from '@/features/play/components/rematch-host'
@@ -30,36 +28,24 @@ export default function AppLayout() {
 
 function AppNavigation() {
   const theme = useTheme()
-  const insets = useSafeAreaInsets()
   const connection = useConnectionBanner()
   const bannerGame = useBannerGame()
-  // La coupure réseau se signale partout, parcours de jeu compris (plus de `ReconnectCountdown`, 2026-11-14).
-  const banner = connection.state !== 'hidden'
-  const shown = banner || !!bannerGame
-  // Sortie de la bande : la safe area reste prise et une cale de sa hauteur tient sa place le temps que l'écran
-  // remonte, puis on la rend d'un coup (sans mouvement visible). Dérivé au rendu pour ne pas peindre d'état
-  // intermédiaire.
-  const [lastShown, setLastShown] = useState(shown)
-  const [settling, setSettling] = useState(false)
-  if (lastShown !== shown) {
-    setLastShown(shown)
-    setSettling(!shown)
-  }
-  useEffect(() => {
-    if (!settling) return
-    const timer = setTimeout(() => setSettling(false), BANNER_MS)
-    return () => clearTimeout(timer)
-  }, [settling])
-  const layout = useMemo(() => bannerLayout(insets.top), [insets.top])
+  // La coupure réseau se signale partout, parcours de jeu compris (plus de `ReconnectCountdown`, 2026-11-14). Une seule
+  // bande à la fois : la connexion l'emporte sur la partie en cours.
+  const kind = connection.state !== 'hidden' ? 'connection' : bannerGame ? 'game' : null
+  // Dernier état de connexion affiché : la bande le garde pendant sa sortie.
+  const lastConnection = useRef(connection.state)
+  if (connection.state !== 'hidden') lastConnection.current = connection.state
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.bg }}>
-      {banner && <ConnectionBanner state={connection.state} onRetry={() => void connection.retry()} />}
-      <ActiveGameBanner hidden={banner} />
-      {settling && !shown && <View style={{ height: insets.top }} />}
-      {/* La bannière prend la safe area haute : les barres des écrans dessous ne la réservent plus. */}
-      {/* L'écran suit la bande qui entre ou sort, au lieu de sauter de sa hauteur. */}
-      <Animated.View layout={layout} style={{ flex: 1 }}>
-        <SafeAreaInsetsContext.Provider value={shown || settling ? { ...insets, top: 0 } : insets}>
+      {/* La bande se pose par-dessus l'écran et le pousse d'une cale animée (`TopBannerHost`) : seule la barre du
+          haut descend, le contenu ne remonte jamais. */}
+      <TopBannerHost
+        kind={kind}
+        render={(shown) =>
+          shown === 'connection' ? <ConnectionBanner state={lastConnection.current} onRetry={() => void connection.retry()} /> : <ActiveGameBanner />
+        }
+      >
           <Stack screenOptions={nativeHeaderOptions(theme)}>
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             {/* Tâches ciblées (`navigation.md`) : atelier d'un sujet et suppression de compte, sans barre d'onglets. */}
@@ -80,8 +66,7 @@ function AppNavigation() {
             {/* Éditeur de question (Mes sujets) : modale plein écran, Annuler / Enregistrer. */}
             <Stack.Screen name="question-editor" options={{ headerShown: false, presentation: 'fullScreenModal' }} />
           </Stack>
-        </SafeAreaInsetsContext.Provider>
-      </Animated.View>
+      </TopBannerHost>
       {/* Demandes de revanche reçues, au-dessus de tout écran (sauf pendant un duel). */}
       <NotificationsRuntime />
       <RematchHost />
