@@ -149,6 +149,8 @@ export function RoomScreen() {
     }
   }, [params.fromPush, roomStatus, status?.terminalError])
   const close = () => router.back()
+  // Avant tout `return` : l'écran terminal (salon fermé, expiré) ne doit pas sauter de hook (2026-11-14).
+  const shareLink = useShare()
 
   if (roomStatus in TERMINAL || status?.terminalError) {
     const copy =
@@ -192,7 +194,6 @@ export function RoomScreen() {
   const kind = vsBot ? { icon: RobotIcon, label: 'Entraînement' } : nominative ? { icon: SwordIcon, label: 'Défi' } : { icon: LinkIcon, label: 'Salon privé' }
   const cancelLabel = vsBot ? 'Annuler le duel' : nominative ? 'Annuler le défi' : 'Fermer le salon'
   const link = roomLink(roomId)
-  const shareLink = useShare()
 
   return (
     <>

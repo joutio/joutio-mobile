@@ -68,6 +68,8 @@ export function ProfileScreen() {
   const worn = titles.data?.titles.find((title) => title.key === (titles.data?.equippedKey ?? data?.equippedTitle))
   const stats = data?.stats
   const name = data?.pseudonym ?? 'Profil'
+  // Avant le `return` de l'erreur : le nombre de hooks ne doit pas dépendre du chargement (2026-11-14).
+  const share = useShare()
 
   if (me.isError) {
     return (
@@ -86,7 +88,6 @@ export function ProfileScreen() {
     )
   }
 
-  const share = useShare()
   const counters = [
     { label: 'Parties', value: stats ? formatNumber(stats.played) : '—' },
     { label: 'Abonnés', value: data ? formatNumber(data.followersCount) : '—' },
