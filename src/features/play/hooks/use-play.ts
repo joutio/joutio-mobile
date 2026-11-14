@@ -76,16 +76,32 @@ export function useAutoTrain() {
 
 const launchError = (title: string) => () => toast.error(title, { description: 'Vérifie ta connexion, puis réessaie.' })
 
+/** Échec de création d'un salon bot : garde-fou anti-spam identique pour tous (P22), Premium n'y change rien. */
+const botRoomError = (error: unknown) =>
+  quotaProblemOf(error) === 'rooms'
+    ? toast.error("Trop d'entraînements ouverts", { description: "Termine ou quitte un entraînement avant d'en lancer un autre." })
+    : launchError("L'entraînement n'a pas pu démarrer")()
+
+/** Ouvre le salon d'un sujet (paramètres d'en-tête passés, l'écran s'affiche sans attendre le serveur). */
+export const openRoom = (roomId: string, topic: PlayTopic) => router.push({ pathname: '/room/[roomId]', params: { roomId, ...topicParams(topic) } })
+
 /** Entraînement contre le robot : la salle bot se prépare, puis le duel s'ouvre. */
 export function useStartTraining() {
   return useMutation({
     mutationFn: ({ topic, difficulty }: { topic: PlayTopic; difficulty: BotDifficulty }) => playService.createBotRoom(topic.topicId, difficulty),
-    onSuccess: ({ id }, { topic }) => router.push({ pathname: '/room/[roomId]', params: { roomId: id, ...topicParams(topic) } }),
-    // Salons bot : garde-fou anti-spam identique pour tous (P22), Premium n'y change rien.
-    onError: (error) =>
-      quotaProblemOf(error) === 'rooms'
-        ? toast.error("Trop d'entraînements ouverts", { description: "Termine ou quitte un entraînement avant d'en lancer un autre." })
-        : launchError("L'entraînement n'a pas pu démarrer")(),
+    onSuccess: ({ id }, { topic }) => openRoom(id, topic),
+    onError: botRoomError,
+  })
+}
+
+/**
+ * Salon bot créé sans navigation : l'appelant attend la réponse (commande traitée) et choisit quand l'ouvrir — après la
+ * fin de l'onboarding, qui doit d'abord être enregistrée.
+ */
+export function useCreateBotRoom() {
+  return useMutation({
+    mutationFn: ({ topicId, difficulty }: { topicId: string; difficulty: BotDifficulty }) => playService.createBotRoom(topicId, difficulty),
+    onError: botRoomError,
   })
 }
 

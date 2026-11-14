@@ -68,8 +68,7 @@ const FAILURE_DESCRIPTION: Record<RoomFailureKind, string> = {
   unknown: TERMINAL.FAILED.description,
 }
 
-/** Lien public du salon (`joutio-landing` `/join/{roomId}` ouvre l'app). */
-/** Lien universel du salon (`partage.md` § 2), sans code de parrainage. */
+/** Lien universel du salon (`partage.md` § 2). */
 export const roomLink = (roomId: string) => buildShareUrl({ kind: 'room', id: roomId })
 
 /** Horloge serveur, relue chaque seconde (décompte d'expiration, cadence de la relance). */

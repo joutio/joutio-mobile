@@ -150,7 +150,6 @@ export { UserCircleDashedIcon } from 'phosphor-react-native/src/icons/UserCircle
 export { HourglassLowIcon } from 'phosphor-react-native/src/icons/HourglassLow'
 export { CakeIcon } from 'phosphor-react-native/src/icons/Cake'
 export { GiftIcon } from 'phosphor-react-native/src/icons/Gift'
-export { HandshakeIcon } from 'phosphor-react-native/src/icons/Handshake'
 export { EnvelopeSimpleIcon } from 'phosphor-react-native/src/icons/EnvelopeSimple'
 export { DatabaseIcon } from 'phosphor-react-native/src/icons/Database'
 export { LifebuoyIcon } from 'phosphor-react-native/src/icons/Lifebuoy'

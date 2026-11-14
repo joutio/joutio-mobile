@@ -46,7 +46,8 @@ function Panel({ player, side, t, height }: { player: VersusPlayer; side: 'top' 
   const { colors } = useTheme()
   const insets = useSafeAreaInsets()
   const top = side === 'top'
-  const glow = player.tier ? tokens.tier[player.tier].hex : colors.accent
+  // Halo du palier ; sans palier (non classé, robot, profil en chargement) : halo gris neutre, jamais l'accent doré.
+  const glow = player.tier ? tokens.tier[player.tier].hex : colors.muted
   const panel = useAnimatedStyle(() => {
     const y = keyframe(t.value, [
       [0, 1],

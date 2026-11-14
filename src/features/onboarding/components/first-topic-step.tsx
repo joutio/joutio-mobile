@@ -17,7 +17,7 @@ import {
   useTheme,
 } from '@/design-system'
 import type { TopicCardView } from '@joutio/client-domain/api-types'
-import { useStartTraining } from '@/features/play/hooks/use-play'
+import { openRoom, useCreateBotRoom } from '@/features/play/hooks/use-play'
 import { topicName } from '@/shared/utils/topic-name'
 import { useCompleteOnboarding, useRecommendations } from '../hooks/use-onboarding'
 import { useOnboardingStore } from '../onboarding-store'
@@ -28,14 +28,15 @@ const imageOf = (topic: TopicCardView) => topic.imageUrl ?? undefined
 /**
  * Premier thème : aperçu du thème choisi, puis la liste radio des recommandations. Titre et aperçu restent fixes,
  * seule la liste défile ; un dégradé signale la suite. « Explorer l'accueil » termine l'onboarding ; « Découvrir le duel »
- * le termine puis lance une partie contre un robot facile sur le thème choisi (salon bot, comme l'entraînement).
+ * crée d'abord le salon bot (robot facile, thème choisi) et attend la réponse, puis termine l'onboarding et ouvre ce
+ * salon dès la bascule vers l'app connectée, sans attente réseau sur l'accueil (2026-11-14).
  */
 export function FirstTopicStep() {
   const { colors, radius } = useTheme()
   const universes = useOnboardingStore((state) => state.universes)
   const recommendations = useRecommendations(universes)
   const complete = useCompleteOnboarding()
-  const training = useStartTraining()
+  const botRoom = useCreateBotRoom()
   const topics = recommendations.data ?? []
   const [pickedId, setPickedId] = useState<string | null>(null)
   const picked = topics.find((topic) => topic.topicId === pickedId) ?? topics[0]
@@ -46,14 +47,22 @@ export function FirstTopicStep() {
   const finish = () => complete.mutate()
   const play = async () => {
     if (!picked) return
+    const topic = { topicId: picked.topicId, name: topicName(picked.names), category: toCategoryCode(picked.category) }
+    // Salon d'abord : la commande est traitée, le salon existe quand l'écran s'ouvre.
+    let roomId: string
+    try {
+      roomId = (await botRoom.mutateAsync({ topicId: topic.topicId, difficulty: 'EASY' })).id
+    } catch {
+      return
+    }
     try {
       await complete.mutateAsync()
     } catch {
       return
     }
-    // Laisse la navigation protégée basculer vers l'app connectée avant d'ouvrir le salon.
+    // Laisse la navigation protégée basculer vers l'app connectée, puis ouvre le salon déjà créé.
     await new Promise((resolve) => setTimeout(resolve, 0))
-    training.mutate({ topic: { topicId: picked.topicId, name: topicName(picked.names), category: toCategoryCode(picked.category) }, difficulty: 'EASY' })
+    openRoom(roomId, topic)
   }
 
   return (
@@ -61,14 +70,14 @@ export function FirstTopicStep() {
       index={2}
       fill
       action={
-        <Button variant="plain" tone="neutral" size="M" disabled={complete.isPending} onPress={finish}>
+        <Button variant="plain" tone="neutral" size="M" disabled={complete.isPending || botRoom.isPending} onPress={finish}>
           Explorer l'accueil
         </Button>
       }
       footer={
         <View style={{ gap: tokens.space[3] }}>
           {complete.isError && <Notice title="L'accueil n'a pas pu s'ouvrir" message="Vérifie ta connexion et réessaie." />}
-          <Button full icon={LightningIcon} disabled={!picked} loading={complete.isPending || training.isPending} onPress={() => void play()}>
+          <Button full icon={LightningIcon} disabled={!picked} loading={complete.isPending || botRoom.isPending} onPress={() => void play()}>
             Découvrir le duel
           </Button>
         </View>

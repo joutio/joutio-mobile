@@ -472,8 +472,9 @@ Décision utilisateur : supprimer l’ancien dépôt GitHub `joutio/joutio-mobil
 - **Sujets** : « Mes thèmes » (Tous / Suivis / Mes sujets, `followed` ou `mine`) remplace « Masquer les suivis ».
 - **Atelier** : ligne et feuille **Titres** (`TopicTitlesSheet`, `useUpdateTopicTitles`, `PUT /api/topics/{id}/titles`),
   helpers partagés `@joutio/client-domain/authoring` (`titleLabel`, `normalizeTitles`…).
-- **Feuille en liste virtualisée** : `MobileSheet.renderList` rend une `FlashList` dont le défilement reste l'enfant
-  direct de TrueSheet (`scrollableRef`) ; `stickyHeader` passe sous l'en-tête. Feuille Pays : pages de 30.
+- **Pas de liste virtualisée en feuille** (2026-11-14) : `MobileSheet.renderList` est retiré — FlashList 2.x enveloppe
+  son défilement dans une vue `flex:1` mesurée à 0 de haut sous TrueSheet, la feuille Pays paraissait vide. Feuille
+  Pays : lignes en `children` + `loadMore`, pages de 30.
 - **Avatar de base** : fond `raised` relevé vers le texte + filet `border`, lisible dans les lignes des feuilles.
 - **Lot du 2026-11-13 (soir)** : résultat non immersif (`useToastSuppression(!finished)` dans le duel : toasts et
   `RematchHost` y réapparaissent) ; chat d'après-duel masqué (`RESULT_CHAT_ENABLED`) ; **champ entier au-dessus du clavier** (`field-reveal.ts` : `Screen` fournit
