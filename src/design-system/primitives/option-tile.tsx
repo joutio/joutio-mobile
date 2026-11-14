@@ -14,7 +14,7 @@ export interface OptionTileProps {
   style?: StyleProp<ViewStyle>
 }
 
-/** Choix visuel d'une option, dans un groupe à choix unique. */
+/** Choix visuel d'une option, dans un groupe à choix unique. Libellé sur deux lignes au plus : il reste lisible. */
 export function OptionTile({ label, image, selected = false, onSelect, style }: OptionTileProps) {
   const { colors, radius } = useTheme()
   return (
@@ -42,7 +42,7 @@ export function OptionTile({ label, image, selected = false, onSelect, style }: 
         variant="caption"
         weight={selected ? '600' : undefined}
         color={selected ? 'text' : 'muted'}
-        numberOfLines={1}
+        numberOfLines={2}
         align="center"
         style={{ alignSelf: 'stretch' }}
       >
