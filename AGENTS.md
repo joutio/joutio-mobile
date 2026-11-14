@@ -478,8 +478,7 @@ Décision utilisateur : supprimer l’ancien dépôt GitHub `joutio/joutio-mobil
   direct de TrueSheet (`scrollableRef`) ; `stickyHeader` passe sous l'en-tête. Feuille Pays : pages de 30.
 - **Avatar de base** : fond `raised` relevé vers le texte + filet `border`, lisible dans les lignes des feuilles.
 - **Lot du 2026-11-13 (soir)** : résultat non immersif (`useToastSuppression(!finished)` dans le duel : toasts et
-  `RematchHost` y réapparaissent) ; chat d'après-duel masqué (`RESULT_CHAT_ENABLED`) ; **haptique de bord**
-  (`edge-haptics.ts`, `test:edge-haptics`) ; **champ entier au-dessus du clavier** (`field-reveal.ts` : `Screen` fournit
+  `RematchHost` y réapparaissent) ; chat d'après-duel masqué (`RESULT_CHAT_ENABLED`) ; **champ entier au-dessus du clavier** (`field-reveal.ts` : `Screen` fournit
   `reveal`, `Field` s'en sert au focus et quand il grandit) ; Éditer le profil : `ListRow` « Modifier l'avatar » ;
   Réglages : « Affichage et langue » sans valeur ; Accueil : « Fraîchement mis à jour », rails sans « Tout voir » ;
   `TopicRow` au visuel de `TopicTile` (pictogramme, couleur d'univers) ; description **localisée** du sujet (atelier,

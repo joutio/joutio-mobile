@@ -1,10 +1,9 @@
-import { useEdgeHaptics } from './edge-haptics'
 import { ScrollEdgeContext } from './scroll-edge'
 import { scrollEdgeProgress } from './header-geometry'
 import { tabBarScrollInsets, withBottomInset } from './tab-bar-inset'
 import { useCallback, useContext, useMemo, useRef, type ReactNode, type Ref } from 'react'
 import { FieldRevealContext } from './field-reveal'
-import { Keyboard, RefreshControl, ScrollView, View, type ScrollViewInstance, type ScrollViewProps, type ViewInstance, type StyleProp, type ViewStyle } from 'react-native'
+import { Keyboard, RefreshControl, ScrollView, View, type NativeScrollEvent, type NativeSyntheticEvent, type ScrollViewInstance, type ScrollViewProps, type ViewInstance, type StyleProp, type ViewStyle } from 'react-native'
 import { HeaderHeightContext } from 'expo-router/react-navigation'
 import { Platform } from 'react-native'
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller'
@@ -106,19 +105,16 @@ export function Screen({
   // En-tête natif iOS : un ScrollView simple, premier enfant de l'écran (repli du grand titre).
   const Scroller = nativeHeader ? RefreshScrollView : loadMore ? LoadMoreScrollView : RefreshKeyboardAwareScrollView
   const keyboardProps = Scroller === RefreshKeyboardAwareScrollView ? { bottomOffset: KEYBOARD_GAP, keyboardShouldPersistTaps: 'handled' as const } : {}
-  // Haut et bas de page : retour haptique (`edge-haptics.ts`) ; `LoadMoreScrollView` le porte déjà lui-même.
-  const edgeHaptics = useEdgeHaptics(
-    {
-      onScroll: (event) => {
-        headerOffset.value = event.nativeEvent.contentOffset.y + event.nativeEvent.contentInset.top
-        scrollProps?.onScroll?.(event)
-      },
-      onScrollBeginDrag: scrollProps?.onScrollBeginDrag,
-      onScrollEndDrag: scrollProps?.onScrollEndDrag,
-      onMomentumScrollEnd: scrollProps?.onMomentumScrollEnd,
+  // Position du défilement publiée au chrome de l'écran (séparateur d'en-tête).
+  const scrollHandlers = {
+    onScroll: (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      headerOffset.value = event.nativeEvent.contentOffset.y + event.nativeEvent.contentInset.top
+      scrollProps?.onScroll?.(event)
     },
-    Scroller !== LoadMoreScrollView,
-  )
+    onScrollBeginDrag: scrollProps?.onScrollBeginDrag,
+    onScrollEndDrag: scrollProps?.onScrollEndDrag,
+    onMomentumScrollEnd: scrollProps?.onMomentumScrollEnd,
+  }
   // Champ touché entier au-dessus du clavier (`field-reveal.ts`) : la bibliothèque ne cale que le curseur.
   const ownScroll = useRef<ScrollViewInstance | null>(null)
   const setScrollRef = useCallback(
@@ -150,7 +146,7 @@ export function Screen({
       refreshControl={refreshControl}
       {...scrollProps}
       scrollEventThrottle={scrollProps?.scrollEventThrottle ?? 16}
-      {...edgeHaptics}
+      {...scrollHandlers}
       style={{ flex: 1, backgroundColor: colors.bg }}
       {...tabBarScrollInsets(underTabBar ? insets.bottom : 0)}
       contentContainerStyle={withBottomInset([{ paddingBottom: 0 }, contentStyle], bottom)}
