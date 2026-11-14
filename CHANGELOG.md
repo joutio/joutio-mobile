@@ -1,3 +1,10 @@
+## [1.45.0](https://github.com/joutio/joutio-mobile/compare/v1.44.0...v1.45.0) (2026-11-14)
+
+### Features
+
+* **mobile:** bottom bar top hairline while content scrolls beneath it ([d13b845](https://github.com/joutio/joutio-mobile/commit/d13b845484435e70fd260b6ea805bde73f2956e9))
+* **mobile:** join a room as a face-off, topic card and duel conditions ([a27529f](https://github.com/joutio/joutio-mobile/commit/a27529f9bfb0653b0c84b561dae9c067962fdeed))
+
 ## [1.44.0](https://github.com/joutio/joutio-mobile/compare/v1.43.1...v1.44.0) (2026-11-14)
 
 ### Features
