@@ -1,3 +1,9 @@
+## [1.41.0](https://github.com/joutio/joutio-mobile/compare/v1.40.0...v1.41.0) (2026-11-14)
+
+### Features
+
+* **mobile:** align the app with the design (duel details, result, header actions, Défis quotas) ([128b741](https://github.com/joutio/joutio-mobile/commit/128b74142ce283c76afa7ebb9878c64fa8b15cc2))
+
 ## [1.40.0](https://github.com/joutio/joutio-mobile/compare/v1.39.0...v1.40.0) (2026-11-13)
 
 ### Features
