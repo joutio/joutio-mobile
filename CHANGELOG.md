@@ -1,3 +1,9 @@
+## [1.43.0](https://github.com/joutio/joutio-mobile/compare/v1.42.0...v1.43.0) (2026-11-14)
+
+### Features
+
+* **mobile:** onboarding age card, suspension end and reason, bot duel from the first topic; error states replace stale views ([3e6ffc5](https://github.com/joutio/joutio-mobile/commit/3e6ffc51b3c3a7faa36799c1fcd6b7bb39421e11))
+
 ## [1.42.0](https://github.com/joutio/joutio-mobile/compare/v1.41.1...v1.42.0) (2026-11-14)
 
 ### Features
