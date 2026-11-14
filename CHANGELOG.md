@@ -1,3 +1,10 @@
+## [1.45.2](https://github.com/joutio/joutio-mobile/compare/v1.45.1...v1.45.2) (2026-11-14)
+
+### Bug Fixes
+
+* **mobile:** discarding profile edits no longer reopens the confirmation sheet ([fe3de3d](https://github.com/joutio/joutio-mobile/commit/fe3de3d4a0c03a146762680b35db67821bd2413c))
+* **mobile:** no hook after early returns in room and profile screens ([fdaeee7](https://github.com/joutio/joutio-mobile/commit/fdaeee77691b22650852bff14f8a45f56ebb4c05))
+
 ## [1.45.1](https://github.com/joutio/joutio-mobile/compare/v1.45.0...v1.45.1) (2026-11-14)
 
 ### Bug Fixes
