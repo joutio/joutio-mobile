@@ -3,7 +3,7 @@ import { MAX_PSEUDONYM } from '@joutio/client-domain/profile'
 import type { ApiError } from '@joutio/client-domain/api-types'
 import { useNavigation, usePreventRemove } from 'expo-router'
 import { router } from '@/shared/navigation/router'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { View } from 'react-native'
 import {
   Avatar,
@@ -66,15 +66,21 @@ export function EditProfileScreen() {
   const dirty = Object.values(changed).some(Boolean)
   const pseudonymOk = !changed.pseudonym || check.state === 'available'
 
-  // Retour système, geste ou Annuler avec des modifications : confirmation.
-  usePreventRemove(dirty && !saving, ({ data }) =>
+  // Retour système, geste ou Annuler avec des modifications : confirmation. « Abandonner » lève d'abord la protection,
+  // puis rejoue le retour au rendu suivant : rejoué tout de suite, il était de nouveau intercepté et la feuille
+  // revenait (2026-11-14).
+  const [discarding, setDiscarding] = useState<Parameters<typeof navigation.dispatch>[0] | null>(null)
+  useEffect(() => {
+    if (discarding) navigation.dispatch(discarding)
+  }, [discarding, navigation])
+  usePreventRemove(dirty && !saving && !discarding, ({ data }) =>
     showDialog({
       sheet: true,
       icon: WarningIcon,
       title: 'Abandonner les modifications ?',
       message: 'Ce que tu as changé ne sera pas enregistré.',
       actions: [
-        { label: 'Abandonner', variant: 'tinted', tone: 'destructive', onPress: () => navigation.dispatch(data.action) },
+        { label: 'Abandonner', variant: 'tinted', tone: 'destructive', onPress: () => setDiscarding(data.action) },
         { label: "Continuer l'édition", variant: 'plain', tone: 'neutral' },
       ],
     }),
