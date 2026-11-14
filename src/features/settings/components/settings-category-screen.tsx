@@ -1,4 +1,3 @@
-import { nextRecruiterTier, RECRUITER_TIERS } from '@joutio/client-domain/share'
 import { Redirect, useLocalSearchParams } from 'expo-router'
 import { router } from '@/shared/navigation/router'
 import * as WebBrowser from 'expo-web-browser'
@@ -14,7 +13,6 @@ import {
   DatabaseIcon,
   EnvelopeSimpleIcon,
   FileTextIcon,
-  GiftIcon,
   GlobeHemisphereWestIcon,
   InfoIcon,
   LifebuoyIcon,
@@ -24,40 +22,34 @@ import {
   MedalIcon,
   MobileSheet,
   PaletteIcon,
-  ProgressBar,
   ProhibitIcon,
   RadioGroup,
   RobotIcon,
-  SectionHeader,
-  ShareNetworkIcon,
   ShieldCheckIcon,
   SparkleIcon,
   SpeakerHighIcon,
-  Stat,
   Text,
   toast,
   tokens,
   TrashIcon,
   useDeviceSettings,
   useThemeStore,
-  useTheme,
   VibrateIcon,
   type CategoryCode,
 } from '@/design-system'
-import { useMe, useReferral, useSetBirthDate } from '@/features/me'
+import { useMe, useSetBirthDate } from '@/features/me'
 import { PushPermissionRow } from '@/features/notifications/components/push-permission-row'
 import { usePushRematches } from '@/features/notifications/hooks/use-push-preferences'
 import { useAutoTrain } from '@/features/play/hooks/use-play'
 import { usePremiumSheet } from '@/features/premium/premium-store'
 import { useNotificationPreferences, useSetNotificationPreference, useUpdateMe } from '@/features/profile/hooks/use-profile'
-import { useShare } from '@/features/share'
 import { config } from '@/lib/config'
 import { appVersion } from '@/shared/utils/app-info'
 import { BirthDatePicker, birthDateError, formatBirthDate } from '@/shared/components/birth-date-picker'
 import { APPEARANCE, LANGUAGES } from '../lib/settings-options'
 import { Group, SettingsFrame, useSettingsOrigin, type SettingsPage } from './settings-frame'
 
-const PAGES: readonly SettingsPage[] = ['account', 'privacy', 'notifications', 'game', 'display', 'invite', 'help']
+const PAGES: readonly SettingsPage[] = ['account', 'privacy', 'notifications', 'game', 'display', 'help']
 const SUPPORT = 'mailto:contact@joutio.com'
 const MAX_INTERESTS = 3
 const UNIVERSES = Object.keys(tokens.category) as CategoryCode[]
@@ -81,8 +73,6 @@ export function SettingsCategoryScreen() {
       return <GamePage />
     case 'display':
       return <DisplayPage />
-    case 'invite':
-      return <InvitePage />
     case 'help':
       return <HelpPage />
   }
@@ -379,80 +369,6 @@ function DisplayPage() {
           last
         />
       </Group>
-    </SettingsFrame>
-  )
-}
-
-/** Inviter des amis (`partage.md` § 6) : lien de parrainage, compteurs et progression du badge Recruteur. */
-function InvitePage() {
-  const { colors } = useTheme()
-  const me = useMe(true).data
-  const referral = useReferral()
-  const share = useShare()
-  const data = referral.data
-  const next = data ? nextRecruiterTier(data.qualified) : null
-  const previous = data ? ([...RECRUITER_TIERS].reverse().find((tier) => tier <= data.qualified) ?? 0) : 0
-  const progress = data && next ? Math.round(((data.qualified - previous) / (next - previous)) * 100) : 100
-  return (
-    <SettingsFrame title="Inviter des amis">
-      <View style={{ alignItems: 'center', gap: tokens.space[3], paddingTop: tokens.space[3] }}>
-        <View
-          style={{
-            width: 64,
-            height: 64,
-            borderRadius: tokens.radius.lg,
-            backgroundColor: colors.accent,
-            alignItems: 'center',
-            justifyContent: 'center',
-            transform: [{ rotate: '-6deg' }],
-          }}
-        >
-          <GiftIcon size={32} weight="fill" color={colors.onAccent} />
-        </View>
-        <Text variant="title2" align="center">
-          Fais venir tes amis
-        </Text>
-        <Text variant="callout" color="muted" align="center">
-          Ils te suivent dès leur arrivée. Chaque ami qui termine son premier duel te rapproche du badge Recruteur.
-        </Text>
-      </View>
-      {data && (
-        <>
-          <View
-            style={{ gap: tokens.space[1], padding: tokens.space[4], borderRadius: tokens.radius.lg, backgroundColor: colors.surface, alignItems: 'center' }}
-          >
-            <Text variant="caption" color="muted">
-              Ton code de parrainage
-            </Text>
-            <Text variant="title1" mono>
-              {data.code}
-            </Text>
-          </View>
-          <Button
-            full
-            variant="tinted"
-            icon={ShareNetworkIcon}
-            onPress={() =>
-              share({ kind: 'invite', id: data.code, message: `${me?.pseudonym ?? 'Un joueur'} t’invite sur Joutio, le jeu de duels de culture générale.` })
-            }
-          >
-            Partager mon lien
-          </Button>
-          <View style={{ gap: tokens.space[3] }}>
-            <SectionHeader title="Badge Recruteur" />
-            <View style={{ flexDirection: 'row', gap: tokens.space[3] }}>
-              <Stat label="Amis invités" value={String(data.invited)} compact />
-              <Stat label="Ont joué" value={String(data.qualified)} tone="accent" compact />
-            </View>
-            <View style={{ gap: tokens.space[2], padding: tokens.space[4], borderRadius: tokens.radius.lg, backgroundColor: colors.surface }}>
-              <ProgressBar value={progress} label={next ? `${data.qualified} sur ${next} amis` : 'Tous les paliers atteints'} />
-              <Text variant="caption" color="muted">
-                {`Paliers : ${RECRUITER_TIERS.join(', ')} amis qui ont joué.`}
-              </Text>
-            </View>
-          </View>
-        </>
-      )}
     </SettingsFrame>
   )
 }

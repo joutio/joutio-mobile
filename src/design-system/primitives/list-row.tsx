@@ -4,6 +4,7 @@ import { CaretRightIcon, CheckCircleIcon, CircleIcon, RadioButtonIcon, type Icon
 import { HAIRLINE } from '../theme/hairline'
 import { useTheme } from '../theme/theme-provider'
 import { tokens } from '../tokens.generated'
+import { CountBadge } from './icon-button'
 import { PressableScale } from './pressable-scale'
 import { Switch } from './switch'
 import { Text } from './text'
@@ -18,6 +19,8 @@ export interface ListRowProps {
   leading?: ReactNode
   control?: ListRowControl
   value?: string
+  /** Traitements en attente, avec `chevron` : pastille `accent` (`9+` au-delà de 9), comme `TopicRow`. Absente à 0. */
+  badge?: number
   on?: boolean
   destructive?: boolean
   strong?: boolean
@@ -43,6 +46,7 @@ export function ListRow({
   leading,
   control = 'chevron',
   value,
+  badge,
   on = false,
   destructive = false,
   strong = false,
@@ -63,7 +67,7 @@ export function ListRow({
   return (
     <PressableScale
       accessibilityRole={interactive ? (stateRole ?? (control === 'chevron' ? 'link' : 'button')) : 'text'}
-      accessibilityLabel={[label, sub, value].filter(Boolean).join(', ')}
+      accessibilityLabel={[label, sub, value, badge ? `${badge} à traiter` : undefined].filter(Boolean).join(', ')}
       accessibilityState={stateRole ? { checked: on, disabled } : { disabled }}
       disabled={disabled || !interactive}
       pressedScale={1}
@@ -105,6 +109,7 @@ export function ListRow({
       {control === 'chevron' && (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: tokens.space[2] }}>
           {!!value && <Text color="muted">{value}</Text>}
+          {badge !== undefined && badge > 0 && <CountBadge count={badge} />}
           <CaretRightIcon size={14} color={colors.muted} />
         </View>
       )}

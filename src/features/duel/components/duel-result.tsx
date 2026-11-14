@@ -386,8 +386,6 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
               {/* Page 2 : Détails du duel. */}
               {hasReview ? (
                 <View style={{ flex: 1, paddingBottom: insets.bottom + tokens.space[3] }}>
-                  {/* Miroir du bandeau (2026-11-12, `resultat.md` § 6) : caret seul, un toucher revient au résultat. */}
-                  <SwipeHint direction="down" label="Revenir au résultat" onPress={() => setPage(0)} />
                   <DuelReview game={game} me={userId} myName={myName} opponentName={opponentName} canReport />
                 </View>
               ) : null}

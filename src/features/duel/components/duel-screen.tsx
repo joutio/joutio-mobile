@@ -10,7 +10,6 @@ import {
   ForceDark,
   haptic,
   QuestionBlock,
-  ReconnectCountdown,
   RoundIntro,
   ScoreGauge,
   showDialog,
@@ -29,8 +28,8 @@ import {
 } from '@/design-system'
 import { useMe } from '@/features/me'
 import { useServerClock } from '@/lib/realtime/server-clock'
-import { useConnectionStore } from '@/lib/ws'
 import { tierOf } from '@/shared/utils/tier'
+import { countryFlag, countryName } from '@joutio/client-domain/geo'
 import { sortedRounds } from '@joutio/client-domain/game'
 import {
   isBonusRound,
@@ -51,6 +50,8 @@ import { DuelCancelled } from './duel-cancelled'
 import { DuelResult } from './duel-result'
 import { useMyAvatar } from '@/features/avatar/lib/avatar-preview'
 import { usePlayerAvatar, usePlayerPremium } from '@/features/social/hooks/use-player-avatar'
+import { useEquippedTitle } from '../hooks/use-equipped-title'
+import { usePlayerProfile } from '@/features/social/hooks/use-social'
 import { usePlayerIdentity } from '@/features/me'
 
 export interface DuelRouteParams {
@@ -98,7 +99,6 @@ function DuelScreenContent() {
   const me = useMe(true)
   const userId = me.data?.userId ?? ''
   const stream = useGameStream(gameId)
-  const connection = useConnectionStore((state) => state.status)
   const now = useServerNow()
   const game = stream.state
   // Lu ici, avec les autres hooks : jamais après les retours anticipés (chargement, résultat) ci-dessous.
@@ -108,7 +108,11 @@ function DuelScreenContent() {
   const opponentId = game ? (game.player1Id === userId ? game.player2Id : game.player1Id) : null
   const opponentAvatar = usePlayerAvatar(opponentId, game?.player2Type !== 'BOT')
   const opponentPremium = usePlayerPremium(opponentId, game?.player2Type !== 'BOT')
+  // Même profil en cache que l'avatar : palier, Elo et pays de l'adversaire pour le face-à-face.
+  const opponentProfile = usePlayerProfile(opponentId ?? '', Boolean(opponentId) && game?.player2Type !== 'BOT')
   const { myPremium } = usePlayerIdentity()
+  const myTitle = useEquippedTitle(me.data?.equippedTitle)
+  const opponentTitle = useEquippedTitle(game?.player2Type === 'BOT' ? null : opponentProfile.data?.equippedTitle)
   usePrefetchQuestionImages(game?.questionImageUrls ?? [])
   const arena = useDuelArena({
     gameId,
@@ -186,6 +190,9 @@ function DuelScreenContent() {
   const myName = me.data?.pseudonym ?? 'Moi'
   const opponentName = (isPlayer1 ? game?.player2Name : game?.player1Name) ?? (game?.player2Type === 'BOT' ? 'Robot' : 'Adversaire')
   const myTier = me.data?.progression && !me.data.progression.provisional ? tierOf(me.data.progression.rating) : undefined
+  const opponentProgression = opponentProfile.data?.progression
+  const opponentTier = opponentProgression && !opponentProgression.provisional ? tierOf(opponentProgression.rating) : undefined
+  const countryLabel = (code?: string | null) => (code ? `${countryFlag(code)} ${countryName(code)}` : undefined)
 
   if (!game || !stream.status?.loaded) {
     return (
@@ -203,7 +210,6 @@ function DuelScreenContent() {
 
   if (finished) return <DuelResult gameId={gameId} game={game} topic={topic} topicId={params.topicId} category={params.category} />
 
-  const reconnecting = connection === 'reconnecting'
   const roundNumber = arena.roundIndex + 1
   const results = roundResults(game, userId, arena.roundIndex)
 
@@ -326,9 +332,20 @@ function DuelScreenContent() {
               src: myAvatar,
               premium: myPremium,
               tier: myTier,
-              detail: myTier ? `${tokens.tier[myTier].label} · ${me.data?.progression?.rating ?? ''}` : undefined,
+              title: myTitle,
+              rating: me.data?.progression?.rating,
+              country: countryLabel(me.data?.country),
             }}
-            opponent={{ name: opponentName, src: opponentAvatar, premium: opponentPremium, detail: game.player2Type === 'BOT' ? 'Entraînement' : undefined }}
+            opponent={{
+              name: opponentName,
+              src: opponentAvatar,
+              premium: opponentPremium,
+              tier: opponentTier,
+              title: opponentTitle,
+              rating: opponentProgression?.rating,
+              country: countryLabel(opponentProfile.data?.country),
+              detail: game.player2Type === 'BOT' ? 'Entraînement' : undefined,
+            }}
             topic={topic}
             category={category}
             rounds={ROUNDS}
@@ -341,13 +358,6 @@ function DuelScreenContent() {
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
             <SplashLogo variant="loading" />
           </View>
-        )}
-        {reconnecting && (
-          <ReconnectCountdown
-            seconds={playing && !revealed ? seconds : undefined}
-            waiting={{ title: `${opponentName} t'attend`, message: `Manche ${roundNumber} sur ${ROUNDS}` }}
-            onLeave={askAbandon}
-          />
         )}
       </View>
     </ForceDark>

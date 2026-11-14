@@ -1,13 +1,11 @@
 import { BIRTH_DATE_PROBLEMS, birthDateIssue, isoDay } from '@joutio/client-domain/profile'
-import { normalizeReferralCode } from '@joutio/client-domain/share'
 import { useState } from 'react'
 import { Linking, ScrollView, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { Button, CakeIcon, Field, GiftIcon, Notice, ProhibitIcon, Text, toast, tokens, useTheme } from '@/design-system'
+import { Button, CakeIcon, Notice, ProhibitIcon, Text, toast, tokens, useTheme } from '@/design-system'
 import { useLogout } from '@/features/auth'
-import { useApplyReferral, useSetBirthDate } from '@/features/me'
+import { useSetBirthDate } from '@/features/me'
 import { BirthDatePicker } from '@/shared/components/birth-date-picker'
-import { usePendingReferral } from '@/shared/stores/pending-referral-store'
 
 const SUPPORT = 'mailto:contact@joutio.com'
 
@@ -48,19 +46,13 @@ function TooYoung() {
 
 /**
  * Date de naissance (`onboarding.md`, 2026-11-13) : demandée une fois après la connexion aux comptes récents
- * (`MeView.birthDateRequired`), avant la personnalisation, même arrivé par un lien de salon. Code de parrainage
- * pré-rempli (lien d'invitation, Install Referrer) ou saisi. Moins de 15 ans : écran de blocage.
+ * (`MeView.birthDateRequired`), avant la personnalisation, même arrivé par un lien de salon. Moins de 15 ans : écran de blocage.
  */
 export function BirthDateScreen() {
   const { colors } = useTheme()
   const insets = useSafeAreaInsets()
   const save = useSetBirthDate()
-  const applyReferral = useApplyReferral()
-  const pending = usePendingReferral((state) => state.code)
-  const clearPending = usePendingReferral((state) => state.clear)
   const [birthDate, setBirthDate] = useState<string | null>(null)
-  const [code, setCode] = useState(pending ?? '')
-  const [codeOpen, setCodeOpen] = useState(pending !== null)
   const [tooYoung, setTooYoung] = useState(false)
   const issue = birthDate ? birthDateIssue(birthDate, isoDay(new Date())) : 'missing'
 
@@ -73,11 +65,6 @@ export function BirthDateScreen() {
       return
     }
     save.mutate(birthDate, {
-      onSuccess: () => {
-        const referral = normalizeReferralCode(code)
-        clearPending()
-        if (referral) applyReferral.mutate(referral, { onError: () => toast.error("Ce code de parrainage n'a pas pu être appliqué") })
-      },
       onError: (error) => {
         const type = (error as { type?: string } | null)?.type
         if (type === BIRTH_DATE_PROBLEMS.underage) setTooYoung(true)
@@ -113,30 +100,6 @@ export function BirthDateScreen() {
           <Text color="muted">Joutio est réservé aux 15 ans et plus. Ta date reste privée : elle ne s'affiche jamais sur ton profil.</Text>
         </View>
         <BirthDatePicker value={birthDate} onChange={setBirthDate} />
-        {codeOpen ? (
-          <View style={{ gap: tokens.space[3], padding: tokens.space[4], borderRadius: tokens.radius.lg, backgroundColor: colors.surface }}>
-            {pending && (
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: tokens.space[2] }}>
-                <GiftIcon size={20} weight="fill" color={colors.accentInk} />
-                <Text variant="headline">Invité par un ami</Text>
-              </View>
-            )}
-            <Field
-              label="Code de parrainage"
-              value={code}
-              maxLength={8}
-              hint="Facultatif. Tu suivras ton parrain dès ton arrivée."
-              autoCapitalize="characters"
-              autoCorrect={false}
-              onChangeText={(value) => setCode(value.toUpperCase())}
-              onClear={() => setCode('')}
-            />
-          </View>
-        ) : (
-          <Button variant="plain" onPress={() => setCodeOpen(true)}>
-            J'ai un code de parrainage
-          </Button>
-        )}
       </ScrollView>
       <View style={{ paddingHorizontal: tokens.space[5], paddingTop: tokens.space[3], paddingBottom: insets.bottom + tokens.space[5] }}>
         <Button full disabled={!birthDate || (issue !== null && issue !== 'underage')} loading={save.isPending} onPress={submit}>

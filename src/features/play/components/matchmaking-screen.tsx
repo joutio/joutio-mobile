@@ -14,7 +14,6 @@ import {
   ForceDark,
   haptic,
   MatchmakingMap,
-  ReconnectCountdown,
   RobotIcon,
   Text,
   toast,
@@ -28,7 +27,6 @@ import { usePlayerIdentity } from '@/features/me'
 import { PlayerPickerSheet } from '@/features/topic/components/duel-sheet'
 import { formatNumber } from '@/features/topic/lib/format'
 import { readServerNow, useServerClock } from '@/lib/realtime/server-clock'
-import { useConnectionStore } from '@/lib/ws'
 import { tierOf } from '@/shared/utils/tier'
 import { useAutoTrain, useBotDifficulty, useTicket, useTicketPresence, type PlayTopic } from '../hooks/use-play'
 import { playService } from '../lib/play-service'
@@ -101,7 +99,6 @@ function MatchmakingScreenContent() {
   const ticket = useTicket(params.ticketId)
   const status = ticket.state?.status ?? 'SEARCHING'
   const seconds = useSecondsLeft(ticket.state?.deadlineAt ?? null)
-  const connection = useConnectionStore((state) => state.status)
   const autoTrain = useAutoTrain()
   const difficulty = useBotDifficulty((state) => state.difficulty)
   const [pickerOpen, setPickerOpen] = useState(false)
@@ -307,7 +304,6 @@ function MatchmakingScreenContent() {
         </View>
       )}
 
-      {connection === 'reconnecting' && status === 'SEARCHING' && <ReconnectCountdown onLeave={cancelSearch} leaveLabel="Annuler la recherche" />}
       <PlayerPickerSheet
         open={pickerOpen}
         onClose={() => setPickerOpen(false)}

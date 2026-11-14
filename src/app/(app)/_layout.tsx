@@ -1,7 +1,7 @@
 import { useMe } from '@/features/me'
 import { PlaySessionProvider } from '@/features/play/hooks/play-session'
 import { ActiveGameBanner, useBannerGame } from '@/features/play/components/active-game-banner'
-import { Stack, useSegments } from 'expo-router'
+import { Stack } from 'expo-router'
 import { View } from 'react-native'
 import Animated from 'react-native-reanimated'
 import { BANNER_LAYOUT } from '@/shared/components/banner-motion'
@@ -15,8 +15,6 @@ import { useConnectionBanner } from '@/shared/hooks/use-connection-banner'
 
 export const unstable_settings = { anchor: '(tabs)' }
 
-/** Parcours de jeu : la coupure y est déjà signalée en plein écran (`ReconnectCountdown`), pas de bannière en plus. */
-const GAME_ROUTES = new Set(['matchmaking', 'duel'])
 
 /** Écrans du joueur connecté : les 5 onglets, puis les écrans poussés par-dessus. */
 export default function AppLayout() {
@@ -32,10 +30,10 @@ export default function AppLayout() {
 function AppNavigation() {
   const theme = useTheme()
   const insets = useSafeAreaInsets()
-  const segments = useSegments() as string[]
   const connection = useConnectionBanner()
   const bannerGame = useBannerGame()
-  const banner = connection.state !== 'hidden' && !GAME_ROUTES.has(segments[1] ?? '')
+  // La coupure réseau se signale partout, parcours de jeu compris (plus de `ReconnectCountdown`, 2026-11-14).
+  const banner = connection.state !== 'hidden'
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.bg }}>
       {banner && <ConnectionBanner state={connection.state} onRetry={() => void connection.retry()} />}

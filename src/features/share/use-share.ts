@@ -3,12 +3,10 @@ import * as Clipboard from 'expo-clipboard'
 import { useCallback } from 'react'
 import { Platform, Share } from 'react-native'
 import { toast } from '@/design-system'
-import { useSessionStore } from '@/features/auth'
-import { useReferral } from '@/features/me'
 
 export interface ShareTarget {
   kind: ShareKind
-  /** Identifiant du joueur, du sujet, du salon ou code de parrainage. */
+  /** Identifiant du joueur, du sujet, du salon. */
   id: string
   /** Phrase d'accompagnement. */
   message: string
@@ -17,19 +15,17 @@ export interface ShareTarget {
 
 /**
  * Partage natif (`design/specs/screens/partage.md` § 4) : feuille du système avec le lien universel
- * `go.joutio.com/…?ref={code}`. iOS passe le lien en `url` (aperçu riche dans Messages) ; Android l'ajoute au message.
+ * `go.joutio.com/…`. iOS passe le lien en `url` (aperçu riche dans Messages) ; Android l'ajoute au message.
  */
 export function useShare() {
-  const authenticated = useSessionStore((state) => state.authenticated)
-  const referral = useReferral(authenticated).data
   return useCallback(
     ({ kind, id, message, title }: ShareTarget) => {
-      const url = buildShareUrl({ kind, id, ref: referral?.code })
+      const url = buildShareUrl({ kind, id })
       const content = Platform.OS === 'ios' ? { message, url, title } : { message: `${message}\n${url}`, title }
       void Share.share(content).catch(() => undefined)
       return url
     },
-    [referral?.code],
+    [],
   )
 }
 

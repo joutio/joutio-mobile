@@ -62,15 +62,22 @@ export function DuelHeader({ me, opponent, seconds, timerState, lowAt, style }: 
       ]}
     >
       <Side player={me} />
-      <Text
-        variant="numericTimer"
-        color={isTimerUrgent(seconds, timerState, lowAt) ? 'wrong' : 'text'}
-        accessibilityRole="timer"
-        accessibilityLabel={`${seconds} secondes restantes`}
-        maxFontSizeMultiplier={1.2}
-      >
-        {seconds}
-      </Text>
+      {/* Deux chiffres réservés (« 00 » invisible, police mono) : la rangée ne bouge pas de 10 à 9. */}
+      <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+        <Text variant="numericTimer" maxFontSizeMultiplier={1.2} style={{ opacity: 0 }} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+          00
+        </Text>
+        <Text
+          variant="numericTimer"
+          color={isTimerUrgent(seconds, timerState, lowAt) ? 'wrong' : 'text'}
+          accessibilityRole="timer"
+          accessibilityLabel={`${seconds} secondes restantes`}
+          maxFontSizeMultiplier={1.2}
+          style={{ position: 'absolute' }}
+        >
+          {seconds}
+        </Text>
+      </View>
       <Side player={opponent} end />
     </View>
   )

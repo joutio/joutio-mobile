@@ -14,7 +14,6 @@ import { useMe } from '@/features/me'
 import { ExpoPushRuntime } from '@/features/notifications/components/expo-push-runtime'
 import { useCatalogAccess } from '@/features/auth/hooks/use-catalog-access'
 import { BirthDateScreen } from '@/features/onboarding/components/birth-date-screen'
-import { ReferralRuntime } from '@/features/share'
 import { createQueryClient } from '@/lib/query-client'
 import { useNetworkBridge } from '@/shared/hooks/use-online'
 
@@ -123,7 +122,6 @@ function Root() {
       <SessionRuntime />
       <Navigation />
       <ExpoPushRuntime />
-      <ReferralRuntime />
       <ToastHost />
       <DialogHost />
     </NavigationThemeProvider>

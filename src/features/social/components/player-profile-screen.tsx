@@ -312,6 +312,7 @@ export function PlayerProfileScreen() {
                           key={game.gameId}
                           topic={topicName(game.topic.names)}
                           category={toCategoryCode(game.topic.category)}
+                          pictogram={game.topic.pictogramUrl ?? undefined}
                           image={game.topic.imageUrl ?? undefined}
                           sub={dayLabel(new Date(game.playedAt))}
                           outcome={outcome}

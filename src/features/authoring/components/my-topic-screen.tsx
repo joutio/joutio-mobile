@@ -340,7 +340,7 @@ export function MyTopicScreen() {
                   icon={ShieldCheckIcon}
                   label="Modération"
                   control="chevron"
-                  value={String(pending + reported)}
+                  badge={pending + reported}
                   onPress={() => router.push({ pathname: `${base}/moderation`, params: { id: topicId, name } })}
                   last
                 />

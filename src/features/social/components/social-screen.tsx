@@ -1,5 +1,3 @@
-import { useReferral } from '@/features/me'
-import { useShare } from '@/features/share'
 import { NotificationButton } from '@/features/notifications/components/notification-button'
 import { SettingsButton } from '@/features/settings/components/settings-button'
 import { router } from '@/shared/navigation/router'
@@ -26,7 +24,7 @@ import {
   UsersThreeIcon,
   WarningCircleIcon,
 } from '@/design-system'
-import { useMe, usePlayerIdentity } from '@/features/me'
+import { usePlayerIdentity } from '@/features/me'
 import { useContacts } from '@/features/play/hooks/use-play'
 import { formatNumber } from '@/features/topic/lib/format'
 import type { PeopleSort, PlayerCardView } from '@joutio/client-domain/api-types'
@@ -49,7 +47,6 @@ function PeopleList({
   query,
   onOpen,
   onChallenge,
-  onInvite,
   sort,
   onSort,
 }: {
@@ -58,7 +55,6 @@ function PeopleList({
   query: string
   onOpen: (player: PlayerCardView) => void
   onChallenge: (player: PlayerCardView) => void
-  onInvite: () => void
   sort: PeopleSort
   onSort: () => void
 }) {
@@ -125,7 +121,7 @@ function PeopleList({
           </View>
         ) : players.length === 0 ? (
           <View style={{ paddingHorizontal: GUTTER }}>
-            {/* Recherche sans résultat : pas d'action (lab). Liste vide : « Inviter un ami » en action principale. */}
+            {/* Recherche sans résultat : « Rechercher globalement » ; liste vide : pas d'action. */}
             <EmptyState
               icon={query ? MagnifyingGlassIcon : UsersThreeIcon}
               title={emptyTitle}
@@ -135,11 +131,7 @@ function PeopleList({
                   <Button full icon={MagnifyingGlassIcon} onPress={() => router.push({ pathname: '/social/search', params: { q: query.trim() } })}>
                     Rechercher globalement
                   </Button>
-                ) : (
-                  <Button full onPress={onInvite}>
-                    Inviter un ami
-                  </Button>
-                )
+                ) : undefined
               }
             />
           </View>
@@ -179,7 +171,6 @@ function PeopleList({
  * l'épée ouvre le choix du sujet ; on suit depuis la fiche, pas depuis la liste.
  */
 export function SocialScreen() {
-  const me = useMe(true)
   const myProfile = useMyProfile(true)
   const [tab, setTab] = useState<Direction>('following')
   const [query, setQuery] = useState('')
@@ -190,12 +181,6 @@ export function SocialScreen() {
   const following = useContacts('following', query, true, sort)
   const followers = useContacts('followers', query, true, sort)
 
-  const share = useShare()
-  const referral = useReferral().data
-  /** Inviter un ami : lien de parrainage (`partage.md` § 6). */
-  const invite = () =>
-    referral &&
-    share({ kind: 'invite', id: referral.code, message: `${me.data?.pseudonym ?? 'Un joueur'} t’invite sur Joutio, le jeu de duels de culture générale.` })
   const openPlayer = (player: PlayerCardView) => {
     router.push({ pathname: '/social/player/[id]', params: { id: player.userId } })
   }
@@ -238,7 +223,6 @@ export function SocialScreen() {
                 query={query}
                 onOpen={openPlayer}
                 onChallenge={setChallenged}
-                onInvite={invite}
                 sort={sort}
                 onSort={() => setSortOpen(true)}
               />
@@ -254,7 +238,6 @@ export function SocialScreen() {
                 query={query}
                 onOpen={openPlayer}
                 onChallenge={setChallenged}
-                onInvite={invite}
                 sort={sort}
                 onSort={() => setSortOpen(true)}
               />

@@ -1,4 +1,6 @@
+import { useEffect } from 'react'
 import { View, type StyleProp, type ViewStyle } from 'react-native'
+import Animated, { Easing, useAnimatedProps, useSharedValue, withTiming } from 'react-native-reanimated'
 import Svg, { Circle } from 'react-native-svg'
 import { isTimerUrgent } from '../duel/timer-bar'
 import { Avatar } from '../primitives/avatar'
@@ -30,6 +32,7 @@ const RING = 120
 const STROKE = 5
 const R = (RING - STROKE) / 2
 const C = 2 * Math.PI * R
+const AnimatedCircle = Animated.createAnimatedComponent(Circle)
 
 /** Proposition de revanche, posée par l'écran au-dessus d'un voile : anneau du délai autour de l'avatar. */
 export function RematchPrompt({
@@ -48,7 +51,13 @@ export function RematchPrompt({
   style,
 }: RematchPromptProps) {
   const { colors, radius } = useTheme()
-  const fraction = Math.min(1, Math.max(0, seconds / total))
+  // L'anneau vise la fin de la seconde en cours (1 s linéaire) : il se vide en continu, sans saut au tic.
+  const target = Math.min(1, Math.max(0, (seconds - 1) / total))
+  const fraction = useSharedValue(Math.min(1, Math.max(0, seconds / total)))
+  useEffect(() => {
+    fraction.value = withTiming(target, { duration: 1000, easing: Easing.linear })
+  }, [fraction, target])
+  const ringProps = useAnimatedProps(() => ({ strokeDashoffset: C * (1 - fraction.value) }))
   const urgent = isTimerUrgent(seconds, 'running', lowAt)
   return (
     <View
@@ -72,7 +81,7 @@ export function RematchPrompt({
       <View style={{ width: RING, height: RING, alignItems: 'center', justifyContent: 'center' }}>
         <Svg width={RING} height={RING} style={{ position: 'absolute', transform: [{ rotate: '-90deg' }] }}>
           <Circle cx={RING / 2} cy={RING / 2} r={R} stroke={colors.raised} strokeWidth={STROKE} fill="none" />
-          <Circle
+          <AnimatedCircle
             cx={RING / 2}
             cy={RING / 2}
             r={R}
@@ -80,7 +89,7 @@ export function RematchPrompt({
             strokeWidth={STROKE}
             fill="none"
             strokeDasharray={`${C} ${C}`}
-            strokeDashoffset={C * (1 - fraction)}
+            animatedProps={ringProps}
           />
         </Svg>
         <Avatar name={name} src={src} tier={tier} size="xxl" decorative />

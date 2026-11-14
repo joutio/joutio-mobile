@@ -1,12 +1,11 @@
-import { Image } from 'expo-image'
 import { View, type StyleProp, type ViewStyle } from 'react-native'
-import { CategoryIcon } from '../brand/category-icon'
 import { RobotIcon } from '../icons'
 import { HAIRLINE } from '../theme/hairline'
 import { useTheme, type ThemeColors } from '../theme/theme-provider'
 import { tokens, type CategoryCode } from '../tokens.generated'
 import { PressableScale } from './pressable-scale'
 import { Text } from './text'
+import { TopicVisual } from './topic-visual'
 
 export type MatchOutcome = 'win' | 'loss' | 'draw' | 'forfeit'
 
@@ -21,7 +20,9 @@ export interface MatchRowProps {
   /** Titre de la ligne : le sujet, ou l'adversaire quand la liste est déjà filtrée sur un sujet. */
   topic: string
   category: CategoryCode
-  /** Vignette du sujet ; sans elle, la tuile prend la couleur et l'icône de l'univers. */
+  /** Pictogramme carré du sujet : premier choix, comme `TopicRow`. */
+  pictogram?: string
+  /** Vignette : second choix. Absentes ou en échec : pastille et icône de l'univers. */
   image?: string | number
   sub?: string
   outcome: MatchOutcome
@@ -34,8 +35,8 @@ export interface MatchRowProps {
 }
 
 /** Partie terminée : tuile de l'univers, titre, issue et score. */
-export function MatchRow({ topic, category, image, sub, outcome, score, bot = false, last = false, onPress, style }: MatchRowProps) {
-  const { colors, radius, categoryColor, scheme } = useTheme()
+export function MatchRow({ topic, category, pictogram, image, sub, outcome, score, bot = false, last = false, onPress, style }: MatchRowProps) {
+  const { colors, radius } = useTheme()
   const { label, color } = OUTCOMES[outcome]
   return (
     <PressableScale
@@ -58,26 +59,7 @@ export function MatchRow({ topic, category, image, sub, outcome, score, bot = fa
         style,
       ]}
     >
-      <View
-        style={{
-          width: 44,
-          height: 44,
-          alignItems: 'center',
-          justifyContent: 'center',
-          borderRadius: radius.md,
-          backgroundColor: image !== undefined ? colors.raised : categoryColor(category),
-        }}
-      >
-        {image !== undefined ? (
-          <Image
-            source={typeof image === 'number' ? image : { uri: image }}
-            contentFit="cover"
-            accessibilityIgnoresInvertColors
-            style={{ width: 44, height: 44, borderRadius: radius.md }}
-          />
-        ) : (
-          <CategoryIcon category={category} size={22} weight="fill" color={colors.onAccent} style={{ opacity: 0.8 }} />
-        )}
+      <TopicVisual category={category} pictogram={pictogram} image={image}>
         {bot && (
           <View
             style={{
@@ -97,7 +79,7 @@ export function MatchRow({ topic, category, image, sub, outcome, score, bot = fa
             <RobotIcon size={12} color={colors.muted} />
           </View>
         )}
-      </View>
+      </TopicVisual>
       <View style={{ flex: 1, minWidth: 0 }}>
         <Text variant="headline" numberOfLines={1}>
           {topic}

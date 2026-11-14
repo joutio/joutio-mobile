@@ -84,7 +84,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       {
         action: 'VIEW',
         autoVerify: true,
-        data: ['/p', '/t', '/j', '/i'].map((pathPrefix) => ({ scheme: 'https', host: SHARE_HOST, pathPrefix })),
+        data: ['/p', '/t', '/j'].map((pathPrefix) => ({ scheme: 'https', host: SHARE_HOST, pathPrefix })),
         category: ['BROWSABLE', 'DEFAULT'],
       },
     ],

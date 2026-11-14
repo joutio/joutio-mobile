@@ -5,6 +5,8 @@ import { CategoryIcon } from '../brand/category-icon'
 import { useReducedMotion } from '../motion'
 import { PlayerName } from '../primitives/player-name'
 import { Avatar } from '../primitives/avatar'
+import { Badge } from '../primitives/badge'
+import { Pill } from '../primitives/pill'
 import { Text } from '../primitives/text'
 import { alpha } from '../theme/color'
 import { ForceDark, useTheme } from '../theme/theme-provider'
@@ -18,7 +20,11 @@ export interface VersusPlayer {
   src?: string
   /** Titre porté. */
   title?: string
-  /** Ligne mono, par exemple « Or · 867 ». */
+  /** Elo : avec `tier`, pastille de palier « Or · 867 » comme sur Profil ; sans palier (provisoire), « Non classé ». */
+  rating?: number
+  /** Pays déjà formaté (« 🇫🇷 France »), en pastille neutre comme sur Profil. */
+  country?: string
+  /** Texte libre en pastille neutre (« Entraînement » contre le bot). */
   detail?: string
 }
 
@@ -103,10 +109,13 @@ function Panel({ player, side, t, height }: { player: VersusPlayer; side: 'top' 
               {player.title}
             </Text>
           )}
-          {player.detail && (
-            <Text variant="callout" color="muted" mono numberOfLines={1}>
-              {player.detail}
-            </Text>
+          {(player.rating !== undefined || player.country || player.detail) && (
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: tokens.space[3], justifyContent: top ? 'flex-start' : 'flex-end' }}>
+              {player.rating !== undefined &&
+                (player.tier ? <Badge variant="tier" tier={player.tier}>{`${tokens.tier[player.tier].label} · ${player.rating}`}</Badge> : <Pill>Non classé</Pill>)}
+              {player.country && <Pill>{player.country}</Pill>}
+              {player.detail && <Pill>{player.detail}</Pill>}
+            </View>
           )}
         </View>
       </Animated.View>

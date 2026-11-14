@@ -11,7 +11,7 @@ export function useSettingsOrigin(): SettingsOrigin {
   return (useSegments() as string[]).includes('home') ? 'home' : 'profile'
 }
 
-export type SettingsPage = 'account' | 'privacy' | 'notifications' | 'game' | 'display' | 'invite' | 'help'
+export type SettingsPage = 'account' | 'privacy' | 'notifications' | 'game' | 'display' | 'help'
 
 /** Ouvre une catégorie dans la pile d'origine. */
 export function openSettingsPage(origin: SettingsOrigin, page: SettingsPage) {

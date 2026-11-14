@@ -3,7 +3,6 @@ import {
   BellIcon,
   CrownSimpleIcon,
   GameControllerIcon,
-  GiftIcon,
   LifebuoyIcon,
   ListRow,
   Notice,
@@ -60,9 +59,6 @@ export function SettingsScreen() {
         <ListRow icon={BellIcon} label="Notifications" control="chevron" onPress={open('notifications')} />
         <ListRow icon={GameControllerIcon} label="Jeu" sub="Duel, entraînement, centres d'intérêt" control="chevron" onPress={open('game')} />
         <ListRow icon={PaletteIcon} label="Affichage et langue" control="chevron" onPress={open('display')} last />
-      </Group>
-      <Group>
-        <ListRow icon={GiftIcon} label="Inviter des amis" sub="Ton lien de parrainage" control="chevron" onPress={open('invite')} last />
       </Group>
       <Group>
         <ListRow icon={LifebuoyIcon} label="Aide et à propos" control="chevron" onPress={open('help')} last />
