@@ -24,7 +24,8 @@ export interface SwipeHintProps {
 /**
  * Annonce d'une page voisine d'un pager vertical (`ResultPages`, `resultat.md` § 6) : caret, titre et geste
  * facultatifs (le miroir en haut de la page 2 n'a que le caret, 2026-11-12). Un toucher fait la même bascule que le
- * glissé. Port de `SwipeHint` du lab : `gap-0.5 px-4`, bandeau `pt-3 pb-[safe+12px]`, miroir `pt-1 pb-1`.
+ * glissé. Port de `SwipeHint` du lab : `gap-0.5 px-4`, bandeau `pt-3` collé en bas (`pb` = safe area, 8 pt au moins,
+ * 2026-11-14), miroir `pt-1 pb-1`.
  */
 export function SwipeHint({ direction, title, hint, label, accessibilityHint, onPress, bottomInset = 0 }: SwipeHintProps) {
   const { colors } = useTheme()
@@ -43,7 +44,8 @@ export function SwipeHint({ direction, title, hint, label, accessibilityHint, on
         gap: tokens.space[1],
         paddingHorizontal: tokens.space[5],
         paddingTop: banner ? tokens.space[4] : tokens.space[2],
-        paddingBottom: banner ? bottomInset + tokens.space[4] : tokens.space[2],
+        // Collé au plus bas : la safe area seule, sans marge en plus (2026-11-14).
+        paddingBottom: banner ? Math.max(bottomInset, tokens.space[3]) : tokens.space[2],
       }}
     >
       <Caret size={20} color={colors.muted} />

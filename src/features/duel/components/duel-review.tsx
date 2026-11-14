@@ -92,12 +92,15 @@ export const DuelReview = memo(function DuelReview({
   myName,
   opponentName,
   canReport,
+  compact = false,
 }: {
   game: GameState
   me: string
   myName: string
   opponentName: string
   canReport: boolean
+  /** Écran court : onglets de manche sans les points (`RoundReviewTabs`). */
+  compact?: boolean
 }) {
   const rounds = useMemo(() => reviewRoundsOf(game), [game])
   const images = useMemo(() => [...new Set(rounds.map((round) => round.imageUrl).filter((url): url is string => Boolean(url)))], [rounds])
@@ -156,7 +159,7 @@ export const DuelReview = memo(function DuelReview({
           <Text variant="headline" accessibilityRole="header">
             Détails du duel
           </Text>
-          <RoundReviewTabs me={myName} opponent={opponentName} value={index} onChange={go} rounds={tabs} />
+          <RoundReviewTabs me={myName} opponent={opponentName} value={index} onChange={go} rounds={tabs} compact={compact} />
         </View>
         <PagerView
           ref={pager}

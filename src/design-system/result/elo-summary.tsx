@@ -8,11 +8,13 @@ export interface EloSummaryProps {
   delta: number
   /** Objectif suivant, par exemple `Platine à 1 000 · encore 144`. */
   next?: string
+  /** Écran court : Elo en `numericLarge` au lieu de `numericHero`, à côté de la maîtrise. */
+  compact?: boolean
   style?: StyleProp<ViewStyle>
 }
 
 /** Elo en héros, delta de la partie, prochain rang. */
-export function EloSummary({ elo, delta, next, style }: EloSummaryProps) {
+export function EloSummary({ elo, delta, next, compact = false, style }: EloSummaryProps) {
   const sign = delta > 0 ? '+' : delta < 0 ? '−' : ''
   return (
     <View
@@ -24,11 +26,11 @@ export function EloSummary({ elo, delta, next, style }: EloSummaryProps) {
         Elo
       </Text>
       <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: tokens.space[4] }}>
-        <Text variant="numericHero">{elo}</Text>
+        <Text variant={compact ? 'numericLarge' : 'numericHero'}>{elo}</Text>
         <Text variant="numericMedium" color={delta > 0 ? 'correct' : delta < 0 ? 'wrong' : 'muted'}>{`${sign}${Math.abs(delta)}`}</Text>
       </View>
       {next && (
-        <Text variant="callout" color="muted">
+        <Text variant="callout" color="muted" align="center">
           {next}
         </Text>
       )}

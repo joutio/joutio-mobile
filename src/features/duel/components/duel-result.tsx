@@ -3,6 +3,7 @@ import { router } from '@/shared/navigation/router'
 import { useMemo, useState } from 'react'
 import { View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+
 import {
   Notice,
   Button,
@@ -46,6 +47,9 @@ import { ReportPlayerSheet } from './report-sheets'
 import { useMyAvatar } from '@/features/avatar/lib/avatar-preview'
 import { usePlayerAvatar, usePlayerPremium, usePlayerRanked } from '@/features/social/hooks/use-player-avatar'
 import { usePlayerIdentity } from '@/features/me'
+
+/** Hauteur des pages sous laquelle le résultat passe en compact (`resultat.md` § 4 bis) : l'iPhone Duo plié y passe. */
+const COMPACT_RESULT_HEIGHT = 640
 
 /** Chat d'après-duel (écran mocké, le BFF n'a pas de messagerie) : masqué jusqu'à une prochaine itération (2026-11-13). */
 const RESULT_CHAT_ENABLED = false
@@ -142,6 +146,8 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
   const [reportOpen, setReportOpen] = useState(false)
   // Deux pages verticales fixes (résultat, Détails du duel), hauteur mesurée sous la barre.
   const [pageHeight, setPageHeight] = useState(0)
+  // Zone des pages trop courte (iPhone Duo plié) : résultat compact (`resultat.md` § 4 bis).
+  const compact = pageHeight > 0 && pageHeight < COMPACT_RESULT_HEIGHT
   const [page, setPage] = useState(0)
   const hasReview = useMemo(() => !cancelled && reviewRoundsOf(game).length > 0, [cancelled, game])
 
@@ -244,6 +250,26 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
     : undefined
   const mastery = data?.topicMastery
   const pendingReward = !data || data.reward === null
+  const eloSummary = (
+    <EloSummary
+      compact={compact}
+      elo={rating}
+      delta={data?.rated ? (data.eloDelta ?? 0) : 0}
+      next={nextElo}
+      style={compact ? { flex: 1 } : undefined}
+    />
+  )
+  const masteryRing = (
+    <MasteryRing
+      tier={mastery ? tierLabel(mastery.tier as TierCode) : '—'}
+      next={mastery?.nextTier ? tierLabel(mastery.nextTier as TierCode) : undefined}
+      gained={mastery?.xpGained ?? 0}
+      remaining={mastery?.tierRemainingXp ?? 0}
+      size={compact ? 104 : 150}
+      compact={compact}
+      state={pendingReward ? 'pending' : 'done'}
+    />
+  )
 
   return (
     <>
@@ -313,17 +339,18 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
                       }
                     />
                   ) : (
-                    <>
-                      <EloSummary elo={rating} delta={data?.rated ? (data.eloDelta ?? 0) : 0} next={nextElo} />
-                      <MasteryRing
-                        tier={mastery ? tierLabel(mastery.tier as TierCode) : '—'}
-                        next={mastery?.nextTier ? tierLabel(mastery.nextTier as TierCode) : undefined}
-                        gained={mastery?.xpGained ?? 0}
-                        remaining={mastery?.tierRemainingXp ?? 0}
-                        size={150}
-                        state={pendingReward ? 'pending' : 'done'}
-                      />
-                    </>
+                    // Écran court : l'Elo et la maîtrise côte à côte ; sinon deux blocs répartis dans la page.
+                    compact ? (
+                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: tokens.space[5] }}>
+                        {eloSummary}
+                        {masteryRing}
+                      </View>
+                    ) : (
+                      <>
+                        {eloSummary}
+                        {masteryRing}
+                      </>
+                    )
                   )}
                   <View style={{ flexDirection: 'row', gap: tokens.space[3] }}>
                     <View style={{ flex: 1 }}>
@@ -386,7 +413,7 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
               {/* Page 2 : Détails du duel. */}
               {hasReview ? (
                 <View style={{ flex: 1, paddingBottom: insets.bottom + tokens.space[3] }}>
-                  <DuelReview game={game} me={userId} myName={myName} opponentName={opponentName} canReport />
+                  <DuelReview game={game} me={userId} myName={myName} opponentName={opponentName} canReport compact={compact} />
                 </View>
               ) : null}
             </ResultPages>

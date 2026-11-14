@@ -22,11 +22,13 @@ export interface RoundReviewTabsProps {
   /** Pseudonymes, lus par les lecteurs d'écran (jamais « toi »). */
   me: string
   opponent: string
+  /** Écran court (iPhone Duo plié, 2026-11-14) : sans les points de la manche, gardés pour les lecteurs d'écran. */
+  compact?: boolean
   style?: StyleProp<ViewStyle>
 }
 
 /** Sélecteur de manche de la revue : mon résultat à gauche, celui de l'adversaire à droite. */
-export function RoundReviewTabs({ rounds, value, onChange, me, opponent, style }: RoundReviewTabsProps) {
+export function RoundReviewTabs({ rounds, value, onChange, me, opponent, compact = false, style }: RoundReviewTabsProps) {
   const { colors, radius } = useTheme()
   const dot = (answer: ReviewAnswer) => (answer === 'correct' ? colors.correct : answer === 'wrong' ? colors.wrong : colors.raised)
   return (
@@ -67,9 +69,11 @@ export function RoundReviewTabs({ rounds, value, onChange, me, opponent, style }
               <View style={{ width: 8, height: 8, borderRadius: 2, backgroundColor: dot(round.me) }} />
               <View style={{ width: 8, height: 8, borderRadius: 2, backgroundColor: dot(round.opponent) }} />
             </View>
-            <Text variant="caption" weight="600" mono>
-              {round.points}
-            </Text>
+            {!compact && (
+              <Text variant="caption" weight="600" mono>
+                {round.points}
+              </Text>
+            )}
           </PressableScale>
         )
       })}
