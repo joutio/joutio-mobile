@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react'
 import { View } from 'react-native'
 import {
   EmptyState,
+  FeedFooter,
   ListGroup,
   ListRow,
   MagnifyingGlassIcon,
@@ -13,6 +14,7 @@ import {
   Text,
   tokens,
 } from '@/design-system'
+import { clientSource, feedFooterProps } from '@/shared/utils/paging'
 
 /** Pays rendus par page : la feuille s'ouvre sans construire les 249 lignes. */
 const PAGE_SIZE = 30
@@ -49,6 +51,8 @@ export function CountryPicker({
   const results = useMemo(() => searchCountries(query), [query])
   const visible = useMemo(() => results.slice(0, pages * PAGE_SIZE), [results, pages])
   const hasMore = visible.length < results.length
+  // Même forme qu'une liste paginée : le pied annonce la page suivante, puis la fin (2026-11-14).
+  const source = clientSource(pages, setPages, hasMore)
   const suggested = useMemo(() => suggestedCountries(deviceRegion()), [])
 
   const search = (next: string) => {
@@ -83,7 +87,7 @@ export function CountryPicker({
       title="Pays"
       tall
       stickyHeader={<SearchField value={query} onChange={search} placeholder="Chercher un pays" label="Chercher un pays" />}
-      loadMore={{ enabled: hasMore, resetKey: query, onLoadMore: () => setPages((count) => count + 1) }}
+      loadMore={{ enabled: hasMore, resetKey: query, onLoadMore: () => source.fetchNextPage() }}
     >
       <View style={{ gap: tokens.space[4] }}>
         {query.trim() === '' && (
@@ -108,9 +112,12 @@ export function CountryPicker({
         {visible.length === 0 ? (
           <EmptyState icon={MagnifyingGlassIcon} title="Aucun pays trouvé" description="Vérifie l'orthographe ou cherche par code (FR, BE…)." />
         ) : (
-          <RadioGroup label="Tous les pays">
-            <ListGroup>{visible.map((country, index) => row(country.code, index === visible.length - 1))}</ListGroup>
-          </RadioGroup>
+          <>
+            <RadioGroup label="Tous les pays">
+              <ListGroup>{visible.map((country, index) => row(country.code, index === visible.length - 1))}</ListGroup>
+            </RadioGroup>
+            <FeedFooter {...feedFooterProps(source)} endLabel="Tu as vu tous les pays" />
+          </>
         )}
       </View>
     </MobileSheet>
