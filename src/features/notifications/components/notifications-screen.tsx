@@ -1,4 +1,5 @@
 import { useGuardedRefresh } from '@/design-system/mobile/guarded-refresh'
+import { useQueryClient, type InfiniteData } from '@tanstack/react-query'
 import { router } from '@/shared/navigation/router'
 import { RefreshControl, View } from 'react-native'
 import {
@@ -25,7 +26,9 @@ import {
 } from '@/design-system'
 import { useMyChallenges } from '@/features/challenges/hooks/use-challenges'
 import { useMe } from '@/features/me'
+import { queryKeys } from '@/lib/query-keys'
 import type { NotificationView } from '@/lib/realtime/personal-notifications'
+import type { PageResponse } from '@joutio/client-domain/api-types'
 import { DAY_LABELS, dayOf, isExpired, type NotificationDay } from '../lib/notifications-service'
 import { useDeleteAllNotifications, useMarkAllRead, useNotifications } from '../hooks/use-notifications'
 import { NotificationItem } from './notification-item'
@@ -45,14 +48,26 @@ const awaiting = (item: NotificationView) => item.type === 'CHALLENGE_RECEIVED' 
 export function NotificationsScreen() {
   // Fin de liste au-dessus de la tab bar native iOS (`useTabBarInset`).
   const tabInset = useTabBarInset()
-  const { refresh } = useGuardedRefresh(() => list.refetch())
+  const client = useQueryClient()
   const { colors } = useTheme()
   const userId = useMe(true).data?.userId ?? ''
   const list = useNotifications()
+  // Tirer remet la boîte sur sa première page : `refetch()` d'une liste infinie relit toutes les pages chargées, l'une
+  // après l'autre, et leurs bornes (numéro de page) se décalent si une notification arrive ou disparaît entre-temps.
+  // Le spinner suit ce geste et non la requête : une notification reçue en temps réel relit la boîte sans le faire
+  // apparaître seul.
+  const { refreshing, refresh } = useGuardedRefresh(() => {
+    client.setQueryData<InfiniteData<PageResponse<NotificationView>, number>>(queryKeys.notifications.list(), (data) =>
+      data ? { pages: data.pages.slice(0, 1), pageParams: data.pageParams.slice(0, 1) } : data,
+    )
+    return list.refetch()
+  })
   const challenges = useMyChallenges(Boolean(userId))
   const readAll = useMarkAllRead()
   const removeAll = useDeleteAllNotifications()
-  const items = list.data?.pages.flatMap((page) => page.content) ?? []
+  // Pagination par numéro de page : une notification peut figurer à la fin d'une page et au début de la suivante.
+  const seen = new Set<string>()
+  const items = (list.data?.pages.flatMap((page) => page.content) ?? []).filter((item) => !seen.has(item.notificationId) && seen.add(item.notificationId))
   const anyUnread = items.some((item) => item.readAt === null)
   const byChallenge = new Map((challenges.data ?? []).map((challenge) => [challenge.challengeId, challenge]))
   const groups = DAYS.map((day) => ({
@@ -107,7 +122,7 @@ export function NotificationsScreen() {
         <LoadMoreScrollView
           {...tabBarScrollInsets(tabInset)}
           contentContainerStyle={{ flexGrow: 1, paddingBottom: tokens.space[7] }}
-          refreshControl={<RefreshControl refreshing={list.isRefetching && !list.isFetchingNextPage} onRefresh={refresh} tintColor={colors.muted} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={colors.muted} />}
         >
           {list.isPending ? (
             <View accessibilityLabel="Chargement" style={{ gap: tokens.space[3], paddingHorizontal: GUTTER, paddingTop: tokens.space[2] }}>

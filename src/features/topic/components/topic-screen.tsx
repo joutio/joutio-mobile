@@ -110,7 +110,6 @@ export function TopicScreen({ stack = 'home' }: { stack?: TopicStack }) {
   const [duelOpen, setDuelOpen] = useState(false)
   const [postOpen, setPostOpen] = useState(false)
   const [commented, setCommented] = useState<WallPostMock>()
-  const [actionsHeight, setActionsHeight] = useState<number>()
 
   const data = overview.data
   const topic = data?.topic
@@ -180,15 +179,8 @@ export function TopicScreen({ stack = 'home' }: { stack?: TopicStack }) {
         eyebrow={<Pill category={category}>{tokens.category[category].label}</Pill>}
         onBack={() => router.back()}
         barTitleStart
-        dockAt={actionsHeight}
-        right={(docked) => (
+        right={(
           <>
-            {docked && (
-              <>
-                <ParallaxIconButton icon={LightningIcon} label="Lancer un duel" disabled={topic?.status !== 'PUBLISHED'} onPress={() => setDuelOpen(true)} />
-                <ParallaxIconButton icon={HeartIcon} label={followed ? 'Ne plus suivre' : 'Suivre'} filled={followed} onPress={toggleFollow} />
-              </>
-            )}
             {overview.data?.permissions?.canContribute && (
               <ParallaxIconButton
                 icon={PencilSimpleIcon}
@@ -204,7 +196,6 @@ export function TopicScreen({ stack = 'home' }: { stack?: TopicStack }) {
             {/* Description du sujet, sous le titre de l'image (2026-11-13), saisie dans l'atelier. */}
             {!!description && <Text color="muted">{description}</Text>}
             <View
-              onLayout={(event) => setActionsHeight(event.nativeEvent.layout.y + event.nativeEvent.layout.height)}
               style={{ flexDirection: 'row', gap: tokens.space[3] }}
             >
               {/* 65 / 35 : le duel est l'action principale. */}

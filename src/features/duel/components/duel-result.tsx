@@ -1,7 +1,7 @@
 import { useShare } from '@/features/share'
 import { router } from '@/shared/navigation/router'
 import { useMemo, useState } from 'react'
-import { Pressable, View } from 'react-native'
+import { View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import {
   Notice,
@@ -15,7 +15,7 @@ import {
   MasteryRing,
   RankPromotion,
   ResultHeader,
-  Text,
+  SwipeHint,
   StreakUnlock,
   TitleUnlock,
   tokens,
@@ -372,29 +372,22 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
                   </View>
                 </View>
                 {hasReview && (
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel="Revoir les questions du duel"
+                  <SwipeHint
+                    direction="up"
+                    title="Détails du duel"
+                    hint="Glisse vers le haut pour revoir les questions"
+                    label="Revoir les questions du duel"
                     accessibilityHint="Ouvre la page Détails du duel"
+                    bottomInset={insets.bottom}
                     onPress={() => setPage(1)}
-                    style={{
-                      alignItems: 'center',
-                      gap: tokens.space[1],
-                      paddingTop: tokens.space[4],
-                      paddingBottom: insets.bottom + tokens.space[3],
-                      paddingHorizontal: tokens.space[5],
-                    }}
-                  >
-                    <Text variant="headline">Détails du duel</Text>
-                    <Text variant="caption" color="muted" numberOfLines={1}>
-                      Glisse vers le haut pour revoir les questions
-                    </Text>
-                  </Pressable>
+                  />
                 )}
               </View>
               {/* Page 2 : Détails du duel. */}
               {hasReview ? (
-                <View style={{ flex: 1, paddingTop: tokens.space[2], paddingBottom: insets.bottom + tokens.space[3] }}>
+                <View style={{ flex: 1, paddingBottom: insets.bottom + tokens.space[3] }}>
+                  {/* Miroir du bandeau (2026-11-12, `resultat.md` § 6) : caret seul, un toucher revient au résultat. */}
+                  <SwipeHint direction="down" label="Revenir au résultat" onPress={() => setPage(0)} />
                   <DuelReview game={game} me={userId} myName={myName} opponentName={opponentName} canReport />
                 </View>
               ) : null}

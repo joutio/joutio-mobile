@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { View, type StyleProp, type ViewStyle } from 'react-native'
-import { ChatCircleIcon, DotsThreeIcon, HeartIcon } from '../icons'
+import { ChatCircleIcon, DotsThreeVerticalIcon, HeartIcon } from '../icons'
 import { useTheme } from '../theme/theme-provider'
 import { tokens, type TierCode } from '../tokens.generated'
 import { Avatar } from './avatar'
@@ -54,7 +54,7 @@ export function WallPost({ name, tier, src, meta, text, likes, comments, liked =
             {meta}
           </Text>
         </View>
-        <IconButton icon={DotsThreeIcon} label={`Options de la publication de ${name}`} size="S" onPress={onMenu} style={{ marginRight: -tokens.space[3] }} />
+        <IconButton icon={DotsThreeVerticalIcon} label={`Options de la publication de ${name}`} size="S" onPress={onMenu} style={{ marginRight: -tokens.space[3] }} />
       </View>
       <Text variant="callout" weight="400">
         {text}

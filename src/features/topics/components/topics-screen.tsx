@@ -1,5 +1,6 @@
 import { useUnreadCount } from '@/features/home/hooks/use-home'
 import { NotificationButton } from '@/features/notifications/components/notification-button'
+import { SettingsButton } from '@/features/settings/components/settings-button'
 import { useScrollToTop } from 'expo-router'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { FlashList, type FlashListRef } from '@shopify/flash-list'
@@ -244,7 +245,12 @@ export function TopicsScreen() {
           placeholder="Chercher un sujet"
           onFilter={() => setSheetOpen(true)}
           filterDot={categories.length > 0 || sort !== DEFAULT_SORT || scope !== 'ALL'}
-          notifications={<NotificationButton />}
+          notifications={
+            <>
+              <NotificationButton />
+              <SettingsButton />
+            </>
+          }
         />
       }
       overlay={

@@ -1,0 +1,28 @@
+diff --git a/node_modules/react-native-gesture-handler/lib/module/components/ReanimatedSwipeable/ReanimatedSwipeable.js b/node_modules/react-native-gesture-handler/lib/module/components/ReanimatedSwipeable/ReanimatedSwipeable.js
+index 5f2f759..5f2f4cf 100644
+--- a/node_modules/react-native-gesture-handler/lib/module/components/ReanimatedSwipeable/ReanimatedSwipeable.js
++++ b/node_modules/react-native-gesture-handler/lib/module/components/ReanimatedSwipeable/ReanimatedSwipeable.js
+@@ -340,6 +340,8 @@ const Swipeable = props => {
+     enabled: enabled ?? true,
+     enableTrackpadTwoFingerGesture: enableTrackpadTwoFingerGesture,
+     activeOffsetX: [dragOffsetFromRight, dragOffsetFromLeft],
++    // Joutio : un glissé vertical rend aussitôt la main (défilement, tirer pour rafraîchir).
++    failOffsetY: [-DEFAULT_DRAG_OFFSET, DEFAULT_DRAG_OFFSET],
+     simultaneousWith,
+     requireToFail,
+     block,
+diff --git a/node_modules/react-native-gesture-handler/src/components/ReanimatedSwipeable/ReanimatedSwipeable.tsx b/node_modules/react-native-gesture-handler/src/components/ReanimatedSwipeable/ReanimatedSwipeable.tsx
+index b62da83..076e82f 100644
+--- a/node_modules/react-native-gesture-handler/src/components/ReanimatedSwipeable/ReanimatedSwipeable.tsx
++++ b/node_modules/react-native-gesture-handler/src/components/ReanimatedSwipeable/ReanimatedSwipeable.tsx
+@@ -606,6 +606,10 @@ const Swipeable = (props: SwipeableProps) => {
+         typeof dragOffsetFromRight,
+         typeof dragOffsetFromLeft,
+       ],
++      // Joutio : un glissé vertical rend aussitôt la main (défilement, tirer pour rafraîchir). Sans cela, le geste
++      // de la ligne reste « possible » tant que le doigt n'a pas bougé de 10 px à l'horizontale, et bloque le refresh
++      // quand le tirer commence sur une ligne.
++      failOffsetY: [-DEFAULT_DRAG_OFFSET, DEFAULT_DRAG_OFFSET] as [number, number],
+       simultaneousWith,
+       requireToFail,
+       block,

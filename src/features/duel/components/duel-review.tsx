@@ -5,12 +5,8 @@ import { View } from 'react-native'
 import {
   AnswerTimingRow,
   Button,
-  CaretLeftIcon,
-  CaretRightIcon,
   CheckIcon,
   FlagIcon,
-  IconButton,
-  PageDots,
   QuestionBlock,
   RoundReviewTabs,
   Text,
@@ -83,8 +79,9 @@ const ReviewPage = memo(function ReviewPage({ round, me, opponent, myName, oppon
 /**
  * « Détails du duel » (`resultat.md` § 6) : seconde page verticale du résultat, sous la barre fixe. Onglets des
  * manches, temps de réponse, question rejouée avec ses réponses (mêmes ratios que le duel, image réduite à la place
- * disponible), page dots et flèches ; on balaie entre les questions (pager natif Expo UI). « Signaler la question »
- * ouvre sa feuille. Pseudonymes partout, jamais « toi ».
+ * disponible). Les onglets de manche pilotent seuls le carousel (ni points ni flèches) ; on peut aussi balayer entre
+ * les questions (pager natif Expo UI), les onglets suivent. « Signaler la question » ouvre sa feuille. Pseudonymes
+ * partout, jamais « toi ».
  *
  * <p>Le composant reste monté avec le résultat : la question consultée est conservée d'une page à l'autre, et les
  * images sont préchargées dès l'ouverture du résultat.</p>
@@ -170,18 +167,13 @@ export const DuelReview = memo(function DuelReview({
         >
           {pages}
         </PagerView>
-        <View style={{ gap: tokens.space[3], paddingHorizontal: GUTTER }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <IconButton icon={CaretLeftIcon} label="Question précédente" variant="gray" disabled={index === 0} onPress={() => go(index - 1)} />
-            <PageDots count={count} index={index} />
-            <IconButton icon={CaretRightIcon} label="Question suivante" variant="gray" disabled={index >= count - 1} onPress={() => go(index + 1)} />
-          </View>
-          {canReport && (
+        {canReport && (
+          <View style={{ paddingHorizontal: GUTTER }}>
             <Button variant="plain" tone="neutral" size="M" full icon={done ? CheckIcon : FlagIcon} disabled={done} onPress={() => setReportOpen(true)}>
               {done ? 'Question signalée' : 'Signaler la question'}
             </Button>
-          )}
-        </View>
+          </View>
+        )}
       </View>
       <ReportQuestionSheet
         open={reportOpen}

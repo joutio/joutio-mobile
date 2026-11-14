@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { View, type StyleProp, type ViewStyle } from 'react-native'
 import { RoundDots, type RoundResult } from '../duel/round-dots'
 import { LightningIcon } from '../icons'
@@ -7,6 +8,11 @@ import type { MatchOutcome } from '../primitives/match-row'
 import { Text } from '../primitives/text'
 import { useTheme, type ThemeColors } from '../theme/theme-provider'
 import { tokens, type TierCode } from '../tokens.generated'
+
+/** Éclair 24 pt et deux gaps de 8 pt entre les scores (`.jo-result-score` du lab : `(100cqw − 40px) / 3.6`). */
+const SCORE_CHROME = 40
+/** Largeur de deux scores à 3 chiffres, en fois la taille de police : 6 × 0,6 em. */
+const SCORE_EM = 3.6
 
 type Tone = keyof ThemeColors
 const OUTCOMES: Record<MatchOutcome, { label: string; tone: Tone; me: Tone; opponent: Tone }> = {
@@ -62,6 +68,12 @@ function PlayerLabel({ player }: { player: ResultPlayer }) {
 export function ResultHeader({ outcome, topic, me, opponent, style }: ResultHeaderProps) {
   const { colors } = useTheme()
   const tones = OUTCOMES[outcome]
+  const [center, setCenter] = useState(0)
+  // Une seule taille pour les deux scores, comme `.jo-result-score` du lab : `min(48px, (colonne − 40px) / 3.6)`
+  // (éclair 24 pt + deux gaps de 8 pt, deux scores de 3 chiffres à 0,6 em). Avant la mesure : la taille du token.
+  const max = tokens.typography.numericLarge.fontSize
+  const size = center > 0 ? Math.min(max, (center - SCORE_CHROME) / SCORE_EM) : max
+  const scoreStyle = { fontSize: size, lineHeight: size }
   return (
     <View style={[{ alignSelf: 'stretch', gap: tokens.space[5] }, style]}>
       <View style={{ alignItems: 'center', gap: tokens.space[2] }}>
@@ -80,13 +92,15 @@ export function ResultHeader({ outcome, topic, me, opponent, style }: ResultHead
           accessible
           accessibilityRole="image"
           accessibilityLabel={`Score : ${me.score} à ${opponent.score}`}
+          onLayout={(event) => setCenter(event.nativeEvent.layout.width)}
           style={{ flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: tokens.space[3] }}
         >
-          <Text variant="numericLarge" color={tones.me} adjustsFontSizeToFit numberOfLines={1} style={{ flex: 1, textAlign: 'left' }}>
+          {/* La mise en page réserve 3 chiffres : le texte ne grossit pas avec Dynamic Type, il déborderait. */}
+          <Text variant="numericLarge" color={tones.me} maxFontSizeMultiplier={1} numberOfLines={1} style={[scoreStyle, { flex: 1, textAlign: 'left' }]}>
             {me.score}
           </Text>
           <LightningIcon size={24} weight="fill" color={colors.accentInk} />
-          <Text variant="numericLarge" color={tones.opponent} adjustsFontSizeToFit numberOfLines={1} style={{ flex: 1, textAlign: 'right' }}>
+          <Text variant="numericLarge" color={tones.opponent} maxFontSizeMultiplier={1} numberOfLines={1} style={[scoreStyle, { flex: 1, textAlign: 'right' }]}>
             {opponent.score}
           </Text>
         </View>

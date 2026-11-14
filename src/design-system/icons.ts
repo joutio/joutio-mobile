@@ -51,6 +51,7 @@ export { SlidersHorizontalIcon } from 'phosphor-react-native/src/icons/SlidersHo
 export { ArrowsDownUpIcon } from 'phosphor-react-native/src/icons/ArrowsDownUp'
 export { EyeSlashIcon } from 'phosphor-react-native/src/icons/EyeSlash'
 export { DotsThreeIcon } from 'phosphor-react-native/src/icons/DotsThree'
+export { DotsThreeVerticalIcon } from 'phosphor-react-native/src/icons/DotsThreeVertical'
 export { SignOutIcon } from 'phosphor-react-native/src/icons/SignOut'
 export { TrashIcon } from 'phosphor-react-native/src/icons/Trash'
 export { ArchiveIcon } from 'phosphor-react-native/src/icons/Archive'

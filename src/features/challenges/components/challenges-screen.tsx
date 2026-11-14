@@ -1,4 +1,5 @@
 import { NotificationButton } from '@/features/notifications/components/notification-button'
+import { SettingsButton } from '@/features/settings/components/settings-button'
 import { useQueryClient } from '@tanstack/react-query'
 import { router } from '@/shared/navigation/router'
 import { useState } from 'react'
@@ -93,7 +94,12 @@ export function ChallengesScreen() {
   const receivedRows = filter === 'all' ? received.slice(0, RECEIVED_PREVIEW) : received.slice(0, receivedPages * RECEIVED_PAGE)
   const receivedSource = clientSource(receivedPages, setReceivedPages, filter === 'received' && receivedRows.length < received.length)
   const counts: Record<Filter, number | undefined> = { all: undefined, received: received.length, sent: sent.length, rooms: salons.length }
-  const subtitle = `${sent.length} défi${sent.length > 1 ? 's' : ''} envoyé${sent.length > 1 ? 's' : ''} sur ${planLimits(me.data).pendingChallenges} possibles`
+  // Plafonds du plan (gratuit : 5 et 5, Premium : 20 et 20), lus dans `MeView.limits` : défis envoyés, puis salons ouverts.
+  const limits = planLimits(me.data)
+  const subtitle = [
+    `${sent.length} défi${sent.length > 1 ? 's' : ''} envoyé${sent.length > 1 ? 's' : ''} sur ${limits.pendingChallenges} possibles`,
+    `${salons.length} salon${salons.length > 1 ? 's' : ''} ouvert${salons.length > 1 ? 's' : ''} sur ${limits.openRooms} possibles`,
+  ].join('\n')
 
   const { refreshing, refresh } = useGuardedRefresh(() =>
     Promise.all([client.refetchQueries({ queryKey: queryKeys.challenges() }), client.refetchQueries({ queryKey: queryKeys.rooms() })]),
@@ -162,7 +168,13 @@ export function ChallengesScreen() {
 
   const header = (
     <View>
-      <MobileTopBar title="Défis" subtitle={subtitle} right={<NotificationButton />} />
+      <MobileTopBar title="Défis" subtitle={subtitle} right={
+          <>
+            <NotificationButton />
+            <SettingsButton />
+          </>
+        }
+      />
       {!empty && !failed && (
         <ScrollView
           horizontal

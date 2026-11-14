@@ -22,6 +22,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { scheduleOnRN } from 'react-native-worklets'
 import { CaretLeftIcon, type Icon } from '../icons'
 import { useReducedMotion } from '../motion'
+import { CountBadge } from '../primitives/icon-button'
 import { PressableScale } from '../primitives/pressable-scale'
 import { Text } from '../primitives/text'
 import { PlayerName } from '../primitives/player-name'
@@ -94,13 +95,15 @@ export interface ParallaxIconButtonProps {
   /** Icône pleine, état actif (sujet suivi). Annoncé comme bouton bascule. */
   filled?: boolean
   disabled?: boolean
+  /** Nombre (non lues) à l'angle de la pastille ; rien à 0. */
+  badge?: number
 }
 
 /**
  * Bouton de `ParallaxScreen` : pastille sombre et icône blanche sur l'image, sans pastille et à la couleur du
  * thème sur la barre. À utiliser dans `right`.
  */
-export function ParallaxIconButton({ icon: IconComponent, label, onPress, filled, disabled }: ParallaxIconButtonProps) {
+export function ParallaxIconButton({ icon: IconComponent, label, onPress, filled, disabled, badge }: ParallaxIconButtonProps) {
   const { colors, radius } = useTheme()
   const progress = useContext(ParallaxContext)?.progress
   // Calculées hors du worklet : `alpha` est une fonction JS.
@@ -116,7 +119,7 @@ export function ParallaxIconButton({ icon: IconComponent, label, onPress, filled
   return (
     <PressableScale
       accessibilityRole="button"
-      accessibilityLabel={label}
+      accessibilityLabel={badge ? `${label}, ${badge}` : label}
       accessibilityState={{ selected: filled, disabled }}
       disabled={disabled}
       pressedScale={0.94}
@@ -131,6 +134,7 @@ export function ParallaxIconButton({ icon: IconComponent, label, onPress, filled
         <Animated.View style={onBar}>
           <IconComponent size={22} weight={filled ? 'fill' : 'regular'} color={colors.text} />
         </Animated.View>
+        {badge !== undefined && badge > 0 && <CountBadge count={badge} style={{ position: 'absolute', top: -2, right: -2 }} />}
       </Animated.View>
     </PressableScale>
   )

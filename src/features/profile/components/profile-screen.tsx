@@ -27,6 +27,7 @@ import { useMyAvatar } from '@/features/avatar/lib/avatar-preview'
 import { useHistoryGames } from '@/features/history/hooks/use-history'
 import { DEFAULT_HISTORY_FILTERS } from '@/features/history/lib/history-service'
 import { useMe } from '@/features/me'
+import { ProfileNotificationButton } from '@/features/notifications/components/profile-notification-button'
 import { useMyTitles } from '@/features/topic/hooks/use-topic'
 import { formatNumber, tierLabel } from '@/features/topic/lib/format'
 import { useShare } from '@/features/share'
@@ -104,6 +105,7 @@ export function ProfileScreen() {
         eyebrow={data ? <Avatar name={name} src={avatar} tier={tier} provisional={progression?.provisional} size="xxl" /> : undefined}
         right={
           <>
+            <ProfileNotificationButton />
             <ParallaxIconButton icon={GearSixIcon} label="Réglages" onPress={() => router.push('/profile/settings')} />
           </>
         }

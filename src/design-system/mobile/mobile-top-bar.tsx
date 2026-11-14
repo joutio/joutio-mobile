@@ -26,7 +26,8 @@ interface LargeBar extends Common {
 
 /**
  * Écran poussé : titre centré, retour texte ou élément libre à gauche.
- * `subtitle` : contexte de la page (sujet, adversaire) sous le titre, jamais concaténé au titre.
+ * `subtitle` : contexte de la page (sujet, adversaire) sous le titre, jamais concaténé au titre. Plusieurs lignes
+ * séparées par `\n` (Défis : défis envoyés, puis salons ouverts), chacune tronquée seule.
  * `back` nomme la page précédente par son type (« Sujet », « Profil »).
  */
 interface InlineBar extends Common {
@@ -190,11 +191,11 @@ export function MobileTopBar(props: MobileTopBarProps) {
         <Text variant="largeTitle" numberOfLines={1} accessibilityRole="header">
           {title}
         </Text>
-        {subtitle && (
-          <Text variant="callout" color="muted" numberOfLines={1}>
-            {subtitle}
+        {subtitle?.split('\n').map((line) => (
+          <Text key={line} variant="callout" color="muted" numberOfLines={1}>
+            {line}
           </Text>
-        )}
+        ))}
       </View>
       {right && <View style={{ flexDirection: 'row', alignItems: 'center' }}>{right}</View>}
     </View>

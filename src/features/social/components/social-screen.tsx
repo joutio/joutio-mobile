@@ -1,6 +1,7 @@
 import { useReferral } from '@/features/me'
 import { useShare } from '@/features/share'
 import { NotificationButton } from '@/features/notifications/components/notification-button'
+import { SettingsButton } from '@/features/settings/components/settings-button'
 import { router } from '@/shared/navigation/router'
 import { useState } from 'react'
 import { View } from 'react-native'
@@ -212,7 +213,12 @@ export function SocialScreen() {
           filterLabel="Trier les contacts"
           filterDot={sort !== 'PRESENCE'}
           onFilter={() => setSortOpen(true)}
-          notifications={<NotificationButton />}
+          notifications={
+            <>
+              <NotificationButton />
+              <SettingsButton />
+            </>
+          }
         />
       }
     >

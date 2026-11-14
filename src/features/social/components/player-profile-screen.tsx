@@ -4,7 +4,6 @@ import { useLocalSearchParams } from 'expo-router'
 import { router } from '@/shared/navigation/router'
 import { useState } from 'react'
 import { ScrollView, View } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import {
   Avatar,
   AVATAR_SIZES,
@@ -12,11 +11,10 @@ import {
   Button,
   CheckIcon,
   Dialog,
-  DotsThreeIcon,
+  DotsThreeVerticalIcon,
   EmptyState,
   FlagIcon,
   HERO_HEIGHT,
-  HeartIcon,
   LightningIcon,
   ListGroup,
   MatchRow,
@@ -34,7 +32,6 @@ import {
   TitleRibbon,
   toast,
   toCategoryCode,
-  TOP_BAR_HEIGHT,
   tokens,
   useTheme,
   WarningCircleIcon,
@@ -80,7 +77,6 @@ export function PlayerProfileScreen() {
   const params = useLocalSearchParams<{ id: string }>()
   const id = params.id ?? ''
   const me = useMe(true)
-  const insets = useSafeAreaInsets()
   const { colors, radius } = useTheme()
   const profile = usePlayerProfile(id)
   const client = useQueryClient()
@@ -91,7 +87,6 @@ export function PlayerProfileScreen() {
   const [blockOpen, setBlockOpen] = useState(false)
   const blocked = useIsBlocked(id)
   const setBlocked = useBlockMocks((state) => state.setBlocked)
-  const [actionsY, setActionsY] = useState(0)
   const data = profile.data
   const games = useHistoryGames(id, { opponentId: me.data?.userId ?? '', outcome: 'ALL', sort: 'RECENT' }, Boolean(id && me.data?.userId))
 
@@ -182,31 +177,24 @@ export function PlayerProfileScreen() {
         barTitleStart
         onBack={() => router.back()}
         onRefresh={() => client.refetchQueries({ type: 'active' })}
-        dockAt={HERO_HEIGHT + AVATAR_SIZES.xxl - AVATAR_SIZES.xl + actionsY - (insets.top + TOP_BAR_HEIGHT)}
-        right={(docked) =>
+        right={
           data && !data.isMe ? (
             <>
-              {canAct && docked && (
-                <>
-                  <ParallaxIconButton icon={LightningIcon} label={`Défier ${data.pseudonym}`} onPress={() => setChallengeOpen(true)} />
-                  <ParallaxIconButton icon={HeartIcon} label={data.following ? 'Ne plus suivre' : 'Suivre'} filled={data.following} onPress={toggleFollow} />
-                </>
-              )}
               <Menu
                 items={[
                   { label: 'Signaler', icon: FlagIcon, onPress: () => setReportOpen(true) },
                   ...(blocked ? [] : [{ label: 'Bloquer', icon: ProhibitIcon, destructive: true, onPress: () => setBlockOpen(true) }]),
                 ]}
               >
-                {(open) => <ParallaxIconButton icon={DotsThreeIcon} label="Plus d'actions" onPress={open} />}
+                {(open) => <ParallaxIconButton icon={DotsThreeVerticalIcon} label="Plus d'actions" onPress={open} />}
               </Menu>
             </>
           ) : undefined
         }
         intro={
           data ? (
-            <View style={{ gap: tokens.space[4] }}>
-              <View style={{ alignItems: 'center', gap: tokens.space[2] }}>
+            <View style={{ gap: tokens.space[5] }}>
+              <View style={{ alignItems: 'center', gap: tokens.space[3] }}>
                 {titleText && titleTier && (
                   <ScrollView
                     horizontal
@@ -219,7 +207,7 @@ export function PlayerProfileScreen() {
                     <TitleRibbon tier={titleTier} text={titleText} width="auto" />
                   </ScrollView>
                 )}
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: tokens.space[2] }}>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: tokens.space[3] }}>
                   {tier ? <Badge variant="tier" tier={tier}>{`${tierLabel(tier)} · ${formatNumber(rating ?? 0)}`}</Badge> : <Pill>Non classé</Pill>}
                   {data.country && <Pill>{`${countryFlag(data.country)} ${countryName(data.country)}`}</Pill>}
                   {data.suspended && <Pill tone="suspended">Compte suspendu</Pill>}
@@ -238,7 +226,7 @@ export function PlayerProfileScreen() {
               )}
               {canAct && (
                 // 65 / 35 : le défi est l'action principale, comme « Lancer un duel » sur la Fiche sujet.
-                <View onLayout={(event) => setActionsY(event.nativeEvent.layout.y)} style={{ flexDirection: 'row', gap: tokens.space[2] }}>
+                <View style={{ flexDirection: 'row', gap: tokens.space[3] }}>
                   <Button full style={{ flex: 65 }} icon={LightningIcon} variant="filled" tone="accent" onPress={() => setChallengeOpen(true)}>
                     Défier
                   </Button>
