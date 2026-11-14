@@ -1,3 +1,10 @@
+## [1.45.1](https://github.com/joutio/joutio-mobile/compare/v1.45.0...v1.45.1) (2026-11-14)
+
+### Bug Fixes
+
+* **mobile:** country sheet shows its FeedFooter while countries load by page ([05db101](https://github.com/joutio/joutio-mobile/commit/05db1016c09eeb3725141008395cd9e9843acfd4))
+* **mobile:** top banner overlays the screen and pushes it with an animated spacer ([8d95181](https://github.com/joutio/joutio-mobile/commit/8d95181186de4bcf99c319b238b1c4b7bffaaf23))
+
 ## [1.45.0](https://github.com/joutio/joutio-mobile/compare/v1.44.0...v1.45.0) (2026-11-14)
 
 ### Features
