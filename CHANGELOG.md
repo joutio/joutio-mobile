@@ -1,3 +1,9 @@
+## [1.46.0](https://github.com/joutio/joutio-mobile/compare/v1.45.2...v1.46.0) (2026-11-15)
+
+### Features
+
+* French and English, official badge, image rights, topic reports and terms ([dccd6e4](https://github.com/joutio/joutio-mobile/commit/dccd6e473ff71951559353d6350d0b3280d241ce))
+
 ## [1.45.2](https://github.com/joutio/joutio-mobile/compare/v1.45.1...v1.45.2) (2026-11-14)
 
 ### Bug Fixes
