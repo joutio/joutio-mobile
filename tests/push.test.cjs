@@ -11,6 +11,7 @@ function load(path, mocks = {}, fetch) {
     (id) => {
       // `router` protégé contre le double appui : relaie le mock d'expo-router.
       if (id === '@/shared/navigation/router' && !(id in mocks) && 'expo-router' in mocks) return mocks['expo-router']
+      if (id === '@/lib/i18n' && !(id in mocks)) return require('./i18n-mock.cjs')
       if (!(id in mocks)) throw new Error(`Unexpected dependency: ${id}`)
       return mocks[id]
     },

@@ -1,8 +1,9 @@
 import DateTimePicker from '@expo/ui/community/datetime-picker'
-import { birthDateIssue, isoDay, MIN_AGE } from '@joutio/client-domain/profile'
+import { birthDateIssue, isoDay, MIN_AGE } from '@joutio/client/profile'
 import { useState } from 'react'
 import { Platform, View } from 'react-native'
 import { CakeIcon, ListGroup, ListRow, Text, tokens, useTheme } from '@/design-system'
+import { currentLanguage, t, useT } from '@/lib/i18n'
 
 /** Date de départ du sélecteur sans valeur : 20 ans avant aujourd'hui. */
 const defaultDate = () => {
@@ -14,14 +15,14 @@ const defaultDate = () => {
 const toDate = (iso: string) => new Date(`${iso}T12:00:00`)
 
 export const formatBirthDate = (iso: string | null | undefined) =>
-  iso ? toDate(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : 'À renseigner'
+  iso ? toDate(iso).toLocaleDateString(currentLanguage(), { day: 'numeric', month: 'long', year: 'numeric' }) : t('account.birthDateEmpty')
 
 /** Message d'erreur de la date, ou `undefined` si elle est acceptable. */
 export function birthDateError(iso: string | null): string | undefined {
   if (!iso) return undefined
   const issue = birthDateIssue(iso, isoDay(new Date()))
-  if (issue === 'underage') return `Il faut avoir au moins ${MIN_AGE} ans pour jouer sur Joutio.`
-  if (issue) return "Cette date n'est pas valide."
+  if (issue === 'underage') return t('account.underage', { age: MIN_AGE })
+  if (issue) return t('account.birthDateInvalid')
   return undefined
 }
 
@@ -30,6 +31,7 @@ export function birthDateError(iso: string | null): string | undefined {
  * Android ouvert depuis la ligne. Valeur ISO `AAAA-MM-JJ`.
  */
 export function BirthDatePicker({ value, onChange }: { value: string | null; onChange: (iso: string) => void }) {
+  const t = useT()
   const { colors } = useTheme()
   const [androidOpen, setAndroidOpen] = useState(false)
   const error = birthDateError(value)
@@ -54,7 +56,7 @@ export function BirthDatePicker({ value, onChange }: { value: string | null; onC
         picker
       ) : (
         <ListGroup surface="surface">
-          <ListRow icon={CakeIcon} label="Date de naissance" value={formatBirthDate(value)} control="chevron" onPress={() => setAndroidOpen(true)} last />
+          <ListRow icon={CakeIcon} label={t('account.birthDate')} value={formatBirthDate(value)} control="chevron" onPress={() => setAndroidOpen(true)} last />
         </ListGroup>
       )}
       {Platform.OS === 'android' && androidOpen && picker}
@@ -64,7 +66,7 @@ export function BirthDatePicker({ value, onChange }: { value: string | null; onC
         </Text>
       ) : (
         <Text variant="caption" color="muted">
-          Privée : elle ne s'affiche jamais sur ton profil.
+          {t('account.birthDatePrivate')}
         </Text>
       )}
     </View>

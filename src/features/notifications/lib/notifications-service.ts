@@ -2,7 +2,8 @@ import { api } from '@/lib/api'
 import { ENDPOINTS } from '@/lib/endpoints'
 import type { NotificationView } from '@/lib/realtime/personal-notifications'
 import type { NotificationTarget } from './notification-target'
-import type { PageResponse } from '@joutio/client-domain/api-types'
+import type { PageResponse } from '@joutio/client/api-types'
+import { currentLanguage, formatDate, t } from '@/lib/i18n'
 
 export const NOTIFICATIONS_PAGE_SIZE = 10
 
@@ -29,18 +30,19 @@ export const notificationsService = {
 /** Temps écoulé, comme `joutio-web` : « à l'instant », « il y a 12 min », « il y a 3 h », « il y a 2 j », puis la date. */
 export function relativeTime(iso: string, now = Date.now()) {
   const minutes = Math.floor((now - Date.parse(iso)) / 60_000)
-  if (minutes < 1) return "à l'instant"
-  if (minutes < 60) return `il y a ${minutes} min`
+  if (minutes < 1) return t('notifications.justNow')
+  if (minutes < 60) return t('mobile.time.minutesAgo', { n: minutes })
   const hours = Math.floor(minutes / 60)
-  if (hours < 24) return `il y a ${hours} h`
+  if (hours < 24) return t('mobile.time.hoursAgo', { n: hours })
   const days = Math.floor(hours / 24)
-  if (days < 7) return `il y a ${days} j`
-  return new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
+  if (days < 7) return t('mobile.time.daysAgo', { n: days })
+  return formatDate(new Date(iso), currentLanguage(), { day: 'numeric', month: 'short' })
 }
 
 export type NotificationDay = 'today' | 'week' | 'older'
 
-export const DAY_LABELS: Record<NotificationDay, string> = { today: "Aujourd'hui", week: 'Cette semaine', older: 'Plus ancien' }
+/** Titre d'un groupe de notifications, dans la langue courante (lu au rendu). */
+export const dayGroupLabel = (day: NotificationDay) => t(({ today: 'notifications.today', week: 'notifications.week', older: 'notifications.older' } as const)[day])
 
 export function dayOf(iso: string, now = new Date()): NotificationDay {
   const date = new Date(iso)

@@ -12,6 +12,7 @@ import { alpha } from '../theme/color'
 import { ForceDark, useTheme } from '../theme/theme-provider'
 import { keyframe, useTimeline } from '../timeline'
 import { tokens, type CategoryCode, type TierCode } from '../tokens.generated'
+import { currentLanguage, t, tierKey, translate, useT } from '@/lib/i18n'
 
 export interface VersusPlayer {
   name: string
@@ -43,6 +44,7 @@ export interface VersusIntroProps {
 }
 
 function Panel({ player, side, t, height }: { player: VersusPlayer; side: 'top' | 'bottom'; t: ReturnType<typeof useTimeline>; height: number }) {
+  const tr = useT()
   const { colors } = useTheme()
   const insets = useSafeAreaInsets()
   const top = side === 'top'
@@ -113,7 +115,7 @@ function Panel({ player, side, t, height }: { player: VersusPlayer; side: 'top' 
           {(player.rating !== undefined || player.country || player.detail) && (
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: tokens.space[3], justifyContent: top ? 'flex-start' : 'flex-end' }}>
               {player.rating !== undefined &&
-                (player.tier ? <Badge variant="tier" tier={player.tier}>{`${tokens.tier[player.tier].label} · ${player.rating}`}</Badge> : <Pill>Non classé</Pill>)}
+                (player.tier ? <Badge variant="tier" tier={player.tier}>{tr('common.dotPair', { a: tr(tierKey(player.tier)), b: player.rating })}</Badge> : <Pill>{tr('profile.unranked')}</Pill>)}
               {player.country && <Pill>{player.country}</Pill>}
               {player.detail && <Pill>{player.detail}</Pill>}
             </View>
@@ -206,7 +208,7 @@ function Body({ me, opponent, topic, category, rounds, animated = false, duratio
   return (
     <View
       accessible
-      accessibilityLabel={`${me.name} contre ${opponent.name}, ${topic}, ${rounds} manches`}
+      accessibilityLabel={translate(currentLanguage(), 'ds.versusA11y', { me: me.name, opponent: opponent.name, topic, rounds })}
       style={StyleSheet.absoluteFill}
       pointerEvents="none"
     >

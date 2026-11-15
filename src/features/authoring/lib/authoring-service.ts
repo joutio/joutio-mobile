@@ -1,6 +1,6 @@
 import { api } from '@/lib/api'
 import { ENDPOINTS } from '@/lib/endpoints'
-import type { IdResponse, Language, PageResponse, TopicCardView } from '@joutio/client-domain/api-types'
+import type { IdResponse, Language, PageResponse, TopicCardView } from '@joutio/client/api-types'
 import type { CategoryCode } from '@/design-system'
 import type {
   TopicTitles,
@@ -12,8 +12,8 @@ import type {
   QuestionEditorView,
   ReportedQuestion,
   TopicTodo,
-} from '@joutio/client-domain/authoring'
-import type { QuestionOperation } from '@joutio/client-domain/authoring'
+} from '@joutio/client/authoring'
+import type { QuestionOperation } from '@joutio/client/authoring'
 
 /** Taille de page de `GET /api/topics/{id}/questions` (plafond BFF : 100). */
 const QUESTIONS_PAGE = 100

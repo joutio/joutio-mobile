@@ -16,6 +16,7 @@ import { useTheme } from '../theme/theme-provider'
 import { tokens } from '../tokens.generated'
 import { PressableScale } from './pressable-scale'
 import { Text } from './text'
+import { useT } from '@/lib/i18n'
 
 /** Largeur de référence du centre de la pastille, étiré ensuite par `scaleX`. */
 const PILL_BASE_WIDTH = 100
@@ -41,6 +42,7 @@ export interface JoutioTabsProps<T extends string> {
 }
 
 export function JoutioTabs<T extends string>({ options, value, onChange, label, scrollable = false, position, style }: JoutioTabsProps<T>) {
+  const t = useT()
   const { colors, radius } = useTheme()
   const reduced = useReducedMotion()
   const scroller = useAnimatedRef<Animated.ScrollView>()
@@ -109,7 +111,7 @@ export function JoutioTabs<T extends string>({ options, value, onChange, label, 
         accessibilityRole="tab"
         accessibilityLabel={option.label}
         accessibilityState={{ selected }}
-        accessibilityHint={`${index + 1} sur ${options.length}`}
+        accessibilityHint={t('common.countOf', { index: index + 1, total: options.length })}
         pressedScale={1}
         haptic="selection"
         onPress={() => onChange(option.value)}

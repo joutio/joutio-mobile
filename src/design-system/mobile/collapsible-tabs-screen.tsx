@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useReducedMotion } from '../motion'
 import { JoutioTabs } from '../primitives/joutio-tabs'
 import { Text } from '../primitives/text'
+import { OfficialBadge } from '../brand/premium-badge'
 import { PlayerName } from '../primitives/player-name'
 import { alpha } from '../theme/color'
 import { HAIRLINE } from '../theme/hairline'
@@ -67,6 +68,8 @@ export interface CollapsibleTabsScreenProps<T extends string> {
   title: string
   /** Joueur Premium (Profil, Fiche joueur) : `PremiumBadge` après le titre, sur l'image et dans la barre compacte. */
   premium?: boolean
+  /** Sujet officiel (fiche sujet) : `OfficialBadge` après le titre. */
+  official?: boolean
   /** Au-dessus du titre, par exemple la catégorie. */
   eyebrow?: ReactNode
   /** Titre centré sur l'image, pour une identité plutôt qu'un sujet. */
@@ -106,6 +109,8 @@ interface HeroProps {
   image?: string | number
   title: string
   premium?: boolean
+  /** Sujet officiel (fiche sujet) : `OfficialBadge` après le titre. */
+  official?: boolean
   eyebrow?: ReactNode
   centered?: boolean
   intro?: ReactNode
@@ -120,7 +125,7 @@ interface HeroProps {
 }
 
 /** Image en parallaxe et titre qui s'efface : l'en-tête que le natif replie. */
-function Hero({ heroHeight, image, title, premium = false, eyebrow, centered, intro, scroll, pull, titleStart, titleLength, barHeight }: HeroProps) {
+function Hero({ heroHeight, image, title, premium = false, official = false, eyebrow, centered, intro, scroll, pull, titleStart, titleLength, barHeight }: HeroProps) {
   const { colors } = useTheme()
   const reduced = useReducedMotion()
   const imageStyle = useAnimatedStyle(() => ({ transform: heroImageTransform(scroll.value - pull.value, reduced, heroHeight) }))
@@ -164,9 +169,12 @@ function Hero({ heroHeight, image, title, premium = false, eyebrow, centered, in
             {premium ? (
               <PlayerName name={title} premium badgeSize={22} variant="title1" justify={centered ? 'center' : 'flex-start'} />
             ) : (
-              <Text variant="title1" align={centered ? 'center' : 'left'}>
-                {title}
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: tokens.space[2] }}>
+                <Text variant="title1" align={centered ? 'center' : 'left'} style={{ flexShrink: 1 }}>
+                  {title}
+                </Text>
+                {official && <OfficialBadge size={22} />}
+              </View>
             )}
           </Animated.View>
         </View>

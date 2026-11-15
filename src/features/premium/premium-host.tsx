@@ -16,24 +16,26 @@ import {
   UserCircleIcon,
   useTheme,
 } from '@/design-system'
-import { limitReason, planLimits, PREMIUM_LIMITS as P } from '@joutio/client-domain/premium'
+import { limitReason, planLimits, PREMIUM_LIMITS as P } from '@joutio/client/premium'
 import { useMe } from '@/features/me'
 import { usePremiumSheet } from './premium-store'
+import { t, useT } from '@/lib/i18n'
 
 /** Chiffres tirés des limites Premium par défaut, jamais figés dans les textes (`premium.md` § 2). */
-const PERKS = [
-  { icon: ProhibitIcon, label: 'Aucune publicité' },
-  { icon: LightningIcon, label: `${P.pendingChallenges} défis et ${P.openRooms} salons ouverts` },
-  { icon: ChartLineUpIcon, label: 'Statistiques par sujet' },
-  { icon: UserCircleIcon, label: 'Avatars Lorelei et Notionists' },
-  { icon: PencilSimpleIcon, label: `${P.publishedTopics} sujets, ${P.questionsPerTopic} questions, équipe` },
-]
+const PERKS = () => ([
+  { icon: ProhibitIcon, label: t('premium.perkAds') },
+  { icon: LightningIcon, label: t('premium.perkLimits', { challenges: P.pendingChallenges, rooms: P.openRooms }) },
+  { icon: ChartLineUpIcon, label: t('premium.perkStats') },
+  { icon: UserCircleIcon, label: t('premium.perkAvatars') },
+  { icon: PencilSimpleIcon, label: t('premium.perkCreation', { topics: P.publishedTopics, questions: P.questionsPerTopic }) },
+])
 
 /**
  * Feuille Premium (`premium.md`), état **Bientôt** : l'offre n'est pas ouverte (achat StoreKit / Play Billing à venir),
  * ni prix ni essai ; « Rejoindre la liste », puis « Tu es sur la liste ». Rendue une fois, dans le layout `(app)`.
  */
 export function PremiumHost() {
+  const t = useT()
   const { colors, radius } = useTheme()
   const open = usePremiumSheet((state) => state.open)
   const context = usePremiumSheet((state) => state.context)
@@ -42,12 +44,12 @@ export function PremiumHost() {
   const set = useDeviceSettings((state) => state.set)
   const limits = planLimits(useMe(true).data)
   const pitch =
-    context === 'offer' ? 'Premium arrive bientôt. Il ne change rien aux duels : même chrono, mêmes questions, même Elo.' : limitReason(context, limits)
+    context === 'offer' ? t('premium.soonPitch') : limitReason(context, limits)
   return (
     <MobileSheet
       open={open}
       onClose={hide}
-      title="Premium"
+      title={t('pending.premium')}
       tall
       footer={
         <View style={{ gap: tokens.space[3] }}>
@@ -59,10 +61,10 @@ export function PremiumHost() {
             disabled={joined}
             onPress={() => set({ premiumWaitlist: true })}
           >
-            {joined ? 'Tu es sur la liste' : 'Rejoindre la liste'}
+            {joined ? t('premium.joined') : t('premium.join')}
           </Button>
           <Text variant="caption" color="muted" align="center">
-            On te prévient par e-mail dès l’ouverture de Premium.
+            {t('premium.waitlistText')}
           </Text>
         </View>
       }
@@ -83,15 +85,15 @@ export function PremiumHost() {
             <CrownSimpleIcon size={32} weight="fill" color={colors.onAccent} />
           </View>
           <Text variant="title2" align="center" accessibilityRole="header">
-            Joue sans pub, défie qui tu veux
+            {t('premium.headline')}
           </Text>
           <Text variant="callout" color="muted" align="center">
             {pitch}
           </Text>
         </View>
         <ListGroup>
-          {PERKS.map((perk, index) => (
-            <ListRow key={perk.label} icon={perk.icon} label={perk.label} control="none" last={index === PERKS.length - 1} />
+          {PERKS().map((perk, index) => (
+            <ListRow key={perk.label} icon={perk.icon} label={perk.label} control="none" last={index === PERKS().length - 1} />
           ))}
         </ListGroup>
       </View>

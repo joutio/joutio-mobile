@@ -9,6 +9,7 @@ import { useTheme } from '../theme/theme-provider'
 import { tokens } from '../tokens.generated'
 import { GlassBackground } from './glass'
 import { HAIRLINE } from '../theme/hairline'
+import { useT } from '@/lib/i18n'
 
 /** Hauteur au standard de la plateforme (`navigation.md` § BottomNav) : UITabBar 49 pt, Material 3 80 dp. */
 export const BOTTOM_NAV_HEIGHT = Platform.OS === 'ios' ? 49 : 80
@@ -32,12 +33,13 @@ export interface BottomNavProps<K extends string> {
 
 /** Navigation principale : 5 onglets, fond glass, filet haut. */
 export function BottomNav<K extends string>({ items, active, onChange, style }: BottomNavProps<K>) {
+  const t = useT()
   const { colors } = useTheme()
   const insets = useSafeAreaInsets()
   return (
     <View
       accessibilityRole="tablist"
-      accessibilityLabel="Navigation principale"
+      accessibilityLabel={t('mobile.ds.mainNav')}
       style={[
         { flexDirection: 'row', paddingHorizontal: tokens.space[3], paddingBottom: insets.bottom, borderTopWidth: HAIRLINE, borderTopColor: colors.border },
         style,
@@ -52,7 +54,7 @@ export function BottomNav<K extends string>({ items, active, onChange, style }: 
           <PressableScale
             key={key}
             accessibilityRole="tab"
-            accessibilityLabel={count ? `${label}, ${count > 9 ? 'plus de 9' : count} nouveaux` : label}
+            accessibilityLabel={count ? t('ds.navNew', { label, count: count > 9 ? t('ds.moreThan9') : count }) : label}
             accessibilityState={{ selected: isActive }}
             pressedScale={0.94}
             haptic="selection"

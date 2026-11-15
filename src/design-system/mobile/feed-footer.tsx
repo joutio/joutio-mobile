@@ -9,6 +9,7 @@ import { useTheme } from '../theme/theme-provider'
 import { tokens } from '../tokens.generated'
 import { HAIRLINE } from '../theme/hairline'
 import { LOAD_MORE_THRESHOLD, useLoadMoreAction, useLoadMorePull } from './drag-to-load-more'
+import { t, useT } from '@/lib/i18n'
 
 export type FeedFooterState = 'more' | 'loading' | 'error' | 'end'
 
@@ -35,7 +36,8 @@ export interface FeedFooterProps {
  * pour le toucher et les lecteurs d'écran. Les éléments déjà chargés restent visibles quand la page suivante
  * échoue.
  */
-export function FeedFooter({ state, pages, onLoadMore, onRetry, endLabel = 'Tu as tout vu', remainingLabel, style }: FeedFooterProps) {
+export function FeedFooter({ state, pages, onLoadMore, onRetry, endLabel = t('mobile.ds.allSeen'), remainingLabel, style }: FeedFooterProps) {
+  const t = useT()
   const { colors, radius } = useTheme()
   // Sous `DragToLoadMore`, le chargement se voit dans son loader, sous la liste : le pied garde sa place (l'annonce,
   // effacée par la traction) au lieu de passer à une roue — un seul indicateur, une hauteur qui ne saute pas.
@@ -50,7 +52,7 @@ export function FeedFooter({ state, pages, onLoadMore, onRetry, endLabel = 'Tu a
     return (
       <View
         accessible
-        accessibilityLabel="Chargement de la suite"
+        accessibilityLabel={t('mobile.ds.loadingMore')}
         accessibilityLiveRegion="polite"
         accessibilityState={{ busy: true }}
         style={[{ alignItems: 'center', justifyContent: 'center', minHeight: 44, paddingVertical: tokens.space[4] }, style]}
@@ -71,10 +73,10 @@ export function FeedFooter({ state, pages, onLoadMore, onRetry, endLabel = 'Tu a
       >
         <WarningCircleIcon size={20} color={colors.wrong} />
         <Text variant="caption" color="muted" align="center">
-          La suite n'a pas pu se charger.
+          {t('mobile.ds.loadMoreFailed')}
         </Text>
         <Button variant="plain" tone="accent" size="S" icon={ArrowClockwiseIcon} onPress={requestLoad ?? onRetry} style={{ alignSelf: 'center' }}>
-          Réessayer
+          {t('callback.retry')}
         </Button>
       </View>
     )
@@ -111,13 +113,14 @@ export function FeedFooter({ state, pages, onLoadMore, onRetry, endLabel = 'Tu a
 
 /** Annonce de la suite : chevron, « Tire pour voir la suite » et ce qui reste ; s'efface sous la traction. */
 function PullHint({ onLoadMore, remainingLabel, style }: { onLoadMore?: () => void; remainingLabel?: string; style?: StyleProp<ViewStyle> }) {
+  const t = useT()
   const pull = useLoadMorePull()
   // Hors de `DragToLoadMore` (liste dans une feuille) : rien à tirer, un vrai bouton charge la suite.
   if (!pull) {
     return (
       <View style={[{ alignItems: 'center', gap: tokens.space[2], paddingVertical: tokens.space[3] }, style]}>
         <Button variant="plain" tone="accent" size="S" icon={CaretDownIcon} onPress={onLoadMore} style={{ alignSelf: 'center' }}>
-          Charger la suite
+          {t('mobile.ds.loadMore')}
         </Button>
         {remainingLabel && (
           <Text variant="caption" color="muted">
@@ -141,6 +144,7 @@ function PullHintBody({
   remainingLabel?: string
   style?: StyleProp<ViewStyle>
 }) {
+  const t = useT()
   const { colors } = useTheme()
   // Le pied touché charge par le même chemin que la traction (`DragToLoadMore`) : indicateur natif et conservation de la position de lecture.
   const load = useLoadMoreAction()
@@ -149,8 +153,8 @@ function PullHintBody({
     <Animated.View style={[{ alignItems: 'center' }, fade, style]}>
       <PressableScale
         accessibilityRole="button"
-        accessibilityLabel={remainingLabel ? `Charger la suite, ${remainingLabel}` : 'Charger la suite'}
-        accessibilityHint="Ou tire la liste vers le haut"
+        accessibilityLabel={remainingLabel ? t('mobile.ds.loadMoreRemaining', { remaining: remainingLabel }) : t('mobile.ds.loadMore')}
+        accessibilityHint={t('mobile.ds.pullHint')}
         pressedScale={0.98}
         onPress={load ?? onLoadMore}
         style={{
@@ -164,7 +168,7 @@ function PullHintBody({
       >
         <CaretUpIcon size={16} color={colors.muted} />
         <Text variant="callout" weight="600" color="muted">
-          Tire pour voir la suite
+          {t('mobile.ds.pullMore')}
         </Text>
         {remainingLabel && (
           <Text variant="caption" color="muted">

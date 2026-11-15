@@ -14,6 +14,7 @@ import { tokens } from '../tokens.generated'
 import { Button } from './button'
 import type { ButtonTone, ButtonVariant } from './button-styles'
 import { Text } from './text'
+import { useT } from '@/lib/i18n'
 
 export interface DialogAction {
   label: string
@@ -58,6 +59,7 @@ const CLOSE_TIMING = { duration: 140, easing: Easing.in(Easing.quad), reduceMoti
  * feuille), le voile suit ; la fermeture le rétracte en 140 ms. Sous mouvement réduit, il apparaît d'un coup.
  */
 export function Dialog({ open, onClose, title, message, icon: IconComponent, tone = 'neutral', actions, sheet = false }: DialogProps) {
+  const t = useT()
   const { colors, radius } = useTheme()
   const insets = useSafeAreaInsets()
   const reduced = useReducedMotion()
@@ -132,7 +134,7 @@ export function Dialog({ open, onClose, title, message, icon: IconComponent, ton
       >
         <Animated.View style={[StyleSheet.absoluteFill, scrimStyle]}>
           <Pressable
-            accessibilityLabel="Fermer"
+            accessibilityLabel={t('play.close')}
             accessibilityRole="button"
             onPress={dismiss}
             style={[StyleSheet.absoluteFill, { backgroundColor: colors.scrim }]}

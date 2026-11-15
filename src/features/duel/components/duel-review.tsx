@@ -16,9 +16,10 @@ import {
   type ReviewAnswer,
   type ReviewRoundTab,
 } from '@/design-system'
-import { sortedRounds } from '@joutio/client-domain/game'
-import { localizedQuestion, type GameRoundState, type GameState } from '@joutio/client-domain/game'
+import { sortedRounds } from '@joutio/client/game'
+import { localizedQuestion, type GameRoundState, type GameState } from '@joutio/client/game'
 import { ReportQuestionSheet } from './report-sheets'
+import { currentLanguage, useT } from '@/lib/i18n'
 
 const GUTTER = tokens.space[5]
 
@@ -42,7 +43,7 @@ interface ReviewPageProps {
 /** Une manche rejouée. Mémoïsée : changer de question ou de detent ne la re-rend pas. */
 const ReviewPage = memo(function ReviewPage({ round, me, opponent, myName, opponentName }: ReviewPageProps) {
   const { colors } = useTheme()
-  const { questionText, answers } = localizedQuestion(round, 'fr')
+  const { questionText, answers } = localizedQuestion(round, currentLanguage())
   const mine = round.playerAnswers[me]
   const theirs = opponent ? round.playerAnswers[opponent] : undefined
   const first = mine && (!theirs || mine.timeMs <= theirs.timeMs) ? 'me' : theirs ? 'opponent' : undefined
@@ -102,6 +103,7 @@ export const DuelReview = memo(function DuelReview({
   /** Écran court : onglets de manche sans les points (`RoundReviewTabs`). */
   compact?: boolean
 }) {
+  const t = useT()
   const rounds = useMemo(() => reviewRoundsOf(game), [game])
   const images = useMemo(() => [...new Set(rounds.map((round) => round.imageUrl).filter((url): url is string => Boolean(url)))], [rounds])
   const opponent = game.player1Id === me ? game.player2Id : game.player1Id
@@ -157,7 +159,7 @@ export const DuelReview = memo(function DuelReview({
       <View style={{ flex: 1, gap: tokens.space[4] }}>
         <View style={{ gap: tokens.space[4], paddingHorizontal: GUTTER }}>
           <Text variant="headline" accessibilityRole="header">
-            Détails du duel
+            {t('result.details')}
           </Text>
           <RoundReviewTabs me={myName} opponent={opponentName} value={index} onChange={go} rounds={tabs} compact={compact} />
         </View>
@@ -173,7 +175,7 @@ export const DuelReview = memo(function DuelReview({
         {canReport && (
           <View style={{ paddingHorizontal: GUTTER }}>
             <Button variant="plain" tone="neutral" size="M" full icon={done ? CheckIcon : FlagIcon} disabled={done} onPress={() => setReportOpen(true)}>
-              {done ? 'Question signalée' : 'Signaler la question'}
+              {done ? t('result.questionReported') : t('result.reportQuestion')}
             </Button>
           </View>
         )}
@@ -184,7 +186,7 @@ export const DuelReview = memo(function DuelReview({
         questionId={round?.questionId ?? null}
         gameId={game.gameId}
         hasImage={Boolean(round?.imageUrl)}
-        subtitle={`Question ${index + 1} sur ${count}`}
+        subtitle={t('result.questionOf', { index: index + 1, total: count })}
         onSent={() => setReported([...reported, index])}
       />
     </>

@@ -4,8 +4,9 @@ import { toast } from '@/design-system'
 import { useMe } from '@/features/me'
 import { optimisticUpdate } from '@/lib/optimistic-cache'
 import { queryKeys } from '@/lib/query-keys'
-import type { HomeView, TitlesView, TopicCardView, TopicOverviewView, MeView, PlayerProfileView } from '@joutio/client-domain/api-types'
+import type { HomeView, TitlesView, TopicCardView, TopicOverviewView, MeView, PlayerProfileView } from '@joutio/client/api-types'
 import { topicService, type RankingFilters } from '../lib/topic-service'
+import { useT } from '@/lib/i18n'
 
 /** En-tête, statistiques et progression du sujet. */
 export function useTopicOverview(topicId: string, enabled = Boolean(topicId)) {
@@ -56,6 +57,7 @@ export function useMyTitles(enabled = true) {
 
 /** Suivre / ne plus suivre, appliqué tout de suite (et annulé si le BFF refuse). */
 export function useFollowTopic(topicId: string) {
+  const t = useT()
   const client = useQueryClient()
   const key = queryKeys.topic.overview(topicId)
   return useMutation({
@@ -124,13 +126,14 @@ export function useFollowTopic(topicId: string) {
       }),
     onError: (_error, follow, context) => {
       context?.rollback()
-      toast.error(follow ? "Le sujet n'a pas pu être suivi" : "Le sujet n'a pas pu être retiré", { description: 'Vérifie ta connexion, puis réessaie.' })
+      toast.error(follow ? t('topic.followError') : t('topic.unfollowError'), { description: t('home.errorText') })
     },
   })
 }
 
 /** Porter un titre du sujet. */
 export function useWearTitle() {
+  const t = useT()
   const client = useQueryClient()
   const me = useMe(true)
   const userId = me.data?.userId ?? ''
@@ -145,7 +148,7 @@ export function useWearTitle() {
       }),
     onError: (_error, _key, context) => {
       context?.rollback()
-      toast.error(_key === null ? 'Le titre n’a pas pu être enlevé' : 'Le titre n’a pas pu être porté')
+      toast.error(_key === null ? t('topic.removeTitleError') : t('topic.wearTitleError'))
     },
   })
 }

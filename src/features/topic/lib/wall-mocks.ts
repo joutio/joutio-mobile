@@ -1,4 +1,5 @@
 import type { TierCode } from '@/design-system'
+import { t, tierKey } from '@/lib/i18n'
 
 /**
  * Mur d'un sujet : **mock** (`design/specs/screens/fiche-sujet.md` § 5). Le BFF n'expose ni publications, ni
@@ -56,7 +57,7 @@ export const WALL_POSTS_MOCK: WallPostMock[] = Array.from({ length: 32 }, (_, in
     id: `post-${index}`,
     name: NAMES[index % NAMES.length] ?? 'Joueur',
     tier,
-    meta: `${TIER_LABEL[tier]} · ${when}`,
+    meta: `${t(tierKey(tier))} · ${when}`,
     text: ANECDOTES[index % ANECDOTES.length] ?? '',
     likes: Math.max(0, 24 - index),
     comments: index % 8,

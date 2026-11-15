@@ -6,6 +6,7 @@ import { useTheme } from '../theme/theme-provider'
 import { tokens, type CategoryCode } from '../tokens.generated'
 import { PressableScale } from './pressable-scale'
 import { Text } from './text'
+import { OfficialBadge } from '../brand/premium-badge'
 
 /** Côté du visuel (`--jo-space-11`, 80 px). */
 export const TOPIC_TILE_VISUAL = tokens.space[11]
@@ -14,6 +15,8 @@ export const TOPIC_TILE_TITLE_HEIGHT = tokens.typography.callout.lineHeight * 2
 
 export interface TopicTileProps {
   title: string
+  /** Sujet éditorial de Joutio (`OfficialBadge` après le nom) ; obligatoire : chaque sujet affiché dit s'il l'est. */
+  official: boolean
   category: CategoryCode
   /** Pictogramme carré du sujet : premier choix. */
   pictogram?: string
@@ -32,7 +35,7 @@ export interface TopicTileProps {
  * point**, rayon réduit d'autant, puis l'image, seule à toucher le bord. La couleur se voit à travers un pictogramme
  * détouré, jamais dans l'anticrénelage de l'arrondi (liseré aux coins en thème sombre). Sans image, elle remplit le cadre.
  */
-export function TopicTile({ title, category, pictogram, image, onPress, style }: TopicTileProps) {
+export function TopicTile({ title, official, category, pictogram, image, onPress, style }: TopicTileProps) {
   const { colors, radius, categoryColor } = useTheme()
   const [failed, setFailed] = useState<readonly (string | number)[]>([])
   const source = [pictogram, image].find((url): url is string | number => url !== undefined && url !== '' && !failed.includes(url))
@@ -70,6 +73,12 @@ export function TopicTile({ title, category, pictogram, image, onPress, style }:
       </View>
       <Text variant="callout" align="center" numberOfLines={2} style={{ alignSelf: 'stretch', minHeight: TOPIC_TILE_TITLE_HEIGHT }}>
         {title}
+        {official && (
+          <>
+            {' '}
+            <OfficialBadge size={14} />
+          </>
+        )}
       </Text>
     </PressableScale>
   )

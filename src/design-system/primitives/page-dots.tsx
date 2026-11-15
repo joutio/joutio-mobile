@@ -4,6 +4,7 @@ import Animated, { useAnimatedStyle, useSharedValue } from 'react-native-reanima
 import { animateTo, useReducedMotion } from '../motion'
 import { useTheme } from '../theme/theme-provider'
 import { tokens } from '../tokens.generated'
+import { useT } from '@/lib/i18n'
 
 export interface PageDotsProps {
   count: number
@@ -50,11 +51,12 @@ function Dot({ dot, index }: { dot: number; index: number }) {
 
 /** Position dans un carrousel ou un parcours : le point courant s'étire en ambre. */
 export function PageDots({ count, index, style }: PageDotsProps) {
+  const t = useT()
   return (
     <View
       accessible
       accessibilityRole="image"
-      accessibilityLabel={`Étape ${index + 1} sur ${count}`}
+      accessibilityLabel={t('mobile.ds.stepOf', { index: index + 1, count })}
       style={[{ width: Math.max(0, count - 1) * (DOT + GAP) + LONG, height: DOT }, style]}
     >
       {Array.from({ length: count }, (_, dot) => (

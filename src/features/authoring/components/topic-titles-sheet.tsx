@@ -3,7 +3,6 @@ import { View } from 'react-native'
 import { Badge, Button, Field, MobileSheet, Segmented, Text, tokens } from '@/design-system'
 import {
   MASTERY_TIERS,
-  MASTERY_TIER_LABELS,
   normalizeTitles,
   TITLE_MAX_LENGTH,
   titleLabel,
@@ -12,9 +11,10 @@ import {
   tooLongTitle,
   type TitleLanguage,
   type TopicTitles,
-} from '@joutio/client-domain/authoring'
+} from '@joutio/client/authoring'
 import { formatNumber, MASTERY_XP } from '@/features/topic/lib/format'
 import { LANGUAGES } from './topic-sheets'
+import { tierKey, useT } from '@/lib/i18n'
 
 /**
  * Titres par palier (`creation.md` § 1, Titres, 2026-11-13) : le créateur nomme librement chacun des 7 paliers, en
@@ -35,6 +35,7 @@ export function TopicTitlesSheet({
   onClose: () => void
   onSave: (titles: TopicTitles | null) => void
 }) {
+  const t = useT()
   const [language, setLanguage] = useState<TitleLanguage>('fr')
   const [draft, setDraft] = useState(() => titlesDraft(titles))
   useEffect(() => {
@@ -49,38 +50,38 @@ export function TopicTitlesSheet({
     <MobileSheet
       open={open}
       onClose={onClose}
-      title="Titres"
+      title={t('workshop.titles')}
       subtitle={topicName}
       tall
       footer={
         <Button full loading={busy} disabled={invalid || !titlesChanged(titles, draft)} onPress={() => onSave(normalizeTitles(draft))}>
-          Enregistrer
+          {t('settings.save')}
         </Button>
       }
     >
       <View style={{ gap: tokens.space[4] }}>
         <Text variant="callout" color="muted">
-          Le titre que gagne un joueur à chaque palier de maîtrise. Laisse vide pour garder « Or · {topicName} ».
+          {t('workshop.titlesText', { topic: topicName })}
         </Text>
-        <Segmented<TitleLanguage> label="Langue" options={LANGUAGES} value={language} onChange={setLanguage} />
+        <Segmented<TitleLanguage> label={t('settings.language')} options={LANGUAGES} value={language} onChange={setLanguage} />
         {MASTERY_TIERS.map((tier) => {
           const value = draft[language][tier]
           return (
             <View key={`${language}-${tier}`} style={{ gap: tokens.space[2] }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: tokens.space[2] }}>
                 <Badge variant="tier" tier={tier}>
-                  {MASTERY_TIER_LABELS[tier]}
+                  {t(tierKey(tier))}
                 </Badge>
                 <Text variant="caption" color="muted">
-                  {`${formatNumber(MASTERY_XP[tier])} XP`}
+                  {t('common.xp', { xp: formatNumber(MASTERY_XP[tier]) })}
                 </Text>
               </View>
               <Field
-                label={`Titre ${MASTERY_TIER_LABELS[tier]}${language === 'en' ? ' en anglais' : ''}`}
-                placeholder={language === 'en' ? titleLabel(normalizeTitles(draft), tier, topicName, 'fr') : `${MASTERY_TIER_LABELS[tier]} · ${topicName}`}
+                label={t(language === 'en' ? 'workshop.titleLabelEn' : 'workshop.titleLabel', { tier: t(tierKey(tier)) })}
+                placeholder={language === 'en' ? titleLabel(normalizeTitles(draft), tier, topicName, 'fr') : t('workshop.tierTitle', { tier: t(tierKey(tier)), topic: topicName })}
                 value={value}
                 maxLength={TITLE_MAX_LENGTH}
-                counter={`${value.length} / ${TITLE_MAX_LENGTH}`}
+                counter={t('common.counter', { count: value.length, max: TITLE_MAX_LENGTH })}
                 onChangeText={(next) => setDraft({ ...draft, [language]: { ...draft[language], [tier]: next } })}
               />
             </View>

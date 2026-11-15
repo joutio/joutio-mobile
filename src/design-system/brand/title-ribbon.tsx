@@ -6,6 +6,7 @@ import { Text } from '../primitives/text'
 import { tokens, type TierCode } from '../tokens.generated'
 import { LockBadge, LOCKED_STYLE } from './lock-badge'
 import { RIBBON_ASSETS, RIBBON_PART_ASSETS } from './tier-assets'
+import { t, tierKey, useT } from '@/lib/i18n'
 
 export interface TitleRibbonProps {
   tier: TierCode
@@ -27,6 +28,7 @@ const SEAM = 1 / PixelRatio.get()
 
 /** Extrémités fixes, centre répété : ni le motif ni le texte ne sont étirés. */
 export function TitleRibbon({ tier, text, width = 220, state = 'earned', style }: TitleRibbonProps) {
+  const t = useT()
   const locked = state === 'locked'
   const auto = width === 'auto'
   const [textWidth, setTextWidth] = useState(0)
@@ -45,7 +47,7 @@ export function TitleRibbon({ tier, text, width = 220, state = 'earned', style }
     <View
       accessible
       accessibilityRole="image"
-      accessibilityLabel={[`Titre ${tokens.tier[tier].label}`, text, locked && 'verrouillé'].filter(Boolean).join(', ')}
+      accessibilityLabel={[t('workshop.titleLabel', { tier: t(tierKey(tier)) }), text, locked && t('mobile.profile.locked')].filter(Boolean).join(', ')}
       onLayout={(event) => setLayoutWidth(event.nativeEvent.layout.width)}
       style={[{ width: boxWidth, minWidth: auto ? naturalWidth : undefined, height, alignSelf: 'flex-start' }, style]}
     >

@@ -5,12 +5,14 @@ import { Notice, Button, CategoryTile, Text, tokens, type CategoryCode } from '@
 import { useSaveInterests } from '../hooks/use-onboarding'
 import { MAX_UNIVERSES, useOnboardingStore } from '../onboarding-store'
 import { Steps } from './steps'
+import { useT } from '@/lib/i18n'
 
 const UNIVERSES = Object.keys(tokens.category) as CategoryCode[]
 const COLUMNS = 3
 
 /** Univers : 1 à 3 choix ; au 3e, les autres se désactivent. « Passer » saute le premier thème. */
 export function UniversesStep() {
+  const t = useT()
   const selected = useOnboardingStore((state) => state.universes)
   const setUniverses = useOnboardingStore((state) => state.setUniverses)
   const setSkipped = useOnboardingStore((state) => state.setSkipped)
@@ -35,12 +37,12 @@ export function UniversesStep() {
             router.push('/notifications')
           }}
         >
-          Passer
+          {t('onboarding.universes.skip')}
         </Button>
       }
       footer={
         <View style={{ gap: tokens.space[3] }}>
-          {save.isError && <Notice title="Tes univers n'ont pas pu être enregistrés" message="Vérifie ta connexion et réessaie." />}
+          {save.isError && <Notice title={t('onboarding.universes.saveError')} message={t('common.checkConnection')} />}
           <Button
             full
             disabled={selected.length === 0}
@@ -54,19 +56,19 @@ export function UniversesStep() {
               })
             }
           >
-            {`Continuer${selected.length > 0 ? ` · ${selected.length} sur ${MAX_UNIVERSES}` : ''}`}
+            {selected.length > 0 ? t('onboarding.universes.count', { count: selected.length, max: MAX_UNIVERSES }) : t('onboarding.universes.continue')}
           </Button>
         </View>
       }
     >
       <View style={{ gap: tokens.space[3] }}>
         <Text variant="title1" accessibilityRole="header">
-          Quels univers te tentent ?
+          {t('onboarding.universes.title')}
         </Text>
-        <Text color="muted">Choisis 1 à 3 univers. Ils personnalisent ton accueil et nous servent à te proposer ton premier thème.</Text>
+        <Text color="muted">{t('onboarding.universes.subtitle')}</Text>
       </View>
       <View
-        accessibilityLabel={`Univers, ${selected.length} sur ${MAX_UNIVERSES} choisis`}
+        accessibilityLabel={t('onboarding.universes.grid', { count: selected.length, max: MAX_UNIVERSES })}
         onLayout={(event) => setGridWidth(event.nativeEvent.layout.width)}
         style={{ gap: tokens.space[3], opacity: tileWidth ? 1 : 0 }}
       >

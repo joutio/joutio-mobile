@@ -4,6 +4,7 @@ import { Button } from '../primitives/button'
 import { useTheme } from '../theme/theme-provider'
 import type { TierCode } from '../tokens.generated'
 import { UnlockContent } from './unlock-content'
+import { useT } from '@/lib/i18n'
 
 export interface BadgeUnlockProps {
   tier: TierCode
@@ -23,6 +24,7 @@ export interface BadgeUnlockProps {
 
 /** Un déblocage par badge gagné, dans `UnlockSequence` : le badge tombe, puis ressort. */
 export function BadgeUnlock({ tier, badge, family, icon: FamilyIcon, text, next, nextRule, reward }: BadgeUnlockProps) {
+  const t = useT()
   const { colors } = useTheme()
   return (
     <UnlockContent
@@ -31,7 +33,7 @@ export function BadgeUnlock({ tier, badge, family, icon: FamilyIcon, text, next,
       crumbFrom={family}
       hero={<TierMedal tier={tier} icon={FamilyIcon} size={160} />}
       heroMotion="drop"
-      eyebrow="Nouveau badge débloqué"
+      eyebrow={t('mobile.ds.newBadge')}
       headline={badge}
       text={text}
       extra={

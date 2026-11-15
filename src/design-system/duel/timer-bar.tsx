@@ -3,6 +3,7 @@ import { View, type StyleProp, type ViewStyle } from 'react-native'
 import Animated, { Easing, ReduceMotion, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
 import { alpha } from '../theme/color'
 import { useTheme } from '../theme/theme-provider'
+import { t } from '@/lib/i18n'
 
 export type TimerState = 'running' | 'low' | 'frozen' | 'expired'
 
@@ -60,7 +61,7 @@ export function TimerBar({ seconds, total = 10, first, state = 'running', lowAt 
     <View
       accessible
       accessibilityRole="progressbar"
-      accessibilityLabel={`Temps restant : ${Math.ceil(seconds)} s${first === undefined ? '' : `, premier à répondre à ${Math.ceil(first)} s`}`}
+      accessibilityLabel={first === undefined ? t('ds.timeLeft', { seconds: Math.ceil(seconds) }) : t('ds.timeLeftFirst', { seconds: Math.ceil(seconds), first: Math.ceil(first) })}
       accessibilityValue={{ min: 0, max: total, now: Math.ceil(seconds) }}
       style={[{ height: 8, alignSelf: 'stretch', overflow: 'hidden' }, style]}
     >

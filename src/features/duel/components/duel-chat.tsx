@@ -4,9 +4,10 @@ import { ScrollView, View } from 'react-native'
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { CaretLeftIcon, Composer, HAIRLINE, IconButton, Message, Pill, Text, tokens, useTheme, TOP_BAR_HEIGHT } from '@/design-system'
+import { t, useT } from '@/lib/i18n'
 
 /** Réponses rapides du chat d'après-duel. */
-const SUGGESTIONS = ['Bien joué !', 'Revanche ?', 'Trop fort', 'GG']
+const SUGGESTIONS = () => ([t('mobile.chat.wellPlayed'), t('mobile.chat.rematch'), t('mobile.chat.tooGood'), 'GG'])
 
 interface ChatMessage {
   id: string
@@ -14,7 +15,7 @@ interface ChatMessage {
   mine: boolean
 }
 
-const OPENING: ChatMessage = { id: 'hello', text: 'Bien joué, belle partie !', mine: false }
+const OPENING = (): ChatMessage => ({ id: 'hello', text: t('mobile.chat.niceGame'), mine: false })
 /**
  * Conversations mockées, conservées le temps de la session : le chat est un écran poussé, revenir au résultat puis
  * le rouvrir ne doit pas effacer les messages (le BFF n'a pas encore de messagerie, décision du 2026-11-05).
@@ -26,10 +27,11 @@ const conversations = new Map<string, ChatMessage[]>()
  * Rappel du duel en tête, réponses rapides ; les messages restent sur l'appareil.
  */
 export function DuelChat({ gameId, opponentName, recap, onBack }: { gameId: string; opponentName: string; recap: string; onBack: () => void }) {
+  const t = useT()
   const { colors } = useTheme()
   const insets = useSafeAreaInsets()
   const [draft, setDraft] = useState('')
-  const [messages, setMessages] = useState<ChatMessage[]>(() => conversations.get(gameId) ?? [OPENING])
+  const [messages, setMessages] = useState<ChatMessage[]>(() => conversations.get(gameId) ?? [OPENING()])
   useEffect(() => {
     conversations.set(gameId, messages)
   }, [gameId, messages])
@@ -51,7 +53,7 @@ export function DuelChat({ gameId, opponentName, recap, onBack }: { gameId: stri
           minHeight: TOP_BAR_HEIGHT + insets.top,
         }}
       >
-        <IconButton icon={CaretLeftIcon} label="Retour au résultat" onPress={onBack} />
+        <IconButton icon={CaretLeftIcon} label={t('mobile.chat.backToResult')} onPress={onBack} />
         <Text variant="headline" numberOfLines={1} style={{ flex: 1 }}>
           {opponentName}
         </Text>
@@ -71,7 +73,7 @@ export function DuelChat({ gameId, opponentName, recap, onBack }: { gameId: stri
           paddingBottom: insets.bottom + tokens.space[3],
         }}
       >
-        <Composer value={draft} onChange={setDraft} onSend={send} placeholder="Message" suggestions={SUGGESTIONS} onSuggestion={send} />
+        <Composer value={draft} onChange={setDraft} onSend={send} placeholder={t('mobile.chat.message')} suggestions={SUGGESTIONS()} onSuggestion={send} />
       </View>
     </KeyboardAvoidingView>
   )

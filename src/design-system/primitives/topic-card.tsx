@@ -7,9 +7,13 @@ import { useTheme } from '../theme/theme-provider'
 import { tokens, type CategoryCode } from '../tokens.generated'
 import { PressableScale } from './pressable-scale'
 import { Text } from './text'
+import { categoryKey, t } from '@/lib/i18n'
+import { OfficialBadge } from '../brand/premium-badge'
 
 export interface TopicCardProps {
   title: string
+  /** Sujet éditorial de Joutio (`OfficialBadge` après le nom) ; obligatoire : chaque sujet affiché dit s'il l'est. */
+  official: boolean
   category: CategoryCode
   orientation?: 'portrait' | 'landscape'
   /** URL ou actif local. Absente ou en échec : fond de l'univers et son icône. */
@@ -21,7 +25,7 @@ export interface TopicCardProps {
 }
 
 /** Carte de sujet : visuel (16:9 en paysage, 3:4 en portrait), univers et nom. Repli du visuel : bannière, sinon univers. */
-export function TopicCard({ title, category, orientation = 'landscape', image, onPress, accessibilityLabel, style }: TopicCardProps) {
+export function TopicCard({ title, official, category, orientation = 'landscape', image, onPress, accessibilityLabel, style }: TopicCardProps) {
   const { colors, radius, categoryColor, scheme } = useTheme()
   const portrait = orientation === 'portrait'
   const color = categoryColor(category)
@@ -30,7 +34,7 @@ export function TopicCard({ title, category, orientation = 'landscape', image, o
   return (
     <PressableScale
       accessibilityRole={onPress ? 'button' : undefined}
-      accessibilityLabel={accessibilityLabel ?? `${title}, ${tokens.category[category].label}`}
+      accessibilityLabel={accessibilityLabel ?? `${title}, ${t(categoryKey(category))}`}
       disabled={!onPress}
       pressedScale={0.99}
       onPress={onPress}
@@ -57,11 +61,14 @@ export function TopicCard({ title, category, orientation = 'landscape', image, o
       </View>
       <View style={{ gap: tokens.space[1], paddingHorizontal: tokens.space[4], paddingTop: tokens.space[3], paddingBottom: tokens.space[4] }}>
         <Text variant="caption" weight="600" color={categoryInk(color, colors.text, scheme)} numberOfLines={1}>
-          {tokens.category[category].label}
+          {t(categoryKey(category))}
         </Text>
-        <Text variant="callout" weight="600" numberOfLines={1}>
-          {title}
-        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: tokens.space[2] }}>
+          <Text variant="callout" weight="600" numberOfLines={1} style={{ flexShrink: 1 }}>
+            {title}
+          </Text>
+          {official && <OfficialBadge size={16} />}
+        </View>
       </View>
     </PressableScale>
   )

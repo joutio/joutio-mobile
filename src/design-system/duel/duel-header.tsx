@@ -4,6 +4,7 @@ import { Avatar } from '../primitives/avatar'
 import { Text } from '../primitives/text'
 import { tokens, type TierCode } from '../tokens.generated'
 import { isTimerUrgent, type TimerState } from './timer-bar'
+import { useT } from '@/lib/i18n'
 
 export interface DuelPlayer {
   name: string
@@ -47,6 +48,7 @@ function Side({ player, end }: { player: DuelPlayer; end?: boolean }) {
 
 /** Haut de l'arène : les deux joueurs et leur score, le décompte au centre. */
 export function DuelHeader({ me, opponent, seconds, timerState, lowAt, style }: DuelHeaderProps) {
+  const t = useT()
   return (
     <View
       style={[
@@ -71,7 +73,7 @@ export function DuelHeader({ me, opponent, seconds, timerState, lowAt, style }: 
           variant="numericTimer"
           color={isTimerUrgent(seconds, timerState, lowAt) ? 'wrong' : 'text'}
           accessibilityRole="timer"
-          accessibilityLabel={`${seconds} secondes restantes`}
+          accessibilityLabel={t('mobile.ds.secondsLeft', { seconds })}
           maxFontSizeMultiplier={1.2}
           style={{ position: 'absolute' }}
         >

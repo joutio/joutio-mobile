@@ -46,7 +46,7 @@ import { useMe } from '@/features/me'
 import { MyTopicsList } from '@/features/authoring'
 import { openSettingsPage } from '@/features/settings/components/settings-frame'
 import { useMyActivity } from '@/features/profile/hooks/use-profile'
-import type { TopicCardView } from '@joutio/client-domain/api-types'
+import type { TopicCardView } from '@joutio/client/api-types'
 import { tierOf } from '@/shared/utils/tier'
 import { topicName } from '@/shared/utils/topic-name'
 import { openTopic } from '@/features/topic'
@@ -54,20 +54,21 @@ import { useTopicFacets, useTopics } from '@/features/topics/hooks/use-topics'
 import type { TopicFilters } from '@/features/topics/lib/topics-service'
 import { useHome, useUnreadCount } from '../hooks/use-home'
 import { feedFooterProps, pagedQuery } from '@/shared/utils/paging'
+import { categoryKey, t, tierKey, useT } from '@/lib/i18n'
 
 const LANDSCAPE_WIDTH = 240
 const GUTTER = tokens.space[5]
 
 const TABS = [
-  { value: 'for-you', label: 'Pour toi' },
-  { value: 'followed', label: 'Suivis' },
-  { value: 'creation', label: 'Création' },
+  { value: 'for-you', label: 'home.forYou' },
+  { value: 'followed', label: 'home.followed' },
+  { value: 'creation', label: 'home.creation' },
 ] as const
 
 type Tab = (typeof TABS)[number]['value']
 
 const imageOf = (topic: TopicCardView) => topic.imageUrl ?? undefined
-const remainingFollowed = (count: number) => `${count} ${count > 1 ? 'autres sujets suivis' : 'autre sujet suivi'}`
+const remainingFollowed = (count: number) => t(count > 1 ? 'home.remainingMany' : 'home.remainingOne', { count })
 
 /** Rail de cartes paysage, sans « Tout voir » (2026-11-13 : la sélection est courte, le catalogue est dans Sujets). */
 function TopicRail({ title, topics }: { title: string; topics: TopicCardView[] }) {
@@ -78,6 +79,7 @@ function TopicRail({ title, topics }: { title: string; topics: TopicCardView[] }
         {topics.map((topic) => (
           <TopicCard
             key={topic.topicId}
+            official={topic.official ?? false}
             title={topicName(topic.names)}
             category={toCategoryCode(topic.category)}
             image={imageOf(topic)}
@@ -94,15 +96,16 @@ function TopicRail({ title, topics }: { title: string; topics: TopicCardView[] }
  * Ouvre Réglages › Jeu dans la pile de l'Accueil.
  */
 function InterestsInvite() {
+  const t = useT()
   const { colors, radius } = useTheme()
   return (
     <View style={{ marginHorizontal: GUTTER, padding: tokens.space[5], gap: tokens.space[3], borderRadius: radius.lg, backgroundColor: colors.surface }}>
-      <Text variant="headline">Choisis tes centres d'intérêt</Text>
+      <Text variant="headline">{t('home.interestsTitle')}</Text>
       <Text variant="callout" color="muted">
-        Jusqu'à 3 univers pour recevoir une sélection de sujets faite pour toi.
+        {t('home.interestsText')}
       </Text>
       <Button style={{ alignSelf: 'flex-start' }} icon={HeartIcon} onPress={() => openSettingsPage('home', 'game')}>
-        Choisir
+        {t('home.interestsAction')}
       </Button>
     </View>
   )
@@ -119,6 +122,7 @@ function ForYou({
   recommended: TopicCardView[]
   hasInterests: boolean
 }) {
+  const t = useT()
   const seeAll = () => router.navigate('/topics')
   return (
     <>
@@ -127,6 +131,7 @@ function ForYou({
           topics={trending.map((topic) => ({
             id: topic.topicId,
             title: topicName(topic.names),
+            official: topic.official ?? false,
             category: toCategoryCode(topic.category),
             image: imageOf(topic),
           }))}
@@ -137,9 +142,9 @@ function ForYou({
           onSeeAll={seeAll}
         />
       )}
-      {fresh.length > 0 && <TopicRail title="Fraîchement mis à jour" topics={fresh} />}
+      {fresh.length > 0 && <TopicRail title={t('home.newTopics')} topics={fresh} />}
       {/* Sélection du BFF (`recommendedTopics`, intérêts enregistrés, sujets suivis exclus) ; rien si elle est vide. */}
-      {hasInterests ? recommended.length > 0 && <TopicRail title="Selon tes centres d'intérêt" topics={recommended} /> : <InterestsInvite />}
+      {hasInterests ? recommended.length > 0 && <TopicRail title={t('home.recommended')} topics={recommended} /> : <InterestsInvite />}
     </>
   )
 }
@@ -152,6 +157,7 @@ const followedFilters = (categories: readonly CategoryCode[]): TopicFilters => (
  * n'en renvoie que 10). La page suivante arrive par traction en bas de l'onglet (`DragToLoadMore`) ou par le bouton.
  */
 function Followed({ list, selected, onSelect }: { list: ReturnType<typeof useTopics>; selected: CategoryCode[]; onSelect: (next: CategoryCode[]) => void }) {
+  const t = useT()
   const { colors, radius } = useTheme()
   // Les puces d'univers sont un rail horizontal : elles possèdent le geste comme le Top 10.
   const gesture = useHorizontalGesture()
@@ -181,11 +187,11 @@ function Followed({ list, selected, onSelect }: { list: ReturnType<typeof useTop
         contentContainerStyle={{ paddingHorizontal: GUTTER, gap: tokens.space[3] }}
       >
         <Chip selected={selected.length === 0} onPress={() => onSelect([])}>
-          Tous
+          {t('home.all')}
         </Chip>
         {universes.map((category) => (
           <Chip key={category} selected={selected.includes(category)} onPress={() => toggle(category)}>
-            {tokens.category[category].label}
+            {t(categoryKey(category))}
           </Chip>
         ))}
       </ScrollView>
@@ -200,6 +206,7 @@ function Followed({ list, selected, onSelect }: { list: ReturnType<typeof useTop
           {topics.map((topic, index) => (
             <TopicRow
               key={topic.topicId}
+              official={topic.official ?? false}
               title={topicName(topic.names)}
               category={toCategoryCode(topic.category)}
               pictogram={topic.pictogramUrl ?? undefined}
@@ -214,7 +221,7 @@ function Followed({ list, selected, onSelect }: { list: ReturnType<typeof useTop
         <FeedFooter
           style={{ marginHorizontal: GUTTER }}
           {...feedFooterProps(pagedQuery(list))}
-          endLabel="Tu as vu tous tes sujets suivis"
+          endLabel={t('home.followedEnd')}
           remainingLabel={list.hasNextPage && total !== undefined ? remainingFollowed(Math.max(0, total - topics.length)) : undefined}
         />
       )}
@@ -228,8 +235,9 @@ const SKELETON_SECTIONS = [
 ] as const
 
 function Loading() {
+  const t = useT()
   return (
-    <View accessible accessibilityLabel="Chargement" style={{ gap: tokens.space[6] }}>
+    <View accessible accessibilityLabel={t('home.loading')} style={{ gap: tokens.space[6] }}>
       {SKELETON_SECTIONS.map(({ width, height }, section) => (
         <View key={section} style={{ gap: tokens.space[4], paddingHorizontal: GUTTER }}>
           <Skeleton width={160} />
@@ -259,6 +267,7 @@ function CreationPage() {
 }
 
 function FeedPage({ tab, home }: { tab: Exclude<Tab, 'creation'>; home: ReturnType<typeof useHome> }) {
+  const t = useT()
   const me = useMe()
   const hasInterests = (me.data?.interests ?? []).length > 0
   const followed = tab === 'followed'
@@ -282,11 +291,11 @@ function FeedPage({ tab, home }: { tab: Exclude<Tab, 'creation'>; home: ReturnTy
         {home.isError && (
           <EmptyState
             icon={WarningCircleIcon}
-            title="Impossible de charger l'accueil"
-            description="Vérifie ta connexion, puis réessaie."
+            title={t('home.errorTitle')}
+            description={t('home.errorText')}
             action={
               <Button style={{ alignSelf: 'center' }} loading={home.isRefetching} onPress={() => void home.refetch()}>
-                Réessayer
+                {t('callback.retry')}
               </Button>
             }
           />
@@ -294,11 +303,11 @@ function FeedPage({ tab, home }: { tab: Exclude<Tab, 'creation'>; home: ReturnTy
         {empty && (
           <EmptyState
             icon={CompassIcon}
-            title={followed ? 'Tu ne suis aucun sujet' : "Aucun sujet pour l'instant"}
-            description={followed ? 'Suis des sujets pour les retrouver ici.' : 'Suis tes premiers sujets pour remplir ton accueil.'}
+            title={followed ? t('home.followedEmptyTitle') : t('home.emptyTitle')}
+            description={followed ? t('home.followedEmptyText') : t('home.emptyText')}
             action={
               <Button style={{ alignSelf: 'center' }} onPress={() => router.navigate('/topics')}>
-                Explorer
+                {t('home.explore')}
               </Button>
             }
           />
@@ -326,6 +335,7 @@ const BAR_SHIFT = 10
  * au rythme du défilement (courbe `compactBarProgress`, mesurée). Toucher Accueil dans la bottom nav remonte en haut.
  */
 export function HomeScreen() {
+  const t = useT()
   const unread = useUnreadCount()
   const me = useMe()
   const activity = useMyActivity()
@@ -355,7 +365,7 @@ export function HomeScreen() {
   const pseudonym = me.data?.pseudonym ?? ''
   const rating = me.data?.progression?.rating
   const tier = rating !== undefined ? tierOf(rating) : undefined
-  const greeting = pseudonym ? `Bonjour ${pseudonym}` : 'Bonjour'
+  const greeting = pseudonym ? t('home.hello', { name: pseudonym }) : t('home.helloAnonymous')
   const premium = me.data?.premium ?? false
 
   const header = (
@@ -365,7 +375,7 @@ export function HomeScreen() {
         flexDirection: 'row',
         alignItems: 'center',
         paddingLeft: GUTTER,
-        paddingRight: tokens.space[3],
+        paddingRight: tokens.space[4],
         gap: tokens.space[3],
       }}
     >
@@ -387,13 +397,13 @@ export function HomeScreen() {
       <View style={{ flexDirection: 'row', gap: tokens.space[3] }}>
         <IconButton
           icon={MagnifyingGlassIcon}
-          label="Rechercher un sujet ou un joueur"
+          label={t('search.label')}
           variant="plain"
           tone="neutral"
           onPress={() => router.push('/home/search')}
         />
         <NotificationButton />
-        <IconButton icon={GearSixIcon} label="Réglages" variant="plain" tone="neutral" onPress={() => router.push('/home/settings')} />
+        <IconButton icon={GearSixIcon} label={t('profile.settings')} variant="plain" tone="neutral" onPress={() => router.push('/home/settings')} />
       </View>
     </View>
   )
@@ -402,7 +412,7 @@ export function HomeScreen() {
     <Screen inTabs scroll={false} header={header}>
       <TabsScrollView
         tabsRef={tabsRef}
-        label="Contenu de l'accueil"
+        label={t('home.tabs')}
         value={tab}
         onChange={setTab}
         scroll={scroll}
@@ -426,15 +436,15 @@ export function HomeScreen() {
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: tokens.space[3] }}>
               {tier && rating !== undefined && (
                 <Badge variant="tier" tier={tier}>
-                  {`${tokens.tier[tier].label} · ${rating}`}
+                  {t('common.dotPair', { a: t(tierKey(tier)), b: rating })}
                 </Badge>
               )}
               {/* Série en jours, relue sur `/api/profiles/{id}/activity`. */}
-              {streak !== undefined && streak > 0 && <Pill icon={FireIcon}>{`${streak} jour${streak > 1 ? 's' : ''} de série`}</Pill>}
+              {streak !== undefined && streak > 0 && <Pill icon={FireIcon}>{t(streak > 1 ? 'home.streakMany' : 'home.streakOne', { count: streak })}</Pill>}
             </View>
           </View>
         }
-        pages={TABS.map((page) => ({ ...page, content: <TabPage tab={page.value} home={home} /> }))}
+        pages={TABS.map((page) => ({ ...page, label: t(page.label), content: <TabPage tab={page.value} home={home} /> }))}
       />
     </Screen>
   )

@@ -2,6 +2,7 @@ import { View } from 'react-native'
 import { Avatar, HAIRLINE, MobileSheet, Pill, RankLadder, Text, tokens, useTheme, type TierCode } from '@/design-system'
 import type { BadgeFamilySummary } from '../lib/badges'
 import { RANKS, rankRule } from '../lib/format'
+import { t, tierKey, useT } from '@/lib/i18n'
 
 /** Rangs : les 7 rangs et leur seuil, le rang du joueur agrandi, les suivants verrouillés. */
 export function RanksSheet({
@@ -17,10 +18,11 @@ export function RanksSheet({
   avatar?: string
   tier: TierCode | undefined
 }) {
+  const t = useT()
   const { colors, radius } = useTheme()
   const current = tier ? RANKS.indexOf(tier) : -1
   return (
-    <MobileSheet open={open} onClose={onClose} title="Rangs">
+    <MobileSheet open={open} onClose={onClose} title={t('profile.ranks')}>
       <View style={{ overflow: 'hidden', borderRadius: radius.md }}>
         {RANKS.map((rank, index) => {
           const isCurrent = index === current
@@ -28,7 +30,7 @@ export function RanksSheet({
             <View
               key={rank}
               accessible
-              accessibilityLabel={[tokens.tier[rank].label, rankRule(rank), isCurrent && 'ton rang', index > current && 'verrouillé']
+              accessibilityLabel={[t(tierKey(rank)), rankRule(rank), isCurrent && t('mobile.profile.yourRankLower'), index > current && t('mobile.profile.locked')]
                 .filter(Boolean)
                 .join(', ')}
               style={{
@@ -45,13 +47,13 @@ export function RanksSheet({
               <Avatar name={name} src={avatar} tier={rank} size={isCurrent ? 'lg' : 'list'} locked={index > current} decorative />
               <View style={{ flex: 1, minWidth: 0 }}>
                 <Text variant="headline" numberOfLines={1}>
-                  {tokens.tier[rank].label}
+                  {t(tierKey(rank))}
                 </Text>
                 <Text variant="caption" color="muted" numberOfLines={1}>
                   {rankRule(rank)}
                 </Text>
               </View>
-              {isCurrent && <Pill>Ton rang</Pill>}
+              {isCurrent && <Pill>{t('profile.yourRank')}</Pill>}
             </View>
           )
         })}

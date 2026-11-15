@@ -9,6 +9,7 @@ import { Button } from '../primitives/button'
 import { Text } from '../primitives/text'
 import { useTheme } from '../theme/theme-provider'
 import { tokens, type TierCode } from '../tokens.generated'
+import { useT } from '@/lib/i18n'
 
 export interface RematchPromptProps {
   name: string
@@ -50,6 +51,7 @@ export function RematchPrompt({
   onDecline,
   style,
 }: RematchPromptProps) {
+  const t = useT()
   const { colors, radius } = useTheme()
   // L'anneau vise la fin de la seconde en cours (1 s linéaire) : il se vide en continu, sans saut au tic.
   const target = Math.min(1, Math.max(0, (seconds - 1) / total))
@@ -63,7 +65,7 @@ export function RematchPrompt({
     <View
       accessibilityRole="alert"
       accessibilityViewIsModal
-      accessibilityLabel={`${name} veut sa revanche, même sujet : ${topic}`}
+      accessibilityLabel={t('mobile.ds.rematchA11y', { name, topic })}
       style={[
         {
           alignItems: 'center',
@@ -100,28 +102,28 @@ export function RematchPrompt({
         weight={urgent ? '600' : undefined}
         color={urgent ? 'wrong' : 'muted'}
         accessibilityRole="timer"
-        accessibilityLabel={`${seconds} ${seconds > 1 ? 'secondes' : 'seconde'} pour répondre`}
+        accessibilityLabel={t(seconds > 1 ? 'ds.secondsToAnswerMany' : 'ds.secondsToAnswerOne', { count: seconds })}
       >
         {seconds} s
       </Text>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: tokens.space[2] }}>
         <PlayerName name={name} premium={premium} badgeSize={22} variant="title2" />
         <Text variant="title2" align="center">
-          veut sa revanche
+          {t('mobile.ds.wantsRematch')}
         </Text>
       </View>
       <Text variant="callout" color="muted" align="center">
-        Même sujet : {topic}
+        {t('mobile.ds.sameTopic')} {topic}
       </Text>
       <View style={{ alignSelf: 'stretch', flexDirection: 'row', gap: tokens.space[3], marginTop: tokens.space[2] }}>
         <View style={{ flex: 1 }}>
           <Button variant="tinted" tone="destructive" full loading={declining} disabled={accepting} onPress={onDecline}>
-            Refuser
+            {t('challenges.decline')}
           </Button>
         </View>
         <View style={{ flex: 1 }}>
           <Button full loading={accepting} disabled={declining} onPress={onAccept}>
-            Accepter
+            {t('challenges.accept')}
           </Button>
         </View>
       </View>

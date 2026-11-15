@@ -8,6 +8,7 @@ import type { MatchOutcome } from '../primitives/match-row'
 import { Text } from '../primitives/text'
 import { useTheme, type ThemeColors } from '../theme/theme-provider'
 import { tokens, type TierCode } from '../tokens.generated'
+import { t, useT } from '@/lib/i18n'
 
 /** Éclair 24 pt et deux gaps de 8 pt entre les scores (`.jo-result-score` du lab : `(100cqw − 40px) / 3.6`). */
 const SCORE_CHROME = 40
@@ -15,12 +16,12 @@ const SCORE_CHROME = 40
 const SCORE_EM = 3.6
 
 type Tone = keyof ThemeColors
-const OUTCOMES: Record<MatchOutcome, { label: string; tone: Tone; me: Tone; opponent: Tone }> = {
-  win: { label: 'Victoire', tone: 'accentInk', me: 'correct', opponent: 'wrong' },
-  loss: { label: 'Défaite', tone: 'text', me: 'wrong', opponent: 'correct' },
-  draw: { label: 'Égalité', tone: 'text', me: 'text', opponent: 'text' },
-  forfeit: { label: 'Abandon', tone: 'muted', me: 'muted', opponent: 'muted' },
-}
+const OUTCOMES = (): Record<MatchOutcome, { label: string; tone: Tone; me: Tone; opponent: Tone }> => ({
+  win: { label: t('mobile.ds.win'), tone: 'accentInk', me: 'correct', opponent: 'wrong' },
+  loss: { label: t('mobile.ds.loss'), tone: 'text', me: 'wrong', opponent: 'correct' },
+  draw: { label: t('mobile.ds.draw'), tone: 'text', me: 'text', opponent: 'text' },
+  forfeit: { label: t('mobile.ds.forfeit'), tone: 'muted', me: 'muted', opponent: 'muted' },
+})
 
 export interface ResultPlayer {
   name: string
@@ -66,8 +67,9 @@ function PlayerLabel({ player }: { player: ResultPlayer }) {
  * contre leur avatar ; leur taille suit la colonne centrale (48 pt au plus).
  */
 export function ResultHeader({ outcome, topic, me, opponent, style }: ResultHeaderProps) {
+  const t = useT()
   const { colors } = useTheme()
-  const tones = OUTCOMES[outcome]
+  const tones = OUTCOMES()[outcome]
   const [center, setCenter] = useState(0)
   // Une seule taille pour les deux scores, comme `.jo-result-score` du lab : `min(48px, (colonne − 40px) / 3.6)`
   // (éclair 24 pt + deux gaps de 8 pt, deux scores de 3 chiffres à 0,6 em). Avant la mesure : la taille du token.
@@ -91,7 +93,7 @@ export function ResultHeader({ outcome, topic, me, opponent, style }: ResultHead
         <View
           accessible
           accessibilityRole="image"
-          accessibilityLabel={`Score : ${me.score} à ${opponent.score}`}
+          accessibilityLabel={t('mobile.ds.scoreA11y', { mine: me.score, theirs: opponent.score })}
           onLayout={(event) => setCenter(event.nativeEvent.layout.width)}
           style={{ flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: tokens.space[3] }}
         >

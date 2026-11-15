@@ -8,6 +8,7 @@ import { LockSimpleIcon } from '../icons'
 import { useTheme } from '../theme/theme-provider'
 import { tokens, type TierCode } from '../tokens.generated'
 import { Text } from './text'
+import { t, tierKey, useT } from '@/lib/i18n'
 
 export const AVATAR_SIZES = { xs: 24, sm: 32, md: 40, list: 44, row: 48, lg: 56, xl: 72, xxl: 88, preview: 140, hero: 176 } as const
 export type AvatarSize = keyof typeof AVATAR_SIZES
@@ -17,7 +18,7 @@ const FRAME_MIN_SIZE = 40
 
 export type Presence = 'online' | 'ingame' | 'offline'
 
-const PRESENCE_LABEL: Record<Presence, string> = { online: 'en ligne', ingame: 'en partie', offline: 'hors ligne' }
+const PRESENCE_LABEL = (): Record<Presence, string> => ({ online: t('presence.onlineLower'), ingame: t('mobile.ds.inGame'), offline: t('presence.offlineLower') })
 
 export interface AvatarProps {
   name: string
@@ -44,16 +45,17 @@ const initials = (name: string) =>
     .toUpperCase()
 
 export function Avatar({ name, src, size = 'md', tier, provisional = false, locked = false, presence, decorative = false, style }: AvatarProps) {
+  const t = useT()
   const { colors, radius } = useTheme()
   const px = AVATAR_SIZES[size]
 
   // Un seul nom accessible : l'état n'est jamais porté par la seule couleur (kit § 6).
   const label = [
     name,
-    tier && !provisional ? `rang ${tokens.tier[tier].label}` : undefined,
-    provisional ? 'classement provisoire' : undefined,
-    locked ? 'verrouillé' : undefined,
-    presence ? PRESENCE_LABEL[presence] : undefined,
+    tier && !provisional ? t('mobile.ds.rankA11y', { tier: t(tierKey(tier)) }) : undefined,
+    provisional ? t('mobile.ds.provisional') : undefined,
+    locked ? t('mobile.profile.locked') : undefined,
+    presence ? PRESENCE_LABEL()[presence] : undefined,
   ]
     .filter(Boolean)
     .join(', ')

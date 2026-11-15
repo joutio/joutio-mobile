@@ -7,6 +7,7 @@ import { Avatar } from './avatar'
 import { IconButton } from './icon-button'
 import { PressableScale } from './pressable-scale'
 import { Text } from './text'
+import { useT } from '@/lib/i18n'
 
 export interface WallPostProps {
   name: string
@@ -41,6 +42,7 @@ function Action({ label, onPress, children }: { label: string; onPress?: () => v
 
 /** Publication du mur d'un sujet. */
 export function WallPost({ name, tier, src, meta, text, likes, comments, liked = false, onLike, onComment, onMenu, style }: WallPostProps) {
+  const t = useT()
   const { colors, radius } = useTheme()
   return (
     <View style={[{ gap: tokens.space[4], padding: tokens.space[5], borderRadius: radius.lg, backgroundColor: colors.surface }, style]}>
@@ -54,19 +56,19 @@ export function WallPost({ name, tier, src, meta, text, likes, comments, liked =
             {meta}
           </Text>
         </View>
-        <IconButton icon={DotsThreeVerticalIcon} label={`Options de la publication de ${name}`} size="S" onPress={onMenu} style={{ marginRight: -tokens.space[3] }} />
+        <IconButton icon={DotsThreeVerticalIcon} label={t('mobile.ds.postOptions', { name })} size="S" onPress={onMenu} style={{ marginRight: -tokens.space[3] }} />
       </View>
       <Text variant="callout" weight="400">
         {text}
       </Text>
       <View style={{ flexDirection: 'row', gap: tokens.space[6] }}>
-        <Action label={`J'aime, ${likes}${liked ? ', aimé' : ''}`} onPress={onLike}>
+        <Action label={t('ds.like', { count: likes, liked: liked ? t('ds.likedSuffix') : '' })} onPress={onLike}>
           <HeartIcon size={16} weight={liked ? 'fill' : 'regular'} color={liked ? colors.wrong : colors.muted} />
           <Text variant="caption" color={liked ? 'wrong' : 'muted'} mono>
             {likes}
           </Text>
         </Action>
-        <Action label={`Commentaires, ${comments}`} onPress={onComment}>
+        <Action label={t('mobile.ds.commentsCount', { count: comments })} onPress={onComment}>
           <ChatCircleIcon size={16} color={colors.muted} />
           <Text variant="caption" color="muted" mono>
             {comments}

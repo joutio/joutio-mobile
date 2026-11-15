@@ -7,15 +7,16 @@ import { Button } from './button'
 import { PressableScale } from './pressable-scale'
 import { ProgressBar } from './progress-bar'
 import { Text } from './text'
+import { t } from '@/lib/i18n'
 
 export type RewardState = 'unlocked' | 'active' | 'locked' | 'premium'
 
-const STATES: Record<RewardState, { variant: BadgeVariant; label: string }> = {
-  unlocked: { variant: 'correct', label: 'Débloquée' },
-  active: { variant: 'accent', label: 'Utilisée' },
-  locked: { variant: 'neutral', label: 'Verrouillée' },
-  premium: { variant: 'accent', label: 'Premium' },
-}
+const STATES = (): Record<RewardState, { variant: BadgeVariant; label: string }> => ({
+  unlocked: { variant: 'correct', label: t('mobile.ds.unlocked') },
+  active: { variant: 'accent', label: t('mobile.ds.used') },
+  locked: { variant: 'neutral', label: t('mobile.ds.locked') },
+  premium: { variant: 'accent', label: t('pending.premium') },
+})
 
 export interface RewardCardProps {
   title: string
@@ -36,7 +37,7 @@ export interface RewardCardProps {
 /** Style d'avatar à débloquer : aperçu, état, condition et avancement. */
 export function RewardCard({ title, rule, state = 'unlocked', image, avatarName, progress, progressLabel, cta, onSelect, style }: RewardCardProps) {
   const { colors, radius } = useTheme()
-  const { variant, label } = STATES[state]
+  const { variant, label } = STATES()[state]
   const cardStyle: StyleProp<ViewStyle> = [
     {
       flexDirection: 'row',
@@ -79,7 +80,7 @@ export function RewardCard({ title, rule, state = 'unlocked', image, avatarName,
       <PressableScale
         accessibilityRole="radio"
         accessibilityState={{ checked: state === 'active' }}
-        accessibilityLabel={[title, STATES[state].label, rule].filter(Boolean).join(', ')}
+        accessibilityLabel={[title, STATES()[state].label, rule].filter(Boolean).join(', ')}
         haptic="selection"
         onPress={onSelect}
         style={cardStyle}

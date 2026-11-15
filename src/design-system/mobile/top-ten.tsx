@@ -9,6 +9,7 @@ import { fontFace } from '../theme/fonts'
 import { useTheme } from '../theme/theme-provider'
 import { tokens } from '../tokens.generated'
 import { Rail } from './rail'
+import { t, useT } from '@/lib/i18n'
 
 const MAX = 10
 export const TOP_TEN_CARD_WIDTH = 172
@@ -47,7 +48,7 @@ const SHADOW_SLICES = 40
 const SHADOW_MAX = 0.94
 const shadowOpacity = (t: number) => SHADOW_MAX * Math.pow(Math.min(1, t), 1.6)
 
-export interface TopTenTopic extends Pick<TopicCardProps, 'title' | 'category' | 'image'> {
+export interface TopTenTopic extends Pick<TopicCardProps, 'title' | 'category' | 'image' | 'official'> {
   /** Identifiant stable (clé de liste). */
   id: string
 }
@@ -140,7 +141,8 @@ function Ranked({ rank, children }: { rank: number; children: ReactNode }) {
 }
 
 /** Classement des sujets (`accueil.md` § 3) : rail d'affiches avec le rang en chiffre géant, que la carte chevauche. */
-export function TopTen({ topics, title = 'Top 10 du moment', onSelect, onSeeAll, style }: TopTenProps) {
+export function TopTen({ topics, title = t('home.topTen'), onSelect, onSeeAll, style }: TopTenProps) {
+  const t = useT()
   return (
     <View style={[{ gap: tokens.space[4] }, style]}>
       <SectionHeader
@@ -149,7 +151,7 @@ export function TopTen({ topics, title = 'Top 10 du moment', onSelect, onSeeAll,
         action={
           onSeeAll && (
             <Button variant="plain" size="S" style={{ marginRight: -tokens.space[4] }} onPress={onSeeAll}>
-              Tout voir
+              {t('home.seeAll')}
             </Button>
           )
         }
@@ -159,6 +161,7 @@ export function TopTen({ topics, title = 'Top 10 du moment', onSelect, onSeeAll,
           <Ranked key={topic.id} rank={index + 1}>
             <TopicCard
               title={topic.title}
+              official={topic.official}
               category={topic.category}
               image={topic.image}
               orientation="portrait"

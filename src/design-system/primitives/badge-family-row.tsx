@@ -7,6 +7,7 @@ import { tokens, type TierCode } from '../tokens.generated'
 import { PressableScale } from './pressable-scale'
 import { ProgressBar } from './progress-bar'
 import { Text } from './text'
+import { t, tierKey, useT } from '@/lib/i18n'
 
 const TIERS = Object.keys(tokens.tier) as TierCode[]
 
@@ -34,11 +35,12 @@ export interface BadgeFamilyRowProps {
  * les médailles, ce qui reste avant le palier suivant puis la barre. Exploits : leurs médailles et le compte.
  */
 export function BadgeFamilyRow({ name, icon, earned, progress, remaining, feats, onPress, style }: BadgeFamilyRowProps) {
+  const t = useT()
   const { colors, radius } = useTheme()
   const featCount = feats ? `${feats.filter((feat) => feat.earned).length} / ${feats.length}` : undefined
   const next = feats ? undefined : TIERS[earned]
   const reached = !feats && earned > 0 ? TIERS[earned - 1] : undefined
-  const summary = [name, featCount, reached ? tokens.tier[reached].label : undefined, next ? remaining : undefined].filter(Boolean).join(', ')
+  const summary = [name, featCount, reached ? t(tierKey(reached)) : undefined, next ? remaining : undefined].filter(Boolean).join(', ')
   return (
     <PressableScale
       accessibilityRole={onPress ? 'button' : 'summary'}
@@ -71,7 +73,7 @@ export function BadgeFamilyRow({ name, icon, earned, progress, remaining, feats,
         )}
         {reached && (
           <Text variant="caption" weight="600" numberOfLines={1} style={{ color: mix(tokens.tier[reached].hex, colors.text, 0.6) }}>
-            {tokens.tier[reached].label}
+            {t(tierKey(reached))}
           </Text>
         )}
       </View>
@@ -84,7 +86,7 @@ export function BadgeFamilyRow({ name, icon, earned, progress, remaining, feats,
           ? feats.map((feat, index) => <TierMedal key={index} tier={feat.tier} icon={icon} size={40} state={feat.earned ? 'earned' : 'locked'} />)
           : TIERS.map((tier, index) => <TierMedal key={tier} tier={tier} icon={icon} size={40} state={index < earned ? 'earned' : 'locked'} />)}
       </View>
-      {next && <ProgressBar value={progress} tone={next} label={remaining} accessibilityLabel={`${name} · vers ${tokens.tier[next].label}`} />}
+      {next && <ProgressBar value={progress} tone={next} label={remaining} accessibilityLabel={t('mobile.ds.towards', { name, tier: t(tierKey(next)) })} />}
     </PressableScale>
   )
 }

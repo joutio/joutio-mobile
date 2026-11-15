@@ -4,6 +4,7 @@ import { LightningIcon, type Icon } from '../icons'
 import { tokens, type TierCode } from '../tokens.generated'
 import { LockBadge, LOCKED_STYLE } from './lock-badge'
 import { MEDAL_ASSETS } from './tier-assets'
+import { tierKey, useT } from '@/lib/i18n'
 
 export interface TierMedalProps {
   tier: TierCode
@@ -20,13 +21,14 @@ const LOCK_MIN_SIZE = 40
 
 /** Médaille de palier, avec l'icône de sa famille au centre de l'écu. */
 export function TierMedal({ tier, icon: IconComponent = LightningIcon, size = 56, state = 'earned', style }: TierMedalProps) {
+  const t = useT()
   const locked = state === 'locked'
   const iconSize = size * 0.3
   return (
     <View
       accessible
       accessibilityRole="image"
-      accessibilityLabel={`Médaille ${tokens.tier[tier].label}${locked ? ', verrouillée' : ''}`}
+      accessibilityLabel={t('mobile.ds.medal', { tier: t(tierKey(tier)), locked: locked ? t('ds.lockedSuffixF') : '' })}
       style={[{ width: size, height: size * 1.1 }, style]}
     >
       <View style={[{ flex: 1 }, locked && LOCKED_STYLE]}>

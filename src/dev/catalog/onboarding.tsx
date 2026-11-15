@@ -135,7 +135,7 @@ export function TopicRowDemo() {
         <View style={{ borderRadius: radius.lg, backgroundColor: colors.surface, overflow: 'hidden' }}>
           <RadioGroup label="Premier thème">
             {TOPICS.map((topic, index) => (
-              <TopicRow
+              <TopicRow official
                 key={topic.id}
                 {...topic}
                 control="radio"
@@ -149,7 +149,7 @@ export function TopicRowDemo() {
       </Specimen>
       <Specimen label="chevron">
         <View style={{ borderRadius: radius.lg, backgroundColor: colors.surface, overflow: 'hidden' }}>
-          <TopicRow title="Rois de France" category="HISTORY" sub="320 questions" onPress={() => undefined} last />
+          <TopicRow official title="Rois de France" category="HISTORY" sub="320 questions" onPress={() => undefined} last />
         </View>
       </Specimen>
     </>
@@ -160,10 +160,10 @@ export function TopicRowDemo() {
 export function TopicTileDemo() {
   return (
     <Specimen label="pictogramme, bannière, univers, échec" row>
-      <TopicTile title="Harry Potter" category="LITERATURE" pictogram="https://media.joutio.com/pictogrammes/harry-potter.svg" style={{ width: 96 }} />
-      <TopicTile title="L'Olympia" category="MUSIC" image={SAMPLE_BANNER} style={{ width: 96 }} />
-      <TopicTile title="Échecs et stratégie" category="GAMES" style={{ width: 96 }} />
-      <TopicTile title="Lien cassé" category="SCIENCE" pictogram="https://invalid.joutio.test/x.png" style={{ width: 96 }} />
+      <TopicTile official title="Harry Potter" category="LITERATURE" pictogram="https://media.joutio.com/pictogrammes/harry-potter.svg" style={{ width: 96 }} />
+      <TopicTile official title="L'Olympia" category="MUSIC" image={SAMPLE_BANNER} style={{ width: 96 }} />
+      <TopicTile official title="Échecs et stratégie" category="GAMES" style={{ width: 96 }} />
+      <TopicTile official title="Lien cassé" category="SCIENCE" pictogram="https://invalid.joutio.test/x.png" style={{ width: 96 }} />
     </Specimen>
   )
 }
@@ -172,14 +172,14 @@ export function TopicCardDemo() {
   return (
     <>
       <Specimen label="landscape, image">
-        <TopicCard title="Karnak, la cité des dieux" category="HISTORY" image={SAMPLE_BANNER} onPress={() => undefined} />
+        <TopicCard official title="Karnak, la cité des dieux" category="HISTORY" image={SAMPLE_BANNER} onPress={() => undefined} />
       </Specimen>
       <Specimen label="landscape, sans image">
-        <TopicCard title="Rois de France" category="HISTORY" />
+        <TopicCard official title="Rois de France" category="HISTORY" />
       </Specimen>
       <Specimen label="portrait" row>
-        <TopicCard title="L'Olympia" category="MUSIC" image={SAMPLE_IMAGE} orientation="portrait" style={{ width: 140 }} />
-        <TopicCard title="Échecs" category="GAMES" orientation="portrait" style={{ width: 140 }} />
+        <TopicCard official title="L'Olympia" category="MUSIC" image={SAMPLE_IMAGE} orientation="portrait" style={{ width: 140 }} />
+        <TopicCard official title="Échecs" category="GAMES" orientation="portrait" style={{ width: 140 }} />
       </Specimen>
     </>
   )

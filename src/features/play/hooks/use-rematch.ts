@@ -9,8 +9,9 @@ import { api } from '@/lib/api'
 import { ENDPOINTS } from '@/lib/endpoints'
 import { usePersonalNotifications } from '@/lib/realtime/personal-notifications'
 import { readServerNow } from '@/lib/realtime/server-clock'
-import type { ChallengeView, IdResponse, MeView, PlayerProfileView } from '@joutio/client-domain/api-types'
+import type { ChallengeView, IdResponse, MeView, PlayerProfileView } from '@joutio/client/api-types'
 import { nameUuid } from '@/shared/utils/name-uuid'
+import { useT } from '@/lib/i18n'
 
 export const rematchService = {
   /** Revanche : défi nominatif portant la partie d'origine (TTL court côté serveur). */
@@ -51,6 +52,7 @@ export function useSendRematch({
   topic: { topicId: string; name: string; category?: string }
   gameId: string
 }) {
+  const t = useT()
   const client = useQueryClient()
   const [sending, setSending] = useState(false)
   const [state, setState] = useState<RematchState>('idle')
@@ -75,7 +77,7 @@ export function useSendRematch({
       settleChallenge(client, challenge.id, 'DECLINED')
       setState('refused')
       setChallenge(null)
-      toast.info('Revanche refusée')
+      toast.info(t('result.rematchRefused'))
     }
   })
 
@@ -86,7 +88,7 @@ export function useSendRematch({
     settleChallenge(client, challenge.id, 'EXPIRED')
     setState('idle')
     setChallenge(null)
-    toast.info('Pas de réponse', { description: 'Ton adversaire n’a pas répondu à temps.' })
+    toast.info(t('result.rematchNoAnswer'), { description: t('mobile.rematch.noAnswerText') })
   }, [client, state, challenge, seconds])
 
   const send = async () => {
@@ -102,7 +104,7 @@ export function useSendRematch({
         challengeId: tempId,
         topic: { topicId: topic.topicId, names: { fr: topic.name }, category: topic.category ?? null, imageUrl: null, pictogramUrl: null },
         challenger: { userId: userId ?? '', pseudonym: me?.pseudonym ?? '', avatarOptions: me?.avatarOptions ?? null, suspended: false },
-        opponent: { userId: opponentId, pseudonym: opponent?.pseudonym ?? 'Adversaire', avatarOptions: opponent?.avatarOptions ?? null, suspended: false },
+        opponent: { userId: opponentId, pseudonym: opponent?.pseudonym ?? t('topic.opponent'), avatarOptions: opponent?.avatarOptions ?? null, suspended: false },
         status: 'PENDING',
         roomId: null,
         gameId,
@@ -121,7 +123,7 @@ export function useSendRematch({
     } catch {
       transaction.rollback()
       setState('idle')
-      toast.error("La revanche n'a pas pu être proposée", { description: 'Vérifie ta connexion, puis réessaie.' })
+      toast.error(t('result.rematchError'), { description: t('home.errorText') })
     } finally {
       setSending(false)
     }

@@ -4,6 +4,7 @@ import { PremiumBadge } from '../brand/premium-badge'
 import { tokens } from '../tokens.generated'
 import { PressableScale } from './pressable-scale'
 import { Text, type TextProps } from './text'
+import { useT } from '@/lib/i18n'
 
 export interface PlayerNameProps extends Pick<TextProps, 'variant' | 'weight' | 'color'> {
   name: string
@@ -41,9 +42,10 @@ export interface PlayerLinkProps {
 
 /** Avatar ou pseudonyme qui ouvre la fiche du joueur ; sans `onOpen`, le contenu tel quel. */
 export function PlayerLink({ onOpen, name, style, children }: PlayerLinkProps) {
+  const t = useT()
   if (!onOpen) return <View style={style}>{children}</View>
   return (
-    <PressableScale accessibilityRole="button" accessibilityLabel={`Voir la fiche de ${name}`} onPress={onOpen} style={style}>
+    <PressableScale accessibilityRole="button" accessibilityLabel={t('mobile.ds.seeProfile', { name })} onPress={onOpen} style={style}>
       {children}
     </PressableScale>
   )

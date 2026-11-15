@@ -1,26 +1,27 @@
 import type { NotificationView } from '@/lib/realtime/personal-notifications'
+import { t } from '@/lib/i18n'
 
 /** Libellés de `joutio-web` (`notifications.row`). */
 export function notificationTitle(notification: NotificationView, name: string) {
   switch (notification.type) {
     case 'FOLLOW':
-      return `${name} s'est abonné à toi`
+      return t('mobile.notifications.followed', { name })
     case 'CHALLENGE_RECEIVED':
-      return notification.gameId ? `${name} te demande une revanche` : `${name} te défie`
+      return notification.gameId ? t('notifications.rematch', { name }) : t('notifications.challenge', { name })
     case 'CHALLENGE_DECLINED':
-      return `${name} a refusé ton défi`
+      return t('notifications.declined', { name })
     case 'ROOM_ACCEPTED':
-      return `${name} a accepté ton défi`
+      return t('notifications.accepted', { name })
     case 'WIZZ':
-      return `${name} te demande de rejoindre la salle`
+      return t('notifications.wizz', { name })
     case 'QUESTION_REPORTED':
       // Anonyme (`notifications.md`) : jamais le signalant.
-      return 'Question signalée'
+      return t('result.questionReported')
     case 'TOPIC_DRAFTED':
-      return 'Ton sujet est repassé en brouillon'
+      return t('notifications.drafted')
     case 'ACCOUNT_SUSPENDED':
-      return 'Ton compte a été suspendu'
+      return t('notifications.suspended')
     default:
-      return 'Notification'
+      return t('mobile.notifications.generic')
   }
 }

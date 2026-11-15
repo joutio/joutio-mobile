@@ -29,15 +29,15 @@ import {
   questionStatus,
   questionText,
   QUESTION_CHOICES,
-  reasonsLabel,
   type QuestionEditorView,
   type ReportedQuestion,
-} from '@joutio/client-domain/authoring'
-import type { QuestionReportReason } from '@joutio/client-domain/api-types'
-import { MAX_REJECT } from '@joutio/client-domain/authoring'
+} from '@joutio/client/authoring'
+import type { QuestionReportReason } from '@joutio/client/api-types'
+import { MAX_REJECT } from '@joutio/client/authoring'
 import { useMyTopic, useModerateQuestion, useReportQueue, useTopicQuestions } from '../hooks/use-authoring'
 import { openQuestionEditor } from './questions-screen'
 import { clientSource, feedFooterProps, loadMoreOptions } from '@/shared/utils/paging'
+import { reasonsLabel, reportsLabel, t, useT } from '@/lib/i18n'
 
 const PAGE_SIZE = 20
 const PAGE = { gap: tokens.space[3], paddingHorizontal: tokens.space[5], paddingTop: tokens.space[2], paddingBottom: tokens.space[7] }
@@ -49,7 +49,7 @@ const answersOf = (question: QuestionEditorView) => {
 }
 
 /** Motifs distincts de tous les signalements ouverts d'une question. */
-const reasonsOf = (item: ReportedQuestion) => reasonsLabel([...new Set(item.reports.flatMap((report) => report.reasons))] as QuestionReportReason[])
+const reasonsOf = (item: ReportedQuestion) => reasonsLabel(t, [...new Set(item.reports.flatMap((report) => report.reasons))] as QuestionReportReason[])
 
 /**
  * Modération (`creation.md` § 1) : À valider et Signalements, balayables, onglets collés en haut. Approuver retire
@@ -57,6 +57,7 @@ const reasonsOf = (item: ReportedQuestion) => reasonsLabel([...new Set(item.repo
  * valider contient les questions du créateur lui-même (toute question naît en attente).
  */
 export function ModerationScreen() {
+  const t = useT()
   const params = useLocalSearchParams<{ id: string; name?: string; tab?: string }>()
   const topicId = params.id
   const me = useMe(true)
@@ -81,7 +82,7 @@ export function ModerationScreen() {
   const pendingSource = clientSource(pendingPages, setPendingPages, shownPending.length < pending.length)
   const reportSource = clientSource(reportPages, setReportPages, shownReports.length < reported.length)
   const numberOf = (question: QuestionEditorView) => all.indexOf(question) + 1
-  const author = (question: QuestionEditorView) => (question.creatorId === me.data?.userId ? (me.data?.pseudonym ?? 'Moi') : 'Rédacteur')
+  const author = (question: QuestionEditorView) => (question.creatorId === me.data?.userId ? (me.data?.pseudonym ?? t('mobile.authoring.me')) : t('workshop.roleWriter'))
 
   const loading = (
     <View style={{ gap: tokens.space[3] }}>
@@ -96,7 +97,7 @@ export function ModerationScreen() {
         {questions.isPending ? (
           loading
         ) : pending.length === 0 ? (
-          <EmptyState icon={CheckCircleIcon} title="Rien à valider" description="Les questions de tes rédacteurs arriveront ici." />
+          <EmptyState icon={CheckCircleIcon} title={t('workshop.nothingToValidate')} description={t('workshop.nothingToValidateText')} />
         ) : (
           <>
             {shownPending.map((question) => (
@@ -121,7 +122,7 @@ export function ModerationScreen() {
                 onEdit={() => openQuestionEditor(topicId, numberOf(question), question.questionId)}
               />
             ))}
-            <FeedFooter {...feedFooterProps(pendingSource)} endLabel="Tu as vu toutes les questions à valider" />
+            <FeedFooter {...feedFooterProps(pendingSource)} endLabel={t('workshop.validateEnd')} />
           </>
         )}
       </TabLoadMoreScrollView>
@@ -135,11 +136,11 @@ export function ModerationScreen() {
           loading
         ) : reports.isError ? (
           <View>
-            <Text>Les signalements n’ont pas pu être chargés.</Text>
-            <Button onPress={() => void reports.refetch()}>Réessayer</Button>
+            <Text>{t('mobile.authoring.reportsLoadFailed')}</Text>
+            <Button onPress={() => void reports.refetch()}>{t('callback.retry')}</Button>
           </View>
         ) : reported.length === 0 ? (
-          <EmptyState icon={CheckCircleIcon} title="Aucun signalement" description="Les signalements des joueurs arriveront ici." />
+          <EmptyState icon={CheckCircleIcon} title={t('workshop.noReport')} description={t('workshop.noReportText')} />
         ) : (
           <>
             <ListGroup surface="surface">
@@ -148,7 +149,10 @@ export function ModerationScreen() {
                   key={item.question.questionId}
                   icon={item.question.status === 'SUSPENDED' ? ProhibitIcon : WarningIcon}
                   label={questionText(item.question)}
-                  sub={`${item.question.status === 'SUSPENDED' ? 'Suspendue · ' : ''}${reasonsOf(item)} · ${item.reports.length} signalement${item.reports.length > 1 ? 's' : ''}`}
+                  sub={(() => {
+                    const rest = `${reasonsOf(item)} · ${reportsLabel(t, item.reports.length)}`
+                    return item.question.status === 'SUSPENDED' ? t('workshop.suspendedPrefix', { rest }) : rest
+                  })()}
                   control="chevron"
                   onPress={() =>
                     router.push({
@@ -160,7 +164,7 @@ export function ModerationScreen() {
                 />
               ))}
             </ListGroup>
-            <FeedFooter {...feedFooterProps(reportSource)} endLabel="Tu as vu tous les signalements" />
+            <FeedFooter {...feedFooterProps(reportSource)} endLabel={t('workshop.reportsEnd')} />
           </>
         )}
       </TabLoadMoreScrollView>
@@ -169,23 +173,23 @@ export function ModerationScreen() {
 
   if (workshop.isError || questions.isError)
     return (
-      <Screen header={<MobileTopBar variant="inline" title="Modération" back="Sujet" onBack={() => router.back()} />}>
-        <Text>La modération n’est pas disponible.</Text>
+      <Screen header={<MobileTopBar variant="inline" title={t('workshop.moderation')} back={t('pending.topic')} onBack={() => router.back()} />}>
+        <Text>{t('mobile.authoring.moderationUnavailable')}</Text>
         <Button
           onPress={() => {
             void workshop.refetch()
             void questions.refetch()
           }}
         >
-          Réessayer
+          {t('callback.retry')}
         </Button>
       </Screen>
     )
   if (workshop.isPending) return <Screen>{loading}</Screen>
   if (!workshop.permissions?.canManage)
     return (
-      <Screen header={<MobileTopBar variant="inline" title="Mes propositions" back="Sujet" onBack={() => router.back()} />}>
-        {all.length === 0 && <Text>Aucune proposition</Text>}
+      <Screen header={<MobileTopBar variant="inline" title={t('mobile.authoring.myProposals')} back={t('pending.topic')} onBack={() => router.back()} />}>
+        {all.length === 0 && <Text>{t('mobile.authoring.noProposals')}</Text>}
         {all.map((question) => (
           <ListRow
             key={question.questionId}
@@ -201,13 +205,13 @@ export function ModerationScreen() {
   return (
     <Screen
       scroll={false}
-      header={<MobileTopBar variant="inline" back="Sujet" onBack={() => router.back()} title="Modération" />}
+      header={<MobileTopBar variant="inline" back={t('pending.topic')} onBack={() => router.back()} title={t('workshop.moderation')} />}
       overlay={
         <>
           <MobileSheet
             open={rejecting !== undefined}
             onClose={() => setRejecting(undefined)}
-            title="Rejeter la question"
+            title={t('workshop.rejectTitle')}
             footer={
               <Button
                 full
@@ -220,17 +224,17 @@ export function ModerationScreen() {
                   moderate.mutate({ questionId: rejecting.questionId, decision: 'reject', reason: reason.trim() }, { onSuccess: () => setRejecting(undefined) })
                 }
               >
-                Rejeter
+                {t('workshop.reject')}
               </Button>
             }
           >
             <Field
-              label="Motif"
-              placeholder="Il sera envoyé au rédacteur"
+              label={t('workshop.rejectReason')}
+              placeholder={t('workshop.rejectPlaceholder')}
               multiline
               value={reason}
               maxLength={MAX_REJECT}
-              counter={`${reason.length} / ${MAX_REJECT}`}
+              counter={t('mobile.authoring.counter', { count: reason.length, max: MAX_REJECT })}
               onChangeText={setReason}
             />
           </MobileSheet>
@@ -239,13 +243,13 @@ export function ModerationScreen() {
     >
       <View style={{ flex: 1 }}>
         <TabsScrollView<Tab>
-          label="Modération"
+          label={t('workshop.moderation')}
           value={tab}
           onChange={setTab}
           scrollToTopPill={false}
           pages={[
-            { value: 'pending', label: `À valider · ${pending.length}`, content: pendingPage },
-            { value: 'reports', label: `Signalements · ${reported.length}`, content: reportsPage },
+            { value: 'pending', label: t('workshop.toValidate', { count: pending.length }), content: pendingPage },
+            { value: 'reports', label: t('workshop.reportsTab', { count: reported.length }), content: reportsPage },
           ]}
         />
       </View>

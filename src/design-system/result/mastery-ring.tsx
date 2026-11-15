@@ -5,6 +5,7 @@ import { useReducedMotion } from '../motion'
 import { Text } from '../primitives/text'
 import { useTheme } from '../theme/theme-provider'
 import { tokens } from '../tokens.generated'
+import { useT } from '@/lib/i18n'
 
 const RADIUS = 65
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS
@@ -67,6 +68,7 @@ function useCountUp(key: string, pending: boolean, reduced: boolean) {
  * d'autre de l'anneau ; trop étroit pour eux (Galaxy S24, 2026-11-14), ils s'empilent à sa droite, anneau inchangé.
  */
 export function MasteryRing({ tier, next, gained, remaining, size = 180, state = 'done', compact = false, style }: MasteryRingProps) {
+  const t = useT()
   const { colors } = useTheme()
   const reduced = useReducedMotion()
   const pending = state === 'pending'
@@ -105,7 +107,7 @@ export function MasteryRing({ tier, next, gained, remaining, size = 180, state =
       </Svg>
       <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center', gap: tokens.space[1] }}>
         <Text variant="caption" weight="600" color="muted">
-          Maîtrise
+          {t('topic.mastery')}
         </Text>
         <Text variant={compact ? 'headline' : 'title2'} weight="700">
           {tier}
@@ -120,7 +122,7 @@ export function MasteryRing({ tier, next, gained, remaining, size = 180, state =
       <View style={{ gap: tokens.space[3], opacity }}>
           <View>
             <Text variant="caption" weight="600" color="accentInk" numberOfLines={1}>
-              XP gagnée
+              {t('mobile.ds.xpGained')}
             </Text>
             <Text variant="title2" mono weight="600" color="accentInk">
               +{shownGained}
@@ -128,7 +130,7 @@ export function MasteryRing({ tier, next, gained, remaining, size = 180, state =
           </View>
           <View>
             <Text variant="caption" weight="600" numberOfLines={1}>
-              {next ? `Avant ${next}` : 'Palier max'}
+              {next ? t('mobile.ds.before', { next }) : t('mobile.ds.maxTier')}
             </Text>
             <Text variant="title2" mono weight="600">
               {total - shownGained}
@@ -186,7 +188,7 @@ export function MasteryRing({ tier, next, gained, remaining, size = 180, state =
       >
         <View style={{ marginRight: tokens.space[3], alignItems: 'flex-end' }}>
           <Text variant="caption" weight="600" numberOfLines={1}>
-            {next ? `Avant ${next}` : 'Palier max'}
+            {next ? t('mobile.ds.before', { next }) : t('mobile.ds.maxTier')}
           </Text>
           <Text variant="largeTitle" mono weight="600">
             {total - shownGained}
@@ -211,7 +213,7 @@ export function MasteryRing({ tier, next, gained, remaining, size = 180, state =
         <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: colors.accent }} />
         <View style={{ marginLeft: tokens.space[3] }}>
           <Text variant="caption" weight="600" color="accentInk" numberOfLines={1}>
-            XP gagnée
+            {t('mobile.ds.xpGained')}
           </Text>
           <Text variant="largeTitle" mono weight="600" color="accentInk">
             +{shownGained}

@@ -18,6 +18,7 @@ import { useCatalogAccess } from '@/features/auth/hooks/use-catalog-access'
 import { useMe } from '@/features/me'
 import { usePremiumSheet } from '@/features/premium/premium-store'
 import { Group, openSettingsPage, SettingsFrame, useSettingsOrigin } from './settings-frame'
+import { useT } from '@/lib/i18n'
 
 /**
  * Réglages (`reglages.md` § 1, refonte du 2026-11-13) : racine de catégories, ouverte par la roue dentée du Profil ou
@@ -25,6 +26,7 @@ import { Group, openSettingsPage, SettingsFrame, useSettingsOrigin } from './set
  * publics du profil sont dans Éditer le profil.
  */
 export function SettingsScreen() {
+  const t = useT()
   const origin = useSettingsOrigin()
   const catalogAccess = useCatalogAccess()
   const data = useMe(true).data
@@ -34,41 +36,41 @@ export function SettingsScreen() {
 
   const confirmLogout = () =>
     showDialog({
-      title: 'Se déconnecter ?',
-      message: 'Tes parties et ta progression restent liées à ton compte.',
+      title: t('settings.logoutTitle'),
+      message: t('settings.logoutText'),
       icon: SignOutIcon,
       sheet: true,
       actions: [
-        { label: 'Se déconnecter', variant: 'tinted', tone: 'destructive', onPress: () => logout.mutateAsync() },
-        { label: 'Annuler', variant: 'plain', tone: 'neutral' },
+        { label: t('onboarding.ended.logout'), variant: 'tinted', tone: 'destructive', onPress: () => logout.mutateAsync() },
+        { label: t('topic.cancel'), variant: 'plain', tone: 'neutral' },
       ],
     })
 
   return (
-    <SettingsFrame title="Réglages" root>
+    <SettingsFrame title={t('profile.settings')} root>
       <Notice
         tone={data?.premium ? 'success' : 'live'}
         icon={CrownSimpleIcon}
-        title={data?.premium ? 'Premium actif' : 'Passe à Premium'}
-        message={data?.premium ? 'Merci de soutenir Joutio.' : 'Sujets illimités, détail par sujet et aucune publicité. Essai de 7 jours.'}
-        action={{ label: data?.premium ? 'Gérer' : 'Découvrir', onPress: () => showPremium() }}
+        title={data?.premium ? t('settings.premiumCardActive') : t('settings.premiumCard')}
+        message={data?.premium ? t('settings.premiumCardActiveText') : t('settings.premiumCardText')}
+        action={{ label: data?.premium ? t('workshop.manage') : t('settings.premiumDiscover'), onPress: () => showPremium() }}
       />
       <Group>
-        <ListRow icon={UserCircleIcon} label="Compte" sub="E-mail, date de naissance" control="chevron" onPress={open('account')} />
-        <ListRow icon={ShieldCheckIcon} label="Confidentialité et sécurité" control="chevron" onPress={open('privacy')} />
-        <ListRow icon={BellIcon} label="Notifications" control="chevron" onPress={open('notifications')} />
-        <ListRow icon={GameControllerIcon} label="Jeu" sub="Duel, entraînement, centres d'intérêt" control="chevron" onPress={open('game')} />
-        <ListRow icon={PaletteIcon} label="Affichage et langue" control="chevron" onPress={open('display')} last />
+        <ListRow icon={UserCircleIcon} label={t('settings.account')} sub={t('settings.accountSub')} control="chevron" onPress={open('account')} />
+        <ListRow icon={ShieldCheckIcon} label={t('settings.privacyCategory')} control="chevron" onPress={open('privacy')} />
+        <ListRow icon={BellIcon} label={t('home.notifications')} control="chevron" onPress={open('notifications')} />
+        <ListRow icon={GameControllerIcon} label={t('settings.game')} sub={t('settings.gameSub')} control="chevron" onPress={open('game')} />
+        <ListRow icon={PaletteIcon} label={t('settings.display')} control="chevron" onPress={open('display')} last />
       </Group>
       <Group>
-        <ListRow icon={LifebuoyIcon} label="Aide et à propos" control="chevron" onPress={open('help')} last />
+        <ListRow icon={LifebuoyIcon} label={t('settings.help')} control="chevron" onPress={open('help')} last />
       </Group>
       <Group>
-        <ListRow icon={SignOutIcon} label="Se déconnecter" control="none" destructive onPress={confirmLogout} last />
+        <ListRow icon={SignOutIcon} label={t('onboarding.ended.logout')} control="none" destructive onPress={confirmLogout} last />
       </Group>
       {catalogAccess && (
         <Group title="Dev">
-          <ListRow icon={SquaresFourIcon} label="Catalogue des composants" control="chevron" onPress={() => router.push('/catalog')} last />
+          <ListRow icon={SquaresFourIcon} label={t('mobile.settings.catalog')} control="chevron" onPress={() => router.push('/catalog')} last />
         </Group>
       )}
     </SettingsFrame>

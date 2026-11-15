@@ -1,3 +1,4 @@
 export { useMe } from './hooks/use-me'
 export { usePlayerIdentity } from './hooks/use-player-identity'
-export { useSetBirthDate } from './hooks/use-account'
+export { useAcceptTerms, useSetBirthDate } from './hooks/use-account'
+export { useLanguageSync } from './hooks/use-language-sync'

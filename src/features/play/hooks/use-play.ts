@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { create } from 'zustand'
 import { haptic, toast } from '@/design-system'
 import { showQuotaDialog } from '@/features/challenges/lib/quota'
-import { quotaProblemOf } from '@joutio/client-domain/premium'
+import { quotaProblemOf } from '@joutio/client/premium'
 import { useMe } from '@/features/me'
 import { ENDPOINTS } from '@/lib/endpoints'
 import { optimisticUpdate, optimisticId } from '@/lib/optimistic-cache'
@@ -13,14 +13,15 @@ import { readServerNow } from '@/lib/realtime/server-clock'
 import { subscribeStomp } from '@/lib/ws'
 import { useNotificationStream } from '@/lib/realtime/use-notification-stream'
 import { getItem, setItem } from '@/lib/storage'
-import type { MeView, PeopleSort, ChallengeView } from '@joutio/client-domain/api-types'
-import type { BotDifficulty } from '@joutio/client-domain/game'
-import { applyMatchmakingNotification, emptyMatchmaking, type Matchmaking } from '@joutio/client-domain/rooms'
-import type { MatchmakingNotification } from '@joutio/client-domain/rooms'
-import { applyRoomNotification, emptyRoom, type Room } from '@joutio/client-domain/rooms'
-import type { RoomView } from '@joutio/client-domain/rooms'
-import type { RoomNotification } from '@joutio/client-domain/rooms'
+import type { MeView, PeopleSort, ChallengeView } from '@joutio/client/api-types'
+import type { BotDifficulty } from '@joutio/client/game'
+import { applyMatchmakingNotification, emptyMatchmaking, type Matchmaking } from '@joutio/client/rooms'
+import type { MatchmakingNotification } from '@joutio/client/rooms'
+import { applyRoomNotification, emptyRoom, type Room } from '@joutio/client/rooms'
+import type { RoomView } from '@joutio/client/rooms'
+import type { RoomNotification } from '@joutio/client/rooms'
 import { CONTACTS_PAGE_SIZE, playService } from '../lib/play-service'
+import { t, useT } from '@/lib/i18n'
 
 /** Contexte du sujet passé d'écran en écran : l'en-tête s'affiche sans attendre le serveur. */
 export interface PlayTopic {
@@ -57,6 +58,7 @@ void getItem(DIFFICULTY_KEY).then((stored) => {
 
 /** `true` par défaut, y compris tant que le BFF n'expose pas encore le champ. */
 export function useAutoTrain() {
+  const t = useT()
   const me = useMe(true)
   const client = useQueryClient()
   const enabled = me.data?.autoTrainOnTimeout ?? true
@@ -66,7 +68,7 @@ export function useAutoTrain() {
       optimisticUpdate(client, [queryKeys.me()], () => client.setQueryData<MeView>(queryKeys.me(), (me) => (me ? { ...me, autoTrainOnTimeout: next } : me))),
     onError: (_error, _next, context) => {
       context?.rollback()
-      toast.error("Le réglage n'a pas pu être enregistré")
+      toast.error(t('play.settingError'))
     },
   })
   return { enabled, pending: mutation.isPending, set: (next: boolean) => mutation.mutate(next) }
@@ -74,13 +76,13 @@ export function useAutoTrain() {
 
 /* ───────────────────────── Lancements ───────────────────────── */
 
-const launchError = (title: string) => () => toast.error(title, { description: 'Vérifie ta connexion, puis réessaie.' })
+const launchError = (title: string) => () => toast.error(title, { description: t('home.errorText') })
 
 /** Échec de création d'un salon bot : garde-fou anti-spam identique pour tous (P22), Premium n'y change rien. */
 const botRoomError = (error: unknown) =>
   quotaProblemOf(error) === 'rooms'
-    ? toast.error("Trop d'entraînements ouverts", { description: "Termine ou quitte un entraînement avant d'en lancer un autre." })
-    : launchError("L'entraînement n'a pas pu démarrer")()
+    ? toast.error(t('play.botQuotaError'), { description: t('play.botQuotaText') })
+    : launchError(t('play.trainingError'))()
 
 /** Ouvre le salon d'un sujet (paramètres d'en-tête passés, l'écran s'affiche sans attendre le serveur). */
 export const openRoom = (roomId: string, topic: PlayTopic) => router.push({ pathname: '/room/[roomId]', params: { roomId, ...topicParams(topic) } })
@@ -107,15 +109,17 @@ export function useCreateBotRoom() {
 
 /** « Défier le monde » : ticket d'appariement, puis l'écran de recherche. */
 export function useStartMatchmaking() {
+  const t = useT()
   return useMutation({
     mutationFn: (topic: PlayTopic) => playService.enqueue(topic.topicId),
     onSuccess: (ticket, topic) => router.push({ pathname: '/matchmaking/[ticketId]', params: { ticketId: ticket.ticketId, ...topicParams(topic) } }),
-    onError: launchError("La recherche n'a pas pu démarrer"),
+    onError: launchError(t('play.matchmakingError')),
   })
 }
 
 /** Salon privé à partager par lien. */
 export function useCreatePrivateRoom() {
+  const t = useT()
   const client = useQueryClient()
   return useMutation({
     mutationFn: (topic: PlayTopic) => playService.createRoom(topic.topicId),
@@ -146,13 +150,14 @@ export function useCreatePrivateRoom() {
     },
     onError: (error, _topic, context) => {
       context?.rollback()
-      showQuotaDialog(error, client.getQueryData<MeView>(queryKeys.me())) || launchError("Le salon n'a pas pu être créé")()
+      showQuotaDialog(error, client.getQueryData<MeView>(queryKeys.me())) || launchError(t('play.roomError'))()
     },
   })
 }
 
 /** Défi nominatif : envoyé, l'invité l'accepte depuis ses Défis. */
 export function useChallengePlayer() {
+  const t = useT()
   const client = useQueryClient()
   const me = useMe(true)
   return useMutation({
@@ -180,11 +185,11 @@ export function useChallengePlayer() {
       client.setQueryData<ChallengeView[]>(queryKeys.challenges(), (items) =>
         items?.map((item) => (item.challengeId === context.tempId ? { ...item, challengeId: id } : item)),
       )
-      toast.success('Défi envoyé', { description: `${opponent.pseudonym} · ${topic.name}` })
+      toast.success(t('play.challengeSent'), { description: t('common.dotPair', { a: opponent.pseudonym, b: topic.name }) })
     },
     onError: (error, _variables, context) => {
       context?.rollback()
-      showQuotaDialog(error, me.data) || launchError("Le défi n'a pas pu être envoyé")()
+      showQuotaDialog(error, me.data) || launchError(t('play.challengeError'))()
     },
   })
 }
@@ -281,6 +286,7 @@ export function useTicketPresence(ticketId: string, enabled: boolean) {
 
 /** Relance de l'adversaire absent. */
 export function useWizzRoom(roomId: string) {
+  const t = useT()
   const [sentAt, setSentAt] = useState<number | null>(null)
   const mutation = useMutation({
     mutationFn: () => playService.wizzRoom(roomId),
@@ -291,7 +297,7 @@ export function useWizzRoom(roomId: string) {
     },
     onError: (_error, _variables, context) => {
       setSentAt(context?.previous ?? null)
-      toast.error("La relance n'a pas pu être envoyée")
+      toast.error(t('play.wizzError'))
     },
     onSuccess: () => haptic('light'),
   })

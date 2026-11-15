@@ -4,14 +4,15 @@ import { Platform } from 'react-native'
 import { CompassIcon, HouseIcon, JoTabBar, SwordIcon, UserIcon, UsersIcon, type Icon, useTheme } from '@/design-system'
 import { splitChallenges, useChallengesRealtime, useMyChallenges } from '@/features/challenges'
 import { useMe } from '@/features/me'
+import { useT, type MessageKey } from '@/lib/i18n'
 
 /** Navigation principale (`accueil.md` § 3) : 5 onglets, dans cet ordre. */
-const TABS: { name: string; title: string; icon: Icon; sf: SFSymbolIcon['sf'] }[] = [
-  { name: 'home', title: 'Accueil', icon: HouseIcon, sf: { default: 'house', selected: 'house.fill' } },
-  { name: 'topics', title: 'Sujets', icon: CompassIcon, sf: { default: 'safari', selected: 'safari.fill' } },
-  { name: 'social', title: 'Social', icon: UsersIcon, sf: { default: 'person.2', selected: 'person.2.fill' } },
-  { name: 'challenges', title: 'Défis', icon: SwordIcon, sf: { default: 'figure.fencing', selected: 'figure.fencing' } },
-  { name: 'profile', title: 'Profil', icon: UserIcon, sf: { default: 'person.crop.circle', selected: 'person.crop.circle.fill' } },
+const TABS: { name: string; title: MessageKey; icon: Icon; sf: SFSymbolIcon['sf'] }[] = [
+  { name: 'home', title: 'nav.home', icon: HouseIcon, sf: { default: 'house', selected: 'house.fill' } },
+  { name: 'topics', title: 'nav.topics', icon: CompassIcon, sf: { default: 'safari', selected: 'safari.fill' } },
+  { name: 'social', title: 'nav.social', icon: UsersIcon, sf: { default: 'person.2', selected: 'person.2.fill' } },
+  { name: 'challenges', title: 'nav.challenges', icon: SwordIcon, sf: { default: 'figure.fencing', selected: 'figure.fencing' } },
+  { name: 'profile', title: 'nav.profile', icon: UserIcon, sf: { default: 'person.crop.circle', selected: 'person.crop.circle.fill' } },
 ]
 
 const ICONS = Object.fromEntries(TABS.map((tab) => [tab.name, tab.icon]))
@@ -21,6 +22,7 @@ const ICONS = Object.fromEntries(TABS.map((tab) => [tab.name, tab.icon]))
  * area, qui compte la barre, et la première liste de l'écran s'y ajuste seule. Android : `JoTabBar` de Joutio.
  */
 export default function TabsLayout() {
+  const t = useT()
   const { colors } = useTheme()
   const userId = useMe(true).data?.userId ?? ''
   // Badge Défis : défis reçus en attente, tenus à jour par le flux personnel STOMP.
@@ -34,7 +36,7 @@ export default function TabsLayout() {
         {TABS.map((tab) => (
           <NativeTabs.Trigger key={tab.name} name={tab.name} contentStyle={{ backgroundColor: colors.bg }}>
             <NativeTabs.Trigger.Icon sf={tab.sf} />
-            <NativeTabs.Trigger.Label>{tab.title}</NativeTabs.Trigger.Label>
+            <NativeTabs.Trigger.Label>{t(tab.title)}</NativeTabs.Trigger.Label>
             {tab.name === 'challenges' && received > 0 && <NativeTabs.Trigger.Badge>{String(received)}</NativeTabs.Trigger.Badge>}
           </NativeTabs.Trigger>
         ))}
@@ -47,7 +49,7 @@ export default function TabsLayout() {
         <Tabs.Screen
           key={tab.name}
           name={tab.name}
-          options={{ title: tab.title, tabBarBadge: tab.name === 'challenges' && received > 0 ? received : undefined }}
+          options={{ title: t(tab.title), tabBarBadge: tab.name === 'challenges' && received > 0 ? received : undefined }}
         />
       ))}
     </Tabs>

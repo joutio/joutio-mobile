@@ -8,7 +8,7 @@ import type {
   TitlesView,
   TopicLeaderboardView,
   TopicOverviewView,
-} from '@joutio/client-domain/api-types'
+} from '@joutio/client/api-types'
 
 /** Top 10 de l'onglet Classement ; la page complète vit dans Classements (`classements.md`). */
 export const BOARD_SIZE = 10

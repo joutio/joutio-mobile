@@ -3,12 +3,14 @@ import { CheckIcon, FireIcon, XIcon } from '../icons'
 import { useTheme } from '../theme/theme-provider'
 import { tokens } from '../tokens.generated'
 import { Text } from './text'
+import { currentLanguage, formatDate, t, useT } from '@/lib/i18n'
 
 export type StreakDay = 'done' | 'today' | 'missed' | 'future'
 
 const DAY_LABELS = ['L', 'M', 'M', 'J', 'V', 'S', 'D']
-const DAY_NAMES = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche']
-const STATE_NAMES: Record<StreakDay, string> = { done: 'joué', today: "aujourd'hui", missed: 'manqué', future: 'à venir' }
+/** Lundi → dimanche dans la langue courante (2024-01-01 est un lundi). */
+const dayName = (index: number) => formatDate(new Date(2024, 0, 1 + index), currentLanguage(), { weekday: 'long' })
+const STATE_NAMES = (): Record<StreakDay, string> => ({ done: t('mobile.ds.played'), today: "aujourd'hui", missed: t('mobile.ds.missed'), future: t('mobile.ds.upcoming') })
 
 export interface StreakProps {
   count: number
@@ -21,14 +23,15 @@ export interface StreakProps {
 
 /** Série de jours joués : compteur à la flamme, puis la semaine en cours. */
 export function Streak({ count, hint, week, compact = false, style }: StreakProps) {
+  const t = useT()
   const { colors, radius } = useTheme()
   const active = count > 0
-  const label = count > 1 ? `${count} jours` : `${count} jour`
+  const label = count > 1 ? t('mobile.ds.daysMany', { count }) : t('mobile.ds.daysOne', { count })
   return (
     <View style={[{ alignSelf: 'stretch', gap: tokens.space[5] }, style]}>
       <View
         accessible
-        accessibilityLabel={[`Série de ${label}`, hint].filter(Boolean).join(', ')}
+        accessibilityLabel={[t('mobile.ds.streakOf', { label }), hint].filter(Boolean).join(', ')}
         style={{ flexDirection: 'row', alignItems: 'center', gap: tokens.space[4] }}
       >
         <View
@@ -63,7 +66,7 @@ export function Streak({ count, hint, week, compact = false, style }: StreakProp
               <View
                 key={index}
                 accessible
-                accessibilityLabel={`${DAY_NAMES[index]}, ${STATE_NAMES[day]}`}
+                accessibilityLabel={t('ds.weekday', { day: dayName(index), state: STATE_NAMES()[day] })}
                 style={{ alignItems: 'center', gap: tokens.space[2] }}
               >
                 <Text variant="caption" weight="600" color="muted">

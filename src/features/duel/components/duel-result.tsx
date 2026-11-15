@@ -32,21 +32,23 @@ import { useMe } from '@/features/me'
 import { useBotDifficulty, useStartMatchmaking, useStartTraining } from '@/features/play/hooks/use-play'
 import { useSendRematch } from '@/features/play/hooks/use-rematch'
 import { useMyTitles, useWearTitle } from '@/features/topic/hooks/use-topic'
+import { customTitle } from '@joutio/client/authoring'
 import { formatNumber, MASTERY_TIERS, MASTERY_XP, tierLabel } from '@/features/topic/lib/format'
-import type { MasteryTier } from '@joutio/client-domain/api-types'
+import type { MasteryTier } from '@joutio/client/api-types'
 import { tierOf } from '@/shared/utils/tier'
-import { sortedRounds } from '@joutio/client-domain/game'
-import { isBonusRound, ROUNDS } from '@joutio/client-domain/game'
-import type { GameState } from '@joutio/client-domain/game'
-import type { GameResultView } from '@joutio/client-domain/game'
+import { sortedRounds } from '@joutio/client/game'
+import { isBonusRound, ROUNDS } from '@joutio/client/game'
+import type { GameState } from '@joutio/client/game'
+import type { GameResultView } from '@joutio/client/game'
 import { useGameResult, useStreakUnlock } from '../hooks/use-game'
-import { nextStreakMilestone } from '@joutio/client-domain/profile'
+import { nextStreakMilestone } from '@joutio/client/profile'
 import { ResultPages } from './result-pages'
 import { DuelReview, reviewRoundsOf } from './duel-review'
 import { ReportPlayerSheet } from './report-sheets'
 import { useMyAvatar } from '@/features/avatar/lib/avatar-preview'
 import { usePlayerAvatar, usePlayerPremium, usePlayerRanked } from '@/features/social/hooks/use-player-avatar'
 import { usePlayerIdentity } from '@/features/me'
+import { t, useLanguage, useT } from '@/lib/i18n'
 
 /** Hauteur des pages sous laquelle le résultat passe en compact (`resultat.md` § 4 bis) : l'iPhone Duo plié y passe. */
 const COMPACT_RESULT_HEIGHT = 640
@@ -99,7 +101,7 @@ function streakOf(game: GameState, playerId: string | null): RoundResult[] {
   })
 }
 
-const BOT_LEVEL: Record<string, string> = { EASY: 'Niveau facile', NORMAL: 'Niveau normal', HARD: 'Niveau difficile' }
+const BOT_LEVEL = (): Record<string, string> => ({ EASY: t('result.botEasy'), NORMAL: t('result.botNormal'), HARD: t('result.botHard') })
 
 /**
  * Résultat d'un duel (`resultat.md`) : la séquence de déblocages d'abord (rang, titres), puis le résultat classé
@@ -128,11 +130,13 @@ export function DuelResult(props: DuelResultProps) {
 }
 
 function DuelResultContent({ gameId, game, topic, topicId, category, celebrate = true }: DuelResultProps) {
+  const t = useT()
   const { colors } = useTheme()
   const insets = useSafeAreaInsets()
   const me = useMe(true)
   const userId = me.data?.userId ?? ''
-  const myName = me.data?.pseudonym ?? 'Moi'
+  const language = useLanguage()
+  const myName = me.data?.pseudonym ?? t('common.me')
   const cancelled = game.status === 'CANCELED'
   const result = useGameResult(gameId, !cancelled)
   const data = result.data
@@ -154,7 +158,7 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
   const isPlayer1 = game.player1Id === userId
   const opponentId = data?.opponentId ?? (isPlayer1 ? game.player2Id : game.player1Id)
   const bot = data?.botGame ?? game.player2Type === 'BOT'
-  const opponentName = data?.opponent?.pseudonym ?? (isPlayer1 ? game.player2Name : game.player1Name) ?? (bot ? 'Robot' : 'Adversaire')
+  const opponentName = data?.opponent?.pseudonym ?? (isPlayer1 ? game.player2Name : game.player1Name) ?? (bot ? t('topic.bot') : t('topic.opponent'))
   const myScore = data?.myScore ?? (isPlayer1 ? game.player1Score : game.player2Score)
   const theirScore = data?.opponentScore ?? (isPlayer1 ? game.player2Score : game.player1Score)
   const winner = data?.winnerId ?? game.winnerId
@@ -197,14 +201,14 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
         id: resolvedTopicId,
         message:
           current.kind === 'streak'
-            ? `${current.days} jours de série sur Joutio !`
+            ? t('result.shareStreak', { days: current.days })
             : current.kind === 'rank'
-              ? `Je viens de passer ${tierLabel(current.tier)} sur Joutio !`
-              : `Nouveau titre sur Joutio : ${topic}`,
+              ? t('result.shareRank', { tier: tierLabel(current.tier) })
+              : t('result.shareTitle', { topic }),
       })
     const pages = unlocks.map((unlock) => {
       if (unlock.kind === 'streak')
-        return <StreakUnlock key="streak" days={unlock.days} nextRule={nextStreakMilestone(unlock.days) === 7 ? 'débloque Micah.' : undefined} />
+        return <StreakUnlock key="streak" days={unlock.days} nextRule={nextStreakMilestone(unlock.days) === 7 ? t('result.streakMicah') : undefined} />
       if (unlock.kind === 'rank') {
         const nextTier = ORDER[ORDER.indexOf(unlock.tier) + 1]
         return (
@@ -215,23 +219,23 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
             next={nextTier}
             name={myName}
             src={myAvatar}
-            text="Ton cadre change sur ton profil et en duel."
-            nextRule={nextTier ? `à ${formatNumber(tokens.tier[nextTier].minElo)}.` : undefined}
+            text={t('result.rankText')}
+            nextRule={nextTier ? t('result.rankNext', { elo: formatNumber(tokens.tier[nextTier].minElo) }) : undefined}
           />
         )
       }
       const key = `${resolvedTopicId}:${unlock.tier}`
       const nextTier = MASTERY_TIERS[MASTERY_TIERS.indexOf(unlock.tier) + 1]
-      const name = data.topic.titles?.fr?.[unlock.tier] ?? `${tierLabel(unlock.tier)} · ${topic}`
+      const name = customTitle(data.topic.titles, unlock.tier, language) ?? t('workshop.tierTitle', { tier: tierLabel(unlock.tier), topic })
       return (
         <TitleUnlock
           key={`title-${unlock.tier}`}
           tier={unlock.tier}
           title={name}
           topic={topic}
-          text="Porte-le : il s'affiche sous ton nom, sur ton profil et en duel."
+          text={t('result.titleText')}
           next={nextTier}
-          nextRule={nextTier ? `à ${formatNumber(MASTERY_XP[nextTier])} points d'expérience.` : undefined}
+          nextRule={nextTier ? t('result.titleNext', { xp: formatNumber(MASTERY_XP[nextTier]) }) : undefined}
           worn={titles.data?.equippedKey === key}
           wearing={wear.isPending && wear.variables === key}
           onWear={() => wear.mutate(key)}
@@ -242,11 +246,13 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
   }
 
   // ─── Résultat ───
-  const outcomeLabel = { win: 'victoire', loss: 'défaite', draw: 'égalité', forfeit: 'abandon' }[outcome]
-  const chatRecap = `${topic} · ${outcomeLabel} ${myScore} à ${theirScore}`
+  const outcomeLabel = { win: t('result.win'), loss: t('mobile.result.loss'), draw: t('mobile.result.draw'), forfeit: t('result.forfeit') }[outcome]
+  const chatRecap = t('result.chatRecap', { topic, outcome: outcomeLabel, mine: myScore, theirs: theirScore })
   const nextTier = myTier ? ORDER[ORDER.indexOf(myTier) + 1] : undefined
   const nextElo = nextTier
-    ? `${tierLabel(nextTier)} à ${formatNumber(tokens.tier[nextTier].minElo)}${tokens.tier[nextTier].minElo > rating ? ` · encore ${formatNumber(tokens.tier[nextTier].minElo - rating)}` : ''}`
+    ? tokens.tier[nextTier].minElo > rating
+      ? t('result.nextEloLeft', { tier: tierLabel(nextTier), elo: formatNumber(tokens.tier[nextTier].minElo), left: formatNumber(tokens.tier[nextTier].minElo - rating) })
+      : t('result.nextElo', { tier: tierLabel(nextTier), elo: formatNumber(tokens.tier[nextTier].minElo) })
     : undefined
   const mastery = data?.topicMastery
   const pendingReward = !data || data.reward === null
@@ -284,7 +290,7 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
                 {RESULT_CHAT_ENABLED && (
                   <IconButton
                     icon={ChatCircleIcon}
-                    label={`Message à ${opponentName}`}
+                    label={t('mobile.result.messageTo', { name: opponentName })}
                     badge="dot"
                     onPress={() =>
                       router.push({
@@ -294,11 +300,11 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
                     }
                   />
                 )}
-                {opponentId && !data?.opponentDeleted && <IconButton icon={FlagIcon} label={`Signaler ${opponentName}`} onPress={() => setReportOpen(true)} />}
+                {opponentId && !data?.opponentDeleted && <IconButton icon={FlagIcon} label={t('result.reportPlayer', { name: opponentName })} onPress={() => setReportOpen(true)} />}
               </>
             )}
           </View>
-          <IconButton icon={XIcon} label="Quitter les résultats" onPress={() => router.back()} />
+          <IconButton icon={XIcon} label={t('result.quit')} onPress={() => router.back()} />
         </View>
         <View style={{ flex: 1 }} onLayout={(event) => setPageHeight(event.nativeEvent.layout.height)}>
           {pageHeight > 0 && (
@@ -315,7 +321,7 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
                       tier: myTier,
                       score: myScore,
                       streak: streakOf(game, userId),
-                      meta: bot ? `Elo ${formatNumber(rating)} · non classé` : undefined,
+                      meta: bot ? t('result.unranked', { elo: formatNumber(rating) }) : undefined,
                       premium: identity.myPremium,
                       onOpen: identity.open(userId),
                     }}
@@ -325,7 +331,7 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
                       tier: opponentTier,
                       score: theirScore,
                       streak: streakOf(game, opponentId),
-                      meta: bot ? (BOT_LEVEL[data?.botDifficulty ?? game.botDifficulty ?? ''] ?? 'Robot') : undefined,
+                      meta: bot ? (BOT_LEVEL()[data?.botDifficulty ?? game.botDifficulty ?? ''] ?? t('topic.bot')) : undefined,
                       premium: !bot && opponentPremium,
                       // Le robot et un compte supprimé n'ont pas de fiche.
                       onOpen: bot || data?.opponentDeleted ? undefined : identity.open(opponentId),
@@ -334,9 +340,9 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
                   {bot || cancelled ? (
                     <Notice
                       tone="training"
-                      title={cancelled ? 'Partie annulée' : 'Entraînement'}
+                      title={cancelled ? t('result.cancelled') : t('room.training')}
                       message={
-                        cancelled ? 'Aucun point compté pour cette partie.' : "Pas d'expérience : la progression vient des duels contre d'autres joueurs."
+                        cancelled ? t('result.cancelledText') : t('result.trainingText')
                       }
                     />
                   ) : (
@@ -365,7 +371,7 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
                             training.mutate({ topic: playTopic, difficulty })
                           }}
                         >
-                          Rejouer
+                          {t('result.replay')}
                         </Button>
                       ) : (
                         <Button
@@ -376,10 +382,10 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
                           onPress={() => void rematch.send()}
                         >
                           {rematch.state === 'pending' && rematch.seconds > 0
-                            ? `En attente · ${rematch.seconds} s`
+                            ? t('result.rematchWaiting', { seconds: rematch.seconds })
                             : rematch.state === 'refused'
-                              ? 'Revanche refusée'
-                              : 'Revanche'}
+                              ? t('result.rematchRefused')
+                              : t('result.rematch')}
                         </Button>
                       )}
                     </View>
@@ -394,7 +400,7 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
                           matchmaking.mutate(playTopic)
                         }}
                       >
-                        Nouvel adversaire
+                        {t('result.newOpponent')}
                       </Button>
                     </View>
                   </View>
@@ -402,10 +408,10 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
                 {hasReview && (
                   <SwipeHint
                     direction="up"
-                    title="Détails du duel"
-                    hint="Glisse vers le haut pour revoir les questions"
-                    label="Revoir les questions du duel"
-                    accessibilityHint="Ouvre la page Détails du duel"
+                    title={t('result.details')}
+                    hint={t('result.swipeUp')}
+                    label={t('result.openDetails')}
+                    accessibilityHint={t('mobile.result.reviewA11y')}
                     bottomInset={insets.bottom}
                     onPress={() => setPage(1)}
                   />
@@ -428,7 +434,7 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
           userId={opponentId}
           name={opponentName}
           gameId={gameId}
-          subtitle={`Ce duel · ${topic}`}
+          subtitle={t('result.reportContext', { topic })}
         />
       )}
     </>

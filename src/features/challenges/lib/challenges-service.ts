@@ -1,7 +1,8 @@
-import type { RoomView } from '@joutio/client-domain/rooms'
+import type { RoomView } from '@joutio/client/rooms'
 import { api } from '@/lib/api'
 import { ENDPOINTS } from '@/lib/endpoints'
-import type { ChallengeView } from '@joutio/client-domain/api-types'
+import type { ChallengeView } from '@joutio/client/api-types'
+import { t } from '@/lib/i18n'
 
 /** Défis nominatifs et salons du joueur (`/api/challenges`, `/api/rooms`). */
 export const challengesService = {
@@ -19,7 +20,7 @@ const DAY = 24 * HOUR
 /** Délai lisible : « 23 h », « 45 min », « 3 j ». */
 export function duration(ms: number) {
   const value = Math.max(0, ms)
-  if (value >= 2 * DAY) return `${Math.floor(value / DAY)} j`
-  if (value >= HOUR) return `${Math.floor(value / HOUR)} h`
-  return `${Math.max(1, Math.floor(value / 60_000))} min`
+  if (value >= 2 * DAY) return t('mobile.time.days', { n: Math.floor(value / DAY) })
+  if (value >= HOUR) return t('mobile.time.hours', { n: Math.floor(value / HOUR) })
+  return t('mobile.time.minutes', { n: Math.max(1, Math.floor(value / 60_000)) })
 }

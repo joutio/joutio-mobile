@@ -32,6 +32,7 @@ import { HAIRLINE } from '../theme/hairline'
 import { Skeleton } from '../primitives/skeleton'
 import { useTransitionDone } from './use-transition-done'
 import { useOverscrollStretch } from './overscroll-stretch'
+import { useT } from '@/lib/i18n'
 
 /** Hauteur de la zone image, safe area comprise (`fiche-sujet.md` § 1). */
 export const HERO_HEIGHT = 320
@@ -156,6 +157,7 @@ export interface CompactBarRowProps {
  * native), avec une marge égale à la plus large des deux zones d'actions, mesurées.
  */
 export function CompactBarRow({ title, premium = false, back = true, onBack, right, titleStart = false, titleStyle }: CompactBarRowProps) {
+  const t = useT()
   const [sides, setSides] = useState({ left: 44, right: 0 })
   const inset = Math.max(sides.left, sides.right) + tokens.space[4] + tokens.space[3]
   const label = premium ? (
@@ -181,7 +183,7 @@ export function CompactBarRow({ title, premium = false, back = true, onBack, rig
       }}
     >
       <View onLayout={(event) => setSides((value) => ({ ...value, left: event.nativeEvent.layout.width }))} style={{ minWidth: 44, alignItems: 'flex-start' }}>
-        {back && <ParallaxIconButton icon={CaretLeftIcon} label="Retour" onPress={onBack} />}
+        {back && <ParallaxIconButton icon={CaretLeftIcon} label={t('topic.back')} onPress={onBack} />}
       </View>
       {titleStart ? (
         <Animated.View style={[{ flex: 1, minWidth: 0 }, titleStyle]} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>

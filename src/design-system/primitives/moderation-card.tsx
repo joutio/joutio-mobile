@@ -5,6 +5,7 @@ import { useTheme } from '../theme/theme-provider'
 import { tokens } from '../tokens.generated'
 import { Button } from './button'
 import { Text } from './text'
+import { useT } from '@/lib/i18n'
 
 export interface ModerationCardProps {
   /** Auteur, rôle et date. */
@@ -23,6 +24,7 @@ export interface ModerationCardProps {
 
 /** Question à valider : auteur, énoncé, réponses (la bonne cochée et annoncée), Rejeter, Approuver, Modifier. */
 export function ModerationCard({ author, question, answers, correct, busy, onApprove, onReject, onEdit, style }: ModerationCardProps) {
+  const t = useT()
   const { colors, radius } = useTheme()
   return (
     <View style={[{ gap: tokens.space[3], borderRadius: radius.lg, backgroundColor: colors.surface, padding: tokens.space[4] }, style]}>
@@ -35,7 +37,7 @@ export function ModerationCard({ author, question, answers, correct, busy, onApp
           <View
             key={`${index}-${answer}`}
             accessible
-            accessibilityLabel={index === correct ? `${answer}, bonne réponse` : answer}
+            accessibilityLabel={index === correct ? t('mobile.ds.answerIsCorrect', { answer }) : answer}
             style={{
               minHeight: 50,
               flexDirection: 'row',
@@ -58,17 +60,17 @@ export function ModerationCard({ author, question, answers, correct, busy, onApp
       <View style={{ flexDirection: 'row', gap: tokens.space[2] }}>
         <View style={{ flex: 1 }}>
           <Button variant="tinted" tone="destructive" size="M" full loading={busy === 'reject'} disabled={busy !== undefined} onPress={onReject}>
-            Rejeter
+            {t('workshop.reject')}
           </Button>
         </View>
         <View style={{ flex: 1 }}>
           <Button size="M" full loading={busy === 'approve'} disabled={busy !== undefined} onPress={onApprove}>
-            Approuver
+            {t('mobile.ds.approve')}
           </Button>
         </View>
       </View>
       <Button variant="plain" tone="neutral" size="M" full disabled={busy !== undefined} onPress={onEdit}>
-        Modifier avant d'approuver
+        {t('mobile.ds.editBeforeApprove')}
       </Button>
     </View>
   )

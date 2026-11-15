@@ -1,18 +1,19 @@
 import { View } from 'react-native'
 import { Button, ListGroup, ListRow, MobileSheet, RadioGroup, SectionHeader, tokens } from '@/design-system'
-import type { LeaderboardPeriod, LeaderboardScope } from '@joutio/client-domain/api-types'
+import type { LeaderboardPeriod, LeaderboardScope } from '@joutio/client/api-types'
 import type { RankingFilterState } from '../lib/topic-service'
+import { t, useT } from '@/lib/i18n'
 
-const PERIODS: { value: LeaderboardPeriod; label: string }[] = [
-  { value: 'ALL_TIME', label: 'Depuis toujours' },
-  { value: 'MONTHLY', label: 'Ce mois' },
-]
+const PERIODS = (): { value: LeaderboardPeriod; label: string }[] => ([
+  { value: 'ALL_TIME', label: t('board.allTime') },
+  { value: 'MONTHLY', label: t('mobile.rankings.month') },
+])
 
-const SCOPES: { value: LeaderboardScope; label: string }[] = [
-  { value: 'WORLD', label: 'Mondial' },
-  { value: 'FOLLOWING', label: 'Suivis' },
-  { value: 'COUNTRY', label: 'Pays' },
-]
+const SCOPES = (): { value: LeaderboardScope; label: string }[] => ([
+  { value: 'WORLD', label: t('mobile.rankings.world') },
+  { value: 'FOLLOWING', label: t('home.followed') },
+  { value: 'COUNTRY', label: t('settings.country') },
+])
 
 export interface RankingsFiltersSheetProps {
   open: boolean
@@ -26,45 +27,46 @@ export interface RankingsFiltersSheetProps {
 
 /** Feuille Filtrer des classements (`classements.md` § 3). */
 export function RankingsFiltersSheet({ open, onClose, filters, onChange, onReset, hasCountry }: RankingsFiltersSheetProps) {
+  const t = useT()
   return (
     <MobileSheet
       open={open}
       onClose={onClose}
-      title="Filtrer"
+      title={t('titles.filter')}
       action={
         <Button variant="plain" size="S" onPress={onReset}>
-          Réinitialiser
+          {t('topics.reset')}
         </Button>
       }
       footer={
         <Button full onPress={onClose}>
-          Afficher le classement
+          {t('mobile.rankings.show')}
         </Button>
       }
     >
       <View style={{ gap: tokens.space[6] }}>
         <View style={{ gap: tokens.space[4] }}>
-          <SectionHeader title="Période" />
+          <SectionHeader title={t('board.period')} />
           <ListGroup>
-            <RadioGroup label="Période">
-              {PERIODS.map((option, index) => (
+            <RadioGroup label={t('board.period')}>
+              {PERIODS().map((option, index) => (
                 <ListRow
                   key={option.value}
                   label={option.label}
                   control="radio"
                   on={filters.period === option.value}
                   onToggle={() => onChange({ period: option.value })}
-                  last={index === PERIODS.length - 1}
+                  last={index === PERIODS().length - 1}
                 />
               ))}
             </RadioGroup>
           </ListGroup>
         </View>
         <View style={{ gap: tokens.space[4] }}>
-          <SectionHeader title="Portée" />
+          <SectionHeader title={t('mobile.rankings.scope')} />
           <ListGroup>
-            <RadioGroup label="Portée">
-              {(hasCountry ? SCOPES : SCOPES.filter((option) => option.value !== 'COUNTRY')).map((option, index, options) => (
+            <RadioGroup label={t('mobile.rankings.scope')}>
+              {(hasCountry ? SCOPES() : SCOPES().filter((option) => option.value !== 'COUNTRY')).map((option, index, options) => (
                 <ListRow
                   key={option.value}
                   label={option.label}

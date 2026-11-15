@@ -3,6 +3,7 @@ import { View, type StyleProp, type ViewStyle } from 'react-native'
 import Animated, { Easing, ReduceMotion, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
 import { useReducedMotion } from '../motion'
 import { useTheme } from '../theme/theme-provider'
+import { t, useT } from '@/lib/i18n'
 
 export interface ScoreGaugeProps {
   value: number
@@ -17,7 +18,8 @@ export interface ScoreGaugeProps {
 const REVEAL_MS = 900
 
 /** Jauge verticale de score : prend toute la hauteur de son parent. */
-export function ScoreGauge({ value, max, state = 'rest', label = 'Score', style }: ScoreGaugeProps) {
+export function ScoreGauge({ value, max, state = 'rest', label = t('mobile.ds.score'), style }: ScoreGaugeProps) {
+  const t = useT()
   const { colors } = useTheme()
   const reduced = useReducedMotion()
   const bounded = Math.min(max, Math.max(0, value))

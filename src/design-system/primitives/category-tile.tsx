@@ -5,6 +5,7 @@ import { tokens, type CategoryCode } from '../tokens.generated'
 import { PressableScale } from './pressable-scale'
 import { Text } from './text'
 import { hairlineRing } from '../theme/hairline'
+import { categoryKey, t } from '@/lib/i18n'
 
 export interface CategoryTileProps {
   category: CategoryCode
@@ -22,7 +23,7 @@ export function CategoryTile({ category, selected = false, disabled = false, onT
   return (
     <PressableScale
       accessibilityRole="checkbox"
-      accessibilityLabel={tokens.category[category].label}
+      accessibilityLabel={t(categoryKey(category))}
       accessibilityState={{ checked: selected, disabled }}
       disabled={disabled}
       haptic="selection"
@@ -46,7 +47,7 @@ export function CategoryTile({ category, selected = false, disabled = false, onT
     >
       <CategoryIcon category={category} size={20} weight={selected ? 'fill' : 'regular'} color={foreground} />
       <Text variant="caption" weight="600" color={foreground} numberOfLines={1}>
-        {tokens.category[category].label}
+        {t(categoryKey(category))}
       </Text>
     </PressableScale>
   )

@@ -9,6 +9,7 @@ import { PressableScale } from '../primitives/pressable-scale'
 import { Text } from '../primitives/text'
 import { useTheme } from '../theme/theme-provider'
 import { tokens } from '../tokens.generated'
+import { useT } from '@/lib/i18n'
 
 /** Remontée (pt) qui fait apparaître la pastille : un geste franc, pas un tremblement. */
 const UP_DISTANCE = 32
@@ -30,6 +31,7 @@ export interface ScrollToTopPillProps {
  * Complète le toucher de l'onglet actif (`useScrollToTop`) et, sur iOS, celui de la barre d'état (`scrollsToTop`).
  */
 export function ScrollToTopPill({ scroll, onPress, top = tokens.space[3], showAfter }: ScrollToTopPillProps) {
+  const t = useT()
   const { colors, radius } = useTheme()
   const reduced = useReducedMotion()
   const { height } = useWindowDimensions()
@@ -79,7 +81,7 @@ export function ScrollToTopPill({ scroll, onPress, top = tokens.space[3], showAf
       >
         <PressableScale
           accessibilityRole="button"
-          accessibilityLabel="Revenir en haut"
+          accessibilityLabel={t('mobile.ds.backToTop')}
           onPress={() => {
             haptic('selection')
             onPress()
@@ -97,7 +99,7 @@ export function ScrollToTopPill({ scroll, onPress, top = tokens.space[3], showAf
         >
           <CaretUpIcon size={14} color={colors.text} weight="bold" />
           <Text variant="callout" weight="600">
-            Haut de page
+            {t('mobile.ds.top')}
           </Text>
         </PressableScale>
       </Animated.View>

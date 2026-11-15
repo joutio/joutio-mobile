@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { readServerNow } from '@/lib/realtime/server-clock'
+import { t } from '@/lib/i18n'
 
 /** Horloge serveur, relue chaque seconde (décompte d'expiration, cadence de la relance). */
 export function useServerNow() {
@@ -18,6 +19,6 @@ export function useServerNow() {
 export function countdownOf(expiresAt: string | null | undefined, now: number) {
   if (!expiresAt) return null
   const left = Math.max(0, Math.round((Date.parse(expiresAt) - now) / 1000))
-  if (left >= 3600) return `${Math.floor(left / 3600)} h ${String(Math.floor((left % 3600) / 60)).padStart(2, '0')}`
+  if (left >= 3600) return t('time.hoursMinutes', { h: Math.floor(left / 3600), m: String(Math.floor((left % 3600) / 60)).padStart(2, '0') })
   return `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`
 }

@@ -8,6 +8,7 @@ import { tokens, type TierCode } from '../tokens.generated'
 import { Avatar, type Presence } from './avatar'
 import { PressableScale } from './pressable-scale'
 import { Text } from './text'
+import { useT } from '@/lib/i18n'
 
 const DELETE_WIDTH = 80
 
@@ -33,6 +34,7 @@ export interface NotificationRowProps {
  * révèle Supprimer. **Aucun bouton d'action dans la ligne** (2026-11-07) : la notification ne fait que rediriger.
  */
 export function NotificationRow({ title, sub, icon: IconComponent, player, unread = false, onPress, chevron = true, onDelete, last = false, style }: NotificationRowProps) {
+  const t = useT()
   const { colors, radius } = useTheme()
   const [pressed, setPressed] = useState(false)
   const dimmed = pressed && Platform.OS !== 'android'
@@ -42,8 +44,8 @@ export function NotificationRow({ title, sub, icon: IconComponent, player, unrea
       {/* Zone pressable sous le contenu : ripple d'un bord à l'autre, l'action reste au-dessus. */}
       <PressableScale
         accessibilityRole="button"
-        accessibilityLabel={[title, sub, unread ? 'non lue' : undefined].filter(Boolean).join(', ')}
-        accessibilityActions={onDelete ? [{ name: 'delete', label: 'Supprimer' }] : undefined}
+        accessibilityLabel={[title, sub, unread ? t('mobile.ds.unread') : undefined].filter(Boolean).join(', ')}
+        accessibilityActions={onDelete ? [{ name: 'delete', label: t('workshop.delete') }] : undefined}
         onAccessibilityAction={(event) => event.nativeEvent.actionName === 'delete' && onDelete?.()}
         pressedScale={1}
         ripple
@@ -96,7 +98,7 @@ export function NotificationRow({ title, sub, icon: IconComponent, player, unrea
       renderRightActions={() => (
         <PressableScale
           accessibilityRole="button"
-          accessibilityLabel={`Supprimer : ${title}`}
+          accessibilityLabel={t('mobile.ds.deleteItem', { title })}
           pressedScale={1}
           onPress={onDelete}
           style={({ pressed: down }) => ({

@@ -21,6 +21,7 @@ import { useAvatarPreview } from '@/features/avatar/lib/avatar-preview'
 import { avatarStylesFor } from '@/features/avatar/lib/avatar-styles'
 import { calendarOf, streakHint, weekOf } from '../lib/streak'
 import { useRefreshActive } from '@/shared/hooks/use-refresh-active'
+import { useT } from '@/lib/i18n'
 
 function Card({ children }: { children: React.ReactNode }) {
   const { colors, radius } = useTheme()
@@ -32,6 +33,7 @@ function Card({ children }: { children: React.ReactNode }) {
  * Micah. Un jour compte dès qu'un duel entre joueurs est terminé ; un jour manqué remet à zéro.
  */
 export function StreakScreen() {
+  const t = useT()
   const activity = useMyActivity()
   const pageRefresh = useRefreshActive()
   const badges = useMyBadges()
@@ -46,7 +48,7 @@ export function StreakScreen() {
     <Screen
       onRefresh={pageRefresh.refresh}
       inTabs
-      header={<MobileTopBar variant="inline" back="Profil" onBack={() => router.back()} title="Série" />}
+      header={<MobileTopBar variant="inline" back={t('nav.profile')} onBack={() => router.back()} title={t('profile.streak')} />}
       contentStyle={{ gap: tokens.space[5], paddingHorizontal: tokens.space[5], paddingTop: tokens.space[2], paddingBottom: tokens.space[7] }}
     >
       {activity.isPending ? (
@@ -57,11 +59,11 @@ export function StreakScreen() {
       ) : activity.isError || !data ? (
         <EmptyState
           icon={WarningCircleIcon}
-          title="Impossible de charger ta série"
-          description="Vérifie ta connexion, puis réessaie."
+          title={t('streak.error')}
+          description={t('home.errorText')}
           action={
             <Button style={{ alignSelf: 'center' }} loading={activity.isRefetching} onPress={() => void activity.refetch()}>
-              Réessayer
+              {t('callback.retry')}
             </Button>
           }
         />
@@ -71,9 +73,9 @@ export function StreakScreen() {
             <Streak count={data.currentStreak} hint={streakHint(data)} week={weekOf(data)} />
           </Card>
           <View style={{ flexDirection: 'row', gap: tokens.space[3] }}>
-            <Stat label="En cours" value={formatNumber(data.currentStreak)} tone="accent" compact />
-            <Stat label="Record" value={formatNumber(data.longestStreak)} compact />
-            <Stat label="Jours actifs" value={formatNumber(data.totalActiveDays)} compact />
+            <Stat label={t('mobile.profile.ongoing')} value={formatNumber(data.currentStreak)} tone="accent" compact />
+            <Stat label={t('streak.best')} value={formatNumber(data.longestStreak)} compact />
+            <Stat label={t('streak.activeDays')} value={formatNumber(data.totalActiveDays)} compact />
           </View>
           <Card>
             <StreakCalendar {...calendarOf(data)} />
@@ -83,11 +85,11 @@ export function StreakScreen() {
           ) : rewardError ? (
             <EmptyState
               icon={WarningCircleIcon}
-              title="Impossible de charger Micah"
-              description="Vérifie ta connexion, puis réessaie."
+              title={t('mobile.profile.micahFailed')}
+              description={t('home.errorText')}
               action={
                 <Button style={{ alignSelf: 'center' }} onPress={() => void pageRefresh.refresh()}>
-                  Réessayer
+                  {t('callback.retry')}
                 </Button>
               }
             />

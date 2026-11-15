@@ -10,9 +10,11 @@ import { useOpenNotification } from '../hooks/use-open-notification'
 import { createNotificationDeduplicator, shouldToast } from '../lib/notification-target'
 import { notificationTitle } from '../lib/notification-presentation'
 import { parsePushNotice } from '../lib/push-target'
+import { useT } from '@/lib/i18n'
 
 /** Inbox et toasts sur tous les écrans connectés, y compris hors des onglets. */
 export function NotificationsRuntime() {
+  const t = useT()
   const userId = useMe(true).data?.userId
   const open = useOpenNotification()
   const dedupe = useRef(createNotificationDeduplicator())
@@ -21,7 +23,7 @@ export function NotificationsRuntime() {
     if (!shouldToast(notice, AppState.currentState === 'active', useToastStore.getState().suspended > 0)) return
     toast.show({
       id: `notification:${notice.notificationId}`,
-      title: notificationTitle(notice, 'Un joueur'),
+      title: notificationTitle(notice, t('notifications.somePlayer')),
       onPress: () => {
         void open(notice, userId)
       },

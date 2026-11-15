@@ -5,6 +5,7 @@ import { Button, EmptyState, SplashLogo, tokens, useTheme, WarningCircleIcon } f
 import { topicName } from '@/shared/utils/topic-name'
 import { useGameHistory, useGameResult } from '../hooks/use-game'
 import { DuelResult } from './duel-result'
+import { useT } from '@/lib/i18n'
 
 export interface ResultRouteParams {
   gameId: string
@@ -19,6 +20,7 @@ export interface ResultRouteParams {
  * partie sont relus en REST, sans ouvrir l'arène ni son flux STOMP ; les déblocages ne sont pas rejoués.
  */
 export function ResultScreen() {
+  const t = useT()
   const params = useLocalSearchParams<ResultRouteParams>()
   const gameId = params.gameId
   const { colors } = useTheme()
@@ -38,8 +40,8 @@ export function ResultScreen() {
       <View style={{ flex: 1, backgroundColor: colors.bg, padding: tokens.space[5], justifyContent: 'center' }}>
         <EmptyState
           icon={WarningCircleIcon}
-          title="Impossible de charger cette partie"
-          description="Vérifie ta connexion, puis réessaie."
+          title={t('result.loadError')}
+          description={t('home.errorText')}
           action={
             <View style={{ gap: tokens.space[3], alignSelf: 'stretch' }}>
               <Button
@@ -50,10 +52,10 @@ export function ResultScreen() {
                   void result.refetch()
                 }}
               >
-                Réessayer
+                {t('callback.retry')}
               </Button>
               <Button variant="plain" tone="neutral" onPress={() => router.back()}>
-                Fermer
+                {t('play.close')}
               </Button>
             </View>
           }

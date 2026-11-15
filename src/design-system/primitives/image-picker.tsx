@@ -6,6 +6,7 @@ import { tokens } from '../tokens.generated'
 import { IconButton } from './icon-button'
 import { PressableScale } from './pressable-scale'
 import { Text } from './text'
+import { t, useT } from '@/lib/i18n'
 
 export interface ImagePickerProps {
   /** Image choisie (URL ou fichier local). */
@@ -23,13 +24,14 @@ export interface ImagePickerProps {
 /** Choix d'une image, facultative. Le sélecteur de la photothèque appartient à l'écran. */
 export function ImagePicker({
   image,
-  hint = 'Ajouter une image · facultatif · JPG ou PNG, 5 Mo',
+  hint = t('mobile.ds.addImage'),
   error,
   busy = false,
   onPick,
   onRemove,
   style,
 }: ImagePickerProps) {
+  const t = useT()
   const { colors, radius } = useTheme()
   return (
     <View style={[{ gap: tokens.space[2] }, style]}>
@@ -37,8 +39,8 @@ export function ImagePicker({
         <View style={{ height: 160, overflow: 'hidden', borderRadius: radius.md, opacity: busy ? 0.6 : 1 }}>
           <Image source={{ uri: image }} contentFit="cover" style={{ width: '100%', height: '100%' }} accessibilityIgnoresInvertColors />
           <View style={{ position: 'absolute', top: tokens.space[3], right: tokens.space[3], flexDirection: 'row', gap: tokens.space[3] }}>
-            <IconButton icon={ImageIcon} label="Changer l'image" variant="gray" size="S" onPress={onPick} disabled={busy} />
-            <IconButton icon={TrashIcon} label="Retirer l'image" variant="gray" size="S" onPress={onRemove} disabled={busy} />
+            <IconButton icon={ImageIcon} label={t('mobile.ds.changeImage')} variant="gray" size="S" onPress={onPick} disabled={busy} />
+            <IconButton icon={TrashIcon} label={t('mobile.ds.removeImage')} variant="gray" size="S" onPress={onRemove} disabled={busy} />
           </View>
         </View>
       ) : (

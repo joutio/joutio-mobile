@@ -1,4 +1,7 @@
-import { tokens, type TierCode } from '@/design-system'
+import { customTitle } from '@joutio/client/authoring'
+import type { TierCode } from '@/design-system'
+import { currentLanguage, t, tierKey } from '@/lib/i18n'
+import { topicName } from '@/shared/utils/topic-name'
 import { useTopicOverview } from '@/features/topic/hooks/use-topic'
 
 /**
@@ -9,5 +12,6 @@ export function useEquippedTitle(key: string | null | undefined): string | undef
   const [topicId = '', tier] = (key ?? '').split(':') as [string?, TierCode?]
   const overview = useTopicOverview(topicId)
   if (!tier || !overview.data) return undefined
-  return overview.data.titles?.fr?.[tier] ?? `${tokens.tier[tier].label} · ${overview.data.topic.names?.fr ?? ''}`
+  const topic = topicName(overview.data.topic.names)
+  return customTitle(overview.data.titles, tier, currentLanguage()) ?? t('workshop.tierTitle', { tier: t(tierKey(tier)), topic })
 }

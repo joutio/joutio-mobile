@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 
-import type { PremiumReason } from '@joutio/client-domain/premium'
+import type { PremiumReason } from '@joutio/client/premium'
 
 /** `quota` : défis ; `topics`, `questions`, `team` : plafonds de création ; `frozen` : sujets gelés (`creation.md` § 3). */
 export type PremiumContext = 'offer' | PremiumReason

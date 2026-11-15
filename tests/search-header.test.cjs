@@ -106,6 +106,7 @@ function harness(os = 'ios') {
     '../primitives/search-field': { SearchField: 'SearchField' },
     '../tokens.generated': { tokens: { space: { 3: 8, 5: 16 } } },
     './mobile-top-bar': { MobileTopBar: 'MobileTopBar' },
+    '@/lib/i18n': require('./i18n-mock.cjs'),
   }
   const source = fs.readFileSync(path.join(__dirname, '../src/design-system/mobile/search-header.tsx'), 'utf8')
   const code = ts.transpileModule(source, {

@@ -8,6 +8,7 @@ import { IconButton } from '../primitives/icon-button'
 import { SearchField } from '../primitives/search-field'
 import { tokens } from '../tokens.generated'
 import { MobileTopBar } from './mobile-top-bar'
+import { t, useT } from '@/lib/i18n'
 
 export interface SearchHeaderProps {
   titleBar?: ReactNode
@@ -39,11 +40,12 @@ export function SearchHeader({
   onChange,
   placeholder,
   onFilter,
-  filterLabel = 'Filtres',
+  filterLabel = t('topics.filters'),
   filterDot = false,
   notifications,
   onGlobalSearch,
 }: SearchHeaderProps) {
+  const t = useT()
   const reduced = useReducedMotion()
   const [searching, setSearching] = useState(false)
   const active = useRef(false)
@@ -124,7 +126,7 @@ export function SearchHeader({
                 right={
                   <>
                     {onGlobalSearch && (
-                      <IconButton icon={MagnifyingGlassIcon} label="Rechercher un sujet ou un joueur" variant="plain" tone="neutral" onPress={onGlobalSearch} />
+                      <IconButton icon={MagnifyingGlassIcon} label={t('search.label')} variant="plain" tone="neutral" onPress={onGlobalSearch} />
                     )}
                     {notifications}
                   </>

@@ -1,12 +1,13 @@
-import { nextStreakMilestone } from '@joutio/client-domain/profile'
+import { nextStreakMilestone } from '@joutio/client/profile'
 import { View } from 'react-native'
 import { FireIcon } from '../icons'
 import { Text } from '../primitives/text'
 import { useTheme } from '../theme/theme-provider'
 import { tokens } from '../tokens.generated'
 import { UnlockContent } from './unlock-content'
+import { t, useT } from '@/lib/i18n'
 
-const daysLabel = (days: number) => (days > 1 ? `${days} jours` : `${days} jour`)
+const daysLabel = (days: number) => (days > 1 ? t('mobile.ds.daysMany', { count: days }) : t('mobile.ds.daysOne', { count: days }))
 
 export interface StreakUnlockProps {
   /** Jours de série atteints avec cette partie. */
@@ -20,13 +21,14 @@ export interface StreakUnlockProps {
  * le rang, les titres et les badges. La flamme s'allume ; couleur d'accent, aucun rang en jeu.
  */
 export function StreakUnlock({ days, nextRule }: StreakUnlockProps) {
+  const t = useT()
   const { colors, radius } = useTheme()
   const next = nextStreakMilestone(days)
   return (
     <UnlockContent
       accent={{ glow: colors.accent, ink: colors.accentInk, label: daysLabel(days) }}
       crumbLead={<FireIcon size={16} weight="fill" color={colors.muted} />}
-      crumbFrom="Série"
+      crumbFrom={t('profile.streak')}
       hero={
         <View style={{ width: 160, height: 160, borderRadius: radius.full, backgroundColor: colors.warm, alignItems: 'center', justifyContent: 'center' }}>
           <FireIcon size={104} weight="fill" color={colors.accent} />
@@ -47,14 +49,14 @@ export function StreakUnlock({ days, nextRule }: StreakUnlockProps) {
         </View>
       }
       heroMotion="ignite"
-      eyebrow="Nouveau jour de série"
+      eyebrow={t('mobile.ds.newStreakDay')}
       headline={daysLabel(days)}
-      text={days > 1 ? `Tu as joué ${days} jours d'affilée. Reviens demain pour passer à ${daysLabel(days + 1)}.` : 'Ta série commence. Reviens demain pour la prolonger.'}
+      text={days > 1 ? t('mobile.ds.streakPlayed', { days, next: daysLabel(days + 1) }) : t('mobile.ds.streakStarts')}
       next={
         next
           ? {
               label: daysLabel(next),
-              rule: nextRule ?? `encore ${daysLabel(next - days)}.`,
+              rule: nextRule ?? t('mobile.ds.stillDays', { count: daysLabel(next - days) }),
               preview: (
                 <View style={{ width: 48, height: 48, borderRadius: radius.full, backgroundColor: colors.raised, alignItems: 'center', justifyContent: 'center' }}>
                   <FireIcon size={28} weight="fill" color={colors.muted} />

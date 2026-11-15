@@ -4,24 +4,25 @@ import { View } from 'react-native'
 import { Button, Field, ListGroup, ListRow, MobileSheet, Text, toast, tokens } from '@/design-system'
 import { api } from '@/lib/api'
 import { ENDPOINTS } from '@/lib/endpoints'
-import type { QuestionReportReason, UserReportReason } from '@joutio/client-domain/api-types'
+import type { QuestionReportReason, UserReportReason } from '@joutio/client/api-types'
+import { currentLanguage, t, useT } from '@/lib/i18n'
 
 const MAX_COMMENT = 500
 
-const PLAYER_REASONS: { value: UserReportReason; label: string; sub: string }[] = [
-  { value: 'HARASSMENT', label: 'Harcèlement', sub: 'Insultes, menaces, comportement répété' },
-  { value: 'HATE_SPEECH', label: 'Discours haineux', sub: 'Propos visant un groupe ou une personne' },
-  { value: 'INAPPROPRIATE_CONTENT', label: 'Contenu inapproprié', sub: 'Pseudonyme, avatar ou bannière choquants' },
-  { value: 'CHEATING', label: 'Triche', sub: 'Comportement déloyal pendant un duel' },
-  { value: 'SPAM', label: 'Spam', sub: 'Publicité, messages répétitifs' },
-  { value: 'OTHER', label: 'Autre', sub: 'Un problème qui ne rentre pas dans les autres cases' },
-]
+const PLAYER_REASONS = (): { value: UserReportReason; label: string; sub: string }[] => ([
+  { value: 'HARASSMENT', label: t('report.player.HARASSMENT'), sub: t('report.player.HARASSMENT.sub') },
+  { value: 'HATE_SPEECH', label: t('report.player.HATE_SPEECH'), sub: t('report.player.HATE_SPEECH.sub') },
+  { value: 'INAPPROPRIATE_CONTENT', label: t('report.player.INAPPROPRIATE_CONTENT'), sub: t('report.player.INAPPROPRIATE_CONTENT.sub') },
+  { value: 'CHEATING', label: t('report.player.CHEATING'), sub: t('report.player.CHEATING.sub') },
+  { value: 'SPAM', label: t('report.player.SPAM'), sub: t('report.player.SPAM.sub') },
+  { value: 'OTHER', label: t('report.player.OTHER'), sub: t('report.player.OTHER.sub') },
+])
 
-const QUESTION_REASONS: { value: QuestionReportReason; label: string; sub: string }[] = [
-  { value: 'QUESTION', label: "L'énoncé", sub: 'Faute, ambiguïté, question incompréhensible' },
-  { value: 'IMAGE', label: "L'image", sub: 'Absente, erronée ou de mauvaise qualité' },
-  { value: 'ANSWERS', label: 'Les réponses', sub: 'Bonne réponse incorrecte ou choix incohérents' },
-]
+const QUESTION_REASONS = (): { value: QuestionReportReason; label: string; sub: string }[] => ([
+  { value: 'QUESTION', label: t('report.question.QUESTION'), sub: t('report.question.QUESTION.sub') },
+  { value: 'IMAGE', label: t('report.question.IMAGE'), sub: t('report.question.IMAGE.sub') },
+  { value: 'ANSWERS', label: t('report.question.ANSWERS'), sub: t('report.question.ANSWERS.sub') },
+])
 
 function Reasons<T extends string>({
   items,
@@ -82,6 +83,7 @@ export function ReportPlayerSheet({
   /** Proposé après l'envoi (fiche joueur) : ferme la feuille puis ouvre la confirmation de blocage. */
   onBlock?: () => void
 }) {
+  const t = useT()
   const [reasons, setReasons] = useState<UserReportReason[]>([])
   // « Bloquer » : la confirmation (un `Modal`) s'ouvre une fois la feuille retirée, pas pendant sa fermeture.
   const blockAfterClose = useRef(false)
@@ -100,7 +102,7 @@ export function ReportPlayerSheet({
         gameId: gameId || undefined,
       }),
     onSuccess: () => setSent(true),
-    onError: () => toast.error("Le signalement n'a pas pu être envoyé", { description: 'Vérifie ta connexion, puis réessaie.' }),
+    onError: () => toast.error(t('report.error'), { description: t('home.errorText') }),
   })
   return (
     <MobileSheet
@@ -111,7 +113,7 @@ export function ReportPlayerSheet({
         blockAfterClose.current = false
         onBlock?.()
       }}
-      title={sent ? 'Signalement envoyé' : `Signaler ${name}`}
+      title={sent ? t('report.sent') : t('report.playerTitle', { name })}
       subtitle={sent ? undefined : subtitle}
       footer={
         sent ? (
@@ -126,42 +128,42 @@ export function ReportPlayerSheet({
                   onClose()
                 }}
               >
-                {`Bloquer ${name}`}
+                {t('mobile.report.block', { name })}
               </Button>
               <Button full variant="plain" tone="neutral" onPress={onClose}>
-                Fermer
+                {t('play.close')}
               </Button>
             </View>
           ) : (
             <Button full variant="gray" tone="neutral" onPress={onClose}>
-              Fermer
+              {t('play.close')}
             </Button>
           )
         ) : (
           <Button full disabled={reasons.length === 0} loading={report.isPending} onPress={() => report.mutate()}>
-            Envoyer le signalement
+            {t('report.send')}
           </Button>
         )
       }
     >
       {sent ? (
         <Text variant="callout" color="muted" align="center">
-          {onBlock ? "Merci. Notre équipe va l'examiner. Tu peux aussi bloquer ce joueur." : "Merci. Notre équipe va l'examiner."}
+          {onBlock ? t('mobile.report.thanksBlock') : t('report.playerThanks')}
         </Text>
       ) : (
         <View style={{ gap: tokens.space[4] }}>
-          <Reasons items={PLAYER_REASONS} value={reasons} onChange={setReasons} />
+          <Reasons items={PLAYER_REASONS()} value={reasons} onChange={setReasons} />
           <Field
-            label="Précisions"
-            placeholder="Facultatif · ce qui s'est passé"
+            label={t('report.details')}
+            placeholder={t('report.playerPlaceholder')}
             multiline
             value={comment}
             maxLength={MAX_COMMENT}
-            counter={`${comment.length} / ${MAX_COMMENT}`}
+            counter={t('mobile.authoring.counter', { count: comment.length, max: MAX_COMMENT })}
             onChangeText={setComment}
           />
           <Text variant="caption" color="muted" align="center">
-            {name} ne saura pas qui l'a signalé.
+            {t('report.playerAnonymous', { name })}
           </Text>
         </View>
       )}
@@ -190,6 +192,7 @@ export function ReportQuestionSheet({
   subtitle: string
   onSent: () => void
 }) {
+  const t = useT()
   const [reasons, setReasons] = useState<QuestionReportReason[]>([])
   const [comment, setComment] = useState('')
   const [sent, setSent] = useState(false)
@@ -200,49 +203,49 @@ export function ReportQuestionSheet({
   })
   const report = useMutation({
     mutationFn: () =>
-      api.post<unknown>(ENDPOINTS.reports.question(questionId ?? ''), { gameId, reasons, comment: comment.trim() || undefined, language: 'fr' }),
+      api.post<unknown>(ENDPOINTS.reports.question(questionId ?? ''), { gameId, reasons, comment: comment.trim() || undefined, language: currentLanguage() }),
     onSuccess: () => {
       setSent(true)
       onSent()
     },
-    onError: () => toast.error("Le signalement n'a pas pu être envoyé", { description: 'Vérifie ta connexion, puis réessaie.' }),
+    onError: () => toast.error(t('report.error'), { description: t('home.errorText') }),
   })
-  const items = QUESTION_REASONS.filter((item) => hasImage || item.value !== 'IMAGE')
+  const items = QUESTION_REASONS().filter((item) => hasImage || item.value !== 'IMAGE')
   return (
     <MobileSheet
       open={open}
       onClose={onClose}
-      title={sent ? 'Signalement envoyé' : 'Signaler la question'}
+      title={sent ? t('report.sent') : t('result.reportQuestion')}
       subtitle={sent ? undefined : subtitle}
       footer={
         sent ? (
           <Button full variant="gray" tone="neutral" onPress={onClose}>
-            Fermer
+            {t('play.close')}
           </Button>
         ) : (
           <Button full disabled={reasons.length === 0 || !questionId} loading={report.isPending} onPress={() => report.mutate()}>
-            Envoyer le signalement
+            {t('report.send')}
           </Button>
         )
       }
     >
       {sent ? (
         <Text variant="callout" color="muted" align="center">
-          Merci. Le créateur du sujet et notre équipe vont la vérifier.
+          {t('report.questionThanks')}
         </Text>
       ) : (
         <View style={{ gap: tokens.space[4] }}>
           <Text variant="callout" color="muted" align="center">
-            Aide-nous à corriger le contenu. Le créateur du sujet ne voit pas ton identité.
+            {t('report.questionIntro')}
           </Text>
           <Reasons items={items} value={reasons} onChange={setReasons} />
           <Field
-            label="Précisions"
-            placeholder="Facultatif"
+            label={t('report.details')}
+            placeholder={t('mobile.common.optional')}
             multiline
             value={comment}
             maxLength={MAX_COMMENT}
-            counter={`${comment.length} / ${MAX_COMMENT}`}
+            counter={t('mobile.authoring.counter', { count: comment.length, max: MAX_COMMENT })}
             onChangeText={setComment}
           />
         </View>

@@ -1,6 +1,6 @@
-import { countryFlag, countryName } from '@joutio/client-domain/geo'
-import { MAX_PSEUDONYM } from '@joutio/client-domain/profile'
-import type { ApiError } from '@joutio/client-domain/api-types'
+import { countryFlag, countryName } from '@joutio/client/geo'
+import { MAX_PSEUDONYM } from '@joutio/client/profile'
+import type { ApiError } from '@joutio/client/api-types'
 import { useNavigation, usePreventRemove } from 'expo-router'
 import { router } from '@/shared/navigation/router'
 import { useEffect, useState } from 'react'
@@ -25,6 +25,7 @@ import { useMe } from '@/features/me'
 import { CountryPicker } from '@/features/settings/components/country-picker'
 import { pseudonymError, pseudonymHint } from '@/features/settings/lib/pseudonym-messages'
 import { usePseudonymCheck, useUpdateMe } from '../hooks/use-profile'
+import { currentLanguage, useT } from '@/lib/i18n'
 
 const MAX_BIO = 160
 /** Ratio de la bannière du profil (lab : 320 de haut sur la largeur du téléphone). */
@@ -44,6 +45,7 @@ interface Draft {
  * Réglages › Compte.
  */
 export function EditProfileScreen() {
+  const t = useT()
   const navigation = useNavigation()
   const me = useMe(true).data
   const avatar = useMyAvatar()
@@ -77,11 +79,11 @@ export function EditProfileScreen() {
     showDialog({
       sheet: true,
       icon: WarningIcon,
-      title: 'Abandonner les modifications ?',
-      message: 'Ce que tu as changé ne sera pas enregistré.',
+      title: t('editProfile.discardTitle'),
+      message: t('editProfile.discardText'),
       actions: [
-        { label: 'Abandonner', variant: 'tinted', tone: 'destructive', onPress: () => setDiscarding(data.action) },
-        { label: "Continuer l'édition", variant: 'plain', tone: 'neutral' },
+        { label: t('duel.abandon'), variant: 'tinted', tone: 'destructive', onPress: () => setDiscarding(data.action) },
+        { label: t('editProfile.keepEditing'), variant: 'plain', tone: 'neutral' },
       ],
     }),
   )
@@ -96,7 +98,7 @@ export function EditProfileScreen() {
       setDraft((current) => ({ ...current, bannerUrl: media.url }))
     } catch (error) {
       const problem = error as Partial<ApiError> | undefined
-      toast.error("L'image n'a pas pu être envoyée", { description: problem?.detail || problem?.message || 'JPG ou PNG, 5 Mo au plus. Réessaie.' })
+      toast.error(t('settings.imageError'), { description: problem?.detail || problem?.message || t('settings.imageRule') })
     } finally {
       setUploading(false)
     }
@@ -109,7 +111,7 @@ export function EditProfileScreen() {
       if (changed.bio) await saveBio.mutateAsync(draft.bio.trim() || null)
       if (changed.country) await saveCountry.mutateAsync(draft.country)
       if (changed.bannerUrl) await saveBanner.mutateAsync(draft.bannerUrl)
-      toast.success('Profil enregistré')
+      toast.success(t('editProfile.saved'))
       router.back()
     } catch {
       // Chaque mutation affiche sa propre erreur ; la page reste ouverte avec le brouillon.
@@ -122,9 +124,9 @@ export function EditProfileScreen() {
       header={
         <MobileTopBar
           variant="modal"
-          title="Éditer le profil"
-          cancel="Annuler"
-          confirm="Enregistrer"
+          title={t('profile.edit')}
+          cancel={t('topic.cancel')}
+          confirm={t('settings.save')}
           confirmDisabled={!dirty || !pseudonymOk || uploading || saving}
           onCancel={() => router.back()}
           onConfirm={() => void save()}
@@ -137,15 +139,15 @@ export function EditProfileScreen() {
     >
       <ImagePicker
         image={draft.bannerUrl ?? undefined}
-        hint="Bannière · JPG ou PNG, 5 Mo"
+        hint={t('mobile.profile.bannerHint')}
         busy={uploading}
         onPick={() => void pickBanner()}
         onRemove={() => setDraft({ ...draft, bannerUrl: null })}
       />
       <ListGroup surface="surface">
         <ListRow
-          leading={<Avatar name={draft.pseudonym || 'Moi'} src={avatar} size="md" decorative />}
-          label="Modifier l'avatar"
+          leading={<Avatar name={draft.pseudonym || t('mobile.authoring.me')} src={avatar} size="md" decorative />}
+          label={t('editProfile.editAvatar')}
           control="chevron"
           onPress={() => router.push('/avatar')}
           last
@@ -153,31 +155,31 @@ export function EditProfileScreen() {
       </ListGroup>
       <View style={{ gap: tokens.space[4] }}>
         <Field
-          label="Pseudonyme"
+          label={t('settings.pseudonym')}
           value={draft.pseudonym}
           maxLength={MAX_PSEUDONYM}
-          counter={`${draft.pseudonym.length} / ${MAX_PSEUDONYM}`}
-          hint={check.state === 'unchanged' ? 'Visible par tous les joueurs.' : pseudonymHint(check)}
+          counter={t('mobile.authoring.counter', { count: draft.pseudonym.length, max: MAX_PSEUDONYM })}
+          hint={check.state === 'unchanged' ? t('settings.pseudonymHint') : pseudonymHint(check)}
           error={pseudonymError(check)}
           autoCapitalize="none"
           autoCorrect={false}
           onChangeText={(pseudonym) => setDraft({ ...draft, pseudonym })}
         />
         <Field
-          label="Bio"
-          placeholder="Facultative · quelques mots sur toi"
+          label={t('settings.bio')}
+          placeholder={t('settings.bioPlaceholder')}
           multiline
           value={draft.bio}
           maxLength={MAX_BIO}
-          counter={`${draft.bio.length} / ${MAX_BIO}`}
+          counter={t('mobile.authoring.counter', { count: draft.bio.length, max: MAX_BIO })}
           onChangeText={(bio) => setDraft({ ...draft, bio })}
         />
       </View>
       <ListGroup surface="surface">
         <ListRow
           icon={GlobeHemisphereWestIcon}
-          label="Pays"
-          value={draft.country ? `${countryFlag(draft.country)} ${countryName(draft.country)}` : 'Non affiché'}
+          label={t('settings.country')}
+          value={draft.country ? `${countryFlag(draft.country)} ${countryName(draft.country, currentLanguage())}` : t('country.hidden')}
           control="chevron"
           onPress={() => setCountryOpen(true)}
           last

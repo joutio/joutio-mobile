@@ -38,13 +38,14 @@ import { topicName } from '@/shared/utils/topic-name'
 import { userAvatar } from '@/shared/utils/avatar'
 import { countdownOf, useServerNow } from '../lib/countdown'
 import { playService } from '../lib/play-service'
+import { currentLanguage, formatNumber, t, tierKey, useT } from '@/lib/i18n'
 
 /** Conditions du duel, en `ListRow` informatives (`lancer-partie.md` § 2). */
-const RULES: readonly { icon: Icon; label: string }[] = [
-  { icon: TimerIcon, label: '7 manches de 10 secondes' },
-  { icon: LightningIcon, label: 'Plus tu réponds vite, plus tu marques' },
-  { icon: NumberCircleTwoIcon, label: 'La dernière manche compte double' },
-]
+const RULES = (): readonly { icon: Icon; label: string }[] => ([
+  { icon: TimerIcon, label: t('join.ruleRounds') },
+  { icon: LightningIcon, label: t('join.ruleSpeed') },
+  { icon: NumberCircleTwoIcon, label: t('join.ruleDouble') },
+])
 
 /** Colonne de 370 pt au plus (face-à-face, sujet, conditions, bouton) : sur un grand écran, la page garde une taille de téléphone. */
 const COLUMN = { width: '100%', maxWidth: 370, alignSelf: 'center' } as const
@@ -82,7 +83,7 @@ function Seat({ name, src, rating, provisional, premium, guest }: SeatProps) {
           {guest}
         </Text>
       ) : tier && rating != null ? (
-        <Badge variant="tier" tier={tier}>{`${tokens.tier[tier].label} · ${rating.toLocaleString('fr-FR')}`}</Badge>
+        <Badge variant="tier" tier={tier}>{t('common.dotPair', { a: t(tierKey(tier)), b: formatNumber(rating, currentLanguage()) })}</Badge>
       ) : null}
     </View>
   )
@@ -100,6 +101,7 @@ function close() {
  * duel » en bas. Sans compte, la connexion ramène ici.
  */
 export function JoinScreen() {
+  const t = useT()
   const { roomId } = useLocalSearchParams<{ roomId: string }>()
   const { colors } = useTheme()
   const insets = useSafeAreaInsets()
@@ -130,12 +132,12 @@ export function JoinScreen() {
 
   const header = (
     <View style={{ height: 52, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingLeft: tokens.space[3], paddingRight: tokens.space[5] }}>
-      <IconButton icon={XIcon} label="Fermer" variant="plain" tone="neutral" onPress={close} />
+      <IconButton icon={XIcon} label={t('play.close')} variant="plain" tone="neutral" onPress={close} />
       {countdown && !unavailable && (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: tokens.space[2] }}>
           <ClockCountdownIcon size={16} color={colors.muted} />
           <Text variant="callout" color="muted">
-            Expire dans{' '}
+            {t('room.expiresIn')}{' '}
             <Text variant="callout" mono weight="600">
               {countdown}
             </Text>
@@ -151,11 +153,11 @@ export function JoinScreen() {
         <EmptyState
           fill
           icon={LinkIcon}
-          title="Ce salon n'est plus disponible"
-          description="Il a expiré, ou un autre joueur l'a déjà rejoint."
+          title={t('join.unavailableTitle')}
+          description={t('join.unavailableText')}
           action={
             <Button full onPress={() => router.replace('/topics')}>
-              Explorer les sujets
+              {t('join.explore')}
             </Button>
           }
         />
@@ -173,19 +175,19 @@ export function JoinScreen() {
         <View style={[COLUMN, { gap: tokens.space[3], paddingTop: tokens.space[3], paddingBottom: Math.max(0, tokens.space[3] - insets.bottom) }]}>
           <View style={{ paddingHorizontal: tokens.space[5] }}>
             <Button full icon={LightningIcon} disabled={authenticated && (room.isPending || (me.data ? !me.data.onboardingCompleted : false))} onPress={join}>
-              {authenticated ? 'Rejoindre le duel' : 'Se connecter pour rejoindre'}
+              {authenticated ? t('join.join') : t('join.signIn')}
             </Button>
           </View>
           {!authenticated && (
             <Text variant="caption" color="muted" align="center">
-              Pas encore de compte ? Tu le crées en 20 secondes.
+              {t('join.noAccount')}
             </Text>
           )}
         </View>
       }
     >
       <Text variant="title1" align="center" accessibilityRole="header">
-        {host ? `${host.pseudonym} t'invite à un duel` : 'Tu es invité à un duel'}
+        {host ? t('join.invitedBy', { name: host.pseudonym }) : t('join.invited')}
       </Text>
       <View style={[COLUMN, { flexDirection: 'row', alignItems: 'flex-start', gap: tokens.space[3] }]}>
         {loading || !host ? (
@@ -201,12 +203,13 @@ export function JoinScreen() {
         {authenticated && me.data ? (
           <Seat name={me.data.pseudonym} src={myAvatar} rating={progression?.rating} provisional={progression?.provisional} premium={identity.myPremium} />
         ) : (
-          <Seat name="Toi" guest="Connecte-toi pour jouer" />
+          <Seat name={t('join.guest')} guest={t('join.guestLogin')} />
         )}
       </View>
       {view && (
         // Même largeur que les cartes paysage des rails de l'Accueil (240 pt), centrée.
         <TopicCard
+          official={view.topic.official ?? false}
           title={topicName(view.topic.names)}
           category={toCategoryCode(view.topic.category)}
           image={view.topic.imageUrl ?? undefined}
@@ -215,8 +218,8 @@ export function JoinScreen() {
       )}
       {/* Conditions du duel : lignes informatives, comme les autorisations de l'onboarding. */}
       <ListGroup surface="surface" style={COLUMN}>
-        {RULES.map(({ icon, label }, index) => (
-          <ListRow key={label} icon={icon} label={label} control="none" last={index === RULES.length - 1} />
+        {RULES().map(({ icon, label }, index) => (
+          <ListRow key={label} icon={icon} label={label} control="none" last={index === RULES().length - 1} />
         ))}
       </ListGroup>
     </Screen>

@@ -5,6 +5,7 @@ import { Text } from '../primitives/text'
 import { alpha } from '../theme/color'
 import { useTheme } from '../theme/theme-provider'
 import { tokens } from '../tokens.generated'
+import { useT } from '@/lib/i18n'
 
 export interface PreparationStep {
   id: string
@@ -29,12 +30,13 @@ export interface PreparationStepsProps {
  * tirage des questions, lancement. Faites cochées, en cours avec une roue, à venir en gris.
  */
 export function PreparationSteps({ steps, current, detail, complete = false, engaged = false, style }: PreparationStepsProps) {
+  const t = useT()
   const { colors, radius } = useTheme()
   const tint = complete ? colors.correct : engaged ? colors.accent : undefined
   return (
     <View
       accessibilityRole="progressbar"
-      accessibilityLabel="Préparation du duel"
+      accessibilityLabel={t('mobile.ds.preparation')}
       accessibilityValue={{ min: 0, max: steps.length, now: Math.min(current, steps.length) }}
       style={[
         {

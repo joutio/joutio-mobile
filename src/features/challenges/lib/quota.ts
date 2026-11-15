@@ -1,8 +1,9 @@
 import { router } from '@/shared/navigation/router'
 import { LightningIcon, showDialog } from '@/design-system'
 import { usePremiumSheet } from '@/features/premium/premium-store'
-import type { MeView } from '@joutio/client-domain/api-types'
-import { planLimits, problemLimit, quotaProblemOf } from '@joutio/client-domain/premium'
+import type { MeView } from '@joutio/client/api-types'
+import { planLimits, problemLimit, quotaProblemOf } from '@joutio/client/premium'
+import { t } from '@/lib/i18n'
 
 /**
  * Limite atteinte (`defis.md` § 3) : `Dialog` Voir mes défis, Passer Premium (sans Premium), Fermer. La limite vient de
@@ -16,18 +17,18 @@ export function showQuotaDialog(error: unknown, me?: Pick<MeView, 'premium' | 'l
   const limits = planLimits(me)
   const limit = problemLimit(error) ?? (rooms ? limits.openRooms : limits.pendingChallenges)
   showDialog({
-    title: rooms ? 'Limite de salons atteinte' : 'Limite de défis atteinte',
+    title: rooms ? t('play.roomQuotaTitle') : t('play.challengeQuotaTitle'),
     message: rooms
-      ? `Tu as atteint ta limite de ${limit} salons ouverts. Ferme un salon avant d'en créer un autre.`
-      : `Tu as atteint ta limite de ${limit} défis en attente. Termine ou annule un défi avant d'en lancer un autre.`,
+      ? t('play.roomQuotaText', { limit })
+      : t('play.challengeQuotaText', { limit }),
     icon: LightningIcon,
     tone: 'accent',
     actions: [
-      { label: 'Voir mes défis', variant: 'filled', tone: 'accent', onPress: () => router.navigate({ pathname: '/challenges', params: { tab: 'sent' } }) },
+      { label: t('play.seeChallenges'), variant: 'filled', tone: 'accent', onPress: () => router.navigate({ pathname: '/challenges', params: { tab: 'sent' } }) },
       ...(me?.premium
         ? []
-        : [{ label: 'Passer Premium', variant: 'tinted' as const, tone: 'accent' as const, onPress: () => usePremiumSheet.getState().show('quota') }]),
-      { label: 'Fermer', variant: 'plain', tone: 'neutral' },
+        : [{ label: t('play.goPremium'), variant: 'tinted' as const, tone: 'accent' as const, onPress: () => usePremiumSheet.getState().show('quota') }]),
+      { label: t('play.close'), variant: 'plain', tone: 'neutral' },
     ],
   })
   return true

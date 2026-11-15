@@ -15,17 +15,18 @@ import {
   WarningCircleIcon,
   type MatchOutcome,
 } from '@/design-system'
-import type { GameHistoryItemView, GameOutcome } from '@joutio/client-domain/api-types'
+import type { GameHistoryItemView, GameOutcome } from '@joutio/client/api-types'
 import { topicName as formatTopicName } from '@/shared/utils/topic-name'
 import { useTopicGames } from '../hooks/use-topic'
 import { dayLabel, formatNumber } from '../lib/format'
+import { t, useT } from '@/lib/i18n'
 
 const OUTCOMES: Partial<Record<GameOutcome, MatchOutcome>> = { WIN: 'win', LOSS: 'loss', DRAW: 'draw' }
 
 const subOf = (game: GameHistoryItemView) => {
-  if (game.opponentType === 'BOT') return 'entraînement'
+  if (game.opponentType === 'BOT') return t('topic.training')
   if (game.xp === null) return undefined
-  return `${game.xp >= 0 ? '+' : '−'}${formatNumber(Math.abs(game.xp))} XP`
+  return t('common.xpSigned', { sign: game.xp >= 0 ? '+' : '−', xp: formatNumber(Math.abs(game.xp)) })
 }
 
 /** Onglet Parties : mes 10 dernières parties du sujet, groupées par jour. */
@@ -38,6 +39,7 @@ export function GamesTab({
   topicName: string
   historyPath: '/home/history' | '/topics/history' | '/profile/history' | '/social/history'
 }) {
+  const t = useT()
   const games = useTopicGames(topicId)
   // Parties terminées seulement : une partie en attente ou annulée n'a pas d'issue à montrer.
   const finished = (games.data?.content ?? []).filter((game) => OUTCOMES[game.outcome])
@@ -55,10 +57,10 @@ export function GamesTab({
       contentContainerStyle={{ gap: tokens.space[5], paddingHorizontal: tokens.space[5], paddingTop: tokens.space[2], paddingBottom: tokens.space[7] }}
     >
       <SectionHeader
-        title="Dernières parties"
+        title={t('topic.lastGames')}
         action={
-          <Button variant="plain" size="S" onPress={() => router.push({ pathname: historyPath, params: { topicId, topicName, backLabel: 'Sujet' } })}>
-            Tout voir
+          <Button variant="plain" size="S" onPress={() => router.push({ pathname: historyPath, params: { topicId, topicName, backLabel: t('pending.topic') } })}>
+            {t('home.seeAll')}
           </Button>
         }
       />
@@ -71,16 +73,16 @@ export function GamesTab({
       ) : games.isError ? (
         <EmptyState
           icon={WarningCircleIcon}
-          title="Impossible de charger tes parties"
-          description="Vérifie ta connexion, puis réessaie."
+          title={t('topic.gamesError')}
+          description={t('home.errorText')}
           action={
             <Button style={{ alignSelf: 'center' }} loading={games.isRefetching} onPress={() => void games.refetch()}>
-              Réessayer
+              {t('callback.retry')}
             </Button>
           }
         />
       ) : groups.length === 0 ? (
-        <EmptyState icon={SwordIcon} title="Aucune partie dans ce sujet" description="Lance un duel : tes parties apparaîtront ici." />
+        <EmptyState icon={SwordIcon} title={t('topic.noGamesTitle')} description={t('topic.noGamesText')} />
       ) : (
         groups.map((group) => (
           <View key={group.day} style={{ gap: tokens.space[3] }}>
@@ -91,7 +93,7 @@ export function GamesTab({
               {group.games.map((game, index) => (
                 <MatchRow
                   key={game.gameId}
-                  topic={game.opponent?.pseudonym ?? (game.opponentType === 'BOT' ? 'Robot' : 'Adversaire')}
+                  topic={game.opponent?.pseudonym ?? (game.opponentType === 'BOT' ? t('topic.bot') : t('topic.opponent'))}
                   category={toCategoryCode(game.topic.category)}
                   pictogram={game.topic.pictogramUrl ?? undefined}
                   image={game.topic.imageUrl ?? undefined}

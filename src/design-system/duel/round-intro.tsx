@@ -8,6 +8,7 @@ import { ForceDark, useTheme } from '../theme/theme-provider'
 import { keyframe, useTimeline } from '../timeline'
 import { tokens, type CategoryCode } from '../tokens.generated'
 import { RoundDots, type RoundResult } from './round-dots'
+import { useT } from '@/lib/i18n'
 
 export interface RoundIntroProps {
   round: number
@@ -24,6 +25,7 @@ export interface RoundIntroProps {
 }
 
 function Body({ round, total, topic, category, results, bonus = false, animated = false, duration = 1900, elapsedMs, onComplete }: RoundIntroProps) {
+  const tr = useT()
   const { colors, radius, categoryColor, scheme } = useTheme()
   const reduced = useReducedMotion()
   const t = useTimeline({ duration, elapsedMs, animated: animated && !reduced, held: 0.5, onComplete })
@@ -128,7 +130,7 @@ function Body({ round, total, topic, category, results, bonus = false, animated 
           </Animated.View>
           <Animated.View style={word}>
             <Text variant="title2" weight="700" color="onAccent">
-              Manche
+              {tr('mobile.ds.round')}
             </Text>
             <Text variant="callout" weight="600" color="onAccent" style={{ opacity: 0.7 }}>
               de {total}
@@ -156,7 +158,7 @@ function Body({ round, total, topic, category, results, bonus = false, animated 
             >
               <LightningIcon size={16} weight="fill" color={colors.accentInk} />
               <Text variant="callout" weight="700" color="accentInk">
-                Question bonus · points doublés
+                {tr('mobile.ds.bonusQuestion')}
               </Text>
             </View>
           )}

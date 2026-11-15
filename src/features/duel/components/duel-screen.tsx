@@ -29,8 +29,8 @@ import {
 import { useMe } from '@/features/me'
 import { useServerClock } from '@/lib/realtime/server-clock'
 import { tierOf } from '@/shared/utils/tier'
-import { countryFlag, countryName } from '@joutio/client-domain/geo'
-import { sortedRounds } from '@joutio/client-domain/game'
+import { countryFlag, countryName } from '@joutio/client/geo'
+import { sortedRounds } from '@joutio/client/game'
 import {
   isBonusRound,
   MAX_SCORE,
@@ -41,8 +41,8 @@ import {
   SWOOSH_DURATION_MS,
   ROUND_INTRO_MS,
   LATE_JOIN_MS,
-} from '@joutio/client-domain/game'
-import type { GameState } from '@joutio/client-domain/game'
+} from '@joutio/client/game'
+import type { GameState } from '@joutio/client/game'
 import { useDuelArena } from '../hooks/use-duel-arena'
 import { useGameStream, usePrefetchQuestionImages, useServerNow } from '../hooks/use-game'
 import { gameService } from '../lib/game-service'
@@ -53,6 +53,7 @@ import { usePlayerAvatar, usePlayerPremium } from '@/features/social/hooks/use-p
 import { useEquippedTitle } from '../hooks/use-equipped-title'
 import { usePlayerProfile } from '@/features/social/hooks/use-social'
 import { usePlayerIdentity } from '@/features/me'
+import { currentLanguage, useT } from '@/lib/i18n'
 
 export interface DuelRouteParams {
   gameId: string
@@ -91,6 +92,7 @@ export function DuelScreen() {
 }
 
 function DuelScreenContent() {
+  const t = useT()
   const params = useLocalSearchParams<DuelRouteParams>()
   const gameId = params.gameId
   useServerClock()
@@ -158,25 +160,25 @@ function DuelScreenContent() {
     onSuccess: () => setAbandoned(true),
     onError: () => {
       hideGame(gameId, false)
-      toast.error("Le duel n'a pas pu être abandonné")
+      toast.error(t('duel.abandonError'))
     },
   })
   const [introDone, setIntroDone] = useState<number | null>(null)
   const askAbandon = () =>
     showDialog({
-      title: 'Abandonner le duel ?',
-      message: 'La partie compte comme perdue et ton adversaire gagne.',
+      title: t('duel.abandonTitle'),
+      message: t('mobile.duel.abandonTextShort'),
       icon: WarningIcon,
       tone: 'danger',
       sheet: true,
       forceDark: true,
       actions: [
         {
-          label: 'Abandonner',
+          label: t('duel.abandon'),
           tone: 'destructive',
           onPress: () => abandon.mutateAsync(),
         },
-        { label: 'Continuer', variant: 'plain' },
+        { label: t('onboarding.universes.continue'), variant: 'plain' },
       ],
     })
   usePreventRemove(!finished && !abandoned, askAbandon)
@@ -184,15 +186,15 @@ function DuelScreenContent() {
     if (abandoned) router.back()
   }, [abandoned])
 
-  const topic = params.topicName ?? 'Duel'
+  const topic = params.topicName ?? t('pending.duel')
   const category = toCategoryCode(params.category)
   const isPlayer1 = game?.player1Id === userId
-  const myName = me.data?.pseudonym ?? 'Moi'
-  const opponentName = (isPlayer1 ? game?.player2Name : game?.player1Name) ?? (game?.player2Type === 'BOT' ? 'Robot' : 'Adversaire')
+  const myName = me.data?.pseudonym ?? t('common.me')
+  const opponentName = (isPlayer1 ? game?.player2Name : game?.player1Name) ?? (game?.player2Type === 'BOT' ? t('topic.bot') : t('topic.opponent'))
   const myTier = me.data?.progression && !me.data.progression.provisional ? tierOf(me.data.progression.rating) : undefined
   const opponentProgression = opponentProfile.data?.progression
   const opponentTier = opponentProgression && !opponentProgression.provisional ? tierOf(opponentProgression.rating) : undefined
-  const countryLabel = (code?: string | null) => (code ? `${countryFlag(code)} ${countryName(code)}` : undefined)
+  const countryLabel = (code?: string | null) => (code ? `${countryFlag(code)} ${countryName(code, currentLanguage())}` : undefined)
 
   if (!game || !stream.status?.loaded) {
     return (
@@ -283,14 +285,14 @@ function DuelScreenContent() {
                 style={{ position: 'absolute', top: 0, bottom: 0, left: 0 }}
                 value={arena.myScore}
                 max={MAX_SCORE}
-                label={`Score de ${myName}`}
+                label={t('duel.score', { name: myName })}
                 state={arena.gauge.you !== 'idle' ? arena.gauge.you : 'rest'}
               />
               <ScoreGauge
                 style={{ position: 'absolute', top: 0, bottom: 0, right: 0 }}
                 value={arena.theirScore}
                 max={MAX_SCORE}
-                label={`Score de ${opponentName}`}
+                label={t('duel.score', { name: opponentName })}
                 state={arena.gauge.them !== 'idle' ? arena.gauge.them : 'rest'}
               />
               <View style={{ flex: 1, paddingHorizontal: tokens.space[5], paddingTop: tokens.space[3], paddingBottom: insets.bottom + tokens.space[5] }}>
@@ -298,7 +300,7 @@ function DuelScreenContent() {
                   // Remonté à la fin de l'intro pour rejouer l'énoncé et les réponses à la première frame visible.
                   key={`question-${arena.roundIndex}-${questionReady ? 'ready' : 'intro'}`}
                   text={arena.questionText}
-                  meta={`${topic} · question ${roundNumber} sur ${ROUNDS}`}
+                  meta={t('duel.meta', { topic, round: roundNumber, total: ROUNDS })}
                   image={arena.imageUrl ?? undefined}
                   answers={answers}
                   answersShown={answersShown}
@@ -344,7 +346,7 @@ function DuelScreenContent() {
               title: opponentTitle,
               rating: opponentProgression?.rating,
               country: countryLabel(opponentProfile.data?.country),
-              detail: game.player2Type === 'BOT' ? 'Entraînement' : undefined,
+              detail: game.player2Type === 'BOT' ? t('room.training') : undefined,
             }}
             topic={topic}
             category={category}

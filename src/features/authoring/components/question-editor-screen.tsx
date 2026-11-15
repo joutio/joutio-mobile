@@ -26,8 +26,8 @@ import {
   useTheme,
 } from '@/design-system'
 import { pickImage, uploadImage } from '@/features/media/media-service'
-import type { Language } from '@joutio/client-domain/api-types'
-import { MAX_ALT, MAX_ANSWER, MAX_QUESTION } from '@joutio/client-domain/authoring'
+import type { Language } from '@joutio/client/api-types'
+import { MAX_ALT, MAX_ANSWER, MAX_QUESTION } from '@joutio/client/authoring'
 import {
   buildQuestionPlan,
   draftFromQuestion,
@@ -35,14 +35,14 @@ import {
   frenchFilled,
   isReady,
   missingAlt,
-  TRANSLATION_STATUS_LABEL,
   translationStatus,
   type QuestionDraft,
-} from '@joutio/client-domain/authoring'
-import { questionActions, workshopRole } from '@joutio/client-domain/authoring'
+} from '@joutio/client/authoring'
+import { questionActions, workshopRole } from '@joutio/client/authoring'
 import { useArchiveQuestion, useCreationLimits, useDeleteQuestion, useFrozen, useMyTopic, useSaveQuestion, useTopicQuestions } from '../hooks/use-authoring'
 import { FrozenNotice } from './frozen-notice'
 import { LANGUAGES } from './topic-sheets'
+import { TRANSLATION_LABEL, useT } from '@/lib/i18n'
 
 /** Image de question : 5:4, comme `QuestionBlock`. */
 const QUESTION_IMAGE_ASPECT: [number, number] = [5, 4]
@@ -64,6 +64,7 @@ export interface QuestionEditorRouteParams {
  * champ backend).
  */
 export function QuestionEditorScreen() {
+  const t = useT()
   const params = useLocalSearchParams<QuestionEditorRouteParams>()
   const { colors } = useTheme()
   const insets = useSafeAreaInsets()
@@ -117,7 +118,7 @@ export function QuestionEditorScreen() {
       setDraft((current) => ({ ...current, imageUrl: media.url }))
       setImageChanged(true)
     } catch {
-      toast.error("L'image n'a pas pu être envoyée", { description: 'JPG ou PNG, 5 Mo au plus.' })
+      toast.error(t('settings.imageError'), { description: t('mobile.authoring.imageFormat') })
     } finally {
       setUploading(false)
     }
@@ -134,9 +135,9 @@ export function QuestionEditorScreen() {
   if (questionId && (questions.isError || (!questions.isPending && !original)))
     return (
       <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top }}>
-        <MobileTopBar variant="modal" title="Question indisponible" cancel="Fermer" onCancel={() => router.back()} />
-        <Text>La question est indisponible ou tu n’as plus accès à son édition.</Text>
-        <Button onPress={() => void questions.refetch()}>Réessayer</Button>
+        <MobileTopBar variant="modal" title={t('workshop.questionUnavailable')} cancel={t('play.close')} onCancel={() => router.back()} />
+        <Text>{t('workshop.questionUnavailableText')}</Text>
+        <Button onPress={() => void questions.refetch()}>{t('callback.retry')}</Button>
       </View>
     )
 
@@ -144,9 +145,9 @@ export function QuestionEditorScreen() {
     <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top }}>
       <MobileTopBar
         variant="modal"
-        title={`Question ${params.number ?? ''}`.trim()}
-        cancel="Annuler"
-        confirm="Enregistrer"
+        title={params.number ? t('workshop.questionNumber', { number: params.number }) : t('workshop.question')}
+        cancel={t('topic.cancel')}
+        confirm={t('settings.save')}
         confirmLoading={save.isPending}
         confirmDisabled={!ready || save.isPending}
         onCancel={() => router.back()}
@@ -164,7 +165,7 @@ export function QuestionEditorScreen() {
       >
         <ImagePicker
           image={draft.imageUrl}
-          hint="Image · facultative · JPG ou PNG, 5 Mo · à décrire"
+          hint={t('workshop.imageHint')}
           busy={uploading}
           onPick={() => void pick()}
           onRemove={() => {
@@ -173,40 +174,40 @@ export function QuestionEditorScreen() {
           }}
         />
         <View style={{ gap: tokens.space[2] }}>
-          <Segmented<Language> label="Langue" options={LANGUAGES} value={language} onChange={setLanguage} />
+          <Segmented<Language> label={t('settings.language')} options={LANGUAGES} value={language} onChange={setLanguage} />
           <Text variant="caption" color={english === 'partial' ? 'wrong' : 'muted'}>
             {english === 'partial'
-              ? 'Anglais à terminer : traduis la question et les quatre réponses, ou vide-les pour enregistrer.'
-              : `Anglais : ${TRANSLATION_STATUS_LABEL[english].toLowerCase()}. Si tu commences, traduis la question et les quatre réponses.`}
+              ? t('workshop.englishPartial')
+              : t('workshop.englishStatus', { status: t(TRANSLATION_LABEL[english]) })}
           </Text>
         </View>
         <Field
           key={language}
-          label={language === 'fr' ? 'Question' : 'Question en anglais'}
-          placeholder={language === 'fr' ? 'Pose ta question' : 'Ask your question'}
-          hint={language === 'en' ? `En français : ${draft.texts.fr.trim() || '—'}` : undefined}
+          label={language === 'fr' ? t('workshop.question') : t('workshop.questionEnglish')}
+          placeholder={language === 'fr' ? t('workshop.questionPlaceholder') : 'Ask your question'}
+          hint={language === 'en' ? t('workshop.inFrench', { text: draft.texts.fr.trim() || '—' }) : undefined}
           multiline
           value={text}
           maxLength={MAX_QUESTION}
-          counter={`${text.length} / ${MAX_QUESTION}`}
+          counter={t('mobile.authoring.counter', { count: text.length, max: MAX_QUESTION })}
           onChangeText={(next) => setDraft({ ...draft, texts: { ...draft.texts, [language]: next } })}
         />
         {draft.imageUrl && (
           <Field
             key={`alt-${language}`}
-            label={language === 'fr' ? "Description de l'image" : "Description de l'image en anglais"}
-            placeholder={language === 'fr' ? 'Ce que montre l’image' : 'What the image shows'}
-            hint={language === 'fr' ? "Lue aux joueurs qui ne voient pas l'image. Obligatoire." : `En français : ${draft.alt.fr.trim() || '—'}`}
-            error={language === 'fr' && altMissing && filled ? "Décris l'image pour enregistrer." : undefined}
+            label={language === 'fr' ? t('workshop.alt') : t('workshop.altEnglish')}
+            placeholder={language === 'fr' ? t('workshop.altPlaceholder') : 'What the image shows'}
+            hint={language === 'fr' ? t('workshop.altHint') : t('workshop.inFrench', { text: draft.alt.fr.trim() || '—' })}
+            error={language === 'fr' && altMissing && filled ? t('workshop.altMissing') : undefined}
             value={draft.alt[language]}
             maxLength={MAX_ALT}
-            counter={`${draft.alt[language].length} / ${MAX_ALT}`}
+            counter={t('mobile.authoring.counter', { count: draft.alt[language].length, max: MAX_ALT })}
             onChangeText={(next) => setDraft({ ...draft, alt: { ...draft.alt, [language]: next } })}
           />
         )}
         <View style={{ gap: tokens.space[3] }}>
-          <SectionHeader title={language === 'fr' ? 'Réponses' : 'Réponses en anglais'} subtitle="Quatre réponses. Touche « Juste » sur la bonne." />
-          <RadioGroup label="Bonne réponse">
+          <SectionHeader title={language === 'fr' ? t('workshop.answers') : t('workshop.answersEnglish')} subtitle={t('workshop.answersHint')} />
+          <RadioGroup label={t('workshop.correctAnswer')}>
             <ListGroup surface="surface">
               {answers.map((answer, index) => (
                 <AnswerEditorRow
@@ -227,7 +228,7 @@ export function QuestionEditorScreen() {
           </RadioGroup>
           {missingCorrect && (
             <Text variant="caption" color="wrong">
-              Choisis la bonne réponse pour enregistrer.
+              {t('workshop.correctMissing')}
             </Text>
           )}
         </View>
@@ -237,14 +238,14 @@ export function QuestionEditorScreen() {
           // Cycle de vie, à l'écart de l'enregistrement ; archiver et supprimer passent toujours par une confirmation.
           <View style={{ gap: tokens.space[3] }}>
             <SectionHeader
-              title="Gérer"
-              subtitle={actions.includes('archive') ? 'Archiver retire la question des parties ; elle reste restaurable.' : undefined}
+              title={t('workshop.manage')}
+              subtitle={actions.includes('archive') ? t('workshop.manageHint') : undefined}
             />
             <ListGroup surface="surface">
               {actions.includes('archive') && (
                 <ListRow
                   icon={ArchiveIcon}
-                  label="Archiver la question"
+                  label={t('workshop.archiveQuestion')}
                   control="chevron"
                   onPress={() => setConfirm('archive')}
                   last={!actions.includes('delete')}
@@ -253,7 +254,7 @@ export function QuestionEditorScreen() {
               {actions.includes('restore') && (
                 <ListRow
                   icon={ArrowCounterClockwiseIcon}
-                  label="Restaurer la question"
+                  label={t('workshop.restoreQuestion')}
                   control="chevron"
                   onPress={() => {
                     lifecycle.mutate({ id: questionId, restore: true })
@@ -263,7 +264,7 @@ export function QuestionEditorScreen() {
                 />
               )}
               {actions.includes('delete') && (
-                <ListRow icon={TrashIcon} label="Supprimer la question" destructive control="none" onPress={() => setConfirm('delete')} last />
+                <ListRow icon={TrashIcon} label={t('workshop.deleteQuestion')} destructive control="none" onPress={() => setConfirm('delete')} last />
               )}
             </ListGroup>
           </View>
@@ -274,37 +275,37 @@ export function QuestionEditorScreen() {
           <Dialog
             open={confirm === 'archive'}
             onClose={() => setConfirm(undefined)}
-            title={`Archiver la question ${params.number ?? ''} ?`.replace('  ', ' ')}
-            message="Elle est retirée des parties. Tu la retrouves dans le filtre Archivées ; la restaurer la remet en attente de validation."
+            title={t('workshop.archiveTitle', { number: params.number ?? '' }).replace('  ', ' ')}
+            message={t('workshop.archiveText')}
             icon={ArchiveIcon}
             actions={[
               {
-                label: 'Archiver',
+                label: t('workshop.archive'),
                 onPress: () => {
                   lifecycle.mutate({ id: questionId })
                   router.back()
                 },
               },
-              { label: 'Annuler', variant: 'plain' },
+              { label: t('topic.cancel'), variant: 'plain' },
             ]}
           />
           <Dialog
             open={confirm === 'delete'}
             onClose={() => setConfirm(undefined)}
-            title={`Supprimer la question ${params.number ?? ''} ?`.replace('  ', ' ')}
-            message="Elle disparaît du sujet et de ses statistiques. Cette action est définitive ; pour la retirer seulement des parties, archive-la."
+            title={t('workshop.deleteQuestionTitle', { number: params.number ?? '' }).replace('  ', ' ')}
+            message={t('workshop.deleteQuestionText')}
             tone="danger"
             icon={TrashIcon}
             actions={[
               {
-                label: 'Supprimer',
+                label: t('workshop.delete'),
                 tone: 'destructive',
                 onPress: () => {
                   archive.mutate(questionId)
                   router.back()
                 },
               },
-              { label: 'Annuler', variant: 'plain' },
+              { label: t('topic.cancel'), variant: 'plain' },
             ]}
           />
         </>

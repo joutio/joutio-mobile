@@ -7,6 +7,7 @@ import { createTabList } from 'react-native-collapsible-tabs-native'
 import { useSharedValue, type SharedValue } from 'react-native-reanimated'
 import { useTheme } from '../theme/theme-provider'
 import { withActivePageScrollsToTop } from './tab-page'
+import { useT } from '@/lib/i18n'
 
 export const LOAD_MORE_THRESHOLD = 64
 interface NativeProps extends ViewProps {
@@ -40,6 +41,7 @@ export interface DragToLoadMoreProps {
 
 /** Native gesture/indicator; React only coordinates the request. Appending never scrolls the list. */
 export function DragToLoadMore({ enabled, loading = false, onLoadMore, style, overlay = false, resetKey, children }: DragToLoadMoreProps) {
+  const t = useT()
   const { colors } = useTheme()
   const pull = useSharedValue(0)
   const [tag, register] = useState(0)
@@ -120,7 +122,7 @@ export function DragToLoadMore({ enabled, loading = false, onLoadMore, style, ov
           onPull={(event) => {
             pull.value = event.nativeEvent.pull
           }}
-          accessibilityLabel="Chargement de la suite"
+          accessibilityLabel={t('mobile.ds.loadingMore')}
           accessibilityState={{ busy }}
         />
       )}

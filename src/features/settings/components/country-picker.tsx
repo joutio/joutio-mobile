@@ -1,4 +1,4 @@
-import { countryFlag, countryName, regionOfLocale, searchCountries, suggestedCountries } from '@joutio/client-domain/geo'
+import { countryFlag, countryName, regionOfLocale, searchCountries, suggestedCountries } from '@joutio/client/geo'
 import { useMemo, useState } from 'react'
 import { View } from 'react-native'
 import {
@@ -15,6 +15,7 @@ import {
   tokens,
 } from '@/design-system'
 import { clientSource, feedFooterProps } from '@/shared/utils/paging'
+import { currentLanguage, useT } from '@/lib/i18n'
 
 /** Pays rendus par page : la feuille s'ouvre sans construire les 249 lignes. */
 const PAGE_SIZE = 30
@@ -46,6 +47,7 @@ export function CountryPicker({
   value: string | null
   onChange: (code: string | null) => void
 }) {
+  const t = useT()
   const [query, setQuery] = useState('')
   const [pages, setPages] = useState(1)
   const results = useMemo(() => searchCountries(query), [query])
@@ -72,7 +74,7 @@ export function CountryPicker({
     <ListRow
       key={code}
       leading={<Text variant="headline">{countryFlag(code)}</Text>}
-      label={countryName(code)}
+      label={countryName(code, currentLanguage())}
       control="radio"
       on={value === code}
       onToggle={() => pick(code)}
@@ -84,21 +86,21 @@ export function CountryPicker({
     <MobileSheet
       open={open}
       onClose={close}
-      title="Pays"
+      title={t('settings.country')}
       tall
-      stickyHeader={<SearchField value={query} onChange={search} placeholder="Chercher un pays" label="Chercher un pays" />}
+      stickyHeader={<SearchField value={query} onChange={search} placeholder={t('settings.countrySearch')} label={t('settings.countrySearch')} />}
       loadMore={{ enabled: hasMore, resetKey: query, onLoadMore: () => source.fetchNextPage() }}
     >
       <View style={{ gap: tokens.space[4] }}>
         {query.trim() === '' && (
           <>
-            <SectionHeader title="Suggérés" />
-            <RadioGroup label="Pays suggérés">
+            <SectionHeader title={t('country.suggested')} />
+            <RadioGroup label={t('mobile.country.suggestedLabel')}>
               <ListGroup>
                 {suggested.map((code) => row(code, false))}
                 <ListRow
-                  label="Ne pas afficher"
-                  sub="Ton pays n'apparaît pas sur ton profil"
+                  label={t('mobile.country.hide')}
+                  sub={t('country.hiddenSub')}
                   control="radio"
                   on={value === null}
                   onToggle={() => pick(null)}
@@ -106,17 +108,17 @@ export function CountryPicker({
                 />
               </ListGroup>
             </RadioGroup>
-            <SectionHeader title="Tous les pays" />
+            <SectionHeader title={t('country.all')} />
           </>
         )}
         {visible.length === 0 ? (
-          <EmptyState icon={MagnifyingGlassIcon} title="Aucun pays trouvé" description="Vérifie l'orthographe ou cherche par code (FR, BE…)." />
+          <EmptyState icon={MagnifyingGlassIcon} title={t('settings.noCountry')} description={t('country.noResultText')} />
         ) : (
           <>
-            <RadioGroup label="Tous les pays">
+            <RadioGroup label={t('country.all')}>
               <ListGroup>{visible.map((country, index) => row(country.code, index === visible.length - 1))}</ListGroup>
             </RadioGroup>
-            <FeedFooter {...feedFooterProps(source)} endLabel="Tu as vu tous les pays" />
+            <FeedFooter {...feedFooterProps(source)} endLabel={t('mobile.country.allSeen')} />
           </>
         )}
       </View>

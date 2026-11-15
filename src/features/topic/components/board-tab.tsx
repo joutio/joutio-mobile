@@ -13,28 +13,30 @@ import {
   TrophyIcon,
   WarningCircleIcon,
 } from '@/design-system'
-import type { LeaderboardEntryView } from '@joutio/client-domain/api-types'
+import type { LeaderboardEntryView } from '@joutio/client/api-types'
 import { usePlayerIdentity } from '@/features/me'
 import { tierOf } from '@/shared/utils/tier'
 import { useTopicLeaderboard } from '../hooks/use-topic'
 import { formatNumber, tierLabel } from '../lib/format'
 import { userAvatar } from '@/shared/utils/avatar'
+import { t, useT } from '@/lib/i18n'
 
 /** Rang à partir duquel la ligne du joueur passe en barre fixe (hors du top 10). */
 export const BOARD_TOP = 10
 
-export const boardSub = (entry: LeaderboardEntryView) => (entry.provisional ? 'Classement provisoire' : tierLabel(tierOf(entry.rating)))
+export const boardSub = (entry: LeaderboardEntryView) => (entry.provisional ? t('topic.provisional') : tierLabel(tierOf(entry.rating)))
 
 /** Ligne du joueur connecté, en barre fixe au-dessus de la barre d'onglets. */
 export function MyBoardRow({
   entry,
-  sub = `${formatNumber(entry.totalXp)} XP au total`,
+  sub = t('topic.totalXp', { xp: formatNumber(entry.totalXp) }),
   trail = formatNumber(entry.totalXp),
 }: {
   entry: LeaderboardEntryView
   sub?: string
   trail?: string
 }) {
+  const t = useT()
   const identity = usePlayerIdentity()
   return (
     <PlayerRow
@@ -64,6 +66,7 @@ export function BoardTab({
   rankingsPath: '/home/rankings' | '/topics/rankings' | '/profile/rankings' | '/social/rankings'
   bottomInset: number
 }) {
+  const t = useT()
   const identity = usePlayerIdentity()
   const board = useTopicLeaderboard(topicId)
   const entries = board.data?.entries.content ?? []
@@ -81,15 +84,15 @@ export function BoardTab({
       }}
     >
       <SectionHeader
-        title="Top 10"
+        title={t('topic.top10')}
         action={
-          <Button variant="plain" size="S" onPress={() => router.push({ pathname: rankingsPath, params: { topicId, topicName, backLabel: 'Sujet' } })}>
-            Tous les classements
+          <Button variant="plain" size="S" onPress={() => router.push({ pathname: rankingsPath, params: { topicId, topicName, backLabel: t('pending.topic') } })}>
+            {t('topic.allRankings')}
           </Button>
         }
       />
       <Text variant="caption" color="muted">
-        Points d'expérience cumulés · Mondial
+        {t('topic.boardLegend')}
       </Text>
       {board.isPending ? (
         <>
@@ -100,16 +103,16 @@ export function BoardTab({
       ) : board.isError ? (
         <EmptyState
           icon={WarningCircleIcon}
-          title="Impossible de charger le classement"
-          description="Vérifie ta connexion, puis réessaie."
+          title={t('topic.boardError')}
+          description={t('home.errorText')}
           action={
             <Button style={{ alignSelf: 'center' }} loading={board.isRefetching} onPress={() => void board.refetch()}>
-              Réessayer
+              {t('callback.retry')}
             </Button>
           }
         />
       ) : entries.length === 0 ? (
-        <EmptyState icon={TrophyIcon} title="Personne n'a encore joué ce mois-ci" description="Lance un duel pour ouvrir le classement." />
+        <EmptyState icon={TrophyIcon} title={t('mobile.topic.nobodyMonth')} description={t('topic.boardEmptyText')} />
       ) : (
         <>
           <Podium

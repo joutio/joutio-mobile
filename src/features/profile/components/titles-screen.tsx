@@ -30,10 +30,11 @@ import {
 } from '@/design-system'
 import { useMyTitles, useWearTitle } from '@/features/topic/hooks/use-topic'
 import { tierLabel } from '@/features/topic/lib/format'
-import type { MasteryTier, TitleView } from '@joutio/client-domain/api-types'
+import type { MasteryTier, TitleView } from '@joutio/client/api-types'
 import { clientSource, feedFooterProps, loadMoreOptions } from '@/shared/utils/paging'
 import { topicName } from '@/shared/utils/topic-name'
 import { titleLabel } from '../lib/format'
+import { t, useT } from '@/lib/i18n'
 
 const GUTTER = tokens.space[5]
 const PAGE_SIZE = 5
@@ -44,7 +45,7 @@ interface Group {
   titles: TitleView[]
 }
 
-const countLabel = (count: number) => `${count} titre${count > 1 ? 's' : ''}`
+const countLabel = (count: number) => t(count > 1 ? 'titles.countMany' : 'titles.countOne', { count })
 
 /** Groupes par sujet (ordre du serveur), titres du palier le plus haut au plus bas. Le BFF ne date pas les déblocages. */
 function groupsOf(titles: readonly TitleView[], tier: MasteryTier | undefined, query: string): Group[] {
@@ -64,6 +65,7 @@ function groupsOf(titles: readonly TitleView[], tier: MasteryTier | undefined, q
 
 /** Tous les titres (`titres.md`) : recherche et filtre par rang ; liste groupée par sujet, 5 sujets par page. */
 export function TitlesScreen() {
+  const t = useT()
   // Fin de liste au-dessus de la tab bar native iOS (`useTabBarInset`).
   const tabInset = useTabBarInset()
   const titles = useMyTitles()
@@ -91,7 +93,7 @@ export function TitlesScreen() {
 
   const header = (
     <View>
-      <MobileTopBar variant="inline" back="Profil" onBack={() => router.back()} title="Tous les titres" />
+      <MobileTopBar variant="inline" back={t('nav.profile')} onBack={() => router.back()} title={t('titles.title')} />
       {hasTitles && !titles.isError && (
         <View
           style={{
@@ -107,13 +109,13 @@ export function TitlesScreen() {
             <SearchField
               value={query}
               onChange={(next) => change(() => setQuery(next))}
-              placeholder="Chercher un titre ou un sujet"
-              label="Chercher un titre ou un sujet"
+              placeholder={t('titles.search')}
+              label={t('titles.search')}
             />
           </View>
           <IconButton
             icon={SlidersHorizontalIcon}
-            label="Filtrer"
+            label={t('titles.filter')}
             variant="gray"
             tone="neutral"
             badge={filtered ? 'dot' : undefined}
@@ -137,25 +139,25 @@ export function TitlesScreen() {
       return (
         <EmptyState
           icon={WarningCircleIcon}
-          title="Impossible de charger tes titres"
-          description="Vérifie ta connexion, puis réessaie."
+          title={t('profile.titlesError')}
+          description={t('home.errorText')}
           action={
             <Button style={{ alignSelf: 'center' }} loading={titles.isRefetching} onPress={() => void titles.refetch()}>
-              Réessayer
+              {t('callback.retry')}
             </Button>
           }
         />
       )
     if (!hasTitles)
-      return <EmptyState icon={CrownSimpleIcon} title="Aucun titre pour l'instant" description="Progresse dans un sujet pour décrocher ton premier titre." />
+      return <EmptyState icon={CrownSimpleIcon} title={t('profile.noTitlesTitle')} description={t('profile.noTitlesText')} />
     if (query.trim())
       return (
         <EmptyState
           icon={MagnifyingGlassIcon}
-          title="Aucun titre trouvé"
+          title={t('titles.noMatch')}
           action={
             <Button variant="gray" tone="neutral" style={{ alignSelf: 'center' }} onPress={() => change(() => setQuery(''))}>
-              Effacer la recherche
+              {t('titles.clearSearch')}
             </Button>
           }
         />
@@ -163,10 +165,10 @@ export function TitlesScreen() {
     return (
       <EmptyState
         icon={CrownSimpleIcon}
-        title="Aucun titre pour ce rang"
+        title={t('titles.noRank')}
         action={
           <Button variant="gray" tone="neutral" style={{ alignSelf: 'center' }} onPress={reset}>
-            Réinitialiser
+            {t('topics.reset')}
           </Button>
         }
       />
@@ -182,27 +184,27 @@ export function TitlesScreen() {
         <MobileSheet
           open={filtersOpen}
           onClose={() => setFiltersOpen(false)}
-          title="Filtrer"
+          title={t('titles.filter')}
           action={
             <Button variant="plain" size="S" onPress={reset}>
-              Réinitialiser
+              {t('topics.reset')}
             </Button>
           }
           footer={
             <Button full onPress={() => setFiltersOpen(false)}>
-              {`Afficher ${countLabel(count)}`}
+              {t('titles.show', { count: countLabel(count) })}
             </Button>
           }
         >
           <View style={{ gap: tokens.space[6] }}>
             <View style={{ gap: tokens.space[4] }}>
-              <SectionHeader title="Rang" />
-              <RadioGroup label="Rang">
+              <SectionHeader title={t('titles.rank')} />
+              <RadioGroup label={t('titles.rank')}>
                 <ListGroup>
                   {[undefined, ...[...TIERS].reverse()].map((item, index) => (
                     <ListRow
                       key={item ?? 'all'}
-                      label={item ? tierLabel(item) : 'Tous les rangs'}
+                      label={item ? tierLabel(item) : t('titles.allRanks')}
                       control="radio"
                       on={tier === item}
                       onToggle={() => change(() => setTier(item))}
@@ -262,7 +264,7 @@ export function TitlesScreen() {
           )}
           ListFooterComponent={
             shown.length > 0 ? (
-              <FeedFooter {...feedFooterProps(source)} endLabel="Tu as vu tous tes titres" remainingLabel={`${groups.length - shown.length} autres sujets`} />
+              <FeedFooter {...feedFooterProps(source)} endLabel={t('titles.end')} remainingLabel={t('mobile.profile.otherTopics', { count: groups.length - shown.length })} />
             ) : undefined
           }
         />

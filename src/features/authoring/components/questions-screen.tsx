@@ -37,19 +37,19 @@ import {
 import {
   isTranslated,
   QUESTION_SORTS,
-  QUESTION_STATUS_LABEL,
   questionStatus,
   questionText,
   sortQuestions,
   type QuestionEditorView,
   type QuestionSort,
   type QuestionStatus,
-} from '@joutio/client-domain/authoring'
-import { MIN_QUESTIONS, questionsLabel } from '@joutio/client-domain/authoring'
+} from '@joutio/client/authoring'
+import { MIN_QUESTIONS } from '@joutio/client/authoring'
 import { useCreationLimits, useFrozen, useMyTopic, useTopicQuestions } from '../hooks/use-authoring'
-import { workshopRole } from '@joutio/client-domain/authoring'
+import { workshopRole } from '@joutio/client/authoring'
 import { FrozenNotice } from './frozen-notice'
 import { clientSource, feedFooterProps, loadMoreOptions } from '@/shared/utils/paging'
+import { STATUS_LABEL, questionsLabel, reportsLabel, t, type MessageKey, useT } from '@/lib/i18n'
 
 const GUTTER = tokens.space[5]
 const PAGE_SIZE = 10
@@ -58,25 +58,25 @@ type StatusFilter = 'all' | QuestionStatus
 type TranslationFilter = 'all' | 'translated' | 'untranslated'
 
 /** « Tous les statuts » laisse de côté les archivées : on les retrouve par leur filtre. */
-const STATUS_FILTERS: readonly { value: StatusFilter; label: string }[] = [
-  { value: 'all', label: 'Tous les statuts' },
-  { value: 'approved', label: QUESTION_STATUS_LABEL.approved },
-  { value: 'pending', label: QUESTION_STATUS_LABEL.pending },
-  { value: 'rejected', label: QUESTION_STATUS_LABEL.rejected },
-  { value: 'suspended', label: QUESTION_STATUS_LABEL.suspended },
-  { value: 'archived', label: QUESTION_STATUS_LABEL.archived },
+const STATUS_FILTERS: readonly { value: StatusFilter; label: MessageKey }[] = [
+  { value: 'all', label: 'workshop.statusAll' },
+  { value: 'approved', label: STATUS_LABEL.approved },
+  { value: 'pending', label: STATUS_LABEL.pending },
+  { value: 'rejected', label: STATUS_LABEL.rejected },
+  { value: 'suspended', label: STATUS_LABEL.suspended },
+  { value: 'archived', label: STATUS_LABEL.archived },
 ]
 
 /** Sous-ligne : statut, signalements ouverts, traduction. */
 const questionSub = (question: QuestionEditorView) => {
-  const status = QUESTION_STATUS_LABEL[questionStatus(question)]
-  const reports = question.openReportCount > 0 ? ` · ${question.openReportCount} signalement${question.openReportCount > 1 ? 's' : ''}` : ''
-  return `${status}${reports} · ${isTranslated(question) ? 'traduite' : 'sans anglais'}`
+  const status = t(STATUS_LABEL[questionStatus(question)])
+  const reports = question.openReportCount > 0 ? ` · ${reportsLabel(t, question.openReportCount)}` : ''
+  return `${status}${reports} · ${t(isTranslated(question) ? 'workshop.translatedLower' : 'workshop.untranslatedLower')}`
 }
-const TRANSLATION_FILTERS: readonly { value: TranslationFilter; label: string }[] = [
-  { value: 'all', label: 'Toutes' },
-  { value: 'translated', label: 'Traduites' },
-  { value: 'untranslated', label: 'Sans anglais' },
+const TRANSLATION_FILTERS: readonly { value: TranslationFilter; label: MessageKey }[] = [
+  { value: 'all', label: 'workshop.translationAll' },
+  { value: 'translated', label: 'workshop.translated' },
+  { value: 'untranslated', label: 'workshop.untranslated' },
 ]
 
 /** Statut à gauche de la ligne, en icône pleine ; le sous-titre le dit aussi en toutes lettres. */
@@ -150,6 +150,7 @@ function FilterOptions<T extends string>({
  * Tous les titres ; repère du plafond une fois publié. 10 par page.
  */
 export function QuestionsScreen() {
+  const t = useT()
   const params = useLocalSearchParams<QuestionsRouteParams>()
   const topicId = params.id
   const { topic, permissions } = useMyTopic(topicId)
@@ -209,21 +210,21 @@ export function QuestionsScreen() {
 
   const header = (
     <SearchHeader
-      title="Questions"
+      title={t('topic.questions')}
       titleBar={
         <MobileTopBar
           variant="inline"
-          back="Sujet"
+          back={t('pending.topic')}
           onBack={() => router.back()}
-          title="Questions"
-          right={<IconButton icon={PlusIcon} label="Ajouter une question" variant="plain" tone="accent" disabled={atCeiling || locked} onPress={add} />}
+          title={t('topic.questions')}
+          right={<IconButton icon={PlusIcon} label={t('workshop.addQuestion')} variant="plain" tone="accent" disabled={atCeiling || locked} onPress={add} />}
         />
       }
       searchVisible={count > 0}
       value={query}
       onChange={(next) => change(() => setQuery(next))}
-      placeholder="Chercher une question"
-      filterLabel="Trier et filtrer les questions"
+      placeholder={t('workshop.searchQuestion')}
+      filterLabel={t('mobile.authoring.sortFilterQuestions')}
       filterDot={filterActive}
       onFilter={() => setFilterOpen(true)}
     />
@@ -242,11 +243,11 @@ export function QuestionsScreen() {
       return (
         <EmptyState
           icon={WarningCircleIcon}
-          title="Impossible de charger les questions"
-          description="Vérifie ta connexion, puis réessaie."
+          title={t('workshop.questionsError')}
+          description={t('home.errorText')}
           action={
             <Button style={{ alignSelf: 'center' }} loading={questions.isRefetching} onPress={() => void questions.refetch()}>
-              Réessayer
+              {t('callback.retry')}
             </Button>
           }
         />
@@ -255,11 +256,11 @@ export function QuestionsScreen() {
       return (
         <EmptyState
           icon={ListChecksIcon}
-          title="Aucune question"
-          description={`Rédige au moins ${MIN_QUESTIONS} questions pour publier le sujet.`}
+          title={t('workshop.noQuestion')}
+          description={t('workshop.noQuestionText', { min: MIN_QUESTIONS })}
           action={
             <Button full icon={PlusIcon} onPress={add}>
-              Ajouter une question
+              {t('workshop.addQuestion')}
             </Button>
           }
         />
@@ -267,8 +268,8 @@ export function QuestionsScreen() {
     return (
       <EmptyState
         icon={MagnifyingGlassIcon}
-        title="Aucune question trouvée"
-        description="Vérifie le texte cherché, ou retire des filtres."
+        title={t('workshop.noQuestionFound')}
+        description={t('workshop.noQuestionFoundText')}
         action={
           <Button
             full
@@ -277,7 +278,7 @@ export function QuestionsScreen() {
               reset()
             }}
           >
-            Tout afficher
+            {t('workshop.showAll')}
           </Button>
         }
       />
@@ -294,27 +295,27 @@ export function QuestionsScreen() {
         <MobileSheet
           open={filterOpen}
           onClose={() => setFilterOpen(false)}
-          title="Trier et filtrer"
+          title={t('workshop.sortAndFilter')}
           action={
             <Button variant="plain" size="S" onPress={reset}>
-              Réinitialiser
+              {t('topics.reset')}
             </Button>
           }
           footer={
             <Button full onPress={() => setFilterOpen(false)}>
-              {`Afficher ${questionsLabel(filtered.length)}`}
+              {t('workshop.show', { shown: questionsLabel(t, filtered.length) })}
             </Button>
           }
         >
           <View style={{ gap: tokens.space[6] }}>
             <FilterOptions
-              label="Trier par"
+              label={t('topics.sortBy')}
               options={sorts.map((option) => ({ value: option, label: option }))}
               value={sort}
               onChange={(next) => change(() => setSort(next))}
             />
-            <FilterOptions label="Statut" options={STATUS_FILTERS} value={status} onChange={(next) => change(() => setStatus(next))} />
-            <FilterOptions label="Traduction" options={TRANSLATION_FILTERS} value={translation} onChange={(next) => change(() => setTranslation(next))} />
+            <FilterOptions label={t('workshop.status')} options={STATUS_FILTERS.map((option) => ({ ...option, label: t(option.label) }))} value={status} onChange={(next) => change(() => setStatus(next))} />
+            <FilterOptions label={t('workshop.translation')} options={TRANSLATION_FILTERS.map((option) => ({ ...option, label: t(option.label) }))} value={translation} onChange={(next) => change(() => setTranslation(next))} />
           </View>
         </MobileSheet>
       }
@@ -322,13 +323,13 @@ export function QuestionsScreen() {
       {questions.data ? (
         <View style={{ gap: tokens.space[3] }}>
           {/* Brouillon : l'avancement vers la publication est sur Mon sujet. */}
-          {!draft && <ProgressBar label={`${count} / ${limits.questionsPerTopic} questions`} value={Math.min(100, (count * 100) / limits.questionsPerTopic)} />}
+          {!draft && <ProgressBar label={t('workshop.ceiling', { count, max: limits.questionsPerTopic })} value={Math.min(100, (count * 100) / limits.questionsPerTopic)} />}
           {locked && <FrozenNotice published={published} limit={limits.publishedTopics} />}
           {atCeiling && (
             <Notice
               tone="info"
-              title="Sujet complet"
-              message={`${limits.questionsPerTopic} questions au maximum. Retire une question pour en ajouter une autre.`}
+              title={t('workshop.fullTitle')}
+              message={t('workshop.fullText', { max: limits.questionsPerTopic })}
             />
           )}
         </View>
@@ -340,7 +341,7 @@ export function QuestionsScreen() {
           {/* Total et tri courant toujours visibles, comme Sujets ; la puce ouvre la feuille. */}
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: tokens.space[3] }}>
             <Text variant="callout" color="muted">
-              {questionsLabel(filtered.length)}
+              {questionsLabel(t, filtered.length)}
             </Text>
             <Chip icon={ArrowsDownUpIcon} onPress={() => setFilterOpen(true)}>
               {sort}
@@ -362,7 +363,7 @@ export function QuestionsScreen() {
               )
             })}
           </ListGroup>
-          <FeedFooter {...feedFooterProps(source)} endLabel="Tu as vu toutes les questions" />
+          <FeedFooter {...feedFooterProps(source)} endLabel={t('workshop.questionsEnd')} />
         </>
       )}
     </Screen>

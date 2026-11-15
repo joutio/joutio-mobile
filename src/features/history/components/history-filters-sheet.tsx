@@ -1,26 +1,27 @@
 import { View } from 'react-native'
 import { Button, ListGroup, ListRow, MobileSheet, RadioGroup, SectionHeader, tokens } from '@/design-system'
 import type { HistoryFilterState, HistoryOpponentType, HistoryOutcome, HistorySort } from '../lib/history-service'
+import { t, useT } from '@/lib/i18n'
 
-const TYPES: { value: HistoryOpponentType | undefined; label: string }[] = [
-  { value: undefined, label: 'Toutes les parties' },
-  { value: 'HUMAN', label: 'Duels' },
-  { value: 'BOT', label: 'Entraînements' },
-]
+const TYPES = (): { value: HistoryOpponentType | undefined; label: string }[] => ([
+  { value: undefined, label: t('pending.games') },
+  { value: 'HUMAN', label: t('history.typeDuels') },
+  { value: 'BOT', label: t('history.typeTraining') },
+])
 
-const OUTCOMES: { value: HistoryOutcome; label: string }[] = [
-  { value: 'ALL', label: 'Tous' },
-  { value: 'WIN', label: 'Victoires' },
-  { value: 'LOSS', label: 'Défaites' },
-  { value: 'DRAW', label: 'Nuls' },
-]
+const OUTCOMES = (): { value: HistoryOutcome; label: string }[] => ([
+  { value: 'ALL', label: t('home.all') },
+  { value: 'WIN', label: t('profile.wins') },
+  { value: 'LOSS', label: t('profile.losses') },
+  { value: 'DRAW', label: t('profile.draws') },
+])
 
-export const HISTORY_SORTS: { value: HistorySort; label: string }[] = [
-  { value: 'RECENT', label: 'Plus récentes' },
-  { value: 'OLDEST', label: 'Plus anciennes' },
-]
+export const HISTORY_SORTS = (): { value: HistorySort; label: string }[] => ([
+  { value: 'RECENT', label: t('history.sortRecent') },
+  { value: 'OLDEST', label: t('history.sortOldest') },
+])
 
-const countLabel = (count: number) => `${count} ${count > 1 ? 'parties' : 'partie'}`
+const countLabel = (count: number) => t(count > 1 ? 'history.countMany' : 'history.countOne', { count })
 
 export interface HistoryFiltersSheetProps {
   open: boolean
@@ -35,37 +36,38 @@ export interface HistoryFiltersSheetProps {
 
 /** Feuille Filtrer de l'historique (`historique.md` § 3). */
 export function HistoryFiltersSheet({ open, onClose, filters, onChange, onReset, hideType = false, count }: HistoryFiltersSheetProps) {
+  const t = useT()
   const reset = () => onReset()
   return (
     <MobileSheet
       open={open}
       onClose={onClose}
-      title="Filtrer"
+      title={t('titles.filter')}
       action={
         <Button variant="plain" size="S" onPress={reset}>
-          Réinitialiser
+          {t('topics.reset')}
         </Button>
       }
       footer={
         <Button full onPress={onClose}>
-          {`Afficher ${countLabel(count)}`}
+          {t('history.show', { count: countLabel(count) })}
         </Button>
       }
     >
       <View style={{ gap: tokens.space[6] }}>
         {!hideType && (
           <View style={{ gap: tokens.space[4] }}>
-            <SectionHeader title="Type" />
+            <SectionHeader title={t('mobile.history.type')} />
             <ListGroup>
-              <RadioGroup label="Type de partie">
-                {TYPES.map((option, index) => (
+              <RadioGroup label={t('history.type')}>
+                {TYPES().map((option, index) => (
                   <ListRow
                     key={option.label}
                     label={option.label}
                     control="radio"
                     on={filters.opponentType === option.value}
                     onToggle={() => onChange({ opponentType: option.value })}
-                    last={index === TYPES.length - 1}
+                    last={index === TYPES().length - 1}
                   />
                 ))}
               </RadioGroup>
@@ -73,34 +75,34 @@ export function HistoryFiltersSheet({ open, onClose, filters, onChange, onReset,
           </View>
         )}
         <View style={{ gap: tokens.space[4] }}>
-          <SectionHeader title="Résultat" />
+          <SectionHeader title={t('pending.result')} />
           <ListGroup>
-            <RadioGroup label="Résultat">
-              {OUTCOMES.map((option, index) => (
+            <RadioGroup label={t('pending.result')}>
+              {OUTCOMES().map((option, index) => (
                 <ListRow
                   key={option.value}
                   label={option.label}
                   control="radio"
                   on={filters.outcome === option.value}
                   onToggle={() => onChange({ outcome: option.value })}
-                  last={index === OUTCOMES.length - 1}
+                  last={index === OUTCOMES().length - 1}
                 />
               ))}
             </RadioGroup>
           </ListGroup>
         </View>
         <View style={{ gap: tokens.space[4] }}>
-          <SectionHeader title="Tri" />
+          <SectionHeader title={t('mobile.history.sort')} />
           <ListGroup>
-            <RadioGroup label="Tri">
-              {HISTORY_SORTS.map((option, index) => (
+            <RadioGroup label={t('mobile.history.sort')}>
+              {HISTORY_SORTS().map((option, index) => (
                 <ListRow
                   key={option.value}
                   label={option.label}
                   control="radio"
                   on={filters.sort === option.value}
                   onToggle={() => onChange({ sort: option.value })}
-                  last={index === HISTORY_SORTS.length - 1}
+                  last={index === HISTORY_SORTS().length - 1}
                 />
               ))}
             </RadioGroup>

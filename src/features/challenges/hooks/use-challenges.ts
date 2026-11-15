@@ -2,15 +2,16 @@ import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tansta
 import { router } from '@/shared/navigation/router'
 import { toast } from '@/design-system'
 import { useMe } from '@/features/me'
-import type { RoomView } from '@joutio/client-domain/rooms'
+import type { RoomView } from '@joutio/client/rooms'
 import { roomOfChallenge } from '@/features/play/hooks/use-rematch'
 import { optimisticUpdate } from '@/lib/optimistic-cache'
 import { queryKeys } from '@/lib/query-keys'
 import { usePersonalNotifications } from '@/lib/realtime/personal-notifications'
-import type { ChallengeView } from '@joutio/client-domain/api-types'
+import type { ChallengeView } from '@joutio/client/api-types'
 import { topicName } from '@/shared/utils/topic-name'
 import { reconcileChallenges, reconcileRooms, settleChallenge, settleRoom } from '@/features/play/lib/play-cache'
 import { challengesService } from '../lib/challenges-service'
+import { useT } from '@/lib/i18n'
 
 /** Défis du joueur (reçus et envoyés). */
 export function useMyChallenges(enabled = true) {
@@ -72,6 +73,7 @@ export function useChallengesRealtime() {
 
 /** Apply each confirmed command separately: partial bulk failure keeps successful decisions. */
 function useChallengeMutation(run: (id: string) => Promise<unknown>, status: 'DECLINED' | 'CANCELLED', error: string) {
+  const t = useT()
   const client = useQueryClient()
   return useMutation({
     onMutate: async (ids: readonly string[]) => {
@@ -96,16 +98,23 @@ function useChallengeMutation(run: (id: string) => Promise<unknown>, status: 'DE
             : item,
         ),
       )
-      toast.error(error, { description: 'Les actions non confirmées restent disponibles. Réessaie.' })
+      toast.error(error, { description: t('challenges.retryText') })
     },
   })
 }
 
-export const useDeclineChallenges = () => useChallengeMutation(challengesService.decline, 'DECLINED', "Le refus n'a pas pu être envoyé")
-export const useCancelChallenge = () => useChallengeMutation(challengesService.cancel, 'CANCELLED', "Le défi n'a pas pu être annulé")
+export const useDeclineChallenges = () => {
+  const t = useT()
+  return useChallengeMutation(challengesService.decline, 'DECLINED', t('challenges.declineError'))
+}
+export const useCancelChallenge = () => {
+  const t = useT()
+  return useChallengeMutation(challengesService.cancel, 'CANCELLED', t('challenges.cancelError'))
+}
 
 /** Accepter : la salle du défi est calculée comme le serveur, puis ouverte. */
 export function useAcceptChallenge() {
+  const t = useT()
   const client = useQueryClient()
   return useMutation({
     onMutate: (challenge: ChallengeView) =>
@@ -146,13 +155,14 @@ export function useAcceptChallenge() {
     },
     onError: (_error, _challenge, context) => {
       context?.rollback()
-      toast.error("Ce défi n'est plus disponible")
+      toast.error(t('challenges.acceptError'))
     },
   })
 }
 
 /** Fermer un salon privé. */
 export function useCloseRoom() {
+  const t = useT()
   const client = useQueryClient()
   return useMutation({
     mutationFn: (roomId: string) => challengesService.cancelRoom(roomId),
@@ -160,7 +170,7 @@ export function useCloseRoom() {
       optimisticUpdate(client, [['rooms'], ['tracked-rooms'], queryKeys.challenges()], () => settleRoom(client, roomId, 'CANCELLED')),
     onError: (_error, _id, context) => {
       context?.rollback()
-      toast.error("Le salon n'a pas pu être fermé", { description: 'Vérifie ta connexion, puis réessaie.' })
+      toast.error(t('play.closeError'), { description: t('home.errorText') })
     },
   })
 }

@@ -10,11 +10,12 @@ import { useReducedMotion, timing } from '../motion'
 import { alpha } from '../theme/color'
 import { useTheme } from '../theme/theme-provider'
 import { tokens } from '../tokens.generated'
+import { t, useT } from '@/lib/i18n'
 
 export type AnswerState = 'rest' | 'pending' | 'correct' | 'wrong' | 'unchosen' | 'disabled'
 export type AnswerNotch = 'none' | 'me' | 'opp' | 'both'
 
-const WHO: Record<AnswerNotch, string> = { none: '', me: ', ton choix', opp: ", choix de l'adversaire", both: ', vos deux choix' }
+const WHO = (): Record<AnswerNotch, string> => ({ none: '', me: t('mobile.ds.yourChoice'), opp: t('mobile.ds.opponentChoice'), both: t('mobile.ds.bothChoices') })
 const MICRO = { ...timing('micro'), reduceMotion: ReduceMotion.Never }
 
 /** Encoche en V : 14 pt de profondeur, 32 pt de haut, centrée sur le bord. */
@@ -41,11 +42,12 @@ export interface AnswerCardProps {
 
 /** Points gagnés sur une réponse : pastille dérivée de la couleur du texte de la carte. */
 export function GainTag({ points, color }: { points: number; color: string }) {
+  const t = useT()
   const { radius } = useTheme()
   return (
     <View
       accessible
-      accessibilityLabel={`plus ${points} points`}
+      accessibilityLabel={t('mobile.ds.plusPoints', { points })}
       style={{ height: 24, paddingHorizontal: tokens.space[3], borderRadius: radius.full, justifyContent: 'center', backgroundColor: alpha(color, 0.15) }}
     >
       <Text variant="caption" weight="700" mono color={color}>
@@ -85,6 +87,7 @@ export function AnswerCard({
   onPress,
   style,
 }: AnswerCardProps) {
+  const t = useT()
   const { colors, radius } = useTheme()
   const revealed = state === 'correct' || state === 'wrong'
   const showDetails = details && revealed
@@ -97,8 +100,8 @@ export function AnswerCard({
     disabled: colors.raised,
   }[state]
   const ink = state === 'correct' ? colors.onCorrect : state === 'wrong' ? colors.onWrong : state === 'unchosen' ? colors.muted : colors.text
-  const verdict = state === 'correct' ? ', bonne réponse' : state === 'wrong' ? ', mauvaise réponse' : ''
-  const points = showDetails && gain !== undefined ? `, plus ${gain} points` : ''
+  const verdict = state === 'correct' ? t('mobile.ds.correctSuffix') : state === 'wrong' ? t('mobile.ds.wrongSuffix') : ''
+  const points = showDetails && gain !== undefined ? t('mobile.ds.plusPointsSuffix', { points: gain }) : ''
   const MarkIcon = state === 'correct' ? CheckCircleIcon : XCircleIcon
   const opacity = state === 'disabled' ? 0.4 : 1
 
@@ -119,7 +122,7 @@ export function AnswerCard({
   return (
     <PressableScale
       accessibilityRole="button"
-      accessibilityLabel={`${label}${WHO[notch]}${verdict}${points}`}
+      accessibilityLabel={`${label}${WHO()[notch]}${verdict}${points}`}
       accessibilityState={{ disabled: state !== 'rest' }}
       disabled={state !== 'rest'}
       pressedScale={0.98}

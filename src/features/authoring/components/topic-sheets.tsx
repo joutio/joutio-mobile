@@ -1,17 +1,19 @@
-import { MAX_DESCRIPTION } from '@joutio/client-domain/authoring'
+import { MAX_DESCRIPTION } from '@joutio/client/authoring'
 import { useEffect, useState } from 'react'
 import { View } from 'react-native'
 import { Button, Field, ListGroup, ListRow, MobileSheet, RadioGroup, Segmented, Text, tokens, type CategoryCode } from '@/design-system'
-import type { Language } from '@joutio/client-domain/api-types'
-import { MAX_NAME } from '@joutio/client-domain/authoring'
-import type { Localized } from '@joutio/client-domain/authoring'
+import type { Language } from '@joutio/client/api-types'
+import { MAX_NAME } from '@joutio/client/authoring'
+import type { Localized } from '@joutio/client/authoring'
+import { LANGUAGE_NAME, categoryKey, t, useT } from '@/lib/i18n'
 
 export const UNIVERSES = Object.keys(tokens.category) as CategoryCode[]
-export const universeLabel = (category: CategoryCode) => tokens.category[category].label
+/** Nom de l'univers dans la langue courante (lu au rendu). */
+export const universeLabel = (category: CategoryCode) => t(categoryKey(category))
 
 export const LANGUAGES = [
-  { value: 'fr', label: 'Français' },
-  { value: 'en', label: 'English' },
+  { value: 'fr', label: LANGUAGE_NAME.fr },
+  { value: 'en', label: LANGUAGE_NAME.en },
 ] as const
 
 /** Univers : 17 choix, la feuille se ferme au choix. */
@@ -28,9 +30,10 @@ export function UniverseSheet({
   onChange: (category: CategoryCode) => void | Promise<unknown>
   busy?: boolean
 }) {
+  const t = useT()
   return (
-    <MobileSheet open={open} onClose={onClose} title="Univers" tall>
-      <RadioGroup label="Univers">
+    <MobileSheet open={open} onClose={onClose} title={t('topics.universes')} tall>
+      <RadioGroup label={t('topics.universes')}>
         <ListGroup>
           {UNIVERSES.map((option, index) => (
             <ListRow
@@ -65,6 +68,7 @@ export function CreateTopicSheet({
   onClose: () => void
   onCreate: (topic: { name: string; category: CategoryCode }) => void
 }) {
+  const t = useT()
   const [name, setName] = useState('')
   const [category, setCategory] = useState<CategoryCode>('GENERAL')
   const [universeOpen, setUniverseOpen] = useState(false)
@@ -78,27 +82,27 @@ export function CreateTopicSheet({
       <MobileSheet
         open={open}
         onClose={onClose}
-        title="Nouveau sujet"
+        title={t('workshop.newTopic')}
         footer={
           <Button full size="L" loading={busy} disabled={name.trim() === ''} onPress={() => onCreate({ name: name.trim(), category })}>
-            Créer le brouillon
+            {t('workshop.createDraft')}
           </Button>
         }
       >
         <View style={{ gap: tokens.space[4] }}>
           <Field
-            label="Nom"
-            placeholder="Par exemple, Châteaux de la Loire"
+            label={t('workshop.name')}
+            placeholder={t('workshop.namePlaceholder')}
             value={name}
             maxLength={MAX_NAME}
-            counter={`${name.length} / ${MAX_NAME}`}
+            counter={t('mobile.authoring.counter', { count: name.length, max: MAX_NAME })}
             onChangeText={setName}
           />
           <ListGroup>
-            <ListRow label="Univers" control="chevron" value={universeLabel(category)} onPress={() => setUniverseOpen(true)} last />
+            <ListRow label={t('topics.universes')} control="chevron" value={universeLabel(category)} onPress={() => setUniverseOpen(true)} last />
           </ListGroup>
           <Text variant="caption" color="muted">
-            Vignette, traduction et questions se règlent ensuite sur la page du sujet.
+            {t('workshop.newTopicText')}
           </Text>
         </View>
       </MobileSheet>
@@ -133,6 +137,7 @@ export function LocalizedFieldSheet({
   onClose: () => void
   onSave: (value: Localized) => void
 }) {
+  const t = useT()
   const [language, setLanguage] = useState<Language>('fr')
   const [draft, setDraft] = useState<Localized>(initial)
   useEffect(() => {
@@ -149,20 +154,20 @@ export function LocalizedFieldSheet({
       title={title}
       footer={
         <Button full loading={busy} disabled={draft.fr.trim() === ''} onPress={() => onSave({ fr: draft.fr.trim(), en: draft.en.trim() })}>
-          Enregistrer
+          {t('settings.save')}
         </Button>
       }
     >
       <View style={{ gap: tokens.space[4] }}>
-        <Segmented<Language> label="Langue" options={LANGUAGES} value={language} onChange={setLanguage} />
+        <Segmented<Language> label={t('settings.language')} options={LANGUAGES} value={language} onChange={setLanguage} />
         <Field
           key={language}
-          label={language === 'fr' ? label : `${label} en anglais`}
+          label={language === 'fr' ? label : t('workshop.inEnglish', { label })}
           placeholder={placeholder[language]}
-          hint={language === 'en' ? `Facultatif. En français : ${draft.fr.trim() || '—'}` : undefined}
+          hint={language === 'en' ? t('workshop.englishHint', { text: draft.fr.trim() || '—' }) : undefined}
           value={value}
           maxLength={max}
-          counter={`${value.length} / ${max}`}
+          counter={t('mobile.authoring.counter', { count: value.length, max })}
           onChangeText={(next) => setDraft({ ...draft, [language]: next })}
         />
       </View>
@@ -187,6 +192,7 @@ export function DescriptionSheet({
   onClose: () => void
   onSave: (changes: { language: Language; description: string | null }[]) => void
 }) {
+  const t = useT()
   const [language, setLanguage] = useState<Language>('fr')
   const [draft, setDraft] = useState<Localized>(initial)
   useEffect(() => {
@@ -203,25 +209,25 @@ export function DescriptionSheet({
     <MobileSheet
       open={open}
       onClose={onClose}
-      title="Description"
-      subtitle="Facultative, affichée sous le titre de la fiche"
+      title={t('workshop.description')}
+      subtitle={t('workshop.descriptionSub')}
       footer={
         <Button full loading={busy} disabled={changes.length === 0} onPress={() => onSave(changes)}>
-          Enregistrer
+          {t('settings.save')}
         </Button>
       }
     >
       <View style={{ gap: tokens.space[4] }}>
-        <Segmented<Language> label="Langue" options={LANGUAGES} value={language} onChange={setLanguage} />
+        <Segmented<Language> label={t('settings.language')} options={LANGUAGES} value={language} onChange={setLanguage} />
         <Field
           key={language}
-          label={language === 'fr' ? 'Description' : 'Description en anglais'}
-          placeholder={language === 'fr' ? 'Ce que les joueurs vont trouver dans ce sujet' : 'What players will find in this topic'}
-          hint={language === 'en' ? 'Facultative. Sans elle, les joueurs anglophones lisent la française.' : undefined}
+          label={language === 'fr' ? t('workshop.description') : t('mobile.authoring.descriptionEn')}
+          placeholder={language === 'fr' ? t('workshop.descriptionPlaceholder') : 'What players will find in this topic'}
+          hint={language === 'en' ? t('mobile.authoring.descriptionEnHint') : undefined}
           multiline
           value={value}
           maxLength={MAX_DESCRIPTION}
-          counter={`${value.length} / ${MAX_DESCRIPTION}`}
+          counter={t('mobile.authoring.counter', { count: value.length, max: MAX_DESCRIPTION })}
           onChangeText={(next) => setDraft({ ...draft, [language]: next })}
         />
       </View>

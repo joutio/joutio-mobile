@@ -1,5 +1,6 @@
 import { Platform } from 'react-native'
 import { config } from '@/lib/config'
+import { t } from '@/lib/i18n'
 
 type GoogleSigninModule = typeof import('@react-native-google-signin/google-signin')
 
@@ -11,9 +12,9 @@ export class GoogleSignInError extends Error {
   }
 }
 
-const DEVELOPER_ERROR = "La connexion Google n'est pas configurée pour cette version (client OAuth, SHA-1). Utilise le code par e-mail."
-const NETWORK_ERROR = 'Connexion Google impossible : vérifie ta connexion.'
-const UNKNOWN_ERROR = 'Connexion Google impossible. Utilise le code par e-mail.'
+const DEVELOPER_ERROR = () => t('mobile.auth.google.notConfigured')
+const NETWORK_ERROR = () => t('mobile.auth.google.network')
+const UNKNOWN_ERROR = () => t('mobile.auth.google.failed')
 
 let configured = false
 
@@ -28,7 +29,7 @@ async function loadGoogleSignin(): Promise<GoogleSigninModule> {
   try {
     module = await import('@react-native-google-signin/google-signin')
   } catch {
-    throw new GoogleSignInError("Google n'est pas disponible dans cette version.")
+    throw new GoogleSignInError(t('mobile.auth.google.unavailableBuild'))
   }
   if (!configured) {
     module.GoogleSignin.configure({
@@ -44,30 +45,30 @@ async function loadGoogleSignin(): Promise<GoogleSigninModule> {
 
 /** Ouvre le sélecteur de compte Google natif et retourne l'ID token ; `null` si la personne annule. */
 export async function signInWithGoogle(): Promise<string | null> {
-  if (!isGoogleSignInAvailable()) throw new GoogleSignInError("Google n'est pas disponible sur cet appareil.")
+  if (!isGoogleSignInAvailable()) throw new GoogleSignInError(t('mobile.auth.google.unavailableDevice'))
   const { GoogleSignin, isSuccessResponse, isErrorWithCode, statusCodes } = await loadGoogleSignin()
   try {
     await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true })
     const response = await GoogleSignin.signIn()
     if (!isSuccessResponse(response)) return null
     const idToken = response.data.idToken ?? (await GoogleSignin.getTokens()).idToken
-    if (!idToken) throw new GoogleSignInError("Google n'a pas fourni de jeton d'identité. Réessaie.")
+    if (!idToken) throw new GoogleSignInError(t('mobile.auth.google.noIdToken'))
     return idToken
   } catch (error) {
     if (error instanceof GoogleSignInError) throw error
     if (isErrorWithCode(error)) {
       if (error.code === statusCodes.SIGN_IN_CANCELLED) return null
-      if (error.code === statusCodes.IN_PROGRESS) throw new GoogleSignInError('Une connexion Google est déjà en cours.')
-      if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) throw new GoogleSignInError('Google Play Services est requis pour la connexion Google.')
+      if (error.code === statusCodes.IN_PROGRESS) throw new GoogleSignInError(t('mobile.auth.google.inProgress'))
+      if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) throw new GoogleSignInError(t('mobile.auth.google.playServices'))
       if (error.code === '10' || /DEVELOPER_ERROR/i.test(error.message)) {
         // Toujours journalisé (sans secret) : visible dans `adb logcat` sur l'APK.
         console.warn('[GoogleSignIn] DEVELOPER_ERROR:', error.message)
-        throw new GoogleSignInError(DEVELOPER_ERROR)
+        throw new GoogleSignInError(DEVELOPER_ERROR())
       }
-      if (error.code === '7' || /NETWORK_ERROR/i.test(error.message)) throw new GoogleSignInError(NETWORK_ERROR)
+      if (error.code === '7' || /NETWORK_ERROR/i.test(error.message)) throw new GoogleSignInError(NETWORK_ERROR())
     }
     if (__DEV__) console.warn('[GoogleSignIn]', error)
-    throw new GoogleSignInError(UNKNOWN_ERROR)
+    throw new GoogleSignInError(UNKNOWN_ERROR())
   }
 }
 

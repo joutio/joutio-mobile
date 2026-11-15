@@ -31,10 +31,11 @@ import {
 import { useMe } from '@/features/me'
 import { useWearTitle } from '@/features/topic/hooks/use-topic'
 import { dayLabel, formatNumber } from '@/features/topic/lib/format'
-import type { GameHistoryItemView, GameOutcome, MasteryTier, TitleView, TopicStatView } from '@joutio/client-domain/api-types'
+import type { GameHistoryItemView, GameOutcome, MasteryTier, TitleView, TopicStatView } from '@joutio/client/api-types'
 import { topicName } from '@/shared/utils/topic-name'
 import type { BadgeFamilySummary } from '../lib/badges'
 import { rankProgress, titleLabel } from '../lib/format'
+import { useT } from '@/lib/i18n'
 
 const GUTTER = tokens.space[5]
 const PAGE = { gap: tokens.space[6], paddingHorizontal: GUTTER, paddingTop: tokens.space[2], paddingBottom: tokens.space[7] }
@@ -55,15 +56,16 @@ function Loading() {
 }
 
 function Failed({ title, onRetry, retrying }: { title: string; onRetry: () => void; retrying: boolean }) {
+  const t = useT()
   return (
     <TabScrollView contentContainerStyle={PAGE}>
       <EmptyState
         icon={WarningCircleIcon}
         title={title}
-        description="Vérifie ta connexion, puis réessaie."
+        description={t('home.errorText')}
         action={
           <Button style={{ alignSelf: 'center' }} loading={retrying} onPress={onRetry}>
-            Réessayer
+            {t('callback.retry')}
           </Button>
         }
       />
@@ -90,6 +92,7 @@ export interface StatsTabProps {
 }
 
 export function StatsTab({ streak, tier, rating, provisional, wins, draws, losses, topics, active, onStreak, onRanks, onPlayed }: StatsTabProps) {
+  const t = useT()
   const played = wins + draws + losses
   const rank = tier && !provisional ? rankProgress(tier, rating) : undefined
   const { categoryColor } = useTheme()
@@ -105,25 +108,25 @@ export function StatsTab({ streak, tier, rating, provisional, wins, draws, losse
     <TabScrollView contentContainerStyle={PAGE}>
       <View style={{ gap: tokens.space[4] }}>
         <SectionHeader
-          title="Série"
+          title={t('profile.streak')}
           action={
             <Button variant="plain" size="S" onPress={onStreak}>
-              Calendrier
+              {t('profile.calendar')}
             </Button>
           }
         />
         <Card>{streak ? <Streak count={streak.count} hint={streak.hint} week={streak.week} /> : <Skeleton shape="row" />}</Card>
       </View>
       {played === 0 ? (
-        <EmptyState icon={ChartLineUpIcon} title="Pas encore de statistiques" description="Joue tes premiers duels pour voir ton bilan." />
+        <EmptyState icon={ChartLineUpIcon} title={t('profile.noStatsTitle')} description={t('profile.noStatsText')} />
       ) : (
         <>
           <View style={{ gap: tokens.space[4] }}>
             <SectionHeader
-              title="Rang"
+              title={t('titles.rank')}
               action={
                 <Button variant="plain" size="S" onPress={onRanks}>
-                  Tous les rangs
+                  {t('titles.allRanks')}
                 </Button>
               }
             />
@@ -137,18 +140,18 @@ export function StatsTab({ streak, tier, rating, provisional, wins, draws, losse
                 </View>
               ) : (
                 <Text variant="callout" color="muted">
-                  Ton rang s'affiche après tes premiers duels classés.
+                  {t('mobile.profile.rankAfter')}
                 </Text>
               )}
             </Card>
           </View>
           <View style={{ gap: tokens.space[4] }}>
-            <SectionHeader title="Bilan" />
+            <SectionHeader title={t('profile.outcomes')} />
             {/* Toujours les trois blocs, puis la barre de ratio (décision du 2026-11-06). */}
             <View style={{ flexDirection: 'row', gap: tokens.space[3] }}>
-              <Stat label="Victoires" value={formatNumber(wins)} tone="up" compact />
-              <Stat label={draws > 1 ? 'Nuls' : 'Nul'} value={formatNumber(draws)} compact />
-              <Stat label="Défaites" value={formatNumber(losses)} tone="down" compact />
+              <Stat label={t('profile.wins')} value={formatNumber(wins)} tone="up" compact />
+              <Stat label={draws > 1 ? t('profile.draws') : t('profile.draw')} value={formatNumber(draws)} compact />
+              <Stat label={t('profile.losses')} value={formatNumber(losses)} tone="down" compact />
             </View>
             <Card>
               <OutcomeBar wins={wins} draws={draws} losses={losses} />
@@ -157,15 +160,15 @@ export function StatsTab({ streak, tier, rating, provisional, wins, draws, losse
           {donut.length > 0 && (
             <View style={{ gap: tokens.space[4] }}>
               <SectionHeader
-                title="Sujets joués"
+                title={t('profile.playedTopics')}
                 action={
                   <Button variant="plain" size="S" onPress={onPlayed}>
-                    Tout voir
+                    {t('home.seeAll')}
                   </Button>
                 }
               />
               <Card padding={tokens.space[3]}>
-                <TopicsDonut label="Sujets joués" data={donut} play={active} />
+                <TopicsDonut label={t('profile.playedTopics')} data={donut} play={active} />
               </Card>
             </View>
           )}
@@ -188,13 +191,14 @@ export interface BadgesTabProps {
 }
 
 export function BadgesTab({ families, summary, loading, error, retrying, onRetry, onOpen }: BadgesTabProps) {
+  const t = useT()
   if (loading) return <Loading />
-  if (error && !families) return <Failed title="Impossible de charger tes badges" onRetry={onRetry} retrying={retrying} />
+  if (error && !families) return <Failed title={t('profile.badgesError')} onRetry={onRetry} retrying={retrying} />
   const earned = (families ?? []).some((family) => family.earned > 0 || family.progress > 0)
   if (!families || !earned)
     return (
       <TabScrollView contentContainerStyle={PAGE}>
-        <EmptyState icon={MedalIcon} title="Aucun badge pour l'instant" description="Joue tes premiers duels pour lancer ta collection." />
+        <EmptyState icon={MedalIcon} title={t('profile.noBadgesTitle')} description={t('profile.noBadgesText')} />
       </TabScrollView>
     )
   return (
@@ -239,23 +243,24 @@ export interface TitlesTabProps {
  * date de la spec attend ce champ (`profil.md` § 5).
  */
 export function TitlesTab({ titles, equippedKey, loading, error, retrying, onRetry, onAll }: TitlesTabProps) {
+  const t = useT()
   const wear = useWearTitle()
   if (loading) return <Loading />
-  if (error && !titles) return <Failed title="Impossible de charger tes titres" onRetry={onRetry} retrying={retrying} />
+  if (error && !titles) return <Failed title={t('profile.titlesError')} onRetry={onRetry} retrying={retrying} />
   if (!titles || titles.length === 0)
     return (
       <TabScrollView contentContainerStyle={PAGE}>
-        <EmptyState icon={CrownSimpleIcon} title="Aucun titre pour l'instant" description="Progresse dans un sujet pour décrocher ton premier titre." />
+        <EmptyState icon={CrownSimpleIcon} title={t('profile.noTitlesTitle')} description={t('profile.noTitlesText')} />
       </TabScrollView>
     )
   const shown = [...titles].sort((a, b) => TIER_ORDER.indexOf(a.tier) - TIER_ORDER.indexOf(b.tier)).slice(0, 5)
   return (
     <TabScrollView contentContainerStyle={{ ...PAGE, gap: tokens.space[4] }}>
       <SectionHeader
-        title="Meilleurs titres"
+        title={t('profile.lastTitles')}
         action={
           <Button variant="plain" size="S" onPress={onAll}>
-            Tout voir
+            {t('home.seeAll')}
           </Button>
         }
       />
@@ -289,14 +294,15 @@ export interface HistoryTabProps {
 }
 
 export function HistoryTab({ games, loading, error, retrying, onRetry }: HistoryTabProps) {
+  const t = useT()
   const me = useMe(true)
   if (loading) return <Loading />
-  if (error && !games) return <Failed title="Impossible de charger tes parties" onRetry={onRetry} retrying={retrying} />
+  if (error && !games) return <Failed title={t('topic.gamesError')} onRetry={onRetry} retrying={retrying} />
   const finished = (games ?? []).filter((game) => OUTCOMES[game.outcome]).slice(0, 10)
   if (finished.length === 0)
     return (
       <TabScrollView contentContainerStyle={PAGE}>
-        <EmptyState icon={ClockCounterClockwiseIcon} title="Aucune partie pour l'instant" description="Tes duels et entraînements apparaîtront ici." />
+        <EmptyState icon={ClockCounterClockwiseIcon} title={t('history.empty')} description={t('history.emptyText')} />
       </TabScrollView>
     )
   const groups: { day: string; games: GameHistoryItemView[] }[] = []
@@ -309,14 +315,14 @@ export function HistoryTab({ games, loading, error, retrying, onRetry }: History
   return (
     <TabScrollView contentContainerStyle={{ ...PAGE, gap: tokens.space[4] }}>
       <SectionHeader
-        title="Dernières parties"
+        title={t('topic.lastGames')}
         action={
           <Button
             variant="plain"
             size="S"
-            onPress={() => router.push({ pathname: '/profile/history', params: { userId: me.data?.userId, backLabel: 'Profil' } })}
+            onPress={() => router.push({ pathname: '/profile/history', params: { userId: me.data?.userId, backLabel: t('nav.profile') } })}
           >
-            Tout voir
+            {t('home.seeAll')}
           </Button>
         }
       />
@@ -333,7 +339,7 @@ export function HistoryTab({ games, loading, error, retrying, onRetry }: History
                 category={toCategoryCode(game.topic.category)}
                 pictogram={game.topic.pictogramUrl ?? undefined}
                 image={game.topic.imageUrl ?? undefined}
-                sub={game.opponentType === 'BOT' ? 'Entraînement' : (game.opponent?.pseudonym ?? 'Adversaire')}
+                sub={game.opponentType === 'BOT' ? t('room.training') : (game.opponent?.pseudonym ?? t('topic.opponent'))}
                 outcome={OUTCOMES[game.outcome] ?? 'draw'}
                 score={`${game.myScore} · ${game.opponentScore}`}
                 bot={game.opponentType === 'BOT'}

@@ -3,6 +3,7 @@ import { useReducedMotion } from '../motion'
 import { alpha } from '../theme/color'
 import { useTheme } from '../theme/theme-provider'
 import { tokens } from '../tokens.generated'
+import { t } from '@/lib/i18n'
 import { VerifiedShine } from '../vendor/reacticx/micro-interactions/verified-shine'
 
 export interface PremiumBadgeProps {
@@ -25,5 +26,17 @@ export function PremiumBadge({ size = 18, style }: PremiumBadgeProps) {
   const reduced = useReducedMotion()
   return (
     <VerifiedShine size={size} color={colors.accent} checkColor={colors.onAccent} shineColors={SHINE_COLORS} paused={reduced} label="Premium" style={style} />
+  )
+}
+
+/**
+ * Marque des **sujets officiels** (éditoriaux de Joutio), à droite du nom du sujet (`marque.md` § OfficialBadge) : même
+ * badge que Premium, en `official` (bleu) avec coche `onOfficial`.
+ */
+export function OfficialBadge({ size = 16, style }: PremiumBadgeProps) {
+  const { colors } = useTheme()
+  const reduced = useReducedMotion()
+  return (
+    <VerifiedShine size={size} color={colors.official} checkColor={colors.onOfficial} shineColors={SHINE_COLORS} paused={reduced} label={t('ds.official')} style={style} />
   )
 }

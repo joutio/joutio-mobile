@@ -31,15 +31,15 @@ import {
   contentFor,
   QUESTION_CHOICES,
   reasonCounts,
-  REPORT_REASON_LABEL,
   snapshotDiffers,
   type OwnerQuestionReport,
   type QuestionEditorView,
   type ReportedQuestion,
   type ReportSnapshot,
-} from '@joutio/client-domain/authoring'
+} from '@joutio/client/authoring'
 import { useDismissReports, useMyTopic, useReportQueue, useTopicQuestions } from '../hooks/use-authoring'
 import { openQuestionEditor, questionNumber } from './questions-screen'
+import { LANGUAGE_NAME, REASON_LABEL, currentLanguage, formatDate, t, useT } from '@/lib/i18n'
 
 type Version = 'current' | 'reported'
 
@@ -54,8 +54,8 @@ export interface QuestionReportsRouteParams {
   [key: string]: string | undefined
 }
 
-const DATE = new Intl.DateTimeFormat('fr', { day: 'numeric', month: 'short' })
-const LANGUAGE_LABEL: Record<string, string> = { fr: 'Français', en: 'English' }
+/** « 28 oct. » dans la langue courante. */
+const shortDate = (value: string) => formatDate(new Date(value), currentLanguage(), { day: 'numeric', month: 'short' })
 
 /** Contenu signalé à comparer : celui du signalement ciblé, sinon du plus récent qui diffère de la question actuelle. */
 function reportedSnapshot(item: ReportedQuestion, highlight?: string): ReportSnapshot | undefined {
@@ -77,10 +77,12 @@ function cardsOf(answers: readonly { choice: string; text: string }[], correct: 
 function historyLine(item: ReportedQuestion, open: boolean): string | undefined {
   const history = item.history
   if (!history) return undefined
-  const outcome = history.lastStatus === 'RESOLVED' ? 'corrigée' : 'close sans modification'
-  const when = history.lastReviewedAt ? ` le ${DATE.format(new Date(history.lastReviewedAt))}` : ''
-  if (!open) return `${outcome.charAt(0).toUpperCase()}${outcome.slice(1)}${when}`
-  return `Déjà signalée ${history.closedCount} fois · ${outcome}${when}`
+  const resolved = history.lastStatus === 'RESOLVED'
+  const outcome = history.lastReviewedAt
+    ? t(resolved ? 'workshop.historyResolved' : 'workshop.historyDismissed', { date: shortDate(history.lastReviewedAt) })
+    : t(resolved ? 'workshop.historyResolvedNoDate' : 'workshop.historyDismissedNoDate')
+  if (!open) return `${outcome.charAt(0).toUpperCase()}${outcome.slice(1)}`
+  return t('workshop.historyCount', { count: history.closedCount, last: outcome })
 }
 
 const QuestionPage = memo(function QuestionPage({
@@ -94,6 +96,7 @@ const QuestionPage = memo(function QuestionPage({
   snapshot: ReportSnapshot | undefined
   peek: number
 }) {
+  const t = useT()
   const { colors } = useTheme()
   const content = contentFor(question, 'fr') ?? question.contents[0]
   const text = snapshot?.questionText ?? content?.text ?? ''
@@ -104,17 +107,17 @@ const QuestionPage = memo(function QuestionPage({
   return (
     <View style={{ flex: 1, gap: tokens.space[3], paddingHorizontal: tokens.space[5], paddingTop: tokens.space[2], paddingBottom: peek + tokens.space[3] }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: tokens.space[2] }}>
-        <Text variant="headline">{number > 0 ? `Question ${number}` : 'Question'}</Text>
+        <Text variant="headline">{number > 0 ? t('workshop.questionNumber', { number }) : t('workshop.question')}</Text>
         {question.status === 'SUSPENDED' ? (
           <Pill tone="suspended" icon={ProhibitIcon}>
-            Suspendue
+            {t('workshop.suspended')}
           </Pill>
         ) : question.status === 'APPROVED' ? (
           <Pill tone="correct" icon={CheckCircleIcon}>
-            En jeu
+            {t('workshop.inPlay')}
           </Pill>
         ) : (
-          <Pill tone="pending">Hors jeu</Pill>
+          <Pill tone="pending">{t('mobile.authoring.outOfPlay')}</Pill>
         )}
       </View>
       <View style={{ flex: 1, minHeight: 0 }}>
@@ -131,10 +134,11 @@ const QuestionPage = memo(function QuestionPage({
 })
 
 function ReportCard({ report, highlighted }: { report: OwnerQuestionReport; highlighted: boolean }) {
+  const t = useT()
   const { colors, radius } = useTheme()
   return (
     <View
-      accessibilityLabel={highlighted ? 'Signalement de la notification' : undefined}
+      accessibilityLabel={highlighted ? t('workshop.reportFromNotification') : undefined}
       style={{
         gap: tokens.space[2],
         padding: tokens.space[4],
@@ -146,19 +150,19 @@ function ReportCard({ report, highlighted }: { report: OwnerQuestionReport; high
     >
       {highlighted && (
         <Text variant="caption" weight="600" color="accentInk">
-          Signalement de la notification
+          {t('workshop.reportFromNotification')}
         </Text>
       )}
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: tokens.space[1] }}>
         {report.reasons.map((reason) => (
           <Pill key={reason} tone="wrong">
-            {REPORT_REASON_LABEL[reason]}
+            {t(REASON_LABEL[reason])}
           </Pill>
         ))}
       </View>
-      {report.comment ? <Text>{`« ${report.comment} »`}</Text> : <Text color="muted">Aucun commentaire.</Text>}
+      {report.comment ? <Text>{`« ${report.comment} »`}</Text> : <Text color="muted">{t('workshop.noComment')}</Text>}
       <Text variant="caption" color="muted">
-        {`${report.language ? `${LANGUAGE_LABEL[report.language] ?? report.language} · ` : ''}${DATE.format(new Date(report.createdAt))}`}
+        {`${report.language ? `${LANGUAGE_NAME[report.language] ?? report.language} · ` : ''}${shortDate(report.createdAt)}`}
       </Text>
     </View>
   )
@@ -171,6 +175,7 @@ function ReportCard({ report, highlighted }: { report: OwnerQuestionReport; high
  * à l'écran d'origine (Modération ou Notifications).
  */
 export function QuestionReportsScreen() {
+  const t = useT()
   const params = useLocalSearchParams<QuestionReportsRouteParams>()
   const { colors } = useTheme()
   const topicId = params.id
@@ -192,8 +197,8 @@ export function QuestionReportsScreen() {
   if (found >= 0) lastIndex.current = found
   const item = items[index]
   const name = workshop.topic ? topicName(workshop.topic.names) : (params.name ?? '')
-  const back = params.from === 'notifications' ? 'Notifications' : 'Modération'
-  const position = items.length > 1 ? ` · ${index + 1} / ${items.length}` : ''
+  const back = params.from === 'notifications' ? t('home.notifications') : t('workshop.moderation')
+  const position = items.length > 1 ? ` · ${t('common.countOf', { index: index + 1, total: items.length })}` : ''
 
   // La question affichée suit la file : après une clôture, elle reprend la suivante.
   useEffect(() => {
@@ -208,7 +213,7 @@ export function QuestionReportsScreen() {
     setDetent('peek')
   }
 
-  const header = <MobileTopBar variant="inline" back={back} onBack={() => router.back()} title="Signalements" subtitle={`${name}${position}`} />
+  const header = <MobileTopBar variant="inline" back={back} onBack={() => router.back()} title={t('workshop.reports')} subtitle={`${name}${position}`} />
 
   if (queue.isPending || workshop.isPending)
     return (
@@ -223,8 +228,8 @@ export function QuestionReportsScreen() {
       <Screen header={header}>
         <EmptyState
           icon={WarningCircleIcon}
-          title="Signalements indisponibles"
-          description="Vérifie ta connexion, ou ton rôle dans l'équipe du sujet."
+          title={t('mobile.authoring.reportsUnavailable')}
+          description={t('mobile.authoring.reportsUnavailableText')}
           action={
             <Button
               style={{ alignSelf: 'center' }}
@@ -233,7 +238,7 @@ export function QuestionReportsScreen() {
                 void workshop.refetch()
               }}
             >
-              Réessayer
+              {t('callback.retry')}
             </Button>
           }
         />
@@ -244,11 +249,11 @@ export function QuestionReportsScreen() {
       <Screen header={header}>
         <EmptyState
           icon={CheckCircleIcon}
-          title="Tout est traité"
-          description="Aucun signalement n'attend de réponse sur ce sujet."
+          title={t('workshop.allDone')}
+          description={t('mobile.authoring.allHandledText')}
           action={
             <Button style={{ alignSelf: 'center' }} onPress={() => router.back()}>
-              Retour
+              {t('topic.back')}
             </Button>
           }
         />
@@ -270,12 +275,12 @@ export function QuestionReportsScreen() {
           {snapshot && (
             <View style={{ paddingHorizontal: tokens.space[5], paddingTop: tokens.space[1], paddingBottom: tokens.space[2] }}>
               <Segmented<Version>
-                label="Version de la question"
+                label={t('workshop.version')}
                 value={version}
                 onChange={setVersion}
                 options={[
-                  { value: 'current', label: 'Actuelle' },
-                  { value: 'reported', label: 'Signalée' },
+                  { value: 'current', label: t('workshop.versionCurrent') },
+                  { value: 'reported', label: t('workshop.versionReported') },
                 ]}
               />
             </View>
@@ -305,7 +310,7 @@ export function QuestionReportsScreen() {
           ))}
         </PagerView>
         <DetentSheet
-          label="Signalements de la question"
+          label={t('workshop.reportsOfQuestion')}
           detent={detent}
           onDetentChange={setDetent}
           onPeekHeight={setPeek}
@@ -313,7 +318,7 @@ export function QuestionReportsScreen() {
           header={
             <View style={{ gap: tokens.space[2] }}>
               <Text variant="headline">
-                {open.length > 0 ? `${open.length} signalement${open.length > 1 ? 's' : ''} ouvert${open.length > 1 ? 's' : ''}` : 'Signalements traités'}
+                {open.length > 0 ? t(open.length > 1 ? 'workshop.openMany' : 'workshop.openOne', { count: open.length }) : t('workshop.reportsDone')}
               </Text>
               {history && (
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: tokens.space[1] }}>
@@ -327,7 +332,7 @@ export function QuestionReportsScreen() {
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: tokens.space[1] }}>
                   {counts.map(([reason, count]) => (
                     <Pill key={reason} tone="wrong">
-                      {`${REPORT_REASON_LABEL[reason]} · ${count}`}
+                      {t('common.labelCount', { label: t(REASON_LABEL[reason]), count })}
                     </Pill>
                   ))}
                 </View>
@@ -344,20 +349,20 @@ export function QuestionReportsScreen() {
                   tone="neutral"
                   onPress={() =>
                     showDialog({
-                      title: open.length > 1 ? `Clore les ${open.length} signalements ?` : 'Clore le signalement ?',
-                      message: 'La question reste telle quelle et les joueurs ne sont pas prévenus. Une question suspendue reste à approuver.',
+                      title: open.length > 1 ? t('workshop.closeTitleMany', { count: open.length }) : t('workshop.closeTitleOne'),
+                      message: t('workshop.closeText'),
                       icon: CheckCircleIcon,
                       actions: [
-                        { label: 'Clore sans modifier', onPress: () => dismiss.mutate(item.question.questionId) },
-                        { label: 'Annuler', variant: 'plain' },
+                        { label: t('workshop.closeConfirm'), onPress: () => dismiss.mutate(item.question.questionId) },
+                        { label: t('topic.cancel'), variant: 'plain' },
                       ],
                     })
                   }
                 >
-                  Clore
+                  {t('workshop.close')}
                 </Button>
                 <Button style={{ flex: 1 }} full icon={PencilSimpleIcon} onPress={() => openQuestionEditor(topicId, number, item.question.questionId, true)}>
-                  Modifier
+                  {t('settings.bannerEdit')}
                 </Button>
               </View>
             ) : undefined
@@ -372,7 +377,7 @@ export function QuestionReportsScreen() {
               icon={FlagIcon}
               onPress={() => router.push({ pathname: '/workshop/[id]/moderation', params: { id: topicId, tab: 'reports' } })}
             >
-              Tous les signalements du sujet
+              {t('mobile.authoring.allTopicReports')}
             </Button>
           )}
         </DetentSheet>

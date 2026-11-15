@@ -35,7 +35,7 @@ Profil **et** Accueil (roue dentée de l'Accueil), retour selon la pile ; date d
 dans Compte, sélecteur natif `@expo/ui/community/datetime-picker` ; **étape Date de naissance** avant tout le reste si
 `MeView.birthDateRequired` (layout racine). **Partage** : `useShare` (feuille du système, lien
 `go.joutio.com/{p|t|j}/…`), routes `p|t|j/[id]` (liens universels, `associatedDomains` et `intentFilters`
-dans `app.config.ts` — **nouveau build natif requis**). Le parrainage et le badge Recruteur ont été supprimés (2026-11-14). Pays : `@joutio/client-domain/geo` (noms FR/EN embarqués, Hermes). Résultat et chat
+dans `app.config.ts` — **nouveau build natif requis**). Le parrainage et le badge Recruteur ont été supprimés (2026-11-14). Pays : `@joutio/client/geo` (noms FR/EN embarqués, Hermes). Résultat et chat
 d'après-duel suivent le thème de l'app (`AppTheme`), la séquence de déblocages reste sombre.
 
 **Identité d'un joueur** (2026-11-12, `design/specs/components/primitives.md` § Identité d'un joueur) : avatar de base =
@@ -65,7 +65,7 @@ Onboarding, écarts assumés :
 Décisions :
 
 - **Domaine partagé (2026-11-11, D17)** : la logique pure (fold du duel, chronologie de l'arène, salles, matchmaking,
-  atelier) et les DTOs du BFF viennent de `@joutio/client-domain` (`libraries/joutio-client-domain`, GitHub Packages),
+  atelier) et les DTOs du BFF viennent de `@joutio/client` (`libraries/joutio-client`, GitHub Packages),
   importés par sous-chemin (`/game`, `/rooms`, `/authoring`, `/api-types`). Aucune copie locale : un changement se fait
   dans le paquet, puis on monte sa version ici. Installation : `.npmrc` du projet (scope `@joutio`) et un jeton
   `read:packages` dans `~/.npmrc` (`make init` du workspace) ; la CI lit avec l'action partagée `setup-node-npm` et le
@@ -153,7 +153,7 @@ src/
     motion.ts haptics.ts icons.ts a11y.ts
   features/                 # auth (OTP, session), me, onboarding : composants, hooks, services, stores
   lib/                      # infra : config, endpoints, auth (tokens, refresh), api-client, query-client
-  shared/                   # utilitaires partagés (types BFF : @joutio/client-domain/api-types)
+  shared/                   # utilitaires partagés (types BFF : @joutio/client/api-types)
   dev/                      # démos du catalogue
 assets/brand, assets/topics # repris du lab par npm run assets:sync
 ```
@@ -230,6 +230,13 @@ sans ligne de co-auteur.
 
 ## 4. Règles
 
+- **Langue (2026-11-15, ADR [`0002`](../../design/specs/decisions/0002-client-i18n.md))** : aucun texte visible en
+  dur. Les textes viennent de `@joutio/client/i18n` (dictionnaire FR/EN partagé avec le web) via `src/lib/i18n` :
+  `useT()` dans un composant ou un hook, `t()` hors React, appelé **au moment de l'affichage** (une liste de module
+  devient une fonction : `TABS()`). Clés propres au mobile en `mobile.*`, primitives en `ds.*`, rangs et univers par
+  `tierKey()` / `categoryKey()` (jamais `tokens.*.label`). Langue de l'appareil avant connexion
+  (`expo-localization`), puis `MeView.language` (`useLanguageSync`). Nombres et dates : `formatNumber`, `formatDate`
+  et `currentLanguage()`, jamais `'fr-FR'`. Les tests node simulent `@/lib/i18n` avec `tests/i18n-mock.cjs`.
 - **Aucune valeur de design en dur** : couleurs, typographie, espace, rayons et motion viennent des tokens
   générés (`useTheme()`, `tokens`). Les mesures propres à un composant (hauteur 48 du Button L, 52 de la barre)
   reprennent celles du lab.
@@ -443,7 +450,7 @@ Décision utilisateur : supprimer l’ancien dépôt GitHub `joutio/joutio-mobil
 - **Rôles** (`questionActions`, `workshopRole`) : section « Gérer » de l'éditeur (archiver et supprimer toujours
   confirmés) ; Mon sujet : Publier / Supprimer le brouillon (créateur, `DELETE /api/topics/{id}`) / Repasser en
   brouillon, chacun confirmé ; un rédacteur ne voit ni Sujet, ni Équipe, ni Modération.
-- Tests : matrice des rôles, tris et contenu signalé dans `@joutio/client-domain` (`authoring.test.ts`) ; `test:push` (cible des signalements).
+- Tests : matrice des rôles, tris et contenu signalé dans `@joutio/client` (`authoring.test.ts`) ; `test:push` (cible des signalements).
 
 ### Atelier et reprise des défis — 2026-11-08
 
@@ -471,7 +478,7 @@ Décision utilisateur : supprimer l’ancien dépôt GitHub `joutio/joutio-mobil
   (`recommendedTopics`) ou carte d'invitation sans intérêt. Retirer un intérêt retire ses sujets du rail sur place.
 - **Sujets** : « Mes thèmes » (Tous / Suivis / Mes sujets, `followed` ou `mine`) remplace « Masquer les suivis ».
 - **Atelier** : ligne et feuille **Titres** (`TopicTitlesSheet`, `useUpdateTopicTitles`, `PUT /api/topics/{id}/titles`),
-  helpers partagés `@joutio/client-domain/authoring` (`titleLabel`, `normalizeTitles`…).
+  helpers partagés `@joutio/client/authoring` (`titleLabel`, `normalizeTitles`…).
 - **Pas de liste virtualisée en feuille** (2026-11-14) : `MobileSheet.renderList` est retiré — FlashList 2.x enveloppe
   son défilement dans une vue `flex:1` mesurée à 0 de haut sous TrueSheet, la feuille Pays paraissait vide. Feuille
   Pays : lignes en `children` + `loadMore`, pages de 30.

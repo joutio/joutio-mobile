@@ -5,6 +5,7 @@ import { HAIRLINE } from '../theme/hairline'
 import { useTheme } from '../theme/theme-provider'
 import { tokens, type TierCode } from '../tokens.generated'
 import { Text } from './text'
+import { t, tierKey } from '@/lib/i18n'
 
 export interface LadderRung {
   tier: TierCode
@@ -34,7 +35,7 @@ export function RankLadder({ rungs, icon, style }: RankLadderProps) {
         <View
           key={rung.tier}
           accessible
-          accessibilityLabel={[rung.title ?? tokens.tier[rung.tier].label, rung.rule, rung.status].join(', ')}
+          accessibilityLabel={[rung.title ?? t(tierKey(rung.tier)), rung.rule, rung.status].join(', ')}
           style={{
             minHeight: 64,
             flexDirection: 'row',
@@ -49,7 +50,7 @@ export function RankLadder({ rungs, icon, style }: RankLadderProps) {
           <TierMedal tier={rung.tier} icon={icon} size={44} state={rung.earned ? 'earned' : 'locked'} />
           <View style={{ flex: 1, minWidth: 0 }}>
             <Text variant="body" numberOfLines={1}>
-              {rung.title ?? tokens.tier[rung.tier].label}
+              {rung.title ?? t(tierKey(rung.tier))}
             </Text>
             <Text variant="caption" color="muted">
               {rung.rule}

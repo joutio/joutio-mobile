@@ -5,6 +5,7 @@ import { useReducedMotion } from '../motion'
 import { useTheme } from '../theme/theme-provider'
 import { tokens } from '../tokens.generated'
 import { Text } from './text'
+import { t, useT } from '@/lib/i18n'
 
 export interface CodeInputProps {
   value: string
@@ -43,12 +44,13 @@ export function CodeInput({
   onChange,
   length = 6,
   error = false,
-  label = 'Code reçu par e-mail',
+  label = t('mobile.ds.codeLabel'),
   focused = false,
   autoFocus = false,
   disabled = false,
   style,
 }: CodeInputProps) {
+  const t = useT()
   const { colors, radius } = useTheme()
   const input = useRef<TextInputInstance>(null)
   const [hasFocus, setHasFocus] = useState(false)
@@ -89,7 +91,7 @@ export function CodeInput({
         accessibilityLabel={label}
         accessibilityValue={{ text: value.split('').join(' ') }}
         accessibilityState={{ disabled }}
-        accessibilityHint={error ? 'Code incorrect' : `${length} chiffres`}
+        accessibilityHint={error ? t('mobile.ds.codeWrong') : t('mobile.ds.digits', { count: length })}
         keyboardType="number-pad"
         inputMode="numeric"
         textContentType="oneTimeCode"

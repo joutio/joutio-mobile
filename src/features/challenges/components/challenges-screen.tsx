@@ -34,7 +34,7 @@ import { useCreatePrivateRoom } from '@/features/play/hooks/use-play'
 import { readServerNow } from '@/lib/realtime/server-clock'
 import { queryKeys } from '@/lib/query-keys'
 import { TopicPickerSheet } from '@/features/topics/components/topic-picker-sheet'
-import type { ChallengeView } from '@joutio/client-domain/api-types'
+import type { ChallengeView } from '@joutio/client/api-types'
 import { avatarSvg } from '@/shared/utils/avatar'
 import { topicName } from '@/shared/utils/topic-name'
 import {
@@ -49,20 +49,22 @@ import {
 import { duration } from '../lib/challenges-service'
 import { clientSource, feedFooterProps } from '@/shared/utils/paging'
 import type { ChallengesTab } from '@/features/notifications/lib/notification-target'
+import { t, useT } from '@/lib/i18n'
 
 const GUTTER = tokens.space[5]
 /** Reçus : liste paginée, 10 par page. */
 const RECEIVED_PAGE = 10
-const TABS: readonly { value: ChallengesTab; label: string }[] = [
-  { value: 'received', label: 'Reçus' },
-  { value: 'sent', label: 'Envoyés' },
-  { value: 'rooms', label: 'Salons' },
-]
+const TABS = (): readonly { value: ChallengesTab; label: string }[] => ([
+  { value: 'received', label: t('challenges.received') },
+  { value: 'sent', label: t('challenges.sent') },
+  { value: 'rooms', label: t('challenges.rooms') },
+])
 const PAGE = { gap: tokens.space[6], paddingHorizontal: GUTTER, paddingTop: tokens.space[4], paddingBottom: tokens.space[7] }
 
 function Loading() {
+  const t = useT()
   return (
-    <View accessibilityLabel="Chargement" style={{ gap: tokens.space[3], paddingHorizontal: GUTTER, paddingTop: tokens.space[2] }}>
+    <View accessibilityLabel={t('home.loading')} style={{ gap: tokens.space[3], paddingHorizontal: GUTTER, paddingTop: tokens.space[2] }}>
       {[0, 1, 2, 3].map((index) => (
         <Skeleton key={index} shape="card" style={{ height: 112 }} />
       ))}
@@ -76,6 +78,7 @@ function Loading() {
  * refuser ». Une notification ouvre l'onglet voulu (`?tab=`). Rafraîchi par le flux personnel STOMP et au tiré.
  */
 export function ChallengesScreen() {
+  const t = useT()
   const identity = usePlayerIdentity()
   const { colors } = useTheme()
   const client = useQueryClient()
@@ -91,7 +94,7 @@ export function ChallengesScreen() {
   // Onglet demandé par une notification : appliqué puis effacé, pour qu'une même demande rejoue plus tard.
   const params = useLocalSearchParams<{ tab?: string }>()
   useEffect(() => {
-    const requested = TABS.find((item) => item.value === params.tab)?.value
+    const requested = TABS().find((item) => item.value === params.tab)?.value
     if (!requested) return
     setTab(requested)
     router.setParams({ tab: undefined })
@@ -109,24 +112,25 @@ export function ChallengesScreen() {
   const receivedSource = clientSource(receivedPages, setReceivedPages, receivedRows.length < received.length)
   const counts: Record<ChallengesTab, number> = { received: received.length, sent: sent.length, rooms: salons.length }
 
-  const { refreshing, refresh } = useGuardedRefresh(() =>
-    Promise.all([client.refetchQueries({ queryKey: queryKeys.challenges() }), client.refetchQueries({ queryKey: queryKeys.rooms() })]),
-  )
+  // Relecture des défis et des salons. Les onglets la passent telle quelle à `TabsScrollView`, qui la garde lui-même
+  // (`usePageRefresh`) : lui passer `refresh`, déjà gardé et sans promesse, arrêtait l'indicateur aussitôt.
+  const reload = () => Promise.all([client.refetchQueries({ queryKey: queryKeys.challenges() }), client.refetchQueries({ queryKey: queryKeys.rooms() })])
+  const { refreshing, refresh } = useGuardedRefresh(reload)
 
   const refuseAll = () =>
     showDialog({
-      title: `Refuser les ${received.length} défis reçus ?`,
-      message: 'Les joueurs seront prévenus. Tu pourras toujours les défier à ton tour.',
+      title: t('challenges.refuseAllTitle', { count: received.length }),
+      message: t('challenges.refuseAllText'),
       icon: LightningIcon,
       tone: 'danger',
       actions: [
         {
-          label: 'Tout refuser',
+          label: t('challenges.refuseAll'),
           variant: 'filled',
           tone: 'destructive',
           onPress: () => decline.mutateAsync(received.map((challenge) => challenge.challengeId)),
         },
-        { label: 'Annuler', variant: 'plain', tone: 'neutral' },
+        { label: t('topic.cancel'), variant: 'plain', tone: 'neutral' },
       ],
     })
 
@@ -134,7 +138,7 @@ export function ChallengesScreen() {
     const player = kind === 'received' ? challenge.challenger : challenge.opponent
     const topic = topicName(challenge.topic.names)
     const status =
-      kind === 'received' ? `expire dans ${duration(Date.parse(challenge.expiresAt) - now)}` : `en attente · ${duration(now - Date.parse(challenge.createdAt))}`
+      kind === 'received' ? t('challenges.expiresIn', { duration: duration(Date.parse(challenge.expiresAt) - now) }) : t('challenges.waiting', { duration: duration(now - Date.parse(challenge.createdAt)) })
     return (
       <ChallengeListRow
         key={challenge.challengeId}
@@ -147,13 +151,13 @@ export function ChallengesScreen() {
         {...(kind === 'received'
           ? {
               primary: {
-                label: 'Accepter',
+                label: t('challenges.accept'),
                 loading: accept.isPending && accept.variables?.challengeId === challenge.challengeId,
                 disabled: accept.isPending,
                 onPress: () => accept.mutate(challenge),
               },
               secondary: {
-                label: 'Refuser',
+                label: t('challenges.decline'),
                 disabled: decline.isPending,
                 loading: decline.isPending && Boolean(decline.variables?.includes(challenge.challengeId)),
                 onPress: () => decline.mutate([challenge.challengeId]),
@@ -162,9 +166,9 @@ export function ChallengesScreen() {
           : {
               primaryVariant: 'tinted' as const,
               // Relancer n'existe pas côté BFF (`defis.md` § 5) : visible, inactif.
-              primary: { label: 'Relancer', disabled: true },
+              primary: { label: t('mm.retry'), disabled: true },
               secondary: {
-                label: 'Annuler',
+                label: t('topic.cancel'),
                 disabled: cancel.isPending || challenge.challengeId.startsWith('pending-'),
                 loading: cancel.isPending && Boolean(cancel.variables?.includes(challenge.challengeId)),
                 onPress: () => cancel.mutate([challenge.challengeId]),
@@ -176,7 +180,7 @@ export function ChallengesScreen() {
 
   const header = (
     <MobileTopBar
-      title="Défis"
+      title={t('nav.challenges')}
       right={
         <>
           <NotificationButton />
@@ -190,7 +194,7 @@ export function ChallengesScreen() {
     <TopicPickerSheet
       open={pickerOpen}
       onClose={() => setPickerOpen(false)}
-      title="Créer un salon privé"
+      title={t('challenges.createRoom')}
       busy={createRoom.isPending}
       onPick={(topic) => {
         setPickerOpen(false)
@@ -215,11 +219,11 @@ export function ChallengesScreen() {
           <View style={{ flex: 1, justifyContent: 'center', paddingHorizontal: GUTTER }}>
             <EmptyState
               icon={WarningCircleIcon}
-              title="Impossible de charger les défis"
-              description="Vérifie ta connexion, puis réessaie."
+              title={t('challenges.errorTitle')}
+              description={t('home.errorText')}
               action={
                 <Button style={{ alignSelf: 'center' }} loading={refreshing} onPress={refresh}>
-                  Réessayer
+                  {t('callback.retry')}
                 </Button>
               }
             />
@@ -228,15 +232,15 @@ export function ChallengesScreen() {
           <View style={{ flex: 1, justifyContent: 'center', paddingHorizontal: GUTTER }}>
             <EmptyState
               icon={LightningIcon}
-              title="Aucun défi en cours"
-              description="Défie un joueur depuis sa fiche, ou crée un salon privé et partage son lien."
+              title={t('challenges.emptyTitle')}
+              description={t('challenges.emptyText')}
               action={
                 <View style={{ alignSelf: 'stretch', gap: tokens.space[3] }}>
                   <Button full loading={createRoom.isPending} onPress={() => setPickerOpen(true)}>
-                    Créer un salon privé
+                    {t('challenges.createRoom')}
                   </Button>
                   <Button full variant="tinted" onPress={() => router.navigate('/social')}>
-                    Défier un abonné
+                    {t('challenges.challengeFollowed')}
                   </Button>
                 </View>
               }
@@ -250,19 +254,19 @@ export function ChallengesScreen() {
     <DragToLoadMore enabled={receivedSource.hasNextPage} loading={false} onLoadMore={() => receivedSource.fetchNextPage()}>
       <TabLoadMoreScrollView showsVerticalScrollIndicator={false} contentContainerStyle={PAGE}>
         {received.length === 0 ? (
-          <EmptyState icon={LightningIcon} title="Aucun défi reçu" description="Les défis que d'autres joueurs t'envoient apparaîtront ici." />
+          <EmptyState icon={LightningIcon} title={t('challenges.noReceived')} description={t('challenges.noReceivedText')} />
         ) : (
           <View style={{ gap: tokens.space[4] }}>
             <SectionHeader
-              title="Reçus"
+              title={t('challenges.received')}
               action={
                 <Button variant="plain" tone="destructive" size="S" loading={decline.isPending} onPress={refuseAll}>
-                  Tout refuser
+                  {t('challenges.refuseAll')}
                 </Button>
               }
             />
             <ListGroup surface="surface">{receivedRows.map((challenge, index) => row(challenge, 'received', index, receivedRows.length))}</ListGroup>
-            <FeedFooter {...feedFooterProps(receivedSource)} endLabel="Tu as vu tous les défis reçus" />
+            <FeedFooter {...feedFooterProps(receivedSource)} endLabel={t('challenges.receivedEnd')} />
           </View>
         )}
       </TabLoadMoreScrollView>
@@ -272,10 +276,10 @@ export function ChallengesScreen() {
   const sentPage = (
     <TabScrollView showsVerticalScrollIndicator={false} contentContainerStyle={PAGE}>
       {sent.length === 0 ? (
-        <EmptyState icon={LightningIcon} title="Aucun défi envoyé" description="Défie un joueur depuis sa fiche ou depuis Social." />
+        <EmptyState icon={LightningIcon} title={t('challenges.noSent')} description={t('challenges.noSentText')} />
       ) : (
         <View style={{ gap: tokens.space[4] }}>
-          <SectionHeader title="Envoyés" />
+          <SectionHeader title={t('challenges.sent')} />
           <ListGroup surface="surface">{sent.map((challenge, index) => row(challenge, 'sent', index, sent.length))}</ListGroup>
         </View>
       )}
@@ -287,24 +291,27 @@ export function ChallengesScreen() {
       {salons.length === 0 ? (
         <EmptyState
           icon={DoorOpenIcon}
-          title="Aucun salon ouvert"
-          description="Crée un salon privé et partage son lien."
+          title={t('challenges.noRoom')}
+          description={t('challenges.noRoomText')}
           action={
             <Button style={{ alignSelf: 'center' }} onPress={() => setPickerOpen(true)}>
-              Créer un salon privé
+              {t('challenges.createRoom')}
             </Button>
           }
         />
       ) : (
         <View style={{ gap: tokens.space[4] }}>
-          <SectionHeader title="Salons ouverts" />
+          <SectionHeader title={t('mobile.challenges.openRooms')} />
           <ListGroup surface="surface">
             {salons.map((room, index) => (
               <ListRow
                 key={room.roomId}
                 icon={DoorOpenIcon}
                 label={topicName(room.topic.names)}
-                sub={`${room.opponent ? `Avec ${room.opponent.pseudonym}` : 'En attente d’un joueur'}${room.expiresAt ? ` · expire dans ${duration(Date.parse(room.expiresAt) - now)}` : ''}`}
+                sub={(() => {
+                  const who = room.opponent ? t('challenges.roomWith', { name: room.opponent.pseudonym }) : t('challenges.roomWaiting')
+                  return room.expiresAt ? t('challenges.roomSub', { who, duration: duration(Date.parse(room.expiresAt) - now) }) : who
+                })()}
                 control="chevron"
                 disabled={room.roomId.startsWith('pending-')}
                 onPress={() =>
@@ -332,12 +339,12 @@ export function ChallengesScreen() {
   return (
     <Screen inTabs scroll={false} header={header} overlay={overlay}>
       <TabsScrollView
-        label="Défis"
+        label={t('nav.challenges')}
         value={tab}
         onChange={setTab}
-        onRefresh={refresh}
+        onRefresh={reload}
         // Le nombre suit le libellé (« Reçus · 5 ») ; sans élément, le libellé seul.
-        pages={TABS.map((item) => ({ value: item.value, label: counts[item.value] > 0 ? `${item.label} · ${counts[item.value]}` : item.label, content: content[item.value] }))}
+        pages={TABS().map((item) => ({ value: item.value, label: counts[item.value] > 0 ? t('common.labelCount', { label: item.label, count: counts[item.value] }) : item.label, content: content[item.value] }))}
       />
     </Screen>
   )

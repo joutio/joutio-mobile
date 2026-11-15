@@ -11,12 +11,14 @@ import { useLoginWithFacebook, useLoginWithGoogle, useRequestLoginCode } from '.
 import { isFacebookSignInAvailable } from '../lib/facebook'
 import { isGoogleSignInAvailable } from '../lib/google'
 import { LegalNotice } from './legal-notice'
+import { t, useT } from '@/lib/i18n'
 
-const schema = z.object({ email: z.string().trim().pipe(z.email('Adresse e-mail invalide.')) })
+const schema = z.object({ email: z.string().trim().pipe(z.email({ error: () => t('mobile.auth.invalidEmail') })) })
 type LoginForm = z.infer<typeof schema>
 
 /** Connexion : fournisseurs sociaux, puis e-mail et code. Pas de mot de passe. */
 export function LoginScreen() {
+  const t = useT()
   const { colors } = useTheme()
   const insets = useSafeAreaInsets()
   const email = useOnboardingStore((state) => state.email)
@@ -55,9 +57,9 @@ export function LoginScreen() {
       <Logo variant="lockup" size={32} />
       <View style={{ flex: 1, justifyContent: 'center', gap: tokens.space[3] }}>
         <Text variant="largeTitle" accessibilityRole="header">
-          Sept tours, dix secondes par question.
+          {t('onboarding.login.title')}
         </Text>
-        <Text color="muted">Défie le monde et grimpe au classement.</Text>
+        <Text color="muted">{t('onboarding.login.subtitle')}</Text>
       </View>
       <View style={{ gap: tokens.space[3] }}>
         {googleAvailable && (
@@ -91,7 +93,7 @@ export function LoginScreen() {
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: tokens.space[4], paddingVertical: tokens.space[3] }}>
             <View style={{ flex: 1, height: HAIRLINE, backgroundColor: colors.border }} />
             <Text variant="caption" color="muted">
-              ou continuer avec
+              {t('onboarding.login.or')}
             </Text>
             <View style={{ flex: 1, height: HAIRLINE, backgroundColor: colors.border }} />
           </View>
@@ -101,7 +103,7 @@ export function LoginScreen() {
           name="email"
           render={({ field: { value, onChange, onBlur }, fieldState }) => (
             <Field
-              accessibilityLabel="Adresse e-mail"
+              accessibilityLabel={t('onboarding.login.email')}
               placeholder="toi@exemple.fr"
               keyboardType="email-address"
               inputMode="email"
@@ -119,7 +121,7 @@ export function LoginScreen() {
           )}
         />
         <Button full disabled={!formState.isValid} loading={requestCode.isPending} onPress={submit}>
-          Recevoir un code
+          {t('onboarding.login.sendCode')}
         </Button>
       </View>
       <LegalNotice />

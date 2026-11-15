@@ -26,10 +26,11 @@ import {
 import { usePlayerIdentity } from '@/features/me'
 import { openTopic } from '@/features/topic'
 import { useOnline } from '@/shared/hooks/use-online'
-import type { SuggestionView } from '@joutio/client-domain/api-types'
+import type { SuggestionView } from '@joutio/client/api-types'
 import { avatarSvg } from '@/shared/utils/avatar'
 import { topicName } from '@/shared/utils/topic-name'
 import { useRecentSearches, useSuggestions } from './use-search'
+import { useT } from '@/lib/i18n'
 
 export type SearchStack = 'home' | 'social'
 
@@ -41,6 +42,7 @@ const PLAYER_PATH = { home: '/home/player/[id]', social: '/social/player/[id]' }
  * fiche dans la pile de l'onglet (Accueil ou Social).
  */
 export function SearchScreen({ stack }: { stack: SearchStack }) {
+  const t = useT()
   const identity = usePlayerIdentity()
   // Fin de liste au-dessus de la tab bar native iOS (`useTabBarInset`).
   const tabInset = useTabBarInset()
@@ -67,16 +69,16 @@ export function SearchScreen({ stack }: { stack: SearchStack }) {
   }
 
   const content = () => {
-    if (!online) return <EmptyState icon={WifiSlashIcon} title="Pas de connexion" description="La recherche reprend dès ton retour en ligne." />
+    if (!online) return <EmptyState icon={WifiSlashIcon} title={t('search.offline')} description={t('search.offlineText')} />
     if (!results.searching) {
-      if (recents.length === 0) return <EmptyState icon={MagnifyingGlassIcon} title="Cherche un sujet ou un joueur" description="Au moins deux lettres." />
+      if (recents.length === 0) return <EmptyState icon={MagnifyingGlassIcon} title={t('search.emptyTitle')} description={t('search.emptyText')} />
       return (
         <View style={{ gap: tokens.space[3] }}>
           <SectionHeader
-            title="Récentes"
+            title={t('search.recents')}
             action={
               <Button variant="plain" size="S" onPress={clear}>
-                Effacer
+                {t('search.clear')}
               </Button>
             }
           />
@@ -97,7 +99,7 @@ export function SearchScreen({ stack }: { stack: SearchStack }) {
     }
     if (results.settling || results.isPending)
       return (
-        <View accessibilityLabel="Chargement" style={{ gap: tokens.space[3] }}>
+        <View accessibilityLabel={t('home.loading')} style={{ gap: tokens.space[3] }}>
           {[0, 1, 2, 3].map((index) => (
             <Skeleton key={index} shape="row" />
           ))}
@@ -107,29 +109,30 @@ export function SearchScreen({ stack }: { stack: SearchStack }) {
       return (
         <EmptyState
           icon={WarningCircleIcon}
-          title="La recherche n'a pas abouti"
-          description="Vérifie ta connexion, puis réessaie."
+          title={t('mobile.search.failed')}
+          description={t('home.errorText')}
           action={
             <Button style={{ alignSelf: 'center' }} loading={results.isRefetching} onPress={() => void results.refetch()}>
-              Réessayer
+              {t('callback.retry')}
             </Button>
           }
         />
       )
     if (items.length === 0)
       return (
-        <EmptyState icon={MagnifyingGlassIcon} title={`Aucun résultat pour « ${query.trim()} »`} description="Vérifie l'orthographe ou essaie un autre mot." />
+        <EmptyState icon={MagnifyingGlassIcon} title={t('search.noResult', { query: query.trim() })} description={t('search.noResultText')} />
       )
     return (
       <>
         {topics.length > 0 && (
           <View style={{ gap: tokens.space[3] }}>
-            <SectionHeader title="Sujets" />
+            <SectionHeader title={t('nav.topics')} />
             <ListGroup surface="surface">
               {topics.map((item, index) => (
                 <TopicRow
                   key={item.id}
                   title={item.names ? topicName(item.names) : item.label}
+                  official={item.official ?? false}
                   category={toCategoryCode(item.category ?? undefined)}
                   pictogram={item.pictogramUrl ?? undefined}
                   image={item.imageUrl ?? undefined}
@@ -143,14 +146,14 @@ export function SearchScreen({ stack }: { stack: SearchStack }) {
         )}
         {players.length > 0 && (
           <View style={{ gap: tokens.space[3] }}>
-            <SectionHeader title="Joueurs" />
+            <SectionHeader title={t('board.scope')} />
             <ListGroup surface="surface">
               {players.map((item, index) => (
                 <PlayerRow
                   key={item.id}
                   name={item.label}
                   premium={identity.premium(item, item.id)}
-                  sub={item.suspended ? 'Compte suspendu' : (item.subtitle ?? undefined)}
+                  sub={item.suspended ? t('onboarding.ended.suspendedTitle') : (item.subtitle ?? undefined)}
                   src={avatarSvg(item.avatarOptions, item.id) ?? undefined}
                   chevron
                   onPress={() => openItem(item)}
@@ -170,8 +173,8 @@ export function SearchScreen({ stack }: { stack: SearchStack }) {
         <SearchField
           value={query}
           onChange={setQuery}
-          placeholder="Sujets et joueurs"
-          label="Rechercher un sujet ou un joueur"
+          placeholder={t('search.placeholder')}
+          label={t('search.label')}
           autoFocus
           onCancel={() => (query ? setQuery('') : router.back())}
         />

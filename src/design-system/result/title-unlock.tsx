@@ -4,6 +4,7 @@ import { Button } from '../primitives/button'
 import { Pill } from '../primitives/pill'
 import type { TierCode } from '../tokens.generated'
 import { UnlockContent } from './unlock-content'
+import { useT } from '@/lib/i18n'
 
 export interface TitleUnlockProps {
   tier: TierCode
@@ -20,23 +21,24 @@ export interface TitleUnlockProps {
 
 /** Un déblocage par titre gagné : le ruban se déroule. */
 export function TitleUnlock({ tier, title, topic, text, next, nextRule, worn = false, wearing = false, onWear }: TitleUnlockProps) {
+  const t = useT()
   return (
     <UnlockContent
       tier={tier}
       crumbFrom={topic}
       hero={<TitleRibbon tier={tier} text={title} width={300} />}
       heroMotion="unroll"
-      eyebrow="Nouveau titre débloqué"
+      eyebrow={t('mobile.ds.newTitle')}
       headline={title}
       text={text}
       extra={
         worn ? (
           <Pill tone="correct" icon={CheckCircleIcon}>
-            Titre porté
+            {t('mobile.ds.titleWorn')}
           </Pill>
         ) : (
           <Button variant="gray" tone="neutral" size="S" icon={CheckCircleIcon} loading={wearing} onPress={onWear}>
-            Porter ce titre
+            {t('mobile.ds.wearTitle')}
           </Button>
         )
       }

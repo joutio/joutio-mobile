@@ -5,6 +5,7 @@ import { Avatar } from '../primitives/avatar'
 import { Text } from '../primitives/text'
 import { useTheme } from '../theme/theme-provider'
 import { tokens, type TierCode } from '../tokens.generated'
+import { useT } from '@/lib/i18n'
 
 export interface RoomPlayer {
   name: string
@@ -25,6 +26,7 @@ export interface RoomPlayersProps {
 }
 
 function Seat({ player }: { player: RoomPlayer }) {
+  const t = useT()
   const { colors, radius } = useTheme()
   const away = player.away ?? false
   return (
@@ -52,7 +54,7 @@ function Seat({ player }: { player: RoomPlayer }) {
       </View>
       <PlayerName name={player.name} premium={player.premium} justify="center" />
       <Text variant="caption" weight="600" color={away ? 'muted' : 'correct'} accessibilityLiveRegion="polite">
-        {player.status ?? (away ? 'Pas encore là' : 'Dans le salon')}
+        {player.status ?? (away ? t('mobile.ds.notHereYet') : t('room.inRoom'))}
       </Text>
     </View>
   )
@@ -60,11 +62,12 @@ function Seat({ player }: { player: RoomPlayer }) {
 
 /** Face-à-face du salon : présence de chacun, place encore libre, éclair vert quand les deux sont là. */
 export function RoomPlayers({ me, opponent, style }: RoomPlayersProps) {
+  const t = useT()
   const { colors, radius } = useTheme()
   const ready = Boolean(opponent) && !me.away && !opponent?.away
   return (
     <View
-      accessibilityLabel={ready ? 'Les deux joueurs sont là' : undefined}
+      accessibilityLabel={ready ? t('room.bothHere') : undefined}
       style={[{ flexDirection: 'row', alignItems: 'flex-start', gap: tokens.space[3] }, style]}
     >
       <Seat player={me} />
@@ -100,10 +103,10 @@ export function RoomPlayers({ me, opponent, style }: RoomPlayersProps) {
             <UserPlusIcon size={30} color={colors.muted} />
           </View>
           <Text variant="headline" color="muted">
-            En attente
+            {t('mobile.ds.waiting')}
           </Text>
           <Text variant="caption" color="muted" align="center">
-            Le duel démarre à deux
+            {t('mobile.ds.startsWithTwo')}
           </Text>
         </View>
       )}

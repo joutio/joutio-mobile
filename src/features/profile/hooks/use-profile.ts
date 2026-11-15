@@ -1,4 +1,4 @@
-import { PSEUDONYM_PROBLEMS, pseudonymIssue, pseudonymKey, type PseudonymIssue } from '@joutio/client-domain/profile'
+import { PSEUDONYM_PROBLEMS, pseudonymIssue, pseudonymKey, type PseudonymIssue } from '@joutio/client/profile'
 import { useMutation, useQuery, useQueryClient, type InfiniteData } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import { toast } from '@/design-system'
@@ -15,8 +15,9 @@ import type {
   ChallengeView,
   NotificationCategory,
   NotificationPreferenceView,
-} from '@joutio/client-domain/api-types'
+} from '@joutio/client/api-types'
 import { profileService } from '../lib/profile-service'
+import { t, useT } from '@/lib/i18n'
 
 const useUserId = () => useMe(true).data?.userId ?? ''
 
@@ -75,6 +76,7 @@ const SAVERS: { [K in MeField]: (userId: string, value: NonNullable<MeView[K]> |
  * refuse ; la fiche publique et les listes connues suivent la même transaction optimiste.
  */
 export function useUpdateMe<K extends MeField>(field: K) {
+  const t = useT()
   const client = useQueryClient()
   const userId = useUserId()
   return useMutation({
@@ -119,14 +121,14 @@ export function useUpdateMe<K extends MeField>(field: K) {
       context?.rollback()
       const type = (error as ApiError | undefined)?.type
       if (field === 'pseudonym' && type === PSEUDONYM_PROBLEMS.taken) {
-        toast.error('Ce pseudonyme est déjà pris.')
+        toast.error(t('settings.pseudonymTaken'))
         return
       }
       if (field === 'pseudonym' && type === PSEUDONYM_PROBLEMS.invalid) {
-        toast.error(PSEUDONYM_RULES)
+        toast.error(pseudonymRules())
         return
       }
-      toast.error("La modification n'a pas été enregistrée", { description: 'Vérifie ta connexion, puis réessaie.' })
+      toast.error(t('settings.saveError'), { description: t('home.errorText') })
     },
   })
 }
@@ -137,6 +139,7 @@ export function useNotificationPreferences() {
 }
 
 export function useSetNotificationPreference() {
+  const t = useT()
   const client = useQueryClient()
   const key = queryKeys.notificationPreferences()
   return useMutation({
@@ -150,7 +153,7 @@ export function useSetNotificationPreference() {
       }),
     onError: (_error, _value, context) => {
       context?.rollback()
-      toast.error("Le réglage n'a pas été enregistré")
+      toast.error(t('settings.preferenceError'))
     },
   })
 }
@@ -165,7 +168,8 @@ export function useDeleteAccount() {
   return useMutation({ mutationFn: (code: string) => profileService.deleteAccount(code) })
 }
 
-export const PSEUDONYM_RULES = '3 à 20 caractères : lettres sans accent, chiffres ou _, en commençant par une lettre.'
+/** Règle du pseudonyme, dans la langue courante (lue à l'appel). */
+export const pseudonymRules = () => t('settings.pseudonymRules')
 
 /** État de saisie du pseudonyme : règles locales immédiates, unicité vérifiée par le BFF après une courte pause. */
 export type PseudonymCheck = { state: 'unchanged' | 'checking' | 'available' | 'taken' } | { state: 'invalid'; issue: PseudonymIssue }

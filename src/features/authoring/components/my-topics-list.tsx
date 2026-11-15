@@ -14,16 +14,17 @@ import {
   TopicRow,
   WarningCircleIcon,
 } from '@/design-system'
-import type { TopicCardView } from '@joutio/client-domain/api-types'
+import type { TopicCardView } from '@joutio/client/api-types'
 import { topicName } from '@/shared/utils/topic-name'
-import { MIN_QUESTIONS, questionsLabel } from '@joutio/client-domain/authoring'
-import { todoTotal } from '@joutio/client-domain/authoring'
+import { MIN_QUESTIONS } from '@joutio/client/authoring'
+import { todoTotal } from '@joutio/client/authoring'
 import { useCreateTopic, useCreationLimits, useFrozen, useMyTopics, useTopicTodo } from '../hooks/use-authoring'
 import { FrozenNotice } from './frozen-notice'
 import { CreateTopicSheet } from './topic-sheets'
+import { t, useT } from '@/lib/i18n'
 
 const topicSub = (topic: TopicCardView) =>
-  topic.status === 'DRAFT' ? `Brouillon · ${topic.questionsCount} / ${MIN_QUESTIONS} questions` : `Publié · ${questionsLabel(topic.questionsCount)}`
+  topic.status === 'DRAFT' ? t('workshop.draftSub', { count: topic.questionsCount, min: MIN_QUESTIONS }) : t(topic.questionsCount > 1 ? 'workshop.publishedSubMany' : 'workshop.publishedSubOne', { count: topic.questionsCount })
 
 /** Ouvre « Mon sujet » tout de suite : nom, univers et vignette passent par la navigation. */
 export function openMyTopic(topicId: string, name: string, category: string | null, imageUrl: string | null) {
@@ -37,6 +38,7 @@ export function openMyTopic(topicId: string, name: string, category: string | nu
  * ramène à l'Accueil).
  */
 export function MyTopicsList({ gutter }: { gutter: number }) {
+  const t = useT()
   const topics = useMyTopics()
   const todo = useTopicTodo()
   const create = useCreateTopic()
@@ -62,11 +64,11 @@ export function MyTopicsList({ gutter }: { gutter: number }) {
       return (
         <EmptyState
           icon={WarningCircleIcon}
-          title="Impossible de charger tes sujets"
-          description="Vérifie ta connexion, puis réessaie."
+          title={t('profile.topicsError')}
+          description={t('home.errorText')}
           action={
             <Button style={{ alignSelf: 'center' }} loading={topics.isRefetching} onPress={() => void topics.refetch()}>
-              Réessayer
+              {t('callback.retry')}
             </Button>
           }
         />
@@ -75,11 +77,11 @@ export function MyTopicsList({ gutter }: { gutter: number }) {
       return (
         <EmptyState
           icon={PencilSimpleIcon}
-          title="Crée ton premier sujet"
-          description={`Rédige au moins ${MIN_QUESTIONS} questions pour le publier et le faire jouer.`}
+          title={t('workshop.emptyTitle')}
+          description={t('workshop.emptyText', { min: MIN_QUESTIONS })}
           action={
             <Button full onPress={startCreate}>
-              Créer un sujet
+              {t('workshop.create')}
             </Button>
           }
         />
@@ -93,6 +95,7 @@ export function MyTopicsList({ gutter }: { gutter: number }) {
           <TopicRow
             key={topic.topicId}
             disabled={topic.topicId.startsWith('pending-')}
+            official={topic.official ?? false}
             title={topicName(topic.names)}
             category={toCategoryCode(topic.category)}
             pictogram={topic.pictogramUrl ?? undefined}
@@ -108,18 +111,18 @@ export function MyTopicsList({ gutter }: { gutter: number }) {
     return (
       <View style={{ gap: tokens.space[6] }}>
         <Button icon={PlusIcon} full onPress={startCreate}>
-          Créer un sujet
+          {t('workshop.create')}
         </Button>
         {frozen && <FrozenNotice published={published} limit={limits.publishedTopics} />}
         {toHandle.length > 0 && (
           <View style={{ gap: tokens.space[3] }}>
-            <SectionHeader title="À traiter" />
+            <SectionHeader title={t('workshop.todo')} />
             {rows(toHandle)}
           </View>
         )}
         {others.length > 0 && (
           <View style={{ gap: tokens.space[3] }}>
-            {toHandle.length > 0 && <SectionHeader title="Mes sujets" />}
+            {toHandle.length > 0 && <SectionHeader title={t('topics.scopeMine')} />}
             {rows(others)}
           </View>
         )}

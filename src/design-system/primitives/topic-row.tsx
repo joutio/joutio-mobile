@@ -7,9 +7,13 @@ import { tokens, type CategoryCode } from '../tokens.generated'
 import { PressableScale } from './pressable-scale'
 import { Text } from './text'
 import { TopicVisual } from './topic-visual'
+import { categoryKey, t } from '@/lib/i18n'
+import { OfficialBadge } from '../brand/premium-badge'
 
 export interface TopicRowProps {
   title: string
+  /** Sujet éditorial de Joutio (`OfficialBadge` après le nom) ; obligatoire : chaque sujet affiché dit s'il l'est. */
+  official: boolean
   category: CategoryCode
   /** Pictogramme carré du sujet : premier choix, comme `TopicTile`. */
   pictogram?: string
@@ -33,10 +37,11 @@ export interface TopicRowProps {
 /** Sujet à choisir dans une liste : visuel, nom, univers, puis chevron ou radio. */
 export function TopicRow({
   title,
+  official,
   category,
   pictogram,
   image,
-  sub = tokens.category[category].label,
+  sub = t(categoryKey(category)),
   control = 'chevron',
   on = false,
   last = false,
@@ -51,7 +56,7 @@ export function TopicRow({
   return (
     <PressableScale
       accessibilityRole={radio ? 'radio' : 'link'}
-      accessibilityLabel={`${title}, ${sub}${badge ? `, ${badge} à traiter` : ''}`}
+      accessibilityLabel={`${title}, ${sub}${badge ? t('ds.toHandleSuffix', { count: badge }) : ''}`}
       accessibilityState={radio ? { checked: on } : undefined}
       disabled={disabled}
       pressedScale={1}
@@ -73,9 +78,12 @@ export function TopicRow({
     >
       <TopicVisual category={category} pictogram={pictogram} image={image} />
       <View style={{ flex: 1, minWidth: 0 }}>
-        <Text variant="headline" numberOfLines={1}>
-          {title}
-        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: tokens.space[2] }}>
+          <Text variant="headline" numberOfLines={1} style={{ flexShrink: 1 }}>
+            {title}
+          </Text>
+          {official && <OfficialBadge size={16} />}
+        </View>
         <Text variant="caption" color="muted" numberOfLines={1}>
           {sub}
         </Text>

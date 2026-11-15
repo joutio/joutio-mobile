@@ -2,6 +2,7 @@ import { View, type StyleProp, type ViewStyle } from 'react-native'
 import { useTheme } from '../theme/theme-provider'
 import { tokens } from '../tokens.generated'
 import { Text } from './text'
+import { useT } from '@/lib/i18n'
 
 export interface AdSlotProps {
   /** Texte de la maquette, à la place de la régie. */
@@ -14,11 +15,12 @@ export interface AdSlotProps {
  * réservée seulement : aucune régie ni alerte de suivi en V1.
  */
 export function AdSlot({ placeholder = 'régie · 320×50', style }: AdSlotProps) {
+  const t = useT()
   const { colors, radius } = useTheme()
   return (
-    <View accessibilityRole="none" accessibilityLabel="Publicité" style={[{ width: '100%', gap: tokens.space[1] }, style]}>
+    <View accessibilityRole="none" accessibilityLabel={t('mobile.ds.ad')} style={[{ width: '100%', gap: tokens.space[1] }, style]}>
       <Text variant="caption" weight="600" color="muted">
-        Publicité
+        {t('mobile.ds.ad')}
       </Text>
       <View
         style={{

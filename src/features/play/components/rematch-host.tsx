@@ -10,6 +10,7 @@ import { useMe } from '@/features/me'
 import { usePersonalNotifications, type NotificationView } from '@/lib/realtime/personal-notifications'
 import { rematchService, roomOfChallenge, useSecondsUntil } from '../hooks/use-rematch'
 import { usePlayerAvatar, usePlayerPremium } from '@/features/social/hooks/use-player-avatar'
+import { useT } from '@/lib/i18n'
 
 /**
  * Demandes de revanche reçues (`CHALLENGE_RECEIVED` avec la partie d'origine) : `RematchPrompt` sur un voile, par
@@ -17,6 +18,7 @@ import { usePlayerAvatar, usePlayerPremium } from '@/features/social/hooks/use-p
  * reste du temps. Accepter ouvre la salle ; refuser, ou laisser filer le délai, ferme la proposition.
  */
 export function RematchHost() {
+  const t = useT()
   const { colors } = useTheme()
   const client = useQueryClient()
   const me = useMe(true)
@@ -56,7 +58,7 @@ export function RematchHost() {
     },
     onError: (_error, _id, context) => {
       context?.rollback()
-      toast.error("La revanche n'est plus disponible")
+      toast.error(t('mobile.rematch.unavailable'))
     },
   })
 
@@ -66,7 +68,7 @@ export function RematchHost() {
     onSuccess: close,
     onError: (_error, _id, context) => {
       context?.rollback()
-      toast.error("Le refus n'a pas pu être envoyé")
+      toast.error(t('challenges.declineError'))
     },
   })
 

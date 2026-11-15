@@ -1,12 +1,12 @@
-import { descriptionsDraft } from '@joutio/client-domain/authoring'
+import { descriptionsDraft } from '@joutio/client/authoring'
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { toast, type CategoryCode } from '@/design-system'
 import { useMe } from '@/features/me'
 import { usePremiumSheet } from '@/features/premium/premium-store'
 import { optimisticUpdate, optimisticId } from '@/lib/optimistic-cache'
-import { applyQuestionOperations } from '@joutio/client-domain/authoring'
+import { applyQuestionOperations } from '@joutio/client/authoring'
 import { queryKeys } from '@/lib/query-keys'
-import type { Language, PageResponse, TopicCardView, TopicOverviewView, HomeView } from '@joutio/client-domain/api-types'
+import type { Language, PageResponse, TopicCardView, TopicOverviewView, HomeView } from '@joutio/client/api-types'
 import type { InfiniteData } from '@tanstack/react-query'
 import type { TopicPage } from '@/features/topics/lib/topics-service'
 
@@ -18,11 +18,12 @@ import type {
   TopicTitles,
   TopicTodo,
   TopicWorkshop,
-} from '@joutio/client-domain/authoring'
-import type { MeView } from '@joutio/client-domain/api-types'
-import { isFrozen, planLimits, premiumReasonOf, quotaProblemOf, type PremiumReason } from '@joutio/client-domain/premium'
-import type { QuestionOperation } from '@joutio/client-domain/authoring'
+} from '@joutio/client/authoring'
+import type { MeView } from '@joutio/client/api-types'
+import { isFrozen, planLimits, premiumReasonOf, quotaProblemOf, type PremiumReason } from '@joutio/client/premium'
+import type { QuestionOperation } from '@joutio/client/authoring'
 import { authoringService } from '../lib/authoring-service'
+import { t, useT } from '@/lib/i18n'
 
 function closeCachedReports(client: QueryClient, topicId: string, questionId: string, status: 'RESOLVED' | 'DISMISSED') {
   client.setQueriesData<ReportDetail>({ queryKey: ['authoring', topicId, 'report-detail'] }, (detail) =>
@@ -33,7 +34,8 @@ function closeCachedReports(client: QueryClient, topicId: string, questionId: st
   )
 }
 
-const retryHint = { description: 'Vérifie ta connexion, puis réessaie.' }
+/** Lu à l'appel : la langue peut changer après le chargement du module. */
+const retryHint = () => ({ description: t('home.errorText') })
 
 /** Mes sujets › À traiter, ajusté sur place quand une action est traitée (signalements clos, question modérée). */
 function patchTodo(client: QueryClient, topicId: string, patch: (todo: TopicTodo) => TopicTodo) {
@@ -67,6 +69,7 @@ export function useReportQueue(topicId: string, enabled = true) {
 
 /** Supprime un brouillon : il quitte Mes sujets sur place. */
 export function useDeleteTopic(topicId: string) {
+  const t = useT()
   const client = useQueryClient()
   return useMutation({
     mutationFn: () => authoringService.deleteTopic(topicId),
@@ -77,11 +80,11 @@ export function useDeleteTopic(topicId: string) {
         )
         client.setQueryData<TopicTodo[]>(queryKeys.authoring.todo(), (items) => items?.filter((todo) => todo.topicId !== topicId))
       }),
-    onSuccess: () => toast.success('Brouillon supprimé'),
+    onSuccess: () => toast.success(t('workshop.deleted')),
     onError: (error, _variables, context) => {
       context?.rollback()
       if (limitHit(client, error)) return
-      toast.error("Le brouillon n'a pas pu être supprimé", retryHint)
+      toast.error(t('workshop.deleteError'), retryHint())
     },
   })
 }
@@ -94,7 +97,7 @@ export function useMyTopics(enabled = true) {
 /** Un de mes sujets, lu dans la liste Mes sujets (le BFF n'a pas de vue auteur d'un sujet seul). */
 export function useMyTopic(topicId: string) {
   const workshop = useQuery({ queryKey: ['authoring', topicId, 'workshop'], queryFn: () => authoringService.workshop(topicId), enabled: Boolean(topicId) })
-  return { ...workshop, topic: workshop.data?.topic, permissions: workshop.data?.permissions, titles: workshop.data?.titles ?? null }
+  return { ...workshop, topic: workshop.data?.topic, permissions: workshop.data?.permissions, titles: workshop.data?.titles ?? null, closedReason: workshop.data?.closedReason ?? null }
 }
 
 /** Limites du plan lues dans `MeView.limits` (appliquées par le BFF) et feuille Premium avec l'accroche dédiée. */
@@ -132,7 +135,7 @@ function limitHit(client: QueryClient, error: unknown) {
   const problem = quotaProblemOf(error) ?? (error instanceof Error ? quotaProblemOf(error.cause) : null)
   if (!problem) return false
   if (client.getQueryData<MeView>(queryKeys.me())?.premium) {
-    toast.error('La limite de ton offre est atteinte')
+    toast.error(t('mobile.authoring.toast.limitReached'))
     return true
   }
   usePremiumSheet.getState().show(premiumReasonOf(problem))
@@ -147,7 +150,7 @@ function patchTopic(client: QueryClient, topicId: string, patch: (topic: TopicCa
   client.setQueryData<PageResponse<TopicCardView>>(queryKeys.authoring.topics(), (page) =>
     page ? { ...page, content: page.content.map((topic) => (topic.topicId === topicId ? patch(topic) : topic)) } : page,
   )
-  client.setQueryData<import('@joutio/client-domain/authoring').TopicWorkshop>(['authoring', topicId, 'workshop'], (view) =>
+  client.setQueryData<import('@joutio/client/authoring').TopicWorkshop>(['authoring', topicId, 'workshop'], (view) =>
     view ? { ...view, topic: patch(view.topic) } : view,
   )
   client.setQueryData<TopicOverviewView>(queryKeys.topic.overview(topicId), (view) => (view ? { ...view, topic: patch(view.topic) } : view))
@@ -169,6 +172,7 @@ function patchTopic(client: QueryClient, topicId: string, patch: (topic: TopicCa
 }
 
 export function useCreateTopic() {
+  const t = useT()
   const client = useQueryClient()
   return useMutation({
     mutationFn: ({ name, category }: { name: string; category: CategoryCode }) => authoringService.createTopic(name, category),
@@ -204,13 +208,14 @@ export function useCreateTopic() {
     onError: (error, _variables, context) => {
       context?.rollback()
       if (limitHit(client, error)) return
-      toast.error("Le sujet n'a pas pu être créé", retryHint)
+      toast.error(t('workshop.createError'), retryHint())
     },
   })
 }
 
 /** Nom français obligatoire, anglais facultatif : une commande par langue modifiée. */
 export function useUpdateTopicNames(topicId: string) {
+  const t = useT()
   const client = useQueryClient()
   return useMutation({
     mutationFn: async (names: Partial<Record<Language, string>>) => {
@@ -233,12 +238,13 @@ export function useUpdateTopicNames(topicId: string) {
       if ('completedNames' in error)
         patchTopic(client, topicId, (topic) => ({ ...topic, names: { ...topic.names, ...(error.completedNames as Partial<Record<Language, string>>) } }))
       if (limitHit(client, error)) return
-      toast.error("Le nom n'a pas pu être enregistré", retryHint)
+      toast.error(t('workshop.nameError'), retryHint())
     },
   })
 }
 
 export function useUpdateTopicCategory(topicId: string) {
+  const t = useT()
   const client = useQueryClient()
   return useMutation({
     mutationFn: (category: CategoryCode) => authoringService.updateCategory(topicId, category),
@@ -249,12 +255,13 @@ export function useUpdateTopicCategory(topicId: string) {
     onError: (error, _variables, context) => {
       context?.rollback()
       if (limitHit(client, error)) return
-      toast.error('L’univers n’a pas pu être enregistré', retryHint)
+      toast.error(t('workshop.categoryError'), retryHint())
     },
   })
 }
 
 export function useUpdateTopicImage(topicId: string) {
+  const t = useT()
   const client = useQueryClient()
   return useMutation({
     mutationFn: (imageUrl: string | null) => authoringService.updateImageUrl(topicId, imageUrl),
@@ -265,13 +272,14 @@ export function useUpdateTopicImage(topicId: string) {
     onError: (error, _variables, context) => {
       context?.rollback()
       if (limitHit(client, error)) return
-      toast.error('La vignette n’a pas pu être enregistrée', retryHint)
+      toast.error(t('workshop.imageError'), retryHint())
     },
   })
 }
 
 /** Pictogramme carré du sujet (`TopicTile`) : PNG envoyé par le créateur, les SVG viennent du seed. */
 export function useUpdateTopicPictogram(topicId: string) {
+  const t = useT()
   const client = useQueryClient()
   return useMutation({
     mutationFn: (pictogramUrl: string | null) => authoringService.updatePictogramUrl(topicId, pictogramUrl),
@@ -282,7 +290,7 @@ export function useUpdateTopicPictogram(topicId: string) {
     onError: (error, _variables, context) => {
       context?.rollback()
       if (limitHit(client, error)) return
-      toast.error('Le pictogramme n’a pas pu être enregistré', retryHint)
+      toast.error(t('workshop.pictogramError'), retryHint())
     },
   })
 }
@@ -292,6 +300,7 @@ export function useUpdateTopicPictogram(topicId: string) {
  * champ `description` historique suit la française.
  */
 export function useUpdateTopicDescription(topicId: string) {
+  const t = useT()
   const client = useQueryClient()
   return useMutation({
     mutationFn: ({ description, language }: { description: string | null; language: 'fr' | 'en' }) =>
@@ -304,17 +313,18 @@ export function useUpdateTopicDescription(topicId: string) {
           return { ...topic, descriptions: kept, description: kept.fr ?? null }
         }),
       ),
-    onSuccess: () => toast.success('Description enregistrée'),
+    onSuccess: () => toast.success(t('mobile.authoring.toast.descriptionSaved')),
     onError: (error, _variables, context) => {
       context?.rollback()
       if (limitHit(client, error)) return
-      toast.error("La description n'a pas pu être enregistrée", retryHint)
+      toast.error(t('mobile.authoring.toast.descriptionFailed'), retryHint())
     },
   })
 }
 
 /** Titres par palier : l'atelier et la fiche sujet (onglet Progression) changent tout de suite. */
 export function useUpdateTopicTitles(topicId: string) {
+  const t = useT()
   const client = useQueryClient()
   return useMutation({
     mutationFn: (titles: TopicTitles | null) => authoringService.updateTitles(topicId, titles),
@@ -323,16 +333,17 @@ export function useUpdateTopicTitles(topicId: string) {
         client.setQueryData<TopicWorkshop>(['authoring', topicId, 'workshop'], (workshop) => (workshop ? { ...workshop, titles } : workshop))
         client.setQueryData<TopicOverviewView>(queryKeys.topic.overview(topicId), (overview) => (overview ? { ...overview, titles } : overview))
       }),
-    onSuccess: () => toast.success('Titres enregistrés'),
+    onSuccess: () => toast.success(t('workshop.titlesSaved')),
     onError: (error, _variables, context) => {
       context?.rollback()
       if (limitHit(client, error)) return
-      toast.error("Les titres n'ont pas pu être enregistrés", retryHint)
+      toast.error(t('workshop.titlesError'), retryHint())
     },
   })
 }
 
 export function usePublishTopic(topicId: string) {
+  const t = useT()
   const client = useQueryClient()
   return useMutation({
     mutationFn: () => authoringService.publish(topicId),
@@ -340,11 +351,11 @@ export function usePublishTopic(topicId: string) {
       optimisticUpdate(client, [['authoring'], ['topic', topicId], ['topics'], queryKeys.home()], () =>
         patchTopic(client, topicId, (topic) => ({ ...topic, status: 'PUBLISHED' })),
       ),
-    onSuccess: () => toast.success('Sujet publié'),
+    onSuccess: () => toast.success(t('workshop.published')),
     onError: (error, _variables, context) => {
       context?.rollback()
       if (limitHit(client, error)) return
-      toast.error("Le sujet n'a pas pu être publié", { description: 'Il faut 7 questions approuvées.' })
+      toast.error(t('workshop.publishError'), { description: t('workshop.publishErrorText') })
     },
   })
 }
@@ -375,6 +386,7 @@ function syncApprovedCount(client: QueryClient, topicId: string) {
 }
 
 export function useSaveQuestion(topicId: string) {
+  const t = useT()
   const client = useQueryClient()
   return useMutation({
     mutationFn: async ({
@@ -428,10 +440,10 @@ export function useSaveQuestion(topicId: string) {
     onSuccess: ({ id, reportsResolved }, _variables, context) => {
       if (!reportsResolved) {
         context.reportTransaction?.rollback()
-        toast.error('Question enregistrée, mais les signalements restent à clore', retryHint)
+        toast.error(t('workshop.reportsStillOpen'), retryHint())
       }
       patchQuestion(client, topicId, context.localId, (question) => ({ ...question, questionId: id }))
-      toast.success('Question enregistrée')
+      toast.success(t('workshop.questionSaved'))
     },
     onError: (error, _variables, context) => {
       context?.reportTransaction?.rollback()
@@ -454,12 +466,13 @@ export function useSaveQuestion(topicId: string) {
         syncApprovedCount(client, topicId)
       }
       if (limitHit(client, error)) return
-      toast.error("La question n'a pas pu être entièrement enregistrée", retryHint)
+      toast.error(t('workshop.questionError'), retryHint())
     },
   })
 }
 
 export function useModerateQuestion(topicId: string) {
+  const t = useT()
   const client = useQueryClient()
   return useMutation({
     mutationFn: ({ questionId, decision, reason }: { questionId: string; decision: 'approve' | 'reject'; reason?: string }) =>
@@ -476,17 +489,18 @@ export function useModerateQuestion(topicId: string) {
         }))
         syncApprovedCount(client, topicId)
       }),
-    onSuccess: (_result, { decision }) => toast.success(decision === 'approve' ? 'Question approuvée' : 'Question rejetée'),
+    onSuccess: (_result, { decision }) => toast.success(decision === 'approve' ? t('workshop.approved') : t('workshop.rejected')),
     onError: (error, { decision }, context) => {
       context?.rollback()
       if (limitHit(client, error)) return
-      toast.error(decision === 'approve' ? "La question n'a pas pu être approuvée" : "La question n'a pas pu être rejetée", retryHint)
+      toast.error(decision === 'approve' ? t('workshop.approveError') : t('workshop.rejectError'), retryHint())
     },
   })
 }
 
 /** « Clore sans modifier » : les signalements ouverts de la question sont écartés. */
 export function useDismissReports(topicId: string) {
+  const t = useT()
   const client = useQueryClient()
   return useMutation({
     mutationFn: (questionId: string) => authoringService.resolveReports(questionId, 'DISMISSED'),
@@ -496,11 +510,11 @@ export function useDismissReports(topicId: string) {
         patchQuestion(client, topicId, questionId, (question) => ({ ...question, openReportCount: 0 }))
         dropFromQueue(client, topicId, questionId)
       }),
-    onSuccess: () => toast.success('Signalements clos'),
+    onSuccess: () => toast.success(t('workshop.reportsClosed')),
     onError: (error, _variables, context) => {
       context?.rollback()
       if (limitHit(client, error)) return
-      toast.error("Le signalement n'a pas pu être clos", retryHint)
+      toast.error(t('workshop.reportsCloseError'), retryHint())
     },
   })
 }
@@ -509,30 +523,32 @@ export function useTeam(topicId: string) {
   return useQuery({ queryKey: ['authoring', topicId, 'team'], queryFn: () => authoringService.team(topicId), enabled: Boolean(topicId) })
 }
 export function useTeamChange(topicId: string) {
+  const t = useT()
   const client = useQueryClient()
   return useMutation({
-    mutationFn: async ({ member, remove }: { member: import('@joutio/client-domain/authoring').TeamMember; remove?: boolean }) =>
+    mutationFn: async ({ member, remove }: { member: import('@joutio/client/authoring').TeamMember; remove?: boolean }) =>
       remove ? authoringService.removeMember(topicId, member.userId) : authoringService.setMember(topicId, member.userId, member.role),
     onMutate: ({ member, remove }) =>
       optimisticUpdate(client, [['authoring', topicId, 'team']], () => {
-        client.setQueryData<import('@joutio/client-domain/authoring').TeamMember[]>(['authoring', topicId, 'team'], (items) =>
+        client.setQueryData<import('@joutio/client/authoring').TeamMember[]>(['authoring', topicId, 'team'], (items) =>
           remove ? items?.filter((m) => m.userId !== member.userId) : [...(items ?? []).filter((m) => m.userId !== member.userId), member],
         )
       }),
     onSuccess: (member) => {
       if (member)
-        client.setQueryData<import('@joutio/client-domain/authoring').TeamMember[]>(['authoring', topicId, 'team'], (items) =>
+        client.setQueryData<import('@joutio/client/authoring').TeamMember[]>(['authoring', topicId, 'team'], (items) =>
           items?.map((item) => (item.userId === member.userId ? member : item)),
         )
     },
     onError: (error, _variables, context) => {
       context?.rollback()
       if (limitHit(client, error)) return
-      toast.error("L'équipe n'a pas pu être modifiée", { description: 'Les administrateurs doivent être Premium.' })
+      toast.error(t('workshop.teamError'), { description: t('workshop.teamErrorText') })
     },
   })
 }
 export function useDraftTopic(topicId: string) {
+  const t = useT()
   const client = useQueryClient()
   return useMutation({
     mutationFn: () => authoringService.draft(topicId),
@@ -543,11 +559,12 @@ export function useDraftTopic(topicId: string) {
     onError: (error, _v, context) => {
       context?.rollback()
       if (limitHit(client, error)) return
-      toast.error('Le sujet n’a pas pu repasser en brouillon')
+      toast.error(t('workshop.draftError'))
     },
   })
 }
 export function useDeleteQuestion(topicId: string) {
+  const t = useT()
   const client = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => authoringService.deleteQuestion(id),
@@ -561,12 +578,13 @@ export function useDeleteQuestion(topicId: string) {
     onError: (error, _v, context) => {
       context?.rollback()
       if (limitHit(client, error)) return
-      toast.error('La question n’a pas pu être supprimée')
+      toast.error(t('workshop.questionDeleteError'))
     },
   })
 }
 
 export function useArchiveQuestion(topicId: string) {
+  const t = useT()
   const client = useQueryClient()
   return useMutation({
     mutationFn: ({ id, restore }: { id: string; restore?: boolean }) => (restore ? authoringService.restore(id) : authoringService.archive(id)),
@@ -581,7 +599,7 @@ export function useArchiveQuestion(topicId: string) {
     onError: (error, _v, context) => {
       context?.rollback()
       if (limitHit(client, error)) return
-      toast.error('La question n’a pas pu être mise à jour')
+      toast.error(t('workshop.lifecycleError'))
     },
   })
 }

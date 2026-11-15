@@ -6,6 +6,7 @@ import { PressableScale, slopFor } from '../primitives/pressable-scale'
 import { Text } from '../primitives/text'
 import { useTheme } from '../theme/theme-provider'
 import { tokens } from '../tokens.generated'
+import { useT } from '@/lib/i18n'
 
 export interface SheetHeaderProps {
   title: string
@@ -50,6 +51,7 @@ function SheetButton({ icon: IconComponent, label, onPress }: { icon: Icon; labe
 
 /** Poignée 36 × 5, puis trois colonnes : retour, titre, action ou Fermer (boutons ronds de 30 pt, standard iOS). */
 export function SheetHeader({ title, subtitle, subtitleLines, onBack, action, onClose, titleRef, handle = true }: SheetHeaderProps) {
+  const t = useT()
   const { colors, radius } = useTheme()
   return (
     <View
@@ -62,7 +64,7 @@ export function SheetHeader({ title, subtitle, subtitleLines, onBack, action, on
       )}
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: tokens.space[3] }}>
         <View style={{ flex: 1, minWidth: 44, alignItems: 'flex-start' }}>
-          {onBack && <SheetButton icon={CaretLeftIcon} label="Retour" onPress={onBack} />}
+          {onBack && <SheetButton icon={CaretLeftIcon} label={t('topic.back')} onPress={onBack} />}
         </View>
         <View ref={titleRef} accessible accessibilityRole="header" style={{ minWidth: 0, flexShrink: 1, alignItems: 'center' }}>
           <Text variant="headline" numberOfLines={1}>
@@ -80,7 +82,7 @@ export function SheetHeader({ title, subtitle, subtitleLines, onBack, action, on
             // texte sur le bord du contenu de la feuille (16 pt), malgré le rembourrage du bouton.
             <View style={{ alignSelf: 'flex-end', marginRight: -tokens.space[2] }}>{action}</View>
           ) : (
-            onClose && <SheetButton icon={XIcon} label="Fermer" onPress={onClose} />
+            onClose && <SheetButton icon={XIcon} label={t('play.close')} onPress={onClose} />
           )}
         </View>
       </View>

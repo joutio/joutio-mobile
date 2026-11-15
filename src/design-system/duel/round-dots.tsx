@@ -2,20 +2,21 @@ import { View, type StyleProp, type ViewStyle } from 'react-native'
 import { Text } from '../primitives/text'
 import { useTheme } from '../theme/theme-provider'
 import { tokens } from '../tokens.generated'
+import { t, useT } from '@/lib/i18n'
 
 export const ROUND_RESULTS = ['correct', 'wrong', 'current', 'upcoming', 'unplayed', 'bonus', 'bonusCorrect', 'bonusWrong'] as const
 export type RoundResult = (typeof ROUND_RESULTS)[number]
 
-const LABELS: Record<RoundResult, string> = {
-  correct: 'réussie',
-  wrong: 'ratée',
-  current: 'en cours',
-  upcoming: 'à venir',
-  unplayed: 'non jouée',
-  bonus: 'bonus à venir',
-  bonusCorrect: 'bonus réussie',
-  bonusWrong: 'bonus ratée',
-}
+const LABELS = (): Record<RoundResult, string> => ({
+  correct: t('mobile.ds.round.correct'),
+  wrong: t('mobile.ds.round.wrong'),
+  current: t('mobile.ds.round.current'),
+  upcoming: t('mobile.ds.upcoming'),
+  unplayed: t('mobile.ds.round.unplayed'),
+  bonus: t('mobile.ds.round.bonus'),
+  bonusCorrect: t('mobile.ds.round.bonusCorrect'),
+  bonusWrong: t('mobile.ds.round.bonusWrong'),
+})
 
 export interface RoundDotsProps {
   results: readonly RoundResult[]
@@ -26,6 +27,7 @@ export interface RoundDotsProps {
 
 /** Avancement des manches : réussie, ratée, en cours, à venir ; la manche bonus porte ×2. */
 export function RoundDots({ results, size = 24, style }: RoundDotsProps) {
+  const t = useT()
   const { colors, radius } = useTheme()
   const roomy = size >= 20
   const dot = (result: RoundResult): ViewStyle => {
@@ -50,12 +52,12 @@ export function RoundDots({ results, size = 24, style }: RoundDotsProps) {
   }
   const ink = (result: RoundResult) => (result === 'bonus' ? colors.accentInk : result === 'bonusCorrect' ? colors.onCorrect : colors.onWrong)
   return (
-    <View accessibilityLabel="Manches" style={[{ flexDirection: 'row', alignItems: 'center', gap: roomy ? tokens.space[3] : tokens.space[2] }, style]}>
+    <View accessibilityLabel={t('mobile.ds.rounds')} style={[{ flexDirection: 'row', alignItems: 'center', gap: roomy ? tokens.space[3] : tokens.space[2] }, style]}>
       {results.map((result, index) => (
         <View
           key={index}
           accessible
-          accessibilityLabel={`Manche ${index + 1}, ${LABELS[result]}`}
+          accessibilityLabel={t('mobile.ds.roundA11y', { n: index + 1, state: LABELS()[result] })}
           style={[{ width: size, height: size, borderRadius: radius.full, alignItems: 'center', justifyContent: 'center' }, dot(result)]}
         >
           {result.startsWith('bonus') && roomy && (

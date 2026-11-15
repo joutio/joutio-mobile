@@ -8,6 +8,7 @@ import { Text } from '../primitives/text'
 import { alpha, mix } from '../theme/color'
 import { useTheme } from '../theme/theme-provider'
 import { tokens, type TierCode } from '../tokens.generated'
+import { t, tierKey, useT } from '@/lib/i18n'
 
 /** Au-delà, le titre passe en `heroSmall` pour tenir sur deux lignes. */
 const LONG_HEADLINE = 12
@@ -91,10 +92,11 @@ export interface UnlockContentProps {
 
 /** Contenu commun d'un déblocage : halo du rang, fil, héros, titre, texte, action et palier suivant. */
 export function UnlockContent({ tier, accent, crumbLead, crumbFrom, hero, heroMotion, eyebrow, headline, text, extra, next }: UnlockContentProps) {
+  const t = useT()
   const { colors, radius } = useTheme()
   const glow = tier ? tokens.tier[tier].hex : (accent?.glow ?? colors.accent)
   const ink = tier ? mix(glow, colors.text, 0.6) : (accent?.ink ?? colors.accentInk)
-  const crumbTo = tier ? tokens.tier[tier].label : (accent?.label ?? '')
+  const crumbTo = tier ? t(tierKey(tier)) : (accent?.label ?? '')
   return (
     <View style={{ flexGrow: 1, alignItems: 'center', gap: tokens.space[4], paddingHorizontal: tokens.space[6], paddingTop: tokens.space[5] }}>
       <View
@@ -148,9 +150,9 @@ export function UnlockContent({ tier, accent, crumbLead, crumbFrom, hero, heroMo
         >
           <View style={{ width: 96, height: 56, alignItems: 'center', justifyContent: 'center' }}>{next.preview}</View>
           <Text variant="caption" color="muted" style={{ flex: 1 }}>
-            Prochain :{' '}
+            {t('mobile.ds.next')}{' '}
             <Text variant="caption" weight="600" color={next.tier ? mix(tokens.tier[next.tier].hex, colors.text, 0.6) : ink}>
-              {next.tier ? tokens.tier[next.tier].label : next.label}
+              {next.tier ? t(tierKey(next.tier)) : next.label}
             </Text>{' '}
             {next.rule}
           </Text>

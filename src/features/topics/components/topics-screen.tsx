@@ -44,11 +44,12 @@ import {
 import { openTopic } from '@/features/topic'
 import { DEFAULT_TOPIC_SORT, pageSizeFor, type TopicScope } from '../lib/topics-service'
 import { useDebounced } from '@/shared/hooks/use-debounced'
-import type { TopicCardView, TopicSort } from '@joutio/client-domain/api-types'
+import type { TopicCardView, TopicSort } from '@joutio/client/api-types'
 import { topicName } from '@/shared/utils/topic-name'
 import { useTopicFacets, useTopics } from '../hooks/use-topics'
 import { useOnline } from '@/shared/hooks/use-online'
 import { feedFooterProps, pagedQuery } from '@/shared/utils/paging'
+import { categoryKey, t, useT } from '@/lib/i18n'
 
 const GUTTER = tokens.space[5]
 /** Écarts de la grille : 12 px entre colonnes, 16 px entre rangées. */
@@ -58,18 +59,18 @@ const GAP_Y = tokens.space[5]
 const MIN_COLUMN = 96
 const columnsFor = (width: number) => Math.max(1, Math.floor((width - GUTTER * 2 + GAP_X) / (MIN_COLUMN + GAP_X)))
 const UNIVERSES = Object.keys(tokens.category) as CategoryCode[]
-const SORTS: { value: TopicSort; label: string }[] = [
-  { value: 'POPULAR', label: 'Les plus suivis' },
-  { value: 'MOST_PLAYED', label: 'Les plus joués' },
-  { value: 'RECENT', label: 'Nouveautés' },
-]
+const SORTS = (): { value: TopicSort; label: string }[] => ([
+  { value: 'POPULAR', label: t('topics.sortPopular') },
+  { value: 'MOST_PLAYED', label: t('topics.sortPlayed') },
+  { value: 'RECENT', label: t('topics.sortRecent') },
+])
 const DEFAULT_SORT: TopicSort = DEFAULT_TOPIC_SORT
 /** « Mes thèmes » (`sujets.md` § 2, 2026-11-13, remplace « Masquer les sujets suivis »). */
-const SCOPES: { value: TopicScope; label: string; icon: NonNullable<ListRowProps['icon']> }[] = [
-  { value: 'ALL', label: 'Tous les sujets', icon: SquaresFourIcon },
-  { value: 'FOLLOWED', label: 'Sujets suivis', icon: HeartIcon },
-  { value: 'MINE', label: 'Mes sujets', icon: PencilSimpleIcon },
-]
+const SCOPES = (): { value: TopicScope; label: string; icon: NonNullable<ListRowProps['icon']> }[] => ([
+  { value: 'ALL', label: t('topics.scopeAll'), icon: SquaresFourIcon },
+  { value: 'FOLLOWED', label: t('topics.scopeFollowed'), icon: HeartIcon },
+  { value: 'MINE', label: t('topics.scopeMine'), icon: PencilSimpleIcon },
+])
 
 const countLabel = (count: number) => `${count} ${count > 1 ? 'sujets' : 'sujet'}`
 const toggle = (list: readonly CategoryCode[], category: CategoryCode) =>
@@ -77,10 +78,11 @@ const toggle = (list: readonly CategoryCode[], category: CategoryCode) =>
 
 /** Neuf pictogrammes et titres en squelette, sur la grille des tuiles. */
 function Loading({ animated = true, columns, tile }: { animated?: boolean; columns: number; tile: number }) {
+  const t = useT()
   return (
     <View
       accessible
-      accessibilityLabel="Chargement"
+      accessibilityLabel={t('home.loading')}
       style={{ flexDirection: 'row', flexWrap: 'wrap', columnGap: GAP_X, rowGap: GAP_Y, paddingHorizontal: GUTTER }}
     >
       {Array.from({ length: Math.max(9, columns) }, (_, index) => (
@@ -102,6 +104,7 @@ function Loading({ animated = true, columns, tile }: { animated?: boolean; colum
  * pleines (environ 20 sujets). Toucher Sujets remonte en haut.
  */
 export function TopicsScreen() {
+  const t = useT()
   // Fin de liste au-dessus de la tab bar native iOS (`useTabBarInset`).
   const tabInset = useTabBarInset()
   const unread = useUnreadCount()
@@ -171,7 +174,7 @@ export function TopicsScreen() {
   // Ce qui reste à charger : connu par les facettes de la même portée.
   const remaining = facets.data ? count - items.length : 0
   const remainingLabel = remaining > 0 ? `${remaining} ${remaining > 1 ? 'autres sujets' : 'autre sujet'}` : undefined
-  const sortLabel = SORTS.find((option) => option.value === sort)?.label ?? ''
+  const sortLabel = SORTS().find((option) => option.value === sort)?.label ?? ''
 
   const listHeader = (
     <View style={{ gap: tokens.space[3], paddingBottom: tokens.space[4] }}>
@@ -182,11 +185,11 @@ export function TopicsScreen() {
         contentContainerStyle={{ paddingHorizontal: GUTTER, gap: tokens.space[3] }}
       >
         <Chip selected={categories.length === 0} onPress={() => setCategories([])}>
-          Tous
+          {t('home.all')}
         </Chip>
         {quick.map((category) => (
           <Chip key={category} selected={categories.includes(category)} onPress={() => setCategories(toggle(categories, category))}>
-            {tokens.category[category].label}
+            {t(categoryKey(category))}
           </Chip>
         ))}
       </ScrollView>
@@ -208,19 +211,19 @@ export function TopicsScreen() {
     ) : failed ? (
       <EmptyState
         icon={WarningCircleIcon}
-        title="Impossible de charger les sujets"
-        description="Vérifie ta connexion, puis réessaie."
+        title={t('topics.errorTitle')}
+        description={t('home.errorText')}
         action={
           <Button style={{ alignSelf: 'center' }} loading={topics.isRefetching} onPress={() => void topics.refetch()}>
-            Réessayer
+            {t('callback.retry')}
           </Button>
         }
       />
     ) : (
       <EmptyState
         icon={MagnifyingGlassIcon}
-        title="Aucun sujet trouvé"
-        description="Essaie un autre mot ou retire des filtres."
+        title={t('topics.emptyTitle')}
+        description={t('topics.emptyText')}
         action={
           <Button
             style={{ alignSelf: 'center' }}
@@ -229,7 +232,7 @@ export function TopicsScreen() {
               setQuery('')
             }}
           >
-            Réinitialiser
+            {t('topics.reset')}
           </Button>
         }
       />
@@ -242,10 +245,10 @@ export function TopicsScreen() {
       scroll={false}
       header={
         <SearchHeader
-          title="Sujets"
+          title={t('nav.topics')}
           value={query}
           onChange={setQuery}
-          placeholder="Chercher un sujet"
+          placeholder={t('topics.search')}
           onFilter={() => setSheetOpen(true)}
           filterDot={categories.length > 0 || sort !== DEFAULT_SORT || scope !== 'ALL'}
           notifications={
@@ -260,51 +263,51 @@ export function TopicsScreen() {
         <MobileSheet
           open={sheetOpen}
           onClose={() => setSheetOpen(false)}
-          title="Filtres"
+          title={t('topics.filters')}
           action={
             <Button variant="plain" size="S" onPress={reset}>
-              Réinitialiser
+              {t('topics.reset')}
             </Button>
           }
           footer={
             <Button full onPress={() => setSheetOpen(false)}>
-              {`Afficher ${countLabel(count)}`}
+              {t('topics.show', { count: countLabel(count) })}
             </Button>
           }
         >
           <View style={{ gap: tokens.space[6] }}>
             <View style={{ gap: tokens.space[4] }}>
-              <SectionHeader title="Univers" />
+              <SectionHeader title={t('topics.universes')} />
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: tokens.space[3] }}>
                 {UNIVERSES.map((category) => (
                   <Chip key={category} selected={categories.includes(category)} onPress={() => setCategories(toggle(categories, category))}>
-                    {tokens.category[category].label}
+                    {t(categoryKey(category))}
                   </Chip>
                 ))}
               </View>
             </View>
             <View style={{ gap: tokens.space[4] }}>
-              <SectionHeader title="Trier par" />
+              <SectionHeader title={t('topics.sortBy')} />
               <ListGroup>
-                <RadioGroup label="Trier par">
-                  {SORTS.map((option, index) => (
+                <RadioGroup label={t('topics.sortBy')}>
+                  {SORTS().map((option, index) => (
                     <ListRow
                       key={option.value}
                       label={option.label}
                       control="radio"
                       on={sort === option.value}
                       onToggle={() => setSort(option.value)}
-                      last={index === SORTS.length - 1}
+                      last={index === SORTS().length - 1}
                     />
                   ))}
                 </RadioGroup>
               </ListGroup>
             </View>
             <View style={{ gap: tokens.space[4] }}>
-              <SectionHeader title="Mes thèmes" />
+              <SectionHeader title={t('topics.scope')} />
               <ListGroup>
-                <RadioGroup label="Mes thèmes">
-                  {SCOPES.map((option, index) => (
+                <RadioGroup label={t('topics.scope')}>
+                  {SCOPES().map((option, index) => (
                     <ListRow
                       key={option.value}
                       icon={option.icon}
@@ -312,7 +315,7 @@ export function TopicsScreen() {
                       control="radio"
                       on={scope === option.value}
                       onToggle={() => setScope(option.value)}
-                      last={index === SCOPES.length - 1}
+                      last={index === SCOPES().length - 1}
                     />
                   ))}
                 </RadioGroup>
@@ -365,6 +368,7 @@ export function TopicsScreen() {
                 <View style={{ paddingLeft: left, paddingBottom: GAP_Y }}>
                   <TopicTile
                     style={{ width: tile }}
+                    official={item.official ?? false}
                     title={topicName(item.names)}
                     category={toCategoryCode(item.category)}
                     pictogram={item.pictogramUrl ?? undefined}
@@ -379,7 +383,7 @@ export function TopicsScreen() {
                 <FeedFooter
                   style={{ marginHorizontal: GUTTER }}
                   {...feedFooterProps(pagedQuery(topics))}
-                  endLabel="Tu as vu tous les sujets"
+                  endLabel={t('topics.end')}
                   remainingLabel={remainingLabel}
                 />
               ) : undefined

@@ -12,6 +12,7 @@ import { useTheme } from '../theme/theme-provider'
 import { tokens } from '../tokens.generated'
 import { PressableScale } from './pressable-scale'
 import { Text } from './text'
+import { useT } from '@/lib/i18n'
 
 export interface MenuItem {
   label: string
@@ -51,6 +52,7 @@ interface Placement {
  * plus proche, dans les safe areas. Fermeture : toucher extérieur, retour Android, choix d'une option.
  */
 export function Menu({ items, title, width = 240, children }: MenuProps) {
+  const t = useT()
   const { colors, radius } = useTheme()
   const reduced = useReducedMotion()
   const insets = useSafeAreaInsets()
@@ -133,7 +135,7 @@ export function Menu({ items, title, width = 240, children }: MenuProps) {
         onRequestClose={() => close()}
         onDismiss={flush}
       >
-        <Pressable accessibilityLabel="Fermer le menu" accessibilityRole="button" onPress={() => close()} style={StyleSheet.absoluteFill} />
+        <Pressable accessibilityLabel={t('mobile.ds.closeMenu')} accessibilityRole="button" onPress={() => close()} style={StyleSheet.absoluteFill} />
         <Animated.View
           accessibilityViewIsModal
           accessibilityRole="menu"

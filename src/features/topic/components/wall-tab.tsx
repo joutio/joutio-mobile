@@ -27,25 +27,27 @@ import {
   type WallPostMock,
 } from '../lib/wall-mocks'
 import { clientSource, feedFooterProps, loadMoreOptions } from '@/shared/utils/paging'
+import { t, useT } from '@/lib/i18n'
 
-const remainingPosts = (count: number) => `${count} ${count > 1 ? 'autres publications' : 'autre publication'}`
+const remainingPosts = (count: number) => t(count > 1 ? 'wall.remainingMany' : 'wall.remainingOne', { count })
 
 /** Signaler une publication ou un commentaire (mock : rien n'est envoyé). */
 export function report(what: 'publication' | 'commentaire') {
   showDialog({
-    title: what === 'publication' ? 'Signaler cette publication ?' : 'Signaler ce commentaire ?',
-    message: 'La modération vérifiera le contenu. Son auteur ne saura pas que tu l’as signalé.',
+    title: what === 'publication' ? t('mobile.wall.reportPost') : t('mobile.wall.reportComment'),
+    message: t('mobile.wall.reportText'),
     icon: FlagIcon,
     tone: 'danger',
     actions: [
-      { label: 'Signaler', tone: 'destructive', onPress: () => toast.success('Signalement envoyé', { description: 'Merci, la modération va regarder.' }) },
-      { label: 'Annuler', variant: 'plain' },
+      { label: t('player.report'), tone: 'destructive', onPress: () => toast.success(t('report.sent'), { description: t('mobile.wall.reportThanks') }) },
+      { label: t('topic.cancel'), variant: 'plain' },
     ],
   })
 }
 
 /** État local du mur (mock) : publications, pages, J'aime, nouvelles anecdotes. */
 export function useWall(me: string) {
+  const t = useT()
   const [posts, setPosts] = useState<WallPostMock[]>(WALL_POSTS_MOCK)
   const [pages, setPages] = useState(1)
   const [liked, setLiked] = useState<ReadonlySet<string>>(new Set())
@@ -65,7 +67,7 @@ export function useWall(me: string) {
         return next
       }),
     publish: (text: string) =>
-      setPosts((current) => [{ id: `mine-${Date.now()}`, name: me, tier: 'OR', meta: "À l'instant", text, likes: 0, comments: 0 }, ...current]),
+      setPosts((current) => [{ id: `mine-${Date.now()}`, name: me, tier: 'OR', meta: t('mobile.wall.justNow'), text, likes: 0, comments: 0 }, ...current]),
   }
 }
 
@@ -73,6 +75,7 @@ export type Wall = ReturnType<typeof useWall>
 
 /** Onglet Mur : l'événement récent, puis les publications par pages de 20 (`DragToLoadMore`). */
 export function WallTab({ wall, onComment }: { wall: Wall; onComment: (post: WallPostMock) => void }) {
+  const t = useT()
   return (
     <DragToLoadMore enabled={wall.hasMore} onLoadMore={wall.loadMore}>
       <TabLoadMoreScrollView
@@ -81,7 +84,7 @@ export function WallTab({ wall, onComment }: { wall: Wall; onComment: (post: Wal
         contentContainerStyle={{ gap: tokens.space[4], paddingHorizontal: tokens.space[5], paddingTop: tokens.space[2], paddingBottom: tokens.space[12] }}
       >
         {wall.posts.length === 0 ? (
-          <EmptyState icon={ChatCircleIcon} title="Le mur est vide" description="Touche le crayon pour partager la première anecdote." />
+          <EmptyState icon={ChatCircleIcon} title={t('mobile.wall.empty')} description={t('mobile.wall.emptyText')} />
         ) : (
           <>
             <WallEvent {...WALL_EVENT_MOCK} icon={LightningIcon} />
@@ -101,7 +104,7 @@ export function WallTab({ wall, onComment }: { wall: Wall; onComment: (post: Wal
               pages={wall.pages}
               onLoadMore={wall.loadMore}
               onRetry={wall.loadMore}
-              endLabel="Tu as vu tout le mur"
+              endLabel={t('mobile.wall.allSeen')}
               remainingLabel={wall.hasMore ? remainingPosts(wall.remaining) : undefined}
             />
           </>
@@ -113,19 +116,20 @@ export function WallTab({ wall, onComment }: { wall: Wall; onComment: (post: Wal
 
 /** Feuille « Partager une anecdote ». */
 export function PostSheet({ open, onClose, topic, onPublish }: { open: boolean; onClose: () => void; topic: string; onPublish: (text: string) => void }) {
+  const t = useT()
   const [text, setText] = useState('')
   return (
-    <MobileSheet open={open} onClose={onClose} title="Partager une anecdote" subtitle={topic}>
+    <MobileSheet open={open} onClose={onClose} title={t('mobile.topic.shareAnecdote')} subtitle={topic}>
       <Composer
         autoFocus
         value={text}
         onChange={setText}
-        placeholder="Ton anecdote"
+        placeholder={t('mobile.wall.placeholder')}
         onSend={(value) => {
           onPublish(value.trim())
           setText('')
           onClose()
-          toast.success('Anecdote publiée', { description: topic })
+          toast.success(t('mobile.wall.published'), { description: topic })
         }}
       />
     </MobileSheet>
@@ -134,6 +138,7 @@ export function PostSheet({ open, onClose, topic, onPublish }: { open: boolean; 
 
 /** Feuille des commentaires d'une publication : bulles du chat, 20 par page, saisie en pied. */
 export function CommentsSheet({ post, me, onClose }: { post: WallPostMock | undefined; me: string; onClose: () => void }) {
+  const t = useT()
   const [comment, setComment] = useState('')
   const [mine, setMine] = useState<WallCommentMock[]>([])
   const [pages, setPages] = useState(1)
@@ -150,7 +155,7 @@ export function CommentsSheet({ post, me, onClose }: { post: WallPostMock | unde
         onClose()
         setPages(1)
       }}
-      title={`Commentaires · ${all.length}`}
+      title={t('mobile.wall.comments', { count: all.length })}
       subtitle={excerpt}
       tall
       loadMore={loadMoreOptions(source)}
@@ -158,9 +163,9 @@ export function CommentsSheet({ post, me, onClose }: { post: WallPostMock | unde
         <Composer
           value={comment}
           onChange={setComment}
-          placeholder="Ajouter un commentaire"
+          placeholder={t('mobile.wall.addComment')}
           onSend={(value) => {
-            setMine((current) => [...current, { id: `mine-${Date.now()}`, author: me, text: value.trim(), meta: "À l'instant" }])
+            setMine((current) => [...current, { id: `mine-${Date.now()}`, author: me, text: value.trim(), meta: t('mobile.wall.justNow') }])
             setComment('')
           }}
         />
@@ -177,7 +182,7 @@ export function CommentsSheet({ post, me, onClose }: { post: WallPostMock | unde
             onLongPress={() => report('commentaire')}
           />
         ))}
-        <FeedFooter {...feedFooterProps(source)} endLabel="Tu as vu tous les commentaires" />
+        <FeedFooter {...feedFooterProps(source)} endLabel={t('mobile.wall.allCommentsSeen')} />
       </View>
     </MobileSheet>
   )

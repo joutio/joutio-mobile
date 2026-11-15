@@ -14,7 +14,7 @@ import {
 import { duration } from '@/features/challenges/lib/challenges-service'
 import { usePlayerProfile } from '@/features/social/hooks/use-social'
 import type { NotificationView } from '@/lib/realtime/personal-notifications'
-import type { ChallengeView } from '@joutio/client-domain/api-types'
+import type { ChallengeView } from '@joutio/client/api-types'
 import { avatarSvg } from '@/shared/utils/avatar'
 import { tierOf } from '@/shared/utils/tier'
 import { topicName } from '@/shared/utils/topic-name'
@@ -24,6 +24,7 @@ import { useOpenNotification } from '../hooks/use-open-notification'
 import { opensScreen } from '../lib/notification-target'
 import { isExpired, isUnread, relativeTime } from '../lib/notifications-service'
 import { useDeleteNotification } from '../hooks/use-notifications'
+import { useT } from '@/lib/i18n'
 
 /** Pictogramme des notifications sans joueur (système). */
 const ICONS: Record<NotificationView['type'], Icon> = {
@@ -42,6 +43,7 @@ const ICONS: Record<NotificationView['type'], Icon> = {
  * l'écran de l'action ; balayer supprime.
  */
 export function NotificationItem({ notification, challenge, last }: { notification: NotificationView; challenge: ChallengeView | undefined; last: boolean }) {
+  const t = useT()
   // Un signalement reste anonyme : jamais le nom ni l'avatar du signalant, même si une ancienne notification le portait.
   const anonymous = notification.type === 'QUESTION_REPORTED'
   const actorId = anonymous ? null : notification.actorId
@@ -50,15 +52,15 @@ export function NotificationItem({ notification, challenge, last }: { notificati
   const open = useOpenNotification()
   const remove = useDeleteNotification()
   const profile = actor.data
-  const name = profile?.pseudonym ?? 'Un joueur'
+  const name = profile?.pseudonym ?? t('notifications.somePlayer')
   const unread = isUnread(notification)
   const now = Date.now()
   const pending = notification.type === 'CHALLENGE_RECEIVED' && challenge?.status === 'PENDING' && !isExpired(notification, now)
   const sub =
     notification.type === 'CHALLENGE_RECEIVED' && challenge
-      ? `${topicName(challenge.topic.names)} · ${pending ? `expire dans ${duration(Date.parse(challenge.expiresAt) - now)}` : relativeTime(notification.createdAt, now)}`
+      ? t('common.dotPair', { a: topicName(challenge.topic.names), b: pending ? t('challenges.expiresIn', { duration: duration(Date.parse(challenge.expiresAt) - now) }) : relativeTime(notification.createdAt, now) })
       : anonymous && reportedTopic
-        ? `${topicName(reportedTopic.names)} · ${relativeTime(notification.createdAt, now)}`
+        ? t('common.dotPair', { a: topicName(reportedTopic.names), b: relativeTime(notification.createdAt, now) })
         : relativeTime(notification.createdAt, now)
 
   return (

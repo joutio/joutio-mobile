@@ -1,6 +1,6 @@
 import { api } from '@/lib/api'
 import { ENDPOINTS } from '@/lib/endpoints'
-import type { SuggestionView } from '@joutio/client-domain/api-types'
+import type { SuggestionView } from '@joutio/client/api-types'
 
 export const SEARCH_LIMIT = 10
 

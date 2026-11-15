@@ -1,10 +1,11 @@
-import { BIRTH_DATE_PROBLEMS, birthDateIssue, isoDay } from '@joutio/client-domain/profile'
+import { BIRTH_DATE_PROBLEMS, birthDateIssue, isoDay } from '@joutio/client/profile'
 import { useState } from 'react'
 import { ScrollView, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Button, CakeIcon, Notice, ProhibitIcon, Text, toast, tokens, useTheme } from '@/design-system'
 import { useSetBirthDate } from '@/features/me'
 import { BirthDatePicker } from '@/shared/components/birth-date-picker'
+import { useT } from '@/lib/i18n'
 
 /**
  * Date de naissance (`onboarding.md`, 2026-11-13) : demandée une fois après la connexion aux comptes récents
@@ -12,6 +13,7 @@ import { BirthDatePicker } from '@/shared/components/birth-date-picker'
  * garde « Continuer » désactivé (plus d'écran de blocage).
  */
 export function BirthDateScreen() {
+  const t = useT()
   const { colors } = useTheme()
   const insets = useSafeAreaInsets()
   const save = useSetBirthDate()
@@ -26,7 +28,7 @@ export function BirthDateScreen() {
       onError: (error) => {
         const type = (error as { type?: string } | null)?.type
         if (type === BIRTH_DATE_PROBLEMS.underage) setRefused(true)
-        else toast.error("La date n'a pas été enregistrée", { description: 'Vérifie ta connexion, puis réessaie.' })
+        else toast.error(t('mobile.onboarding.birthFailed'), { description: t('home.errorText') })
       },
     })
   }
@@ -53,9 +55,9 @@ export function BirthDateScreen() {
             <CakeIcon size={28} weight="fill" color={colors.onAccent} />
           </View>
           <Text variant="title1" accessibilityRole="header">
-            Quelle est ta date de naissance ?
+            {t('birth.title')}
           </Text>
-          <Text color="muted">Joutio est réservé aux 15 ans et plus. Ta date reste privée : elle ne s'affiche jamais sur ton profil.</Text>
+          <Text color="muted">{t('birth.text')}</Text>
         </View>
         <BirthDatePicker
           value={birthDate}
@@ -68,14 +70,14 @@ export function BirthDateScreen() {
           <Notice
             tone="error"
             icon={ProhibitIcon}
-            title="Joutio est réservé aux 15 ans et plus"
-            message="Ton compte n'a pas été activé. Tu pourras revenir quand tu auras l'âge requis."
+            title={t('tooYoung.title')}
+            message={t('tooYoung.message')}
           />
         )}
       </ScrollView>
       <View style={{ paddingHorizontal: tokens.space[5], paddingTop: tokens.space[3], paddingBottom: insets.bottom + tokens.space[5] }}>
         <Button full disabled={!birthDate || tooYoung || issue !== null} loading={save.isPending} onPress={submit}>
-          Continuer
+          {t('onboarding.universes.continue')}
         </Button>
       </View>
     </View>

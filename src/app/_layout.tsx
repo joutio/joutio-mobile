@@ -10,12 +10,14 @@ import { KeyboardProvider } from 'react-native-keyboard-controller'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { Notice, Button, DialogHost, ThemeProvider, ToastHost, tokens, useJoutioFonts, useTheme } from '@/design-system'
 import { LaunchScreen, SessionRuntime, useLogout, useSessionStore } from '@/features/auth'
-import { useMe } from '@/features/me'
+import { useLanguageSync, useMe } from '@/features/me'
 import { ExpoPushRuntime } from '@/features/notifications/components/expo-push-runtime'
 import { useCatalogAccess } from '@/features/auth/hooks/use-catalog-access'
 import { BirthDateScreen } from '@/features/onboarding/components/birth-date-screen'
+import { TermsScreen } from '@/features/onboarding/components/terms-screen'
 import { createQueryClient } from '@/lib/query-client'
 import { useNetworkBridge } from '@/shared/hooks/use-online'
+import { useT } from '@/lib/i18n'
 
 SplashScreen.preventAutoHideAsync().catch(() => undefined)
 // Le splash natif s'efface sur `LaunchScreen` (même logo, même fond) au lieu de couper net.
@@ -41,16 +43,17 @@ function useLaunchMinElapsed(): boolean {
 
 /** `GET /api/me` a échoué au démarrage : réessayer, ou se déconnecter. */
 function BootError({ onRetry }: { onRetry: () => void }) {
+  const t = useT()
   const { colors } = useTheme()
   const logout = useLogout()
   return (
     <View style={{ flex: 1, justifyContent: 'center', gap: tokens.space[4], padding: tokens.space[5], backgroundColor: colors.bg }}>
-      <Notice title="Joutio ne répond pas" message="Vérifie ta connexion et réessaie." />
+      <Notice title={t('boot.title')} message={t('common.checkConnection')} />
       <Button full onPress={onRetry}>
-        Réessayer
+        {t('callback.retry')}
       </Button>
       <Button full variant="plain" tone="neutral" loading={logout.isPending} onPress={() => logout.mutate()}>
-        Se déconnecter
+        {t('onboarding.ended.logout')}
       </Button>
     </View>
   )
@@ -63,12 +66,15 @@ function Navigation() {
   const me = useMe(ready && authenticated)
   const catalogAccess = useCatalogAccess()
   const launchMinElapsed = useLaunchMinElapsed()
+  useLanguageSync(me.data?.language)
 
   if (!launchMinElapsed || !ready || (authenticated && me.isPending)) return <LaunchScreen />
   if (authenticated && me.isError && !me.data) return <BootError onRetry={() => void me.refetch()} />
 
   // Compte récent sans date de naissance : demandée une fois avant tout le reste (`onboarding.md`).
   if (authenticated && me.data?.birthDateRequired) return <BirthDateScreen />
+  // CGU en vigueur pas encore acceptées (première connexion ou nouvelle version) : présentées avant de jouer.
+  if (authenticated && me.data?.termsUpToDate === false) return <TermsScreen />
 
   const onboarded = me.data?.onboardingCompleted ?? false
   return (

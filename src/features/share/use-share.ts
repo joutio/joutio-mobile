@@ -1,8 +1,9 @@
-import { buildShareUrl, type ShareKind } from '@joutio/client-domain/share'
+import { buildShareUrl, type ShareKind } from '@joutio/client/share'
 import * as Clipboard from 'expo-clipboard'
 import { useCallback } from 'react'
 import { Platform, Share } from 'react-native'
 import { toast } from '@/design-system'
+import { t } from '@/lib/i18n'
 
 export interface ShareTarget {
   kind: ShareKind
@@ -33,8 +34,8 @@ export function useShare() {
 export async function copyLink(url: string) {
   try {
     await Clipboard.setStringAsync(url)
-    toast.success('Lien copié')
+    toast.success(t('topic.linkCopied'))
   } catch {
-    toast.error("Le lien n'a pas pu être copié")
+    toast.error(t('topic.linkError'))
   }
 }

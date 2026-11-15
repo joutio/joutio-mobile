@@ -19,11 +19,12 @@ import {
 import { useMe } from '@/features/me'
 import { usePremiumSheet } from '@/features/premium/premium-store'
 import { useMyBadges, useMyRewards, useUpdateMe } from '@/features/profile/hooks/use-profile'
-import { t } from '@/shared/avatar/i18n'
+import { t as avatarT } from '@/shared/avatar/i18n'
 import { defaultOptionsFor, getAvatarStyle, humanizeVariant, NONE_LABEL_KEY, type AvatarStyleSection } from '@/shared/avatar/styles'
 import { avatarSvg, parseAvatarConfig, type AvatarConfig } from '@/shared/utils/avatar'
 import { withStyle } from '../lib/avatar-preview'
 import { avatarStylesFor, styleOf, type AvatarStyleId } from '../lib/avatar-styles'
+import { useT } from '@/lib/i18n'
 
 const PAGE = { gap: tokens.space[6], paddingHorizontal: tokens.space[5], paddingTop: tokens.space[2], paddingBottom: tokens.space[7] }
 /** Grille adaptative : largeur minimale de vignette, 3 colonnes sur un téléphone, davantage sur un écran déplié. */
@@ -40,9 +41,9 @@ function tileWidth(screenWidth: number) {
 /** Libellé d'une variante : traduction du web, sinon « Variante 3 », sinon l'identifiant. */
 function variantLabel(section: AvatarStyleSection, variant: string) {
   const key = section.labelKeys?.[variant]
-  if (key) return t(key)
+  if (key) return avatarT(key)
   const humanized = humanizeVariant(variant)
-  return humanized ? t(humanized.key, { number: humanized.number }) : variant
+  return humanized ? avatarT(humanized.key, { number: humanized.number }) : variant
 }
 
 function Section({ title, children }: { title?: string; children: ReactNode }) {
@@ -61,6 +62,7 @@ function Section({ title, children }: { title?: string; children: ReactNode }) {
  * L'avatar de base est celui du Profil : les initiales, sans aucun réglage (seul l'onglet Style reste, 2026-11-12). Aperçu fixe de l'avatar seul, sans cadre de rang ; Enregistrer s'active au premier changement.
  */
 export function AvatarEditorScreen() {
+  const t = useT()
   const { colors } = useTheme()
   const insets = useSafeAreaInsets()
   const { width: screenWidth } = useWindowDimensions()
@@ -89,14 +91,14 @@ export function AvatarEditorScreen() {
   const section = (item: AvatarStyleSection) => (
     <View key={item.id} style={{ gap: tokens.space[6] }}>
       {item.variantField && item.variants && (
-        <RadioGroup label={t(item.labelKey)} style={{ flexDirection: 'row', flexWrap: 'wrap', gap: TILE_GAP }}>
+        <RadioGroup label={avatarT(item.labelKey)} style={{ flexDirection: 'row', flexWrap: 'wrap', gap: TILE_GAP }}>
             {[...(item.allowsNone ? ['none'] : []), ...item.variants].map((variant) => {
               const field = item.variantField as string
               const current = choice[field] ?? definition?.defaults[field]
               return (
                 <OptionTile
                   key={variant}
-                  label={variant === 'none' ? t(NONE_LABEL_KEY) : variantLabel(item, variant)}
+                  label={variant === 'none' ? avatarT(NONE_LABEL_KEY) : variantLabel(item, variant)}
                   image={render({ ...choice, [field]: variant }) ?? ''}
                   selected={current === variant}
                   onSelect={() => set({ [field]: variant })}
@@ -108,9 +110,9 @@ export function AvatarEditorScreen() {
       )}
       {item.colorField && item.colors && (
         // Partie sans variantes (peau, fond) : l'onglet porte déjà son nom.
-        <Section title={item.variantField ? (item.colorLabelKey ? t(item.colorLabelKey) : t('avatar.color')) : undefined}>
+        <Section title={item.variantField ? (item.colorLabelKey ? avatarT(item.colorLabelKey) : avatarT('avatar.color')) : undefined}>
           <RadioGroup
-            label={item.colorLabelKey ? t(item.colorLabelKey) : t('avatar.color')}
+            label={item.colorLabelKey ? avatarT(item.colorLabelKey) : avatarT('avatar.color')}
             style={{ flexDirection: 'row', flexWrap: 'wrap', gap: tokens.space[2] }}
           >
             {item.colors.map((color, index) => {
@@ -119,7 +121,7 @@ export function AvatarEditorScreen() {
                 <ColorSwatch
                   key={color}
                   color={color}
-                  label={`${item.colorLabelKey ? t(item.colorLabelKey) : t('avatar.color')} ${index + 1}`}
+                  label={t('avatar.colorN', { label: item.colorLabelKey ? avatarT(item.colorLabelKey) : avatarT('avatar.color'), n: index + 1 })}
                   selected={(choice[field] ?? definition?.defaults[field]) === color}
                   onSelect={() => set({ [field]: color })}
                 />
@@ -133,10 +135,10 @@ export function AvatarEditorScreen() {
 
   const stylePage: TabsScrollPage<string> = {
     value: 'style',
-    label: t('avatar.editor.style'),
+    label: avatarT('avatar.editor.style'),
     content: (
       <TabScrollView contentContainerStyle={{ ...PAGE, gap: tokens.space[4] }}>
-        <RadioGroup label="Style d'avatar" style={{ gap: tokens.space[4] }}>
+        <RadioGroup label={t('mobile.avatar.styleLabel')} style={{ gap: tokens.space[4] }}>
           {styles.map((entry) => {
             const active = entry.id === style
             return (
@@ -150,7 +152,7 @@ export function AvatarEditorScreen() {
                 image={render(withStyle(choice, entry.id as AvatarStyleId))}
                 avatarName={data?.pseudonym}
                 onSelect={entry.usable ? () => setChoice(withStyle(choice, entry.id)) : undefined}
-                cta={entry.state === 'premium' ? { label: 'Découvrir Premium', onPress: () => showPremium() } : undefined}
+                cta={entry.state === 'premium' ? { label: t('profile.discoverPremium'), onPress: () => showPremium() } : undefined}
               />
             )
           })}
@@ -165,7 +167,7 @@ export function AvatarEditorScreen() {
   const active = values.indexOf(current)
   const sectionPages: TabsScrollPage<string>[] = sections.map((item, index) => ({
     value: item.id,
-    label: t(item.labelKey),
+    label: avatarT(item.labelKey),
     // Fenêtre de rendu : l'onglet ouvert et ses voisins, pour un balayage sans page blanche.
     content: <TabScrollView contentContainerStyle={PAGE}>{Math.abs(index + 1 - active) <= 1 ? section(item) : null}</TabScrollView>,
   }))
@@ -175,9 +177,9 @@ export function AvatarEditorScreen() {
     <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top, paddingBottom: insets.bottom }}>
       <MobileTopBar
         variant="modal"
-        title="Mon avatar"
-        cancel="Annuler"
-        confirm="Enregistrer"
+        title={t('avatar.title')}
+        cancel={t('topic.cancel')}
+        confirm={t('settings.save')}
         confirmLoading={save.isPending}
         confirmDisabled={!changed || save.isPending}
         onCancel={() => router.back()}
@@ -186,12 +188,12 @@ export function AvatarEditorScreen() {
         }}
       />
       <View style={{ alignItems: 'center', gap: tokens.space[3], paddingVertical: tokens.space[4] }}>
-        <Avatar name={data?.pseudonym ?? 'Moi'} src={render(choice)} size="preview" />
+        <Avatar name={data?.pseudonym ?? t('common.me')} src={render(choice)} size="preview" />
       </View>
       <View style={{ flex: 1 }}>
         <TabsScrollView<string>
           key={style}
-          label="Réglages de l'avatar"
+          label={t('avatar.tabs')}
           value={current}
           onChange={setTab}
           pages={pages}

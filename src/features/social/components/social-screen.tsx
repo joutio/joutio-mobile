@@ -27,7 +27,7 @@ import {
 import { usePlayerIdentity } from '@/features/me'
 import { useContacts } from '@/features/play/hooks/use-play'
 import { formatNumber } from '@/features/topic/lib/format'
-import type { PeopleSort, PlayerCardView } from '@joutio/client-domain/api-types'
+import type { PeopleSort, PlayerCardView } from '@joutio/client/api-types'
 import { tierOf } from '@/shared/utils/tier'
 import { useMyProfile } from '../hooks/use-social'
 import { presenceOf, presenceSub } from '../lib/presence'
@@ -35,6 +35,7 @@ import { ChallengePlayerSheet } from './challenge-player-sheet'
 import { SocialSortSheet, SOCIAL_SORTS } from './social-sort-sheet'
 import { userAvatar } from '@/shared/utils/avatar'
 import { feedFooterProps, pagedQuery } from '@/shared/utils/paging'
+import { useT } from '@/lib/i18n'
 
 const GUTTER = tokens.space[5]
 
@@ -58,20 +59,21 @@ function PeopleList({
   sort: PeopleSort
   onSort: () => void
 }) {
+  const t = useT()
   const identity = usePlayerIdentity()
   const players = list.data?.pages.flatMap((page) => page.content) ?? []
   const emptyTitle = query
     ? direction === 'following'
-      ? 'Aucun Abonnement trouvé'
-      : 'Aucun Abonné trouvé'
+      ? t('mobile.social.noFollowingFound')
+      : t('mobile.social.noFollowerFound')
     : direction === 'following'
-      ? "Tu ne suis personne pour l'instant"
-      : "Tu n'as pas encore d'abonné"
+      ? t('social.followingEmptyTitle')
+      : t('social.followersEmptyTitle')
   const emptyDescription = query
-    ? 'Vérifie le pseudonyme ou essaie un autre mot.'
+    ? t('play.noPlayerText')
     : direction === 'following'
-      ? 'Suis les joueurs croisés en duel pour les défier en un geste et voir leurs résultats.'
-      : 'Invite un ami ou joue des duels pour te faire connaître.'
+      ? t('social.followingEmptyText')
+      : t('social.followersEmptyText')
 
   return (
     <DragToLoadMore enabled={Boolean(list.hasNextPage) && !list.isFetchNextPageError} loading={list.isFetchingNextPage} onLoadMore={() => list.fetchNextPage()}>
@@ -93,15 +95,20 @@ function PeopleList({
         >
           <Text variant="callout" color="muted">
             {list.data
-              ? `${formatNumber(list.data.pages[0]?.totalElements ?? 0)} ${direction === 'following' ? 'abonnement' : 'abonné'}${(list.data.pages[0]?.totalElements ?? 0) > 1 ? 's' : ''}`
+              ? (() => {
+                  const total = list.data.pages[0]?.totalElements ?? 0
+                  const many = total > 1
+                  const key = direction === 'following' ? (many ? 'social.followingMany' : 'social.followingOne') : many ? 'social.followerMany' : 'social.followerOne'
+                  return t(key, { count: formatNumber(total) })
+                })()
               : '…'}
           </Text>
           <Chip icon={ArrowsDownUpIcon} onPress={onSort}>
-            {SOCIAL_SORTS.find((option) => option.value === sort)?.label ?? 'Présence'}
+            {SOCIAL_SORTS().find((option) => option.value === sort)?.label ?? t('social.sortPresence')}
           </Chip>
         </View>
         {list.isPending ? (
-          <View accessibilityLabel="Chargement" style={{ gap: tokens.space[3], paddingHorizontal: GUTTER }}>
+          <View accessibilityLabel={t('home.loading')} style={{ gap: tokens.space[3], paddingHorizontal: GUTTER }}>
             {Array.from({ length: 6 }, (_, index) => (
               <Skeleton key={index} shape="row" style={{ height: 64 }} />
             ))}
@@ -110,11 +117,11 @@ function PeopleList({
           <View style={{ paddingHorizontal: GUTTER }}>
             <EmptyState
               icon={WarningCircleIcon}
-              title="Impossible de charger tes contacts"
-              description="Vérifie ta connexion, puis réessaie."
+              title={t('mobile.social.loadFailed')}
+              description={t('home.errorText')}
               action={
                 <Button style={{ alignSelf: 'center' }} loading={list.isRefetching} onPress={() => void list.refetch()}>
-                  Réessayer
+                  {t('callback.retry')}
                 </Button>
               }
             />
@@ -129,7 +136,7 @@ function PeopleList({
               action={
                 query.trim() ? (
                   <Button full icon={MagnifyingGlassIcon} onPress={() => router.push({ pathname: '/social/search', params: { q: query.trim() } })}>
-                    Rechercher globalement
+                    {t('mobile.social.globalSearch')}
                   </Button>
                 ) : undefined
               }
@@ -148,7 +155,7 @@ function PeopleList({
                   presence={presenceOf(player.presence)}
                   sub={presenceSub(player.presence)}
                   last={index === players.length - 1}
-                  ctaIcon={{ icon: SwordIcon, label: 'Défier', onPress: () => onChallenge(player) }}
+                  ctaIcon={{ icon: SwordIcon, label: t('player.challenge'), onPress: () => onChallenge(player) }}
                   onPress={() => onOpen(player)}
                 />
               ))}
@@ -157,7 +164,7 @@ function PeopleList({
               // Espace au-dessus du filet du pied (et non sous lui) : il ne colle pas à la liste.
               style={{ marginTop: tokens.space[4] }}
               {...feedFooterProps(pagedQuery(list))}
-              endLabel="Tu as vu tous les joueurs"
+              endLabel={t('play.playersEnd')}
             />
           </View>
         )}
@@ -171,6 +178,7 @@ function PeopleList({
  * l'épée ouvre le choix du sujet ; on suit depuis la fiche, pas depuis la liste.
  */
 export function SocialScreen() {
+  const t = useT()
   const myProfile = useMyProfile(true)
   const [tab, setTab] = useState<Direction>('following')
   const [query, setQuery] = useState('')
@@ -191,11 +199,11 @@ export function SocialScreen() {
       scroll={false}
       header={
         <SearchHeader
-          title="Social"
+          title={t('nav.social')}
           value={query}
           onChange={setQuery}
-          placeholder="Chercher un joueur"
-          filterLabel="Trier les contacts"
+          placeholder={t('play.searchPlayer')}
+          filterLabel={t('mobile.social.sortContacts')}
           filterDot={sort !== 'PRESENCE'}
           onFilter={() => setSortOpen(true)}
           notifications={
@@ -208,14 +216,14 @@ export function SocialScreen() {
       }
     >
       <TabsScrollView
-        label="Contacts"
+        label={t('play.contacts')}
         value={tab}
         onChange={setTab}
         onRefresh={() => Promise.all([following.refetch(), followers.refetch(), myProfile.refetch()])}
         pages={[
           {
             value: 'following',
-            label: 'Abonnements',
+            label: t('profile.following'),
             content: (
               <PeopleList
                 list={following}
@@ -230,7 +238,7 @@ export function SocialScreen() {
           },
           {
             value: 'followers',
-            label: 'Abonnés',
+            label: t('topic.followers'),
             content: (
               <PeopleList
                 list={followers}

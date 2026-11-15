@@ -1,7 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { router } from '@/shared/navigation/router'
 import { useMemo, useState } from 'react'
-import { countryFlag, countryName } from '@joutio/client-domain/geo'
+import { countryFlag, countryName } from '@joutio/client/geo'
 import { ScrollView, View } from 'react-native'
 import {
   Avatar,
@@ -38,6 +38,7 @@ import { titleLabel } from '../lib/format'
 import { streakHint, weekOf } from '../lib/streak'
 import { BadgeFamilySheet, RanksSheet } from './profile-sheets'
 import { BadgesTab, HistoryTab, StatsTab, TitlesTab } from './profile-tabs'
+import { currentLanguage, useLanguage, useT } from '@/lib/i18n'
 
 type Tab = 'stats' | 'badges' | 'titles' | 'history'
 
@@ -46,6 +47,8 @@ type Tab = 'stats' | 'badges' | 'titles' | 'history'
  * rang, pays et compteurs, puis onglets Statistiques, Badges, Titres et Historique. C'est un onglet : pas de retour.
  */
 export function ProfileScreen() {
+  const t = useT()
+  const language = useLanguage()
   const client = useQueryClient()
   const me = useMe(true)
   const data = me.data
@@ -61,13 +64,13 @@ export function ProfileScreen() {
   const [family, setFamily] = useState<BadgeFamilySummary>()
   const [familyOpen, setFamilyOpen] = useState(false)
 
-  const families = useMemo(() => (badges.data ? familiesOf(badges.data) : undefined), [badges.data])
+  const families = useMemo(() => (badges.data ? familiesOf(badges.data, t, language) : undefined), [badges.data, t, language])
   const progression = data?.progression
   const rating = progression?.rating ?? 0
   const tier = progression && !progression.provisional ? tierOf(progression.rating) : undefined
   const worn = titles.data?.titles.find((title) => title.key === (titles.data?.equippedKey ?? data?.equippedTitle))
   const stats = data?.stats
-  const name = data?.pseudonym ?? 'Profil'
+  const name = data?.pseudonym ?? t('nav.profile')
   // Avant le `return` de l'erreur : le nombre de hooks ne doit pas dépendre du chargement (2026-11-14).
   const share = useShare()
 
@@ -76,11 +79,11 @@ export function ProfileScreen() {
       <View style={{ flex: 1, justifyContent: 'center', padding: tokens.space[5] }}>
         <EmptyState
           icon={WarningCircleIcon}
-          title="Impossible de charger ton profil"
-          description="Vérifie ta connexion, puis réessaie."
+          title={t('profile.error')}
+          description={t('home.errorText')}
           action={
             <Button style={{ alignSelf: 'center' }} loading={me.isRefetching} onPress={() => void me.refetch()}>
-              Réessayer
+              {t('callback.retry')}
             </Button>
           }
         />
@@ -89,9 +92,9 @@ export function ProfileScreen() {
   }
 
   const counters = [
-    { label: 'Parties', value: stats ? formatNumber(stats.played) : '—' },
-    { label: 'Abonnés', value: data ? formatNumber(data.followersCount) : '—' },
-    { label: 'Abonnements', value: data ? formatNumber(data.followingCount) : '—' },
+    { label: t('topic.tabGames'), value: stats ? formatNumber(stats.played) : '—' },
+    { label: t('topic.followers'), value: data ? formatNumber(data.followersCount) : '—' },
+    { label: t('profile.following'), value: data ? formatNumber(data.followingCount) : '—' },
   ]
 
   return (
@@ -107,7 +110,7 @@ export function ProfileScreen() {
         right={
           <>
             <ProfileNotificationButton />
-            <ParallaxIconButton icon={GearSixIcon} label="Réglages" onPress={() => router.push('/profile/settings')} />
+            <ParallaxIconButton icon={GearSixIcon} label={t('profile.settings')} onPress={() => router.push('/profile/settings')} />
           </>
         }
         intro={
@@ -129,17 +132,17 @@ export function ProfileScreen() {
                 {!data ? (
                   <Skeleton shape="row" style={{ width: 160 }} />
                 ) : tier ? (
-                  <Badge variant="tier" tier={tier}>{`${tierLabel(tier)} · ${formatNumber(rating)}`}</Badge>
+                  <Badge variant="tier" tier={tier}>{t('common.dotPair', { a: tierLabel(tier), b: formatNumber(rating) })}</Badge>
                 ) : (
-                  <Pill>Non classé</Pill>
+                  <Pill>{t('profile.unranked')}</Pill>
                 )}
-                {data?.country && <Pill>{`${countryFlag(data.country)} ${countryName(data.country)}`}</Pill>}
+                {data?.country && <Pill>{`${countryFlag(data.country)} ${countryName(data.country, currentLanguage())}`}</Pill>}
               </View>
             </View>
             {/* Même gabarit que Défier / Suivre de la Fiche joueur : 65 / 35, avant les compteurs (`profil.md` § 1). */}
             <View style={{ flexDirection: 'row', gap: tokens.space[2] }}>
               <Button full style={{ flex: 65 }} icon={PencilSimpleIcon} variant="tinted" disabled={!data} onPress={() => router.push('/edit-profile')}>
-                Éditer le profil
+                {t('profile.edit')}
               </Button>
               <Button
                 full
@@ -147,9 +150,9 @@ export function ProfileScreen() {
                 icon={ShareNetworkIcon}
                 variant="gray"
                 disabled={!data}
-                onPress={() => data && share({ kind: 'profile', id: data.userId, message: 'Viens me défier sur Joutio !', title: 'Partager mon profil' })}
+                onPress={() => data && share({ kind: 'profile', id: data.userId, message: t('share.profileText'), title: t('share.profileTitle') })}
               >
-                Partager
+                {t('profile.share')}
               </Button>
             </View>
             <View style={{ flexDirection: 'row', gap: tokens.space[3] }}>
@@ -159,13 +162,13 @@ export function ProfileScreen() {
             </View>
           </View>
         }
-        tabsLabel="Contenu du profil"
+        tabsLabel={t('profile.tabs')}
         initialTab="stats"
         onTabChange={setTab}
         tabs={[
           {
             value: 'stats',
-            label: 'Statistiques',
+            label: t('profile.tabStats'),
             content: data ? (
               <StatsTab
                 streak={activity.data ? { count: activity.data.currentStreak, hint: streakHint(activity.data), week: weekOf(activity.data) } : undefined}
@@ -187,11 +190,11 @@ export function ProfileScreen() {
           },
           {
             value: 'badges',
-            label: 'Badges',
+            label: t('profile.tabBadges'),
             content: (
               <BadgesTab
                 families={families}
-                summary={badges.data ? badgesSummary(badges.data) : undefined}
+                summary={badges.data ? badgesSummary(badges.data, t) : undefined}
                 loading={badges.isPending}
                 error={badges.isError}
                 retrying={badges.isRefetching}
@@ -205,7 +208,7 @@ export function ProfileScreen() {
           },
           {
             value: 'titles',
-            label: 'Titres',
+            label: t('workshop.titles'),
             content: (
               <TitlesTab
                 titles={titles.data?.titles}
@@ -220,7 +223,7 @@ export function ProfileScreen() {
           },
           {
             value: 'history',
-            label: 'Historique',
+            label: t('profile.tabHistory'),
             content: (
               <HistoryTab
                 games={games.data?.pages[0]?.content}

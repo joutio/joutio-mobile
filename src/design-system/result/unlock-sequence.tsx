@@ -9,6 +9,7 @@ import { PageDots } from '../primitives/page-dots'
 import { ForceDark, useTheme } from '../theme/theme-provider'
 import { tokens } from '../tokens.generated'
 import { UnlockActiveContext } from './unlock-content'
+import { useT } from '@/lib/i18n'
 
 export interface UnlockSequenceProps {
   /** Un déblocage par page : `RankPromotion`, `TitleUnlock` ou `BadgeUnlock`. */
@@ -24,6 +25,7 @@ export interface UnlockSequenceProps {
 }
 
 function Body({ pages, step, onStepChange, onDone, onShare }: UnlockSequenceProps) {
+  const t = useT()
   const { colors, radius } = useTheme()
   const insets = useSafeAreaInsets()
   const pager = useRef<PagerViewRef>(null)
@@ -42,7 +44,7 @@ function Body({ pages, step, onStepChange, onDone, onShare }: UnlockSequenceProp
         <View style={{ flex: 1, alignItems: 'flex-end' }}>
           {!last && (
             <Button variant="plain" tone="neutral" size="M" onPress={onDone}>
-              Tout passer
+              {t('mobile.ds.skipAll')}
             </Button>
           )}
         </View>
@@ -68,10 +70,10 @@ function Body({ pages, step, onStepChange, onDone, onShare }: UnlockSequenceProp
           paddingBottom: insets.bottom + tokens.space[7],
         }}
       >
-        <IconButton icon={ShareNetworkIcon} label="Partager" variant="gray" size="L" onPress={onShare} style={{ width: 52, borderRadius: radius.sm }} />
+        <IconButton icon={ShareNetworkIcon} label={t('profile.share')} variant="gray" size="L" onPress={onShare} style={{ width: 52, borderRadius: radius.sm }} />
         <View style={{ flex: 1 }}>
           <Button full onPress={next}>
-            {last ? 'Voir le résultat' : 'Continuer'}
+            {last ? t('mobile.ds.seeResult') : t('onboarding.universes.continue')}
           </Button>
         </View>
       </View>

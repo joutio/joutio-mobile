@@ -1,4 +1,4 @@
-import { descriptionsDraft, topicDescription } from '@joutio/client-domain/authoring'
+import { descriptionsDraft, topicDescription } from '@joutio/client/authoring'
 import { useLocalSearchParams } from 'expo-router'
 import { router } from '@/shared/navigation/router'
 import { useState } from 'react'
@@ -31,12 +31,13 @@ import {
   UsersThreeIcon,
   type CategoryCode,
   ProgressBar,
+  Notice,
 } from '@/design-system'
 import { pickImage, uploadImage } from '@/features/media/media-service'
 import { toast } from '@/design-system'
 import { topicName } from '@/shared/utils/topic-name'
-import { questionStatus, workshopRole } from '@joutio/client-domain/authoring'
-import { customizedTierCount, MASTERY_TIERS, MAX_NAME, MIN_QUESTIONS, playableCount } from '@joutio/client-domain/authoring'
+import { questionStatus, workshopRole } from '@joutio/client/authoring'
+import { customizedTierCount, MASTERY_TIERS, MAX_NAME, MIN_QUESTIONS, playableCount } from '@joutio/client/authoring'
 import { TopicTitlesSheet } from './topic-titles-sheet'
 
 import {
@@ -58,6 +59,7 @@ import {
 import { FrozenNotice } from './frozen-notice'
 import { DescriptionSheet, LocalizedFieldSheet, UniverseSheet, universeLabel } from './topic-sheets'
 import { useRefreshActive } from '@/shared/hooks/use-refresh-active'
+import { useT } from '@/lib/i18n'
 
 /** Vignette d'un sujet : paysage, comme `TopicCard`. */
 const THUMBNAIL_ASPECT: [number, number] = [16, 9]
@@ -78,10 +80,11 @@ export interface MyTopicRouteParams {
  * brouillon a l'avancement « n / 7 » puis « Publier » à 7 questions approuvées.
  */
 export function MyTopicScreen() {
+  const t = useT()
   const base = '/workshop/[id]' as const
   const params = useLocalSearchParams<MyTopicRouteParams>()
   const topicId = params.id
-  const { topic, permissions, titles, isError, refetch } = useMyTopic(topicId)
+  const { topic, permissions, titles, closedReason, isError, refetch } = useMyTopic(topicId)
   const draftTopic = useDraftTopic(topicId)
   const deleteTopic = useDeleteTopic(topicId)
   const role = workshopRole(permissions)
@@ -125,7 +128,7 @@ export function MyTopicScreen() {
       await image.mutateAsync(media.url)
       close()
     } catch {
-      toast.error("La vignette n'a pas pu être envoyée", { description: 'JPG ou PNG, 5 Mo au plus.' })
+      toast.error(t('mobile.authoring.thumbnailUploadFailed'), { description: t('mobile.authoring.imageFormat') })
     } finally {
       setUploading(false)
     }
@@ -136,7 +139,7 @@ export function MyTopicScreen() {
     const asset = await pickImage([1, 1], { crop: false })
     if (!asset) return
     if (asset.mimeType && asset.mimeType !== 'image/png') {
-      toast.error('Le pictogramme doit être un PNG', { description: 'Carré, 5 Mo au plus.' })
+      toast.error(t('mobile.authoring.pictogramPng'), { description: t('mobile.authoring.pictogramSquare') })
       return
     }
     setUploading(true)
@@ -145,7 +148,7 @@ export function MyTopicScreen() {
       await pictogram.mutateAsync(media.url)
       close()
     } catch {
-      toast.error("Le pictogramme n'a pas pu être envoyé", { description: 'PNG carré, 5 Mo au plus.' })
+      toast.error(t('mobile.authoring.pictogramUploadFailed'), { description: t('mobile.authoring.pictogramFormat') })
     } finally {
       setUploading(false)
     }
@@ -158,9 +161,9 @@ export function MyTopicScreen() {
 
   if (isError)
     return (
-      <Screen header={<MobileTopBar variant="inline" title="Sujet" back="Retour" onBack={() => router.back()} />}>
-        <Text>Le sujet est indisponible ou tu ne fais plus partie de son équipe.</Text>
-        <Button onPress={() => void refetch()}>Réessayer</Button>
+      <Screen header={<MobileTopBar variant="inline" title={t('pending.topic')} back={t('topic.back')} onBack={() => router.back()} />}>
+        <Text>{t('mobile.authoring.topicUnavailableText')}</Text>
+        <Button onPress={() => void refetch()}>{t('callback.retry')}</Button>
       </Screen>
     )
   return (
@@ -174,8 +177,8 @@ export function MyTopicScreen() {
         onBack={() => router.back()}
         intro={
           <View style={{ flexDirection: 'row', gap: tokens.space[2] }}>
-            <Pill tone={draft ? 'neutral' : 'correct'}>{draft ? 'Brouillon' : 'Publié'}</Pill>
-            {permissions && role !== 'creator' && <Pill tone="neutral">{role === 'admin' ? 'Administrateur' : 'Rédacteur'}</Pill>}
+            <Pill tone={draft ? 'neutral' : 'correct'}>{draft ? t('workshop.draft') : t('workshop.publishedStatus')}</Pill>
+            {permissions && role !== 'creator' && <Pill tone="neutral">{role === 'admin' ? t('workshop.roleAdmin') : t('workshop.roleWriter')}</Pill>}
           </View>
         }
         // Zone d'actions du sujet, selon le rôle : publier ou supprimer le brouillon, repasser le publié en brouillon.
@@ -186,12 +189,12 @@ export function MyTopicScreen() {
               {/* Tant que le minimum manque, l'avancement remplace un bouton Publier inactif (2026-11-12). */}
               {ready ? (
                 <Button full size="L" loading={publish.isPending} onPress={onPublish}>
-                  Publier
+                  {t('workshop.publish')}
                 </Button>
               ) : (
                 <ProgressBar
                   style={{ paddingVertical: tokens.space[2] }}
-                  label={`${approved} / ${MIN_QUESTIONS} questions dans une même langue pour publier`}
+                  label={t('workshop.minimum', { count: approved, min: MIN_QUESTIONS })}
                   value={Math.min(100, (approved * 100) / MIN_QUESTIONS)}
                 />
               )}
@@ -204,25 +207,25 @@ export function MyTopicScreen() {
                   loading={deleteTopic.isPending}
                   onPress={() =>
                     showDialog({
-                      title: `Supprimer « ${name} » ?`,
-                      message: `Le brouillon et ses ${list.length} question${list.length > 1 ? 's' : ''} sont supprimés. Cette action est définitive.`,
+                      title: t('workshop.deleteTitle', { name }),
+                      message: list.length > 1 ? t('workshop.deleteTextMany', { count: list.length }) : t('workshop.deleteTextOne'),
                       tone: 'danger',
                       icon: TrashIcon,
                       actions: [
                         {
-                          label: 'Supprimer',
+                          label: t('workshop.delete'),
                           tone: 'destructive',
                           onPress: () => {
                             deleteTopic.mutate()
                             router.back()
                           },
                         },
-                        { label: 'Annuler', variant: 'plain' },
+                        { label: t('topic.cancel'), variant: 'plain' },
                       ],
                     })
                   }
                 >
-                  Supprimer le brouillon
+                  {t('workshop.deleteDraft')}
                 </Button>
               )}
             </View>
@@ -236,50 +239,53 @@ export function MyTopicScreen() {
               tone="neutral"
               onPress={() =>
                 showDialog({
-                  title: 'Repasser en brouillon ?',
+                  title: t('workshop.unpublishTitle'),
                   message:
-                    "Le sujet quitte le catalogue : plus de nouvelles parties ni d'invitations. Les parties en cours se terminent. Tu pourras le republier.",
+                    t('workshop.unpublishText'),
                   icon: FileDashedIcon,
                   actions: [
-                    { label: 'Repasser en brouillon', onPress: () => draftTopic.mutate() },
-                    { label: 'Annuler', variant: 'plain' },
+                    { label: t('workshop.unpublish'), onPress: () => draftTopic.mutate() },
+                    { label: t('topic.cancel'), variant: 'plain' },
                   ],
                 })
               }
             >
-              Repasser en brouillon
+              {t('workshop.unpublish')}
             </Button>
           )
         }
       >
         <View style={{ gap: tokens.space[6], paddingHorizontal: tokens.space[5], paddingTop: tokens.space[2], paddingBottom: tokens.space[7] }}>
           {locked && <FrozenNotice published={published} limit={limits.publishedTopics} />}
+          {closedReason !== null && (
+            <Notice tone="error" title={t('workshop.closedTitle')} message={t('workshop.closedText', { reason: closedReason || '—' })} />
+          )}
           {/* Nom, univers et vignette : réservés à ceux qui gèrent le sujet. */}
           {manager && (
             <View style={{ gap: tokens.space[3] }}>
-              <SectionHeader title="Sujet" />
+              <SectionHeader title={t('pending.topic')} />
               <ListGroup surface="surface">
                 <ListRow
                   icon={PencilSimpleIcon}
-                  label="Nom"
+                  label={t('workshop.name')}
                   control={locked ? 'none' : 'chevron'}
                   disabled={locked}
                   value={name}
-                  sub={englishName ? `English : ${englishName}` : 'English : facultatif'}
+                  sub={englishName ? t('mobile.authoring.englishName', { name: englishName }) : t('workshop.englishOptional')}
                   onPress={permissions?.canManage && !locked ? () => setSheet('name') : undefined}
                 />
                 <ListRow
                   icon={TextAlignLeftIcon}
-                  label="Description"
+                  label={t('workshop.description')}
                   control={locked ? 'none' : 'chevron'}
                   disabled={locked}
-                  value={topic && topicDescription(topic) ? 'Modifier' : 'Ajouter'}
-                  sub={(topic && topicDescription(topic)) ?? 'Facultative, sous le titre de la fiche'}
+                  value={topic && topicDescription(topic) ? t('settings.bannerEdit') : t('settings.bannerAdd')}
+                  sub={(topic && topicDescription(topic)) ?? t('mobile.authoring.descriptionSubShort')}
                   onPress={permissions?.canManage && !locked ? () => setSheet('description') : undefined}
                 />
                 <ListRow
                   icon={SquaresFourIcon}
-                  label="Univers"
+                  label={t('topics.universes')}
                   control={locked ? 'none' : 'chevron'}
                   disabled={locked}
                   value={universeLabel(code)}
@@ -287,27 +293,27 @@ export function MyTopicScreen() {
                 />
                 <ListRow
                   icon={ImageIcon}
-                  label="Vignette"
+                  label={t('workshop.thumbnail')}
                   control={locked ? 'none' : 'chevron'}
                   disabled={locked}
-                  value={imageUrl ? 'Modifier' : 'Ajouter'}
+                  value={imageUrl ? t('settings.bannerEdit') : t('settings.bannerAdd')}
                   onPress={permissions?.canManage && !locked ? () => setSheet('image') : undefined}
                 />
                 <ListRow
                   icon={StickerIcon}
-                  label="Pictogramme"
+                  label={t('workshop.pictogram')}
                   control={locked ? 'none' : 'chevron'}
                   disabled={locked}
-                  value={pictogramUrl ? 'Modifier' : 'Ajouter'}
+                  value={pictogramUrl ? t('settings.bannerEdit') : t('settings.bannerAdd')}
                   onPress={permissions?.canManage && !locked ? () => setSheet('pictogram') : undefined}
                 />
                 <ListRow
                   icon={CrownSimpleIcon}
-                  label="Titres"
+                  label={t('workshop.titles')}
                   control={locked ? 'none' : 'chevron'}
                   disabled={locked}
-                  value={`${customizedTierCount(titles)} / ${MASTERY_TIERS.length}`}
-                  sub="Un titre par palier de maîtrise"
+                  value={t('mobile.authoring.counter', { count: customizedTierCount(titles), max: MASTERY_TIERS.length })}
+                  sub={t('workshop.titlesSub')}
                   onPress={permissions?.canManage && !locked ? () => setSheet('titles') : undefined}
                   last
                 />
@@ -315,13 +321,13 @@ export function MyTopicScreen() {
             </View>
           )}
           <View style={{ gap: tokens.space[3] }}>
-            <SectionHeader title="Contenu" />
+            <SectionHeader title={t('workshop.content')} />
             <ListGroup surface="surface">
               <ListRow
                 icon={ListChecksIcon}
-                label="Questions"
+                label={t('topic.questions')}
                 control="chevron"
-                value={draft ? `${approved} / ${MIN_QUESTIONS}` : String(list.length || approved)}
+                value={draft ? t('mobile.authoring.counter', { count: approved, max: MIN_QUESTIONS }) : String(list.length || approved)}
                 onPress={() => router.push({ pathname: `${base}/questions`, params: { id: topicId, name } })}
                 last={!manager}
               />
@@ -329,7 +335,7 @@ export function MyTopicScreen() {
               {manager && (
                 <ListRow
                   icon={UsersThreeIcon}
-                  label="Équipe"
+                  label={t('workshop.team')}
                   control="chevron"
                   value={String(team.data?.length ?? 1)}
                   onPress={() => router.push({ pathname: `${base}/team`, params: { id: topicId, name } })}
@@ -338,7 +344,7 @@ export function MyTopicScreen() {
               {manager && (
                 <ListRow
                   icon={ShieldCheckIcon}
-                  label="Modération"
+                  label={t('workshop.moderation')}
                   control="chevron"
                   badge={pending + reported}
                   onPress={() => router.push({ pathname: `${base}/moderation`, params: { id: topicId, name } })}
@@ -352,11 +358,11 @@ export function MyTopicScreen() {
 
       <LocalizedFieldSheet
         open={sheet === 'name'}
-        title="Nom"
-        label="Nom"
+        title={t('workshop.name')}
+        label={t('workshop.name')}
         initial={{ fr: name, en: englishName }}
         max={MAX_NAME}
-        placeholder={{ fr: 'Par exemple, Châteaux de la Loire', en: 'For example, Loire Valley castles' }}
+        placeholder={{ fr: t('workshop.namePlaceholder'), en: 'For example, Loire Valley castles' }}
         busy={names.isPending}
         onClose={close}
         onSave={({ fr, en }) => {
@@ -384,19 +390,19 @@ export function MyTopicScreen() {
         busy={category.isPending}
         onChange={(next) => (next !== code ? category.mutateAsync(next) : undefined)}
       />
-      <MobileSheet open={sheet === 'image'} onClose={close} title="Vignette" subtitle="Facultative">
+      <MobileSheet open={sheet === 'image'} onClose={close} title={t('workshop.thumbnail')} subtitle={t('workshop.optional')}>
         <ImagePicker
           image={imageUrl}
-          hint="JPG ou PNG, 5 Mo"
+          hint={t('settings.bannerHint')}
           busy={uploading || image.isPending}
           onPick={() => void pickThumbnail()}
           onRemove={() => image.mutate(null, { onSuccess: close })}
         />
       </MobileSheet>
-      <MobileSheet open={sheet === 'pictogram'} onClose={close} title="Pictogramme" subtitle="Facultatif, affiché dans la grille des sujets">
+      <MobileSheet open={sheet === 'pictogram'} onClose={close} title={t('workshop.pictogram')} subtitle={t('workshop.pictogramSub')}>
         <ImagePicker
           image={pictogramUrl}
-          hint="PNG carré, 5 Mo"
+          hint={t('workshop.pictogramHint')}
           busy={uploading || pictogram.isPending}
           onPick={() => void pickPictogram()}
           onRemove={() => pictogram.mutate(null, { onSuccess: close })}

@@ -5,6 +5,7 @@ import { useOnboardingStore } from '@/features/onboarding/onboarding-store'
 import { useLoginWithCode, useRequestLoginCode } from '../hooks/use-login'
 import { useSessionStore } from '../session-store'
 import { SessionEndedScreen } from './session-ended-screen'
+import { useT } from '@/lib/i18n'
 
 const CODE_LENGTH = 6
 const RESEND_SECONDS = 60
@@ -13,6 +14,7 @@ const clock = (seconds: number) => `${Math.floor(seconds / 60)}:${String(seconds
 
 /** Saisie du code : validé seul au 6e chiffre. */
 export function CodeScreen() {
+  const t = useT()
   const email = useOnboardingStore((state) => state.email)
   const [code, setCode] = useState('')
   const [wait, setWait] = useState(RESEND_SECONDS)
@@ -47,10 +49,10 @@ export function CodeScreen() {
     >
       <View style={{ gap: tokens.space[3] }}>
         <Text variant="title1" accessibilityRole="header">
-          Entre le code reçu
+          {t('onboarding.code.title')}
         </Text>
         <Text color="muted">
-          Envoyé à <Text weight="600">{email}</Text>. Il reste valable 10 minutes.
+          {t('onboarding.code.sentTo')} <Text weight="600">{email}</Text>{t('mobile.auth.code.validity')}
         </Text>
       </View>
       <View style={{ gap: tokens.space[3] }}>
@@ -63,7 +65,7 @@ export function CodeScreen() {
       </View>
       {wait > 0 ? (
         <Text variant="callout" color="muted" align="center">
-          Renvoyer le code dans {clock(wait)}
+          {t('onboarding.code.resendIn', { time: clock(wait) })}
         </Text>
       ) : (
         <Button
@@ -82,7 +84,7 @@ export function CodeScreen() {
             })
           }
         >
-          Renvoyer le code
+          {t('onboarding.code.resend')}
         </Button>
       )}
     </Screen>

@@ -1,4 +1,4 @@
-import { topicDescription } from '@joutio/client-domain/authoring'
+import { topicDescription } from '@joutio/client/authoring'
 import { useShare } from '@/features/share'
 import { useQueryClient } from '@tanstack/react-query'
 import { useLocalSearchParams } from 'expo-router'
@@ -14,6 +14,9 @@ import {
   HeartIcon,
   IconButton,
   LightningIcon,
+  DotsThreeVerticalIcon,
+  FlagIcon,
+  Menu,
   ParallaxIconButton,
   ShareNetworkIcon,
   PencilSimpleIcon,
@@ -37,18 +40,20 @@ import { formatNumber, tierLabel } from '../lib/format'
 import type { WallPostMock } from '../lib/wall-mocks'
 import { BOARD_TOP, BoardTab, MyBoardRow } from './board-tab'
 import { DuelSheet } from './duel-sheet'
+import { ReportTopicSheet } from './report-topic-sheet'
 import { GamesTab } from './games-tab'
 import { ProgressTab } from './progress-tab'
 import { CommentsSheet, PostSheet, useWall, WallTab } from './wall-tab'
+import { categoryKey, t, useT } from '@/lib/i18n'
 
 // MVP : conserver le Mur et ses maquettes pour sa réactivation.
 const WALL_ENABLED: boolean = false
 
 const TABS = [
-  { value: 'games', label: 'Parties' },
-  { value: 'board', label: 'Classement' },
-  ...(WALL_ENABLED ? [{ value: 'wall' as const, label: 'Mur' }] : []),
-  { value: 'progress', label: 'Progression' },
+  { value: 'games', label: 'topic.tabGames' },
+  { value: 'board', label: 'topic.tabBoard' },
+  ...(WALL_ENABLED ? [{ value: 'wall' as const, label: 'mobile.topic.wall' }] : []),
+  { value: 'progress', label: 'topic.tabProgress' },
 ] as const
 type Tab = (typeof TABS)[number]['value']
 
@@ -93,11 +98,12 @@ function Loading() {
  * Parties, Classement et Progression (Mur conservé, désactivé pour le MVP). Tirer recharge toute la page.
  */
 export function TopicScreen({ stack = 'home' }: { stack?: TopicStack }) {
+  const t = useT()
   const params = useLocalSearchParams<TopicRouteParams>()
   const topicId = params.id
   const client = useQueryClient()
   const me = useMe(true)
-  const pseudonym = me.data?.pseudonym ?? 'Moi'
+  const pseudonym = me.data?.pseudonym ?? t('mobile.authoring.me')
   const overview = useTopicOverview(topicId)
   // L'écran s'ouvre tout de suite (titre et image viennent de la navigation) ; le contenu lourd attend la fin de la
   // transition, des squelettes à sa place.
@@ -108,6 +114,7 @@ export function TopicScreen({ stack = 'home' }: { stack?: TopicStack }) {
 
   const [tab, setTab] = useState<Tab>('games')
   const [duelOpen, setDuelOpen] = useState(false)
+  const [reportOpen, setReportOpen] = useState(false)
   const [postOpen, setPostOpen] = useState(false)
   const [commented, setCommented] = useState<WallPostMock>()
 
@@ -129,34 +136,34 @@ export function TopicScreen({ stack = 'home' }: { stack?: TopicStack }) {
     if (!followed) return follow.mutate(true)
     // Ne plus suivre se confirme : on évite les allers-retours en rafale (et les notifications d'abonnés qui vont avec).
     showDialog({
-      title: `Ne plus suivre ${name} ?`,
-      message: 'Il disparaîtra de tes sujets suivis sur l’Accueil.',
+      title: t('topic.unfollowTitle', { name }),
+      message: t('topic.unfollowText'),
       icon: HeartIcon,
       tone: 'danger',
       sheet: true,
       actions: [
-        { label: 'Ne plus suivre', tone: 'destructive', onPress: () => follow.mutate(false) },
-        { label: 'Annuler', variant: 'plain' },
+        { label: t('topic.unfollow'), tone: 'destructive', onPress: () => follow.mutate(false) },
+        { label: t('topic.cancel'), variant: 'plain' },
       ],
     })
   }
   const shareLink = useShare()
-  const share = () => shareLink({ kind: 'topic', id: topicId, message: `${name} sur Joutio : viens me défier !`, title: 'Partager le sujet' })
+  const share = () => shareLink({ kind: 'topic', id: topicId, message: t('share.topicText', { topic: name }), title: t('share.topicTitle') })
 
   if (overview.isError) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', padding: tokens.space[5] }}>
         <EmptyState
           icon={WarningCircleIcon}
-          title="Impossible de charger le sujet"
-          description="Vérifie ta connexion, puis réessaie."
+          title={t('topic.errorTitle')}
+          description={t('home.errorText')}
           action={
             <View style={{ alignSelf: 'center', flexDirection: 'row', gap: tokens.space[3] }}>
               <Button variant="gray" tone="neutral" onPress={() => router.back()}>
-                Retour
+                {t('topic.back')}
               </Button>
               <Button loading={overview.isRefetching} onPress={() => void overview.refetch()}>
-                Réessayer
+                {t('callback.retry')}
               </Button>
             </View>
           }
@@ -166,9 +173,9 @@ export function TopicScreen({ stack = 'home' }: { stack?: TopicStack }) {
   }
 
   const stats = [
-    { label: 'Maîtrise', value: data?.myProgress ? tierLabel(data.myProgress.tier) : '—' },
-    { label: 'Abonnés', value: topic ? formatNumber(topic.followersCount) : '—' },
-    { label: 'Questions', value: topic ? formatNumber(topic.questionsCount) : '—' },
+    { label: t('topic.mastery'), value: data?.myProgress ? tierLabel(data.myProgress.tier) : '—' },
+    { label: t('topic.followers'), value: topic ? formatNumber(topic.followersCount) : '—' },
+    { label: t('topic.questions'), value: topic ? formatNumber(topic.questionsCount) : '—' },
   ]
 
   return (
@@ -176,7 +183,8 @@ export function TopicScreen({ stack = 'home' }: { stack?: TopicStack }) {
       <CollapsibleTabsScreen<Tab>
         image={image}
         title={name}
-        eyebrow={<Pill category={category}>{tokens.category[category].label}</Pill>}
+        official={topic?.official ?? false}
+        eyebrow={<Pill category={category}>{t(categoryKey(category))}</Pill>}
         onBack={() => router.back()}
         barTitleStart
         right={(
@@ -184,11 +192,16 @@ export function TopicScreen({ stack = 'home' }: { stack?: TopicStack }) {
             {overview.data?.permissions?.canContribute && (
               <ParallaxIconButton
                 icon={PencilSimpleIcon}
-                label="Modifier le sujet"
+                label={t('mobile.topic.edit')}
                 onPress={() => router.push({ pathname: '/workshop/[id]', params: { id: topicId } })}
               />
             )}
-            <ParallaxIconButton icon={ShareNetworkIcon} label="Partager" onPress={share} />
+            <ParallaxIconButton icon={ShareNetworkIcon} label={t('profile.share')} onPress={share} />
+            {topic && (
+              <Menu items={[{ label: t('topicReport.action'), icon: FlagIcon, onPress: () => setReportOpen(true) }]}>
+                {(open) => <ParallaxIconButton icon={DotsThreeVerticalIcon} label={t('player.more')} onPress={open} />}
+              </Menu>
+            )}
           </>
         )}
         intro={
@@ -200,7 +213,7 @@ export function TopicScreen({ stack = 'home' }: { stack?: TopicStack }) {
             >
               {/* 65 / 35 : le duel est l'action principale. */}
               <Button full icon={LightningIcon} style={{ flex: 65 }} disabled={topic?.status !== 'PUBLISHED'} onPress={() => setDuelOpen(true)}>
-                Lancer un duel
+                {t('topic.duel')}
               </Button>
               <Button
                 full
@@ -213,10 +226,10 @@ export function TopicScreen({ stack = 'home' }: { stack?: TopicStack }) {
                 style={{ flex: 35 }}
                 onPress={toggleFollow}
               >
-                {followed ? 'Suivi' : 'Suivre'}
+                {followed ? t('topic.followed') : t('topic.follow')}
               </Button>
             </View>
-            {topic?.status === 'DRAFT' && <Text color="muted">Ce sujet est en brouillon. Les nouveaux départs de partie sont désactivés.</Text>}
+            {topic?.status === 'DRAFT' && <Text color="muted">{t('topic.draft')}</Text>}
             <View style={{ flexDirection: 'row', gap: tokens.space[3] }}>
               {data
                 ? stats.map((stat) => <Stat key={stat.label} {...stat} compact />)
@@ -233,49 +246,51 @@ export function TopicScreen({ stack = 'home' }: { stack?: TopicStack }) {
             )}
           </View>
         }
-        tabsLabel="Contenu du sujet"
+        tabsLabel={t('topic.tabs')}
         initialTab="games"
         onTabChange={setTab}
         tabs={[
           {
             value: 'games',
-            label: 'Parties',
+            label: t('topic.tabGames'),
             content: <GamesTab topicId={topicId} topicName={name} historyPath={HISTORY_PATH[stack]} />,
           },
           {
             value: 'board',
-            label: 'Classement',
+            label: t('topic.tabBoard'),
             content: <BoardTab topicId={topicId} topicName={name} rankingsPath={RANKINGS_PATH[stack]} bottomInset={showMyRow ? 64 : 0} />,
           },
-          ...(WALL_ENABLED ? [{ value: 'wall' as const, label: 'Mur', content: <WallTab wall={wall} onComment={setCommented} /> }] : []),
-          { value: 'progress', label: 'Progression', content: data ? <ProgressTab overview={data} /> : <Loading /> },
+          ...(WALL_ENABLED ? [{ value: 'wall' as const, label: t('mobile.topic.wall'), content: <WallTab wall={wall} onComment={setCommented} /> }] : []),
+          { value: 'progress', label: t('topic.tabProgress'), content: data ? <ProgressTab overview={data} /> : <Loading /> },
         ]}
         floating={
           WALL_ENABLED && tab === 'wall' ? (
-            <IconButton icon={PencilSimpleIcon} label="Partager une anecdote" variant="filled" tone="accent" size="L" onPress={() => setPostOpen(true)} />
+            <IconButton icon={PencilSimpleIcon} label={t('mobile.topic.shareAnecdote')} variant="filled" tone="accent" size="L" onPress={() => setPostOpen(true)} />
           ) : undefined
         }
         bottomBar={showMyRow ? <MyBoardRow entry={myEntry} /> : undefined}
         onRefresh={() => client.refetchQueries({ queryKey: queryKeys.topic.all(topicId) })}
       />
       <DuelSheet open={duelOpen} onClose={() => setDuelOpen(false)} topic={{ topicId, name, category }} />
+      <ReportTopicSheet open={reportOpen} onClose={() => setReportOpen(false)} topicId={topicId} name={name} />
       <PostSheet open={postOpen} onClose={() => setPostOpen(false)} topic={name} onPublish={wall.publish} />
       <CommentsSheet post={commented} me={pseudonym} onClose={() => setCommented(undefined)} />
     </>
   )
 }
 
-const questionsLabel = (count: number) => `${formatNumber(count)} question${count > 1 ? 's' : ''}`
+const questionsLabel = (count: number) => t(count > 1 ? 'topic.questionsMany' : 'topic.questionsOne', { count: formatNumber(count) })
 
 /** Questions jouées : la part du sujet déjà vue en duel, et ce qui reste à découvrir. */
 function PlayedQuestions({ done, total, percent }: { done: number; total: number; percent: number }) {
+  const t = useT()
   const { colors, radius } = useTheme()
   const left = Math.max(0, total - done)
   return (
     <View style={{ gap: tokens.space[2], borderRadius: radius.lg, backgroundColor: colors.surface, padding: tokens.space[5] }}>
-      <ProgressBar label={`${formatNumber(done)} / ${questionsLabel(total)} jouées`} value={percent} showValue />
+      <ProgressBar label={t('topic.played', { done: formatNumber(done), total: questionsLabel(total) })} value={percent} showValue />
       <Text variant="caption" color="muted">
-        {left === 0 ? 'Tu as joué toutes les questions de ce sujet.' : `Encore ${questionsLabel(left)} à découvrir en duel.`}
+        {left === 0 ? t('topic.allPlayed') : t('topic.leftToPlay', { count: questionsLabel(left) })}
       </Text>
     </View>
   )

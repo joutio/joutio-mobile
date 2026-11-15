@@ -7,6 +7,7 @@ import { tokens, type TierCode } from '../tokens.generated'
 import { PressableScale } from './pressable-scale'
 import { Text } from './text'
 import { ProgressBar } from './progress-bar'
+import { useT } from '@/lib/i18n'
 
 export interface TitleRowProps {
   tier: TierCode
@@ -36,6 +37,7 @@ export function TitleRow({
   last = false,
   style,
 }: TitleRowProps) {
+  const t = useT()
   const { colors } = useTheme()
   const [availableWidth, setAvailableWidth] = useState(220)
   const inactive = locked || disabled || wearing || !onWear
@@ -45,7 +47,7 @@ export function TitleRow({
       ripple
       disabled={inactive}
       accessibilityRole={locked || !onWear ? 'text' : 'button'}
-      accessibilityLabel={locked ? `${title}, verrouillé` : `${worn ? 'Enlever' : 'Porter'} ${title}`}
+      accessibilityLabel={locked ? t('mobile.ds.titleLocked', { title }) : t(worn ? 'ds.unwear' : 'ds.wear', { title })}
       accessibilityState={{ disabled: inactive, selected: worn, busy: wearing }}
       onPress={onWear}
       style={({ pressed }) => [
@@ -83,7 +85,7 @@ export function TitleRow({
           }}
         >
           <Text variant="caption" weight="600" color={colors.bg} maxFontSizeMultiplier={1}>
-            Porté
+            {t('mobile.ds.worn')}
           </Text>
         </View>
       ) : null}

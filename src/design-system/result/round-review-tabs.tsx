@@ -3,10 +3,11 @@ import { PressableScale } from '../primitives/pressable-scale'
 import { Text } from '../primitives/text'
 import { useTheme } from '../theme/theme-provider'
 import { tokens } from '../tokens.generated'
+import { t, useT } from '@/lib/i18n'
 
 export type ReviewAnswer = 'correct' | 'wrong' | 'none'
 
-const LABELS: Record<ReviewAnswer, string> = { correct: 'bonne réponse', wrong: 'mauvaise réponse', none: 'sans réponse' }
+const LABELS = (): Record<ReviewAnswer, string> => ({ correct: t('mobile.ds.correctLower'), wrong: t('mobile.ds.wrongLower'), none: t('mobile.ds.noAnswer') })
 
 export interface ReviewRoundTab {
   me: ReviewAnswer
@@ -29,10 +30,11 @@ export interface RoundReviewTabsProps {
 
 /** Sélecteur de manche de la revue : mon résultat à gauche, celui de l'adversaire à droite. */
 export function RoundReviewTabs({ rounds, value, onChange, me, opponent, compact = false, style }: RoundReviewTabsProps) {
+  const t = useT()
   const { colors, radius } = useTheme()
   const dot = (answer: ReviewAnswer) => (answer === 'correct' ? colors.correct : answer === 'wrong' ? colors.wrong : colors.raised)
   return (
-    <View accessibilityLabel="Manches" style={[{ flexDirection: 'row', gap: tokens.space[2] }, style]}>
+    <View accessibilityLabel={t('mobile.ds.rounds')} style={[{ flexDirection: 'row', gap: tokens.space[2] }, style]}>
       {rounds.map((round, index) => {
         const current = index === value
         return (
@@ -40,7 +42,7 @@ export function RoundReviewTabs({ rounds, value, onChange, me, opponent, compact
             key={index}
             accessibilityRole="tab"
             accessibilityState={{ selected: current }}
-            accessibilityLabel={`Question ${index + 1} : ${me}, ${LABELS[round.me]} ; ${opponent}, ${LABELS[round.opponent]} ; ${round.points} points`}
+            accessibilityLabel={`Question ${index + 1} : ${me}, ${LABELS()[round.me]} ; ${opponent}, ${LABELS()[round.opponent]} ; ${round.points} points`}
             onPress={() => onChange?.(index)}
             style={{
               flex: 1,

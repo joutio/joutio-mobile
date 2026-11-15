@@ -1,4 +1,4 @@
-import type { ShareKind } from '@joutio/client-domain/share'
+import type { ShareKind } from '@joutio/client/share'
 import { Redirect, useLocalSearchParams, type Href } from 'expo-router'
 import { useSessionStore } from '@/features/auth'
 

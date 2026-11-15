@@ -6,19 +6,20 @@ import { useTheme } from '../theme/theme-provider'
 import { tokens } from '../tokens.generated'
 import { Button } from './button'
 import { Text } from './text'
+import { t, useT } from '@/lib/i18n'
 
 export type BannerTone = 'error' | 'success' | 'info' | 'live' | 'training'
 
 /** États de la bannière de connexion globale (`etats-systeme.md`) : réseau et temps réel. */
 export type BannerConnection = 'offline' | 'reconnecting' | 'retrying' | 'failed' | 'restored'
 
-const CONNECTION: Record<BannerConnection, { title: string; message: string; icon: Icon }> = {
-  offline: { title: 'Pas de connexion', message: 'Tout se met à jour dès ton retour en ligne.', icon: WifiSlashIcon },
-  reconnecting: { title: 'Reconnexion…', message: 'Le temps réel reprend dans un instant.', icon: ArrowClockwiseIcon },
-  retrying: { title: 'Nouvelle tentative…', message: 'On vérifie ta connexion.', icon: WifiSlashIcon },
-  failed: { title: 'Toujours hors connexion', message: 'Vérifie ton réseau, puis réessaie.', icon: WifiSlashIcon },
-  restored: { title: 'Connexion rétablie', message: 'Tout est à jour.', icon: CheckCircleIcon },
-}
+const CONNECTION = (): Record<BannerConnection, { title: string; message: string; icon: Icon }> => ({
+  offline: { title: t('search.offline'), message: t('mobile.ds.offlineText'), icon: WifiSlashIcon },
+  reconnecting: { title: t('mobile.ds.reconnecting'), message: t('mobile.ds.reconnectingText'), icon: ArrowClockwiseIcon },
+  retrying: { title: t('mobile.ds.retrying'), message: t('mobile.ds.retryingText'), icon: WifiSlashIcon },
+  failed: { title: t('mobile.ds.stillOffline'), message: t('mobile.ds.stillOfflineText'), icon: WifiSlashIcon },
+  restored: { title: t('mobile.ds.restored'), message: t('mobile.ds.restoredText'), icon: CheckCircleIcon },
+})
 
 type BannerAction = { label: string; onPress?: () => void; loading?: boolean }
 
@@ -59,6 +60,7 @@ export type BannerProps = Common &
  * utiliser `Notice`.
  */
 export function Banner(props: BannerProps) {
+  const t = useT()
   const { colors } = useTheme()
   let tone: BannerTone
   let title: string
@@ -67,9 +69,9 @@ export function Banner(props: BannerProps) {
   let action: BannerAction | undefined
   if (props.connection) {
     const restored = props.connection === 'restored'
-    ;({ title, message, icon } = CONNECTION[props.connection])
+    ;({ title, message, icon } = CONNECTION()[props.connection])
     tone = restored ? 'success' : 'error'
-    action = restored ? undefined : { label: 'Réessayer', onPress: props.onRetry, loading: props.connection === 'retrying' }
+    action = restored ? undefined : { label: t('callback.retry'), onPress: props.onRetry, loading: props.connection === 'retrying' }
   } else {
     ;({ title, message, icon, action } = props)
     tone = props.tone ?? 'error'

@@ -7,6 +7,7 @@ import { PressableScale } from './pressable-scale'
 import { inputStyle, MAX_FONT_SCALE, Text } from './text'
 import { hairlineRing } from '../theme/hairline'
 import { useFieldReveal } from '../mobile/field-reveal'
+import { useT } from '@/lib/i18n'
 
 export interface FieldProps extends Omit<TextInputProps, 'style' | 'editable'> {
   label?: string
@@ -46,6 +47,7 @@ export function Field({
   onBlur,
   ...props
 }: FieldProps) {
+  const t = useT()
   const { colors, radius } = useTheme()
   const input = useRef<TextInputInstance>(null)
   const [focused, setFocused] = useState(false)
@@ -117,7 +119,7 @@ export function Field({
         {onClear && value !== undefined && value !== '' && !multiline && !disabled && (
           <PressableScale
             accessibilityRole="button"
-            accessibilityLabel={label ? `Effacer ${label}` : 'Effacer'}
+            accessibilityLabel={label ? t('mobile.ds.clearField', { label }) : t('search.clear')}
             pressedScale={1}
             hitSlop={12}
             onPress={() => {

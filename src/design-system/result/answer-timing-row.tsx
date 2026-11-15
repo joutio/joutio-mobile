@@ -1,6 +1,7 @@
 import { View, type StyleProp, type ViewStyle } from 'react-native'
 import { Text } from '../primitives/text'
 import { tokens } from '../tokens.generated'
+import { currentLanguage, t, useT } from '@/lib/i18n'
 
 export interface AnswerTiming {
   name: string
@@ -17,18 +18,19 @@ export interface AnswerTimingRowProps {
   style?: StyleProp<ViewStyle>
 }
 
-const duration = (seconds: number) => `${seconds.toLocaleString('fr-FR', { maximumFractionDigits: 1 })} s`
+const duration = (seconds: number) => t('ds.seconds', { value: seconds.toLocaleString(currentLanguage(), { maximumFractionDigits: 1 }) })
 
 function Timing({ player, first, end }: { player: AnswerTiming; first: boolean; end?: boolean }) {
+  const t = useT()
   const color = first ? 'accentInk' : 'muted'
   return (
     <View style={{ flex: 1, minWidth: 0, alignItems: end ? 'flex-end' : 'flex-start' }}>
       <Text variant="caption" weight="600" mono color={color} numberOfLines={1}>
-        {first ? '1er · ' : ''}
+        {first ? t('ds.first') : ''}
         {player.name}
       </Text>
       <Text variant="caption" mono color={color} numberOfLines={1}>
-        {player.seconds === undefined ? 'sans réponse' : duration(player.seconds)} · {player.points > 0 ? `+${player.points}` : player.points}
+        {player.seconds === undefined ? t('mobile.ds.noAnswer') : duration(player.seconds)} · {player.points > 0 ? `+${player.points}` : player.points}
       </Text>
     </View>
   )

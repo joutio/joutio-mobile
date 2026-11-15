@@ -3,6 +3,7 @@ import { router } from '@/shared/navigation/router'
 import type { ReactNode } from 'react'
 import { View } from 'react-native'
 import { ListGroup, MobileTopBar, Screen, SectionHeader, Text, tokens } from '@/design-system'
+import { useT } from '@/lib/i18n'
 
 /** Origine des Réglages : pile de l'onglet Profil ou de l'onglet Accueil (roue dentée des deux écrans). */
 export type SettingsOrigin = 'home' | 'profile'
@@ -20,8 +21,9 @@ export function openSettingsPage(origin: SettingsOrigin, page: SettingsPage) {
 
 /** Cadre d'une page des Réglages : retour « Profil » ou « Accueil » à la racine, « Réglages » dans une catégorie. */
 export function SettingsFrame({ title, root = false, overlay, children }: { title: string; root?: boolean; overlay?: ReactNode; children: ReactNode }) {
+  const t = useT()
   const origin = useSettingsOrigin()
-  const back = root ? (origin === 'home' ? 'Accueil' : 'Profil') : 'Réglages'
+  const back = root ? (origin === 'home' ? t('nav.home') : t('nav.profile')) : t('profile.settings')
   return (
     <Screen
       inTabs

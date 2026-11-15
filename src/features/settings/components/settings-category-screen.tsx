@@ -48,6 +48,7 @@ import { appVersion } from '@/shared/utils/app-info'
 import { BirthDatePicker, birthDateError, formatBirthDate } from '@/shared/components/birth-date-picker'
 import { APPEARANCE, LANGUAGES } from '../lib/settings-options'
 import { Group, SettingsFrame, useSettingsOrigin, type SettingsPage } from './settings-frame'
+import { useT } from '@/lib/i18n'
 
 const PAGES: readonly SettingsPage[] = ['account', 'privacy', 'notifications', 'game', 'display', 'help']
 const SUPPORT = 'mailto:contact@joutio.com'
@@ -80,6 +81,7 @@ export function SettingsCategoryScreen() {
 
 /** Date de naissance, modifiable ici seulement (`editer-profil.md` § 5) : enregistrée à la validation. */
 function BirthDateSheet({ open, value, onClose }: { open: boolean; value: string | null | undefined; onClose: () => void }) {
+  const t = useT()
   const save = useSetBirthDate()
   const [edited, setEdited] = useState<string | null>(null)
   const draft = edited ?? value ?? null
@@ -91,7 +93,7 @@ function BirthDateSheet({ open, value, onClose }: { open: boolean; value: string
     <MobileSheet
       open={open}
       onClose={dismiss}
-      title="Date de naissance"
+      title={t('account.birthDate')}
       footer={
         <Button
           full
@@ -101,14 +103,14 @@ function BirthDateSheet({ open, value, onClose }: { open: boolean; value: string
             draft &&
             save.mutate(draft, {
               onSuccess: () => {
-                toast.success('Date de naissance enregistrée')
+                toast.success(t('account.birthDateSaved'))
                 dismiss()
               },
-              onError: () => toast.error("La date n'a pas été enregistrée"),
+              onError: () => toast.error(t('mobile.onboarding.birthFailed')),
             })
           }
         >
-          Valider
+          {t('account.validate')}
         </Button>
       }
     >
@@ -118,39 +120,41 @@ function BirthDateSheet({ open, value, onClose }: { open: boolean; value: string
 }
 
 function AccountPage() {
+  const t = useT()
   const data = useMe(true).data
   const showPremium = usePremiumSheet((state) => state.show)
   const [birthOpen, setBirthOpen] = useState(false)
   return (
-    <SettingsFrame title="Compte" overlay={<BirthDateSheet open={birthOpen} value={data?.birthDate} onClose={() => setBirthOpen(false)} />}>
-      <Group title="Connexion">
+    <SettingsFrame title={t('settings.account')} overlay={<BirthDateSheet open={birthOpen} value={data?.birthDate} onClose={() => setBirthOpen(false)} />}>
+      <Group title={t('onboarding.code.back')}>
         <ListRow icon={EnvelopeSimpleIcon} label="E-mail" value={data?.email} control="value" last />
       </Group>
-      <Group footer="Privée : elle ne s'affiche jamais sur ton profil. Joutio est réservé aux 15 ans et plus.">
-        <ListRow icon={CakeIcon} label="Date de naissance" value={formatBirthDate(data?.birthDate)} control="chevron" onPress={() => setBirthOpen(true)} last />
+      <Group footer={t('account.birthDateFooter')}>
+        <ListRow icon={CakeIcon} label={t('account.birthDate')} value={formatBirthDate(data?.birthDate)} control="chevron" onPress={() => setBirthOpen(true)} last />
       </Group>
       <Group>
-        <ListRow icon={CrownSimpleIcon} label="Premium" value={data?.premium ? 'Actif' : 'Bientôt'} control="chevron" onPress={() => showPremium()} last />
+        <ListRow icon={CrownSimpleIcon} label={t('pending.premium')} value={data?.premium ? t('settings.premiumActive') : t('settings.premiumSoon')} control="chevron" onPress={() => showPremium()} last />
       </Group>
       <Group>
-        <ListRow icon={TrashIcon} label="Supprimer mon compte" control="none" destructive onPress={() => router.push('/delete-account')} last />
+        <ListRow icon={TrashIcon} label={t('settings.deleteAccount')} control="none" destructive onPress={() => router.push('/delete-account')} last />
       </Group>
     </SettingsFrame>
   )
 }
 
 function PrivacyPage() {
+  const t = useT()
   return (
-    <SettingsFrame title="Confidentialité et sécurité">
-      <Group title="Joueurs">
-        <ListRow icon={ProhibitIcon} label="Joueurs bloqués" value="Bientôt" control="value" disabled last />
+    <SettingsFrame title={t('settings.privacyCategory')}>
+      <Group title={t('board.scope')}>
+        <ListRow icon={ProhibitIcon} label={t('privacy.blocked')} value={t('settings.premiumSoon')} control="value" disabled last />
       </Group>
-      <Group title="Données">
-        <ListRow icon={ShieldCheckIcon} label="Politique de confidentialité" control="chevron" onPress={openPage('/privacy')} />
+      <Group title={t('privacy.data')}>
+        <ListRow icon={ShieldCheckIcon} label={t('privacy.policy')} control="chevron" onPress={openPage('/privacy')} />
         <ListRow
           icon={DatabaseIcon}
-          label="Mes données"
-          sub="Ce que Joutio conserve et comment le supprimer"
+          label={t('privacy.myData')}
+          sub={t('privacy.myDataSub')}
           control="chevron"
           onPress={openPage('/data-deletion')}
           last
@@ -161,21 +165,22 @@ function PrivacyPage() {
 }
 
 function NotificationsPage() {
+  const t = useT()
   const device = useDeviceSettings()
   const rematches = usePushRematches()
   const preferences = useNotificationPreferences()
   const setPreference = useSetNotificationPreference()
   const rooms = preferences.data?.find((item) => item.category === 'ROOM')?.enabled ?? true
   return (
-    <SettingsFrame title="Notifications">
+    <SettingsFrame title={t('home.notifications')}>
       <ListGroup surface="surface">
         <PushPermissionRow />
       </ListGroup>
-      <Group title="Me prévenir quand">
+      <Group title={t('notifications.when')}>
         <ListRow
           icon={LightningIcon}
-          label="Défis et salons"
-          sub="On te défie ou t'invite dans un salon"
+          label={t('settings.notifyChallenges')}
+          sub={t('onboarding.notifications.challenge')}
           control="toggle"
           on={rooms}
           disabled={setPreference.isPending}
@@ -183,8 +188,8 @@ function NotificationsPage() {
         />
         <ListRow
           icon={ArrowCounterClockwiseIcon}
-          label="Revanches"
-          sub="Ton adversaire veut sa revanche"
+          label={t('settings.notifyRematches')}
+          sub={t('onboarding.notifications.rematch')}
           control="toggle"
           on={device.notifyRematches}
           disabled={rematches.isPending}
@@ -192,8 +197,8 @@ function NotificationsPage() {
         />
         <ListRow
           icon={MedalIcon}
-          label="Rangs et badges"
-          sub="Tu changes de rang ou gagnes un badge"
+          label={t('settings.notifyRanks')}
+          sub={t('onboarding.notifications.rank')}
           control="toggle"
           on={device.notifyRanks}
           onToggle={(notifyRanks) => device.set({ notifyRanks })}
@@ -205,6 +210,7 @@ function NotificationsPage() {
 }
 
 function GamePage() {
+  const t = useT()
   const data = useMe(true).data
   const device = useDeviceSettings()
   const autoTrain = useAutoTrain()
@@ -215,13 +221,13 @@ function GamePage() {
   const toggle = (category: string) => setDraft(draft.includes(category) ? draft.filter((item) => item !== category) : [...draft, category])
   return (
     <SettingsFrame
-      title="Jeu"
+      title={t('settings.game')}
       overlay={
         <MobileSheet
           open={open}
           onClose={() => setOpen(false)}
-          title="Centres d'intérêt"
-          subtitle={`${draft.length} sur ${MAX_INTERESTS}`}
+          title={t('settings.interests')}
+          subtitle={t('settings.interestsCount', { count: draft.length, max: MAX_INTERESTS })}
           tall
           footer={
             <Button
@@ -230,13 +236,13 @@ function GamePage() {
               loading={saveInterests.isPending}
               onPress={() => saveInterests.mutate(draft, { onSuccess: () => setOpen(false) })}
             >
-              Enregistrer
+              {t('settings.save')}
             </Button>
           }
         >
           <View style={{ gap: tokens.space[4] }}>
             <Text variant="callout" color="muted">
-              Ils personnalisent ton accueil. Le premier choisi est ton univers principal.
+              {t('settings.interestsText')}
             </Text>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: tokens.space[3] }}>
               {UNIVERSES.map((category) => {
@@ -257,24 +263,24 @@ function GamePage() {
         </MobileSheet>
       }
     >
-      <Group title="Duel">
-        <ListRow icon={SpeakerHighIcon} label="Sons du duel" control="toggle" on={device.sounds} onToggle={(sounds) => device.set({ sounds })} />
-        <ListRow icon={VibrateIcon} label="Vibrations" control="toggle" on={device.haptics} onToggle={(haptics) => device.set({ haptics })} />
+      <Group title={t('pending.duel')}>
+        <ListRow icon={SpeakerHighIcon} label={t('settings.sound')} control="toggle" on={device.sounds} onToggle={(sounds) => device.set({ sounds })} />
+        <ListRow icon={VibrateIcon} label={t('mobile.settings.haptics')} control="toggle" on={device.haptics} onToggle={(haptics) => device.set({ haptics })} />
         <ListRow
           icon={CheckCircleIcon}
-          label="Icônes et points des réponses"
-          sub="Coche, croix et points à la révélation"
+          label={t('settings.answerDetails')}
+          sub={t('settings.answerDetailsSub')}
           control="toggle"
           on={device.answerDetails}
           onToggle={(answerDetails) => device.set({ answerDetails })}
           last
         />
       </Group>
-      <Group title="Recherche d'adversaire">
+      <Group title={t('game.matchmaking')}>
         <ListRow
           icon={RobotIcon}
-          label="Entraînement si aucun adversaire"
-          sub="Après 10 s sans joueur, sans points d'expérience ni série"
+          label={t('settings.autoTrain')}
+          sub={t('settings.autoTrainSub')}
           control="toggle"
           on={autoTrain.enabled}
           disabled={autoTrain.pending}
@@ -282,11 +288,11 @@ function GamePage() {
           last
         />
       </Group>
-      <Group title="Accueil">
+      <Group title={t('nav.home')}>
         <ListRow
           icon={SparkleIcon}
-          label="Centres d'intérêt"
-          sub={interests.map((category) => tokens.category[category as CategoryCode]?.label ?? category).join(', ') || 'Aucun pour l’instant'}
+          label={t('settings.interests')}
+          sub={interests.map((category) => tokens.category[category as CategoryCode]?.label ?? category).join(', ') || t('settings.interestsEmpty')}
           control="chevron"
           onPress={() => {
             setDraft(interests)
@@ -300,6 +306,7 @@ function GamePage() {
 }
 
 function DisplayPage() {
+  const t = useT()
   const data = useMe(true).data
   const language = useUpdateMe('language')
   const appearance = useThemeStore((state) => state.preference)
@@ -307,12 +314,12 @@ function DisplayPage() {
   const [sheet, setSheet] = useState<'language' | 'appearance'>()
   return (
     <SettingsFrame
-      title="Affichage et langue"
+      title={t('settings.display')}
       overlay={
         <>
-          <MobileSheet open={sheet === 'language'} onClose={() => setSheet(undefined)} title="Langue">
+          <MobileSheet open={sheet === 'language'} onClose={() => setSheet(undefined)} title={t('settings.language')}>
             <ListGroup surface="surface">
-              <RadioGroup label="Langue">
+              <RadioGroup label={t('settings.language')}>
                 {LANGUAGES.map((option, index) => (
                   <ListRow
                     key={option.value}
@@ -330,16 +337,16 @@ function DisplayPage() {
               </RadioGroup>
             </ListGroup>
           </MobileSheet>
-          <MobileSheet open={sheet === 'appearance'} onClose={() => setSheet(undefined)} title="Apparence">
+          <MobileSheet open={sheet === 'appearance'} onClose={() => setSheet(undefined)} title={t('settings.appearance')}>
             <ListGroup surface="surface">
-              <RadioGroup label="Apparence">
-                {APPEARANCE.map((option, index) => (
+              <RadioGroup label={t('settings.appearance')}>
+                {APPEARANCE().map((option, index) => (
                   <ListRow
                     key={option.value}
                     label={option.label}
                     control="radio"
                     on={appearance === option.value}
-                    last={index === APPEARANCE.length - 1}
+                    last={index === APPEARANCE().length - 1}
                     onToggle={() => {
                       setAppearance(option.value)
                       setSheet(undefined)
@@ -355,15 +362,15 @@ function DisplayPage() {
       <Group>
         <ListRow
           icon={GlobeHemisphereWestIcon}
-          label="Langue"
+          label={t('settings.language')}
           value={LANGUAGES.find((option) => option.value === (data?.language ?? 'fr'))?.label}
           control="chevron"
           onPress={() => setSheet('language')}
         />
         <ListRow
           icon={PaletteIcon}
-          label="Apparence"
-          value={APPEARANCE.find((option) => option.value === appearance)?.label}
+          label={t('settings.appearance')}
+          value={APPEARANCE().find((option) => option.value === appearance)?.label}
           control="chevron"
           onPress={() => setSheet('appearance')}
           last
@@ -374,15 +381,16 @@ function DisplayPage() {
 }
 
 function HelpPage() {
+  const t = useT()
   return (
-    <SettingsFrame title="Aide et à propos">
+    <SettingsFrame title={t('settings.help')}>
       <Group>
-        <ListRow icon={LifebuoyIcon} label="Contacter le support" control="chevron" onPress={() => void Linking.openURL(SUPPORT).catch(() => undefined)} />
-        <ListRow icon={FileTextIcon} label="Conditions d'utilisation" control="chevron" onPress={openPage('/terms')} />
-        <ListRow icon={ShieldCheckIcon} label="Politique de confidentialité" control="chevron" onPress={openPage('/privacy')} last />
+        <ListRow icon={LifebuoyIcon} label={t('tooYoung.support')} control="chevron" onPress={() => void Linking.openURL(SUPPORT).catch(() => undefined)} />
+        <ListRow icon={FileTextIcon} label={t('settings.terms')} control="chevron" onPress={openPage('/terms')} />
+        <ListRow icon={ShieldCheckIcon} label={t('privacy.policy')} control="chevron" onPress={openPage('/privacy')} last />
       </Group>
       <Group>
-        <ListRow icon={InfoIcon} label="Version" value={appVersion} control="value" last />
+        <ListRow icon={InfoIcon} label={t('help.version')} value={appVersion} control="value" last />
       </Group>
     </SettingsFrame>
   )

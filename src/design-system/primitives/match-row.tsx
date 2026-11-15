@@ -6,15 +6,16 @@ import { tokens, type CategoryCode } from '../tokens.generated'
 import { PressableScale } from './pressable-scale'
 import { Text } from './text'
 import { TopicVisual } from './topic-visual'
+import { t, useT } from '@/lib/i18n'
 
 export type MatchOutcome = 'win' | 'loss' | 'draw' | 'forfeit'
 
-const OUTCOMES: Record<MatchOutcome, { label: string; color: keyof ThemeColors }> = {
-  win: { label: 'Victoire', color: 'correct' },
-  loss: { label: 'Défaite', color: 'wrong' },
-  draw: { label: 'Égalité', color: 'muted' },
-  forfeit: { label: 'Abandon', color: 'muted' },
-}
+const OUTCOMES = (): Record<MatchOutcome, { label: string; color: keyof ThemeColors }> => ({
+  win: { label: t('mobile.ds.win'), color: 'correct' },
+  loss: { label: t('mobile.ds.loss'), color: 'wrong' },
+  draw: { label: t('mobile.ds.draw'), color: 'muted' },
+  forfeit: { label: t('mobile.ds.forfeit'), color: 'muted' },
+})
 
 export interface MatchRowProps {
   /** Titre de la ligne : le sujet, ou l'adversaire quand la liste est déjà filtrée sur un sujet. */
@@ -36,12 +37,13 @@ export interface MatchRowProps {
 
 /** Partie terminée : tuile de l'univers, titre, issue et score. */
 export function MatchRow({ topic, category, pictogram, image, sub, outcome, score, bot = false, last = false, onPress, style }: MatchRowProps) {
+  const t = useT()
   const { colors, radius } = useTheme()
-  const { label, color } = OUTCOMES[outcome]
+  const { label, color } = OUTCOMES()[outcome]
   return (
     <PressableScale
       accessibilityRole={onPress ? 'button' : 'text'}
-      accessibilityLabel={[topic, bot ? 'contre le bot' : undefined, sub, label, score].filter(Boolean).join(', ')}
+      accessibilityLabel={[topic, bot ? t('mobile.ds.againstBot') : undefined, sub, label, score].filter(Boolean).join(', ')}
       disabled={!onPress}
       pressedScale={1}
       ripple

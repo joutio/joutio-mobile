@@ -4,8 +4,9 @@ import { useMe } from '@/features/me'
 import { optimisticUpdate } from '@/lib/optimistic-cache'
 import { queryKeys } from '@/lib/query-keys'
 import { usePersonalNotifications, type NotificationView } from '@/lib/realtime/personal-notifications'
-import type { PageResponse } from '@joutio/client-domain/api-types'
+import type { PageResponse } from '@joutio/client/api-types'
 import { NOTIFICATIONS_PAGE_SIZE, notificationsService } from '../lib/notifications-service'
+import { useT } from '@/lib/i18n'
 
 type Pages = InfiniteData<PageResponse<NotificationView>, number>
 
@@ -65,6 +66,7 @@ function useInboxMutation<V>(
   error: string,
   all: false | 'read' | 'delete' = false,
 ) {
+  const t = useT()
   const client = useQueryClient()
   const listKey = queryKeys.notifications.list()
   const countKey = queryKeys.notifications.unreadCount()
@@ -95,7 +97,7 @@ function useInboxMutation<V>(
       }),
     onError: (_error, _value, context) => {
       context?.rollback()
-      toast.error(error, { description: 'Vérifie ta connexion, puis réessaie.' })
+      toast.error(error, { description: t('home.errorText') })
     },
   })
 }
@@ -103,31 +105,43 @@ function useInboxMutation<V>(
 const now = () => new Date().toISOString()
 
 export const useMarkRead = () =>
-  useInboxMutation(
+  {
+  const t = useT()
+  return useInboxMutation(
     (id: string) => notificationsService.read(id),
     (list, id) => list.map((item) => (item.notificationId === id && item.readAt === null ? { ...item, readAt: now() } : item)),
-    "La notification n'a pas pu être marquée comme lue",
+    t('notifications.readError'),
   )
+}
 
 export const useMarkAllRead = () =>
-  useInboxMutation(
+  {
+  const t = useT()
+  return useInboxMutation(
     (_: void) => notificationsService.readAll(),
     (list) => list.map((item) => (item.readAt === null ? { ...item, readAt: now() } : item)),
-    "Les notifications n'ont pas pu être marquées comme lues",
+    t('notifications.readAllError'),
     'read',
   )
+}
 
 export const useDeleteNotification = () =>
-  useInboxMutation(
+  {
+  const t = useT()
+  return useInboxMutation(
     (id: string) => notificationsService.remove(id),
     (list, id) => list.filter((item) => item.notificationId !== id),
-    "La notification n'a pas pu être supprimée",
+    t('notifications.deleteError'),
   )
+}
 
 export const useDeleteAllNotifications = () =>
-  useInboxMutation(
+  {
+  const t = useT()
+  return useInboxMutation(
     (_: void) => notificationsService.removeAll(),
     () => [],
-    "Les notifications n'ont pas pu être supprimées",
+    t('notifications.deleteAllError'),
     'delete',
   )
+}

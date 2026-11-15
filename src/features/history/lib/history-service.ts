@@ -1,6 +1,6 @@
 import { api } from '@/lib/api'
 import { ENDPOINTS } from '@/lib/endpoints'
-import type { GameHistoryItemView, PageResponse } from '@joutio/client-domain/api-types'
+import type { GameHistoryItemView, PageResponse } from '@joutio/client/api-types'
 
 /** 20 parties par page (`historique.md` § 5). */
 export const HISTORY_PAGE_SIZE = 20

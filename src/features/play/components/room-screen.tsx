@@ -1,4 +1,4 @@
-import { buildShareUrl } from '@joutio/client-domain/share'
+import { buildShareUrl } from '@joutio/client/share'
 import { useShare } from '@/features/share'
 import { toast } from '@/design-system'
 import { useLocalSearchParams, useIsFocused } from 'expo-router'
@@ -38,7 +38,7 @@ import {
   waitingStatusLabel,
   wizzState,
   type RoomFailureKind,
-} from '@joutio/client-domain/rooms'
+} from '@joutio/client/rooms'
 import { useRoom, useRoomPresence, useWizzRoom } from '../hooks/use-play'
 import { playService } from '../lib/play-service'
 import { usePlayerProfile } from '@/features/social/hooks/use-social'
@@ -46,6 +46,7 @@ import { userAvatar } from '@/shared/utils/avatar'
 import { usePlaySession } from '../hooks/play-session'
 import { useMyAvatar } from '@/features/avatar/lib/avatar-preview'
 import { countdownOf, useServerNow } from '../lib/countdown'
+import { t, useT } from '@/lib/i18n'
 
 export interface RoomRouteParams {
   roomId: string
@@ -55,19 +56,22 @@ export interface RoomRouteParams {
   [key: string]: string | undefined
 }
 
-const TERMINAL = {
-  CANCELLED: { title: 'Le salon a été fermé', description: "L'autre joueur ou toi avez annulé avant le duel." },
-  EXPIRED: { title: 'Le salon a expiré', description: "Personne ne l'a rejoint à temps." },
-  FAILED: { title: "Le duel n'a pas pu être préparé", description: 'Relance un duel depuis la fiche du sujet.' },
-} as const
+/** Libellé traduit de chaque étape de `PREPARATION_STEPS` (les libellés de la lib restent le français du lab). */
+const STEP_LABEL = { players: 'room.stepPlayers', profiles: 'room.stepProfiles', questions: 'room.stepQuestions', launch: 'room.stepLaunch' } as const
+
+const TERMINAL = () => ({
+  CANCELLED: { title: t('room.cancelledTitle'), description: t('room.cancelledText') },
+  EXPIRED: { title: t('room.expiredTitle'), description: t('room.expiredText') },
+  FAILED: { title: t('room.failedTitle'), description: t('room.failedText') },
+} as const)
 
 /** Explication d'un échec selon le motif serveur (`ROOM_FAILED.reason`) ; repli générique. */
-const FAILURE_DESCRIPTION: Record<RoomFailureKind, string> = {
-  language: "Ce sujet n'a pas encore assez de questions dans ta langue pour un duel.",
-  topic: "Ce sujet n'est plus disponible pour jouer.",
-  timeout: 'Le serveur a mis trop de temps à répondre. Réessaie dans un instant.',
-  unknown: TERMINAL.FAILED.description,
-}
+const FAILURE_DESCRIPTION = (): Record<RoomFailureKind, string> => ({
+  language: t('room.failedLanguageText'),
+  topic: t('room.failedTopicText'),
+  timeout: t('room.failedTimeoutText'),
+  unknown: TERMINAL().FAILED.description,
+})
 
 /** Lien universel du salon (`partage.md` § 2). */
 export const roomLink = (roomId: string) => buildShareUrl({ kind: 'room', id: roomId })
@@ -80,6 +84,7 @@ export const roomLink = (roomId: string) => buildShareUrl({ kind: 'room', id: ro
  * fermer ; la préparation continue après le retour, suivie par le bandeau global.
  */
 export function RoomScreen() {
+  const t = useT()
   const identity = usePlayerIdentity()
   const params = useLocalSearchParams<RoomRouteParams>()
   const roomId = params.roomId
@@ -107,13 +112,13 @@ export function RoomScreen() {
   const nominative = Boolean(room?.opponentId)
   const shared = !vsBot && !nominative
   const waiting = roomStatus === 'WAITING_PLAYERS'
-  const engaged = !waiting && !(roomStatus in TERMINAL)
+  const engaged = !waiting && !(roomStatus in TERMINAL())
 
   const opponentId = vsBot ? null : isInitiator ? (room?.opponentId ?? room?.participantId ?? null) : (room?.initiatorId ?? null)
   // La vue REST ne connaît pas le second joueur d'un salon partagé arrivé après coup : son profil est lu à part.
   const fetched = usePlayerProfile(opponentId ?? '', Boolean(opponentId) && !view.data?.opponent)
   const opponentView = view.data?.opponent ?? null
-  const opponentName = vsBot ? 'Robot' : (opponentView?.pseudonym ?? fetched.data?.pseudonym)
+  const opponentName = vsBot ? t('topic.bot') : (opponentView?.pseudonym ?? fetched.data?.pseudonym)
   const myPresent = room ? (isInitiator ? room.initiatorPresent : room.participantPresent) : false
   const opponentPresent = vsBot ? true : room ? (isInitiator ? room.participantPresent : room.initiatorPresent) : false
   const countdown = waiting ? countdownOf(room?.expiresAt ?? view.data?.expiresAt ?? null, now) : null
@@ -143,8 +148,8 @@ export function RoomScreen() {
     })
   }
   useEffect(() => {
-    if (params.fromPush === '1' && (roomStatus in TERMINAL || status?.terminalError)) {
-      toast.info('Ce salon n’est plus disponible')
+    if (params.fromPush === '1' && (roomStatus in TERMINAL() || status?.terminalError)) {
+      toast.info(t('mobile.room.unavailable'))
       router.replace('/challenges')
     }
   }, [params.fromPush, roomStatus, status?.terminalError])
@@ -152,15 +157,15 @@ export function RoomScreen() {
   // Avant tout `return` : l'écran terminal (salon fermé, expiré) ne doit pas sauter de hook (2026-11-14).
   const shareLink = useShare()
 
-  if (roomStatus in TERMINAL || status?.terminalError) {
+  if (roomStatus in TERMINAL() || status?.terminalError) {
     const copy =
-      status?.terminalError && !(roomStatus in TERMINAL)
-        ? { title: 'Salon introuvable', description: 'Il a peut-être expiré.' }
+      status?.terminalError && !(roomStatus in TERMINAL())
+        ? { title: t('room.notFoundTitle'), description: t('room.notFoundText') }
         : roomStatus === 'FAILED'
-          ? { title: TERMINAL.FAILED.title, description: FAILURE_DESCRIPTION[roomFailureKind(room?.failureReason)] }
-          : TERMINAL[roomStatus as keyof typeof TERMINAL]
+          ? { title: TERMINAL().FAILED.title, description: FAILURE_DESCRIPTION()[roomFailureKind(room?.failureReason)] }
+          : TERMINAL()[roomStatus as keyof ReturnType<typeof TERMINAL>]
     return (
-      <Screen header={<MobileTopBar variant="inline" back="Retour" title="Salon" onBack={close} />} scroll={false}>
+      <Screen header={<MobileTopBar variant="inline" back={t('topic.back')} title={t('room.title')} onBack={close} />} scroll={false}>
         <Terminal title={copy.title} description={copy.description} onBack={close} />
       </Screen>
     )
@@ -174,13 +179,13 @@ export function RoomScreen() {
     tier: myTier,
     premium: identity.myPremium,
     away: !myPresent,
-    status: myPresent ? 'Dans le salon' : 'Connexion…',
+    status: myPresent ? t('room.inRoom') : t('callback.loading'),
   }
   const opponentSeat: RoomPlayer | undefined = vsBot
     ? { name: 'Robot', status: 'Prêt' }
     : opponentId
       ? {
-          name: opponentName ?? 'Adversaire',
+          name: opponentName ?? t('topic.opponent'),
           premium: identity.premium(opponentView ?? fetched.data, opponentId),
           src: userAvatar(opponentView ?? fetched.data ?? undefined),
           tier: opponentView?.rating != null && !opponentView.provisional ? tierOf(opponentView.rating) : undefined,
@@ -191,8 +196,8 @@ export function RoomScreen() {
   const detail = waiting
     ? waitingStatusLabel({ playerPresent: myPresent, opponentPresent: opponentPresent && Boolean(opponentSeat), opponentLabel: opponentName ?? null })
     : undefined
-  const kind = vsBot ? { icon: RobotIcon, label: 'Entraînement' } : nominative ? { icon: SwordIcon, label: 'Défi' } : { icon: LinkIcon, label: 'Salon privé' }
-  const cancelLabel = vsBot ? 'Annuler le duel' : nominative ? 'Annuler le défi' : 'Fermer le salon'
+  const kind = vsBot ? { icon: RobotIcon, label: t('room.training') } : nominative ? { icon: SwordIcon, label: t('room.challenge') } : { icon: LinkIcon, label: t('room.private') }
+  const cancelLabel = vsBot ? t('room.cancelDuel') : nominative ? t('room.cancelChallenge') : t('room.closeRoom')
   const link = roomLink(roomId)
 
   return (
@@ -203,10 +208,10 @@ export function RoomScreen() {
             {presence.failed && (
               <View style={{ gap: tokens.space[2] }}>
                 <Text variant="caption" color="muted" align="center">
-                  {presence.problem?.detail ?? 'Impossible de rejoindre le salon. Vérifie ta connexion.'}
+                  {presence.problem?.detail ?? t('room.presenceError')}
                 </Text>
                 <Button full variant="gray" tone="neutral" onPress={presence.retry}>
-                  Réessayer
+                  {t('callback.retry')}
                 </Button>
               </View>
             )}
@@ -216,10 +221,10 @@ export function RoomScreen() {
                 icon={LightningIcon}
                 loading={wizz.isPending}
                 disabled={!wizzInfo.available}
-                accessibilityLabel={`Relancer ${opponentName ?? "l'adversaire"}`}
+                accessibilityLabel={t('room.wizz', { name: opponentName ?? t('room.opponentFallback') })}
                 onPress={() => wizz.mutate()}
               >
-                {wizzSeconds > 0 ? `Relancer dans ${wizzSeconds} s` : `Relancer ${opponentName ?? "l'adversaire"}`}
+                {wizzSeconds > 0 ? t('room.wizzIn', { seconds: wizzSeconds }) : t('room.wizz', { name: opponentName ?? t('room.opponentFallback') })}
               </Button>
             )}
             {isInitiator && (
@@ -238,8 +243,8 @@ export function RoomScreen() {
             {topic}
           </Text>
           {countdown && (
-            <Text variant="callout" color="muted" accessibilityLabel={`Le salon expire dans ${countdown}`}>
-              Expire dans{' '}
+            <Text variant="callout" color="muted" accessibilityLabel={t('room.expiresA11y', { countdown })}>
+              {t('room.expiresIn')}{' '}
               <Text variant="callout" mono color="muted">
                 {countdown}
               </Text>
@@ -247,16 +252,16 @@ export function RoomScreen() {
           )}
         </View>
         <RoomPlayers me={meSeat} opponent={opponentSeat} />
-        <PreparationSteps steps={PREPARATION_STEPS} current={step} detail={detail} engaged={engaged} complete={preparationComplete(roomStatus)} />
+        <PreparationSteps steps={PREPARATION_STEPS.map((item) => ({ ...item, label: `${t(STEP_LABEL[item.id])}…` }))} current={step} detail={detail} engaged={engaged} complete={preparationComplete(roomStatus)} />
         {shared && waiting && (
           <>
             <Button
               full
               icon={ShareNetworkIcon}
               variant="tinted"
-              onPress={() => shareLink({ kind: 'room', id: roomId, message: `Viens me défier sur Joutio : ${topic}` })}
+              onPress={() => shareLink({ kind: 'room', id: roomId, message: t('mobile.room.shareMessage', { topic }) })}
             >
-              Partager le lien
+              {t('share.roomButton')}
             </Button>
           </>
         )}
@@ -267,9 +272,10 @@ export function RoomScreen() {
 
 /** Page standard : top bar Joutio, contenu défilant et actions fixes. */
 function Salon({ footer, children }: { footer: React.ReactNode; children: React.ReactNode }) {
+  const t = useT()
   return (
     <Screen
-      header={<MobileTopBar variant="inline" back="Retour" title="Salon" onBack={() => router.back()} />}
+      header={<MobileTopBar variant="inline" back={t('topic.back')} title={t('room.title')} onBack={() => router.back()} />}
       contentStyle={{ gap: tokens.space[6], padding: tokens.space[5] }}
       bottomBar={<View style={{ gap: tokens.space[3], padding: tokens.space[5] }}>{footer}</View>}
     >
@@ -280,6 +286,7 @@ function Salon({ footer, children }: { footer: React.ReactNode; children: React.
 
 /** Fin du salon sans duel : fermé, expiré, échec ou introuvable. */
 function Terminal({ title, description, onBack }: { title: string; description: string; onBack: () => void }) {
+  const t = useT()
   const { colors } = useTheme()
   return (
     <View style={{ flex: 1, justifyContent: 'center', padding: tokens.space[5], backgroundColor: colors.bg }}>
@@ -289,7 +296,7 @@ function Terminal({ title, description, onBack }: { title: string; description: 
         description={description}
         action={
           <Button style={{ alignSelf: 'center' }} onPress={onBack}>
-            Retour
+            {t('topic.back')}
           </Button>
         }
       />

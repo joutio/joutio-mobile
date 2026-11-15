@@ -2,6 +2,7 @@ import { View, type StyleProp, type ViewStyle } from 'react-native'
 import { useTheme } from '../theme/theme-provider'
 import { tokens } from '../tokens.generated'
 import { Text } from './text'
+import { useT } from '@/lib/i18n'
 
 const HEADS = ['L', 'M', 'M', 'J', 'V', 'S', 'D']
 
@@ -22,6 +23,7 @@ const CELL = `${100 / 7}%` as const
 
 /** Calendrier du mois : jours joués en accent, aujourd'hui cerclé, jours à venir estompés. */
 export function StreakCalendar({ month, legend, offset, days, today, active, style }: StreakCalendarProps) {
+  const t = useT()
   const { colors } = useTheme()
   const played = new Set(active)
   return (
@@ -61,7 +63,7 @@ export function StreakCalendar({ month, legend, offset, days, today, active, sty
               <View
                 accessible
                 // La couleur ne suffit pas : l'état du jour est aussi dit en toutes lettres.
-                accessibilityLabel={[String(day), isPlayed && 'joué', isToday && "aujourd'hui"].filter(Boolean).join(', ')}
+                accessibilityLabel={[String(day), isPlayed && t('mobile.ds.played'), isToday && "aujourd'hui"].filter(Boolean).join(', ')}
                 style={{
                   aspectRatio: 1,
                   alignItems: 'center',

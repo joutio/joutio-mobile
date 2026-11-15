@@ -1,12 +1,14 @@
 import { ListGroup, TabScrollView, TitleRow, tokens } from '@/design-system'
-import type { TopicOverviewView } from '@joutio/client-domain/api-types'
+import type { TopicOverviewView } from '@joutio/client/api-types'
 import { topicName } from '@/shared/utils/topic-name'
-import { titleLabel } from '@joutio/client-domain/authoring'
+import { titleLabel } from '@joutio/client/authoring'
 import { useMyTitles, useWearTitle } from '../hooks/use-topic'
 import { formatNumber, MASTERY_TIERS, MASTERY_XP } from '../lib/format'
+import { useT } from '@/lib/i18n'
 
 /** Onglet Progression : tous les titres du sujet et leurs conditions. Un seul porté. */
 export function ProgressTab({ overview }: { overview: TopicOverviewView }) {
+  const t = useT()
   const titles = useMyTitles()
   const wear = useWearTitle()
   const { topic, myProgress: progress } = overview
@@ -32,11 +34,11 @@ export function ProgressTab({ overview }: { overview: TopicOverviewView }) {
               title={label(tier)}
               progress={
                 !earned && index === 0
-                  ? { value: 0, label: '1 partie restante' }
+                  ? { value: 0, label: t('topic.oneGameLeft') }
                   : !earned && progress && index > 0
                     ? {
                         value: Math.min(100, (progress.xp / MASTERY_XP[tier]) * 100),
-                        label: `${formatNumber(Math.max(0, MASTERY_XP[tier] - progress.xp))} points d'expérience restants`,
+                        label: t('topic.xpLeft', { xp: formatNumber(Math.max(0, MASTERY_XP[tier] - progress.xp)) }),
                       }
                     : undefined
               }

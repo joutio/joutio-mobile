@@ -1,4 +1,4 @@
-import { countryName } from '@joutio/client-domain/geo'
+import { countryName } from '@joutio/client/geo'
 import { FlashList, type FlashListRef } from '@shopify/flash-list'
 import { useLocalSearchParams } from 'expo-router'
 import { router } from '@/shared/navigation/router'
@@ -27,7 +27,7 @@ import {
 } from '@/design-system'
 import { useMe, usePlayerIdentity } from '@/features/me'
 import { tierOf } from '@/shared/utils/tier'
-import type { LeaderboardEntryView } from '@joutio/client-domain/api-types'
+import type { LeaderboardEntryView } from '@joutio/client/api-types'
 import { useTopicLeaderboardPage } from '../hooks/use-topic'
 import { formatNumber, monthlyLegend } from '../lib/format'
 import { DEFAULT_RANKING_FILTERS, type RankingFilterState } from '../lib/topic-service'
@@ -36,9 +36,9 @@ import { RankingsFiltersSheet } from './rankings-filters-sheet'
 import { userAvatar } from '@/shared/utils/avatar'
 import { feedFooterProps, pagedQuery } from '@/shared/utils/paging'
 import { useRefreshActive } from '@/shared/hooks/use-refresh-active'
+import { currentLanguage, formatDate, useLanguage, useT } from '@/lib/i18n'
 
 const GUTTER = tokens.space[5]
-const MONTH = new Intl.DateTimeFormat('fr-FR', { month: 'long' })
 
 export interface RankingsRouteParams {
   topicId: string
@@ -60,6 +60,8 @@ function Loading() {
 
 /** Page complète des classements d'un sujet (`classements.md`) : podium, pagination de 20, filtres période/portée. */
 export function RankingsScreen() {
+  const t = useT()
+  const language = useLanguage()
   const identity = usePlayerIdentity()
   // Fin de liste au-dessus de la tab bar native iOS (`useTabBarInset`).
   const tabInset = useTabBarInset()
@@ -92,13 +94,13 @@ export function RankingsScreen() {
   const showMeBar = Boolean(meEntry && !entries.some((entry) => entry.userId === meEntry.userId))
   const scoreOf = (entry: LeaderboardEntryView) => (filterState.period === 'MONTHLY' ? entry.monthlyXp : entry.totalXp)
   const scopeLabel =
-    filterState.scope === 'WORLD' ? 'Mondial' : filterState.scope === 'FOLLOWING' ? 'Suivis' : me.data?.country ? countryName(me.data.country) : ''
+    filterState.scope === 'WORLD' ? t('mobile.rankings.world') : filterState.scope === 'FOLLOWING' ? t('home.followed') : me.data?.country ? countryName(me.data.country, currentLanguage()) : ''
   const legend =
     filterState.period === 'MONTHLY' && filterState.scope === 'WORLD'
       ? monthlyLegend()
       : filterState.period === 'MONTHLY'
-        ? `Points d'expérience gagnés en ${MONTH.format(new Date())} · ${scopeLabel} · remise à zéro le 1er du mois`
-        : `Points d'expérience cumulés · ${scopeLabel}`
+        ? t('rankings.monthlyScope', { month: formatDate(new Date(), language, { month: 'long' }), scope: scopeLabel })
+        : t('rankings.cumulative', { scope: scopeLabel })
   const reset = () => setFilterState(DEFAULT_RANKING_FILTERS)
   const change = (patch: Partial<RankingFilterState>) => setFilterState((current) => ({ ...current, ...patch }))
 
@@ -114,14 +116,14 @@ export function RankingsScreen() {
       header={
         <MobileTopBar
           variant="inline"
-          back={params.backLabel ?? 'Sujet'}
+          back={params.backLabel ?? t('pending.topic')}
           onBack={() => router.back()}
-          title="Tous les classements"
+          title={t('topic.allRankings')}
           subtitle={params.topicName}
           right={
             <IconButton
               icon={SlidersHorizontalIcon}
-              label="Filtrer"
+              label={t('titles.filter')}
               variant="gray"
               tone="neutral"
               badge={active ? 'dot' : undefined}
@@ -144,7 +146,7 @@ export function RankingsScreen() {
         showMeBar && meEntry ? (
           <MyBoardRow
             entry={meEntry}
-            sub={filterState.period === 'MONTHLY' ? `${formatNumber(meEntry.monthlyXp)} XP ce mois` : `${formatNumber(meEntry.totalXp)} XP au total`}
+            sub={filterState.period === 'MONTHLY' ? t('mobile.rankings.xpMonth', { xp: formatNumber(meEntry.monthlyXp) }) : t('topic.totalXp', { xp: formatNumber(meEntry.totalXp) })}
             trail={formatNumber(scoreOf(meEntry))}
           />
         ) : undefined
@@ -157,11 +159,11 @@ export function RankingsScreen() {
         <View style={{ flex: 1, justifyContent: 'center', padding: GUTTER }}>
           <EmptyState
             icon={WarningCircleIcon}
-            title="Impossible de charger le classement"
-            description="Vérifie ta connexion, puis réessaie."
+            title={t('topic.boardError')}
+            description={t('home.errorText')}
             action={
               <Button style={{ alignSelf: 'center' }} loading={list.isRefetching} onPress={() => void list.refetch()}>
-                Réessayer
+                {t('callback.retry')}
               </Button>
             }
           />
@@ -171,7 +173,7 @@ export function RankingsScreen() {
           <Text variant="caption" color="muted" align="center">
             {legend}
           </Text>
-          <EmptyState icon={TrophyIcon} title="Aucun classement pour cette période" description="Les filtres restent la sortie." />
+          <EmptyState icon={TrophyIcon} title={t('mobile.rankings.noneForPeriod')} description={t('mobile.rankings.noneForPeriodText')} />
         </View>
       ) : (
         <DragToLoadMore
@@ -211,7 +213,7 @@ export function RankingsScreen() {
               </View>
             }
             ListFooterComponent={
-              <FeedFooter style={{ marginHorizontal: GUTTER }} {...feedFooterProps(pagedQuery(list))} endLabel="Tu as vu tout le classement" />
+              <FeedFooter style={{ marginHorizontal: GUTTER }} {...feedFooterProps(pagedQuery(list))} endLabel={t('board.end')} />
             }
             renderItem={({ item: entry, index }) => {
               const first = index === 0

@@ -9,7 +9,7 @@ import type {
   RewardsView,
   TopicStatView,
   PseudonymAvailability,
-} from '@joutio/client-domain/api-types'
+} from '@joutio/client/api-types'
 
 /** Profil du joueur connecté : progression (badges, série, sujets, récompenses) et réglages (`/api/profiles/{id}/…`). */
 export const profileService = {

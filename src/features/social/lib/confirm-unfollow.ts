@@ -1,4 +1,5 @@
 import { HeartIcon, showDialog } from '@/design-system'
+import { t } from '@/lib/i18n'
 
 /**
  * Ne plus suivre un joueur se confirme, comme un sujet : on évite les allers-retours en rafale (et les notifications
@@ -6,14 +7,14 @@ import { HeartIcon, showDialog } from '@/design-system'
  */
 export function confirmUnfollow(pseudonym: string, onConfirm: () => void) {
   showDialog({
-    title: `Ne plus suivre ${pseudonym} ?`,
-    message: 'Son profil quittera tes abonnements dans Social.',
+    title: t('topic.unfollowTitle', { name: pseudonym }),
+    message: t('mobile.social.unfollowText'),
     icon: HeartIcon,
     tone: 'danger',
     sheet: true,
     actions: [
-      { label: 'Ne plus suivre', tone: 'destructive', onPress: onConfirm },
-      { label: 'Annuler', variant: 'plain' },
+      { label: t('topic.unfollow'), tone: 'destructive', onPress: onConfirm },
+      { label: t('topic.cancel'), variant: 'plain' },
     ],
   })
 }

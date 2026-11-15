@@ -10,6 +10,7 @@ import { alpha } from '../theme/color'
 import { useTheme } from '../theme/theme-provider'
 import { keyframe } from '../timeline'
 import { tokens, type TierCode } from '../tokens.generated'
+import { useT } from '@/lib/i18n'
 
 export interface MapPlayer {
   name: string
@@ -130,6 +131,7 @@ function Pin({ player, mapWidth, height, delay, found }: { player: MapPlayer; ma
 
 /** Fond de la recherche d'adversaire : défile en recherche, s'arrête sur l'adversaire trouvé. */
 export function MatchmakingMap({ state = 'search', pins = [], opponent, speed = 3, height, width, style }: MatchmakingMapProps) {
+  const t = useT()
   const { colors, radius } = useTheme()
   const reduced = useReducedMotion()
   const mapWidth = height * 2
@@ -160,7 +162,7 @@ export function MatchmakingMap({ state = 'search', pins = [], opponent, speed = 
     <View
       accessible
       accessibilityRole="image"
-      accessibilityLabel={found ? `Adversaire trouvé : ${opponent.name}` : 'Carte des joueurs'}
+      accessibilityLabel={found ? t('mobile.ds.opponentFound', { name: opponent.name }) : t('mobile.ds.playersMap')}
       style={[{ width, height, overflow: 'hidden', backgroundColor: colors.bg }, style]}
     >
       <Animated.View style={[{ position: 'absolute', top: 0, bottom: 0, left: 0, width: mapWidth * 2, flexDirection: 'row' }, strip]}>

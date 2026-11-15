@@ -5,6 +5,7 @@ import LogoMark from '../../../assets/brand/logo-mark.svg'
 import { useReducedMotion } from '../motion'
 import { Text, typeStyle } from '../primitives/text'
 import { tokens } from '../tokens.generated'
+import { useT } from '@/lib/i18n'
 
 export interface SplashLogoProps {
   /** `launch` au démarrage de l'app, `loading` entre deux pages au-delà de 400 ms. */
@@ -14,6 +15,7 @@ export interface SplashLogoProps {
 
 /** Logo du lancement ; en `loading`, il respire (`jo-breathe` : 1,6 s, .92 et .6). */
 export function SplashLogo({ variant = 'launch', style }: SplashLogoProps) {
+  const t = useT()
   const launch = variant === 'launch'
   const reduced = useReducedMotion()
   const breath = useSharedValue(0)
@@ -33,7 +35,7 @@ export function SplashLogo({ variant = 'launch', style }: SplashLogoProps) {
     <View
       accessible
       accessibilityRole={launch ? 'image' : 'progressbar'}
-      accessibilityLabel={launch ? 'Joutio' : 'Chargement'}
+      accessibilityLabel={launch ? t('mobile.common.loading') : t('mobile.common.loading')}
       style={[{ alignItems: 'center', gap: launch ? tokens.space[5] : tokens.space[4] }, style]}
     >
       <Animated.View style={animated}>

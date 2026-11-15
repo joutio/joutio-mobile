@@ -15,7 +15,7 @@ Refresh.
 | Outil         | Version / remarque                                                                          |
 |---------------|---------------------------------------------------------------------------------------------|
 | Node          | 22 ou plus récent (`node -v`)                                                               |
-| Accès npm     | `@joutio/client-domain` vient de GitHub Packages : un `~/.npmrc` avec un jeton `read:packages` |
+| Accès npm     | `@joutio/client` vient de GitHub Packages : un `~/.npmrc` avec un jeton `read:packages` |
 | Xcode (iOS)   | Depuis l'App Store, puis `xcode-select --install` et une première ouverture d'Xcode (licence, simulateurs) |
 | CocoaPods     | `brew install cocoapods`                                                                    |
 | JDK (Android) | Un JDK complet, 17 à 25 : `brew install --cask temurin`                                     |

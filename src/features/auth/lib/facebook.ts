@@ -1,5 +1,6 @@
 import { Platform } from 'react-native'
 import { config } from '@/lib/config'
+import { t } from '@/lib/i18n'
 
 type FacebookSdkModule = typeof import('react-native-fbsdk-next')
 
@@ -14,7 +15,7 @@ export class FacebookSignInError extends Error {
   }
 }
 
-const UNKNOWN_ERROR = 'Connexion Facebook impossible. Utilise le code par e-mail.'
+const UNKNOWN_ERROR = () => t('mobile.auth.facebook.failed')
 
 /** Facebook natif (dev build) : masqué si l'App ID ou le Client Token public manque. */
 export function isFacebookSignInAvailable(): boolean {
@@ -27,7 +28,7 @@ async function loadFacebookSdk(): Promise<FacebookSdkModule> {
   try {
     return await import('react-native-fbsdk-next')
   } catch {
-    throw new FacebookSignInError("Facebook n'est pas disponible dans cette version.")
+    throw new FacebookSignInError(t('mobile.auth.facebook.unavailableBuild'))
   }
 }
 
@@ -36,7 +37,7 @@ const createNonce = () => `${Date.now().toString(36)}-${Math.random().toString(3
 
 /** Ouvre le login Facebook natif ; `null` si la personne annule. */
 export async function signInWithFacebook(): Promise<FacebookCredential | null> {
-  if (!isFacebookSignInAvailable()) throw new FacebookSignInError("Facebook n'est pas disponible sur cet appareil.")
+  if (!isFacebookSignInAvailable()) throw new FacebookSignInError(t('mobile.auth.facebook.unavailableDevice'))
   const { LoginManager, AuthenticationToken, AccessToken } = await loadFacebookSdk()
   try {
     if (Platform.OS === 'ios') {
@@ -44,19 +45,19 @@ export async function signInWithFacebook(): Promise<FacebookCredential | null> {
       const result = await LoginManager.logInWithPermissions(['public_profile', 'email'], 'limited', nonce)
       if (result.isCancelled) return null
       const token = await AuthenticationToken.getAuthenticationTokenIOS()
-      if (!token?.authenticationToken) throw new FacebookSignInError("Facebook n'a pas fourni de jeton d'identité. Réessaie.")
+      if (!token?.authenticationToken) throw new FacebookSignInError(t('mobile.auth.facebook.noIdToken'))
       // Le SDK peut normaliser le nonce : on renvoie celui du token, sinon identity le refuse.
       return { idToken: token.authenticationToken, nonce: token.nonce || nonce }
     }
     const result = await LoginManager.logInWithPermissions(['public_profile', 'email'])
     if (result.isCancelled) return null
     const token = await AccessToken.getCurrentAccessToken()
-    if (!token?.accessToken) throw new FacebookSignInError("Facebook n'a pas fourni de jeton d'accès. Réessaie.")
+    if (!token?.accessToken) throw new FacebookSignInError(t('mobile.auth.facebook.noAccessToken'))
     return { accessToken: token.accessToken }
   } catch (error) {
     if (error instanceof FacebookSignInError) throw error
     if (__DEV__) console.warn('[FacebookSignIn]', error)
-    throw new FacebookSignInError(UNKNOWN_ERROR)
+    throw new FacebookSignInError(UNKNOWN_ERROR())
   }
 }
 

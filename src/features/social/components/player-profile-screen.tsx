@@ -1,4 +1,4 @@
-import { countryFlag, countryName } from '@joutio/client-domain/geo'
+import { countryFlag, countryName } from '@joutio/client/geo'
 import { useQueryClient } from '@tanstack/react-query'
 import { useLocalSearchParams } from 'expo-router'
 import { router } from '@/shared/navigation/router'
@@ -42,7 +42,7 @@ import { useHistoryGames } from '@/features/history/hooks/use-history'
 import { useMe, usePlayerIdentity } from '@/features/me'
 import { useTopicOverview } from '@/features/topic/hooks/use-topic'
 import { dayLabel, formatNumber, tierLabel } from '@/features/topic/lib/format'
-import type { GameOutcome, PlayerCardView } from '@joutio/client-domain/api-types'
+import type { GameOutcome, PlayerCardView } from '@joutio/client/api-types'
 import { tierOf } from '@/shared/utils/tier'
 import { topicName } from '@/shared/utils/topic-name'
 import type { TierCode } from '@/design-system'
@@ -52,6 +52,7 @@ import { presenceLine } from '../lib/presence'
 import { ChallengePlayerSheet } from './challenge-player-sheet'
 import { userAvatar } from '@/shared/utils/avatar'
 import { confirmUnfollow } from '../lib/confirm-unfollow'
+import { currentLanguage, useT } from '@/lib/i18n'
 
 const GUTTER = tokens.space[5]
 const OUTCOMES: Partial<Record<GameOutcome, MatchOutcome>> = { WIN: 'win', LOSS: 'loss', DRAW: 'draw' }
@@ -59,8 +60,9 @@ const outcomeOf = (outcome: GameOutcome) => OUTCOMES[outcome]
 
 /** Lab : fond uni (pas de bannière) et squelettes, `gap-6 pt-1`. */
 function Loading() {
+  const t = useT()
   return (
-    <View accessibilityLabel="Chargement" style={{ gap: tokens.space[6], paddingHorizontal: GUTTER, paddingTop: tokens.space[2] }}>
+    <View accessibilityLabel={t('home.loading')} style={{ gap: tokens.space[6], paddingHorizontal: GUTTER, paddingTop: tokens.space[2] }}>
       <Skeleton shape="row" />
       <Skeleton shape="card" style={{ height: 120 }} />
     </View>
@@ -73,6 +75,7 @@ function Loading() {
  * dans le lab.
  */
 export function PlayerProfileScreen() {
+  const t = useT()
   const identity = usePlayerIdentity()
   const params = useLocalSearchParams<{ id: string }>()
   const id = params.id ?? ''
@@ -126,7 +129,7 @@ export function PlayerProfileScreen() {
         userId: data?.userId ?? '',
         opponentId: me.data?.userId ?? '',
         opponentName: data?.pseudonym ?? '',
-        backLabel: 'Joueur',
+        backLabel: t('history.backPlayer'),
       },
     })
   const openResult = (game: (typeof latest)[number]) => {
@@ -157,12 +160,12 @@ export function PlayerProfileScreen() {
     if (!data) return
     setBlocked(data.userId, true)
     if (data.following) follow.mutate(false)
-    toast.success(`${data.pseudonym} est bloqué·e`)
+    toast.success(t('mobile.social.blocked', { name: data.pseudonym }))
   }
   const unblock = () => {
     if (!data) return
     setBlocked(data.userId, false)
-    toast.success(`${data.pseudonym} est débloqué·e`)
+    toast.success(t('mobile.social.unblocked', { name: data.pseudonym }))
   }
 
   return (
@@ -170,7 +173,7 @@ export function PlayerProfileScreen() {
       <ParallaxScreen
         heroHeight={HERO_HEIGHT + AVATAR_SIZES.xxl - AVATAR_SIZES.xl}
         image={data?.bannerUrl ?? undefined}
-        title={data?.pseudonym ?? 'Joueur'}
+        title={data?.pseudonym ?? t('history.backPlayer')}
         premium={identity.premium(data)}
         eyebrow={data ? <Avatar name={data.pseudonym} src={userAvatar(data)} tier={tier} size="xxl" /> : undefined}
         centered
@@ -182,11 +185,11 @@ export function PlayerProfileScreen() {
             <>
               <Menu
                 items={[
-                  { label: 'Signaler', icon: FlagIcon, onPress: () => setReportOpen(true) },
-                  ...(blocked ? [] : [{ label: 'Bloquer', icon: ProhibitIcon, destructive: true, onPress: () => setBlockOpen(true) }]),
+                  { label: t('player.report'), icon: FlagIcon, onPress: () => setReportOpen(true) },
+                  ...(blocked ? [] : [{ label: t('mobile.social.block'), icon: ProhibitIcon, destructive: true, onPress: () => setBlockOpen(true) }]),
                 ]}
               >
-                {(open) => <ParallaxIconButton icon={DotsThreeVerticalIcon} label="Plus d'actions" onPress={open} />}
+                {(open) => <ParallaxIconButton icon={DotsThreeVerticalIcon} label={t('player.more')} onPress={open} />}
               </Menu>
             </>
           ) : undefined
@@ -208,10 +211,10 @@ export function PlayerProfileScreen() {
                   </ScrollView>
                 )}
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: tokens.space[3] }}>
-                  {tier ? <Badge variant="tier" tier={tier}>{`${tierLabel(tier)} · ${formatNumber(rating ?? 0)}`}</Badge> : <Pill>Non classé</Pill>}
-                  {data.country && <Pill>{`${countryFlag(data.country)} ${countryName(data.country)}`}</Pill>}
-                  {data.suspended && <Pill tone="suspended">Compte suspendu</Pill>}
-                  {blocked && <Pill tone="wrong">Bloqué</Pill>}
+                  {tier ? <Badge variant="tier" tier={tier}>{t('common.dotPair', { a: tierLabel(tier), b: formatNumber(rating ?? 0) })}</Badge> : <Pill>{t('profile.unranked')}</Pill>}
+                  {data.country && <Pill>{`${countryFlag(data.country)} ${countryName(data.country, currentLanguage())}`}</Pill>}
+                  {data.suspended && <Pill tone="suspended">{t('onboarding.ended.suspendedTitle')}</Pill>}
+                  {blocked && <Pill tone="wrong">{t('mobile.social.blockedBadge')}</Pill>}
                 </View>
                 {!data.suspended && !blocked && (
                   <Text variant="caption" color="muted">
@@ -221,14 +224,14 @@ export function PlayerProfileScreen() {
               </View>
               {blocked && !data.isMe && (
                 <Button full variant="gray" tone="neutral" onPress={unblock}>
-                  Débloquer
+                  {t('mobile.social.unblock')}
                 </Button>
               )}
               {canAct && (
                 // 65 / 35 : le défi est l'action principale, comme « Lancer un duel » sur la Fiche sujet.
                 <View style={{ flexDirection: 'row', gap: tokens.space[3] }}>
                   <Button full style={{ flex: 65 }} icon={LightningIcon} variant="filled" tone="accent" onPress={() => setChallengeOpen(true)}>
-                    Défier
+                    {t('player.challenge')}
                   </Button>
                   <Button
                     full
@@ -240,7 +243,7 @@ export function PlayerProfileScreen() {
                     loading={follow.isPending}
                     onPress={toggleFollow}
                   >
-                    {data.following ? 'Suivi' : 'Suivre'}
+                    {data.following ? t('topic.followed') : t('topic.follow')}
                   </Button>
                 </View>
               )}
@@ -254,11 +257,11 @@ export function PlayerProfileScreen() {
           <View style={{ paddingHorizontal: GUTTER }}>
             <EmptyState
               icon={WarningCircleIcon}
-              title="Impossible de charger ce joueur"
-              description="Vérifie ta connexion, puis réessaie."
+              title={t('player.error')}
+              description={t('home.errorText')}
               action={
                 <Button style={{ alignSelf: 'center' }} loading={profile.isRefetching} onPress={() => void profile.refetch()}>
-                  Réessayer
+                  {t('callback.retry')}
                 </Button>
               }
             />
@@ -266,31 +269,31 @@ export function PlayerProfileScreen() {
         ) : (
           <View style={{ gap: tokens.space[6], paddingHorizontal: GUTTER, paddingTop: tokens.space[4], paddingBottom: tokens.space[8] }}>
             <View style={{ gap: tokens.space[3] }}>
-              <SectionHeader title={`Ton bilan contre ${data.pseudonym}`} />
+              <SectionHeader title={t('player.headToHead', { name: data.pseudonym })} />
               {head.isPending ? (
                 <Skeleton shape="card" style={{ height: 120 }} />
               ) : head.data && head.data.played > 0 ? (
                 <>
                   <View style={{ flexDirection: 'row', gap: tokens.space[2] }}>
-                    <Stat label="Victoires" value={String(head.data.wins)} tone="up" compact />
-                    <Stat label="Nul" value={String(head.data.draws)} compact />
-                    <Stat label="Défaites" value={String(head.data.losses)} tone="down" compact />
+                    <Stat label={t('profile.wins')} value={String(head.data.wins)} tone="up" compact />
+                    <Stat label={t('profile.draw')} value={String(head.data.draws)} compact />
+                    <Stat label={t('profile.losses')} value={String(head.data.losses)} tone="down" compact />
                   </View>
                   <View style={{ backgroundColor: colors.surface, borderRadius: radius.lg, padding: tokens.space[4] }}>
                     <OutcomeBar wins={head.data.wins} draws={head.data.draws} losses={head.data.losses} />
                   </View>
                 </>
               ) : (
-                <EmptyState icon={SwordIcon} title="Aucun duel pour l'instant" description={`Défie ${data.pseudonym} pour ouvrir votre face-à-face.`} />
+                <EmptyState icon={SwordIcon} title={t('history.emptyPlayer')} description={t('player.noDuelText', { name: data.pseudonym })} />
               )}
             </View>
             {(head.isPending || played) && (
               <View style={{ gap: tokens.space[3] }}>
                 <SectionHeader
-                  title="Dernières parties"
+                  title={t('topic.lastGames')}
                   action={
                     <Button variant="plain" size="S" onPress={openHistory}>
-                      Tout voir
+                      {t('home.seeAll')}
                     </Button>
                   }
                 />
@@ -301,7 +304,7 @@ export function PlayerProfileScreen() {
                     <Skeleton shape="row" />
                   </View>
                 ) : latest.length === 0 ? (
-                  <EmptyState icon={SwordIcon} title="Aucune partie pour l'instant" description="Vos prochains duels apparaîtront ici." />
+                  <EmptyState icon={SwordIcon} title={t('history.empty')} description={t('mobile.social.noGameText')} />
                 ) : (
                   <ListGroup surface="surface">
                     {latest.map((game, index) => {
@@ -337,7 +340,7 @@ export function PlayerProfileScreen() {
           onClose={() => setReportOpen(false)}
           userId={data.userId}
           name={data.pseudonym}
-          subtitle="Fiche joueur"
+          subtitle={t('mobile.social.playerCard')}
           onBlock={blocked ? undefined : () => setBlockOpen(true)}
         />
       )}
@@ -348,11 +351,11 @@ export function PlayerProfileScreen() {
           sheet
           tone="danger"
           icon={ProhibitIcon}
-          title={`Bloquer ${data.pseudonym} ?`}
-          message="Vous ne pourrez plus vous défier, et ses messages n'arriveront plus."
+          title={t('mobile.social.blockTitle', { name: data.pseudonym })}
+          message={t('mobile.social.blockText')}
           actions={[
-            { label: 'Bloquer', variant: 'tinted', tone: 'destructive', onPress: block },
-            { label: 'Annuler', variant: 'plain', tone: 'neutral' },
+            { label: t('mobile.social.block'), variant: 'tinted', tone: 'destructive', onPress: block },
+            { label: t('topic.cancel'), variant: 'plain', tone: 'neutral' },
           ]}
         />
       )}

@@ -6,9 +6,11 @@ import { useSessionStore } from '@/features/auth/session-store'
 import { notificationTarget, type NotificationLink } from '../lib/notification-target'
 import { notificationsService } from '../lib/notifications-service'
 import { useMarkRead } from './use-notifications'
+import { useT } from '@/lib/i18n'
 
 /** Une seule action d'ouverture, quel que soit le point d'entrée. */
 export function useOpenNotification() {
+  const t = useT()
   const read = useMarkRead()
   const markRead = read.mutate
   return useCallback(
@@ -30,8 +32,8 @@ export function useOpenNotification() {
         const status = (error as { statusCode?: number }).statusCode
         fallback(
           status === 403 || status === 404 || status === 410
-            ? 'Ce contenu n’est plus disponible'
-            : 'Impossible d’ouvrir cette notification. Réessaie après avoir vérifié ta connexion.',
+            ? t('mobile.notifications.contentGone')
+            : t('mobile.notifications.openFailed'),
         )
         return
       }
@@ -62,7 +64,7 @@ export function useOpenNotification() {
           await clearSession('suspended')
           break
         case 'fallback':
-          fallback(target.expired ? 'Cette invitation a expiré' : 'Cette notification n’est plus disponible')
+          fallback(target.expired ? t('notifications.expired') : t('mobile.notifications.gone'))
           break
       }
     },

@@ -8,6 +8,7 @@ import { animateTo, useReducedMotion } from '../motion'
 import { HAIRLINE } from '../theme/hairline'
 import { useTheme } from '../theme/theme-provider'
 import { tokens } from '../tokens.generated'
+import { t, useT } from '@/lib/i18n'
 
 export type Detent = 'peek' | 'half' | 'full'
 
@@ -16,7 +17,7 @@ const ORDER: readonly Detent[] = ['peek', 'half', 'full']
 const FRACTIONS = { half: 0.58, full: 0.94 }
 /** Geste au-delà duquel on passe au cran suivant (lab : 24 px). */
 const STEP = 24
-const VALUE_TEXT: Record<Detent, string> = { peek: 'Réduite', half: 'À moitié', full: 'Plein écran' }
+const VALUE_TEXT = (): Record<Detent, string> => ({ peek: t('mobile.ds.detentPeek'), half: t('mobile.ds.detentHalf'), full: t('mobile.ds.detentFull') })
 
 export interface DetentSheetProps {
   /** Nom accessible de la feuille. */
@@ -43,6 +44,7 @@ export interface DetentSheetProps {
  * Le contenu défile au cran `full`.
  */
 export function DetentSheet({ label, detent, onDetentChange, header, footer, onPeekHeight, locked = false, children }: DetentSheetProps) {
+  const t = useT()
   const { colors, radius } = useTheme()
   const insets = useSafeAreaInsets()
   const reduced = useReducedMotion()
@@ -135,8 +137,8 @@ export function DetentSheet({ label, detent, onDetentChange, header, footer, onP
             ) : (
               <Pressable
                 accessibilityRole="adjustable"
-                accessibilityLabel={`Hauteur de « ${label} »`}
-                accessibilityValue={{ text: VALUE_TEXT[shown] }}
+                accessibilityLabel={t('mobile.ds.detentHeight', { label })}
+                accessibilityValue={{ text: VALUE_TEXT()[shown] }}
                 accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
                 onAccessibilityAction={(event) => step(event.nativeEvent.actionName === 'increment' ? 1 : -1)}
                 onPress={() => onDetentChange(shown === 'full' ? 'peek' : (ORDER[ORDER.indexOf(shown) + 1] ?? 'full'))}

@@ -6,9 +6,11 @@ import { ArrowCounterClockwiseIcon, BellRingingIcon, Button, LightningIcon, List
 import { useCompleteOnboarding } from '../hooks/use-onboarding'
 import { useOnboardingStore } from '../onboarding-store'
 import { Steps } from './steps'
+import { useT } from '@/lib/i18n'
 
 /** Notifications : « Activer » ouvre l'alerte système, « Plus tard » passe à la suite. */
 export function NotificationsStep() {
+  const t = useT()
   const { colors, radius } = useTheme()
   const skipped = useOnboardingStore((state) => state.skipped)
   const complete = useCompleteOnboarding()
@@ -38,13 +40,13 @@ export function NotificationsStep() {
       footer={
         <View style={{ gap: tokens.space[3] }}>
           <Text variant="caption" color="muted" align="center">
-            Modifiable dans Réglages › Notifications.
+            {t('mobile.onboarding.notifHint')}
           </Text>
           <Button full loading={asking || complete.isPending} onPress={enable}>
-            Activer les notifications
+            {t('onboarding.notifications.enable')}
           </Button>
           <Button full variant="plain" tone="neutral" disabled={complete.isPending} onPress={next}>
-            Plus tard
+            {t('onboarding.notifications.later')}
           </Button>
         </View>
       }
@@ -64,16 +66,16 @@ export function NotificationsStep() {
           <BellRingingIcon size={32} weight="fill" color={colors.onAccent} />
         </View>
         <Text variant="title1" align="center" accessibilityRole="header">
-          Ne rate pas un défi
+          {t('onboarding.notifications.title')}
         </Text>
         <Text color="muted" align="center" style={{ maxWidth: 320 }}>
-          Un défi expire au bout d'une heure. On te prévient seulement pour ce qui te concerne.
+          {t('onboarding.notifications.subtitle')}
         </Text>
       </View>
       <View style={{ borderRadius: radius.lg, backgroundColor: colors.surface, overflow: 'hidden' }}>
-        <ListRow icon={LightningIcon} label="On te défie ou t'invite dans un salon" control="none" />
-        <ListRow icon={ArrowCounterClockwiseIcon} label="Ton adversaire veut sa revanche" control="none" />
-        <ListRow icon={MedalIcon} label="Tu changes de rang ou gagnes un badge" control="none" last />
+        <ListRow icon={LightningIcon} label={t('onboarding.notifications.challenge')} control="none" />
+        <ListRow icon={ArrowCounterClockwiseIcon} label={t('onboarding.notifications.rematch')} control="none" />
+        <ListRow icon={MedalIcon} label={t('onboarding.notifications.rank')} control="none" last />
       </View>
     </Steps>
   )

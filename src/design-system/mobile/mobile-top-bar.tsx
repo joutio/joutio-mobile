@@ -7,6 +7,7 @@ import { Text } from '../primitives/text'
 import { useTheme } from '../theme/theme-provider'
 import { tokens } from '../tokens.generated'
 import { GlassBackground } from './glass'
+import { useT } from '@/lib/i18n'
 
 /** Hauteur de la barre : 52 pt sur iOS (lab), 64 dp sur Android comme la barre Material (décision du 2026-11-06). */
 export const TOP_BAR_HEIGHT = Platform.OS === 'android' ? 64 : 52
@@ -76,16 +77,18 @@ function ThreeColumns({
   style?: StyleProp<ViewStyle>
 }) {
   return (
-    <View style={[{ height: TOP_BAR_HEIGHT, flexDirection: 'row', alignItems: 'center', gap: tokens.space[3], paddingHorizontal: tokens.space[3] }, style]}>
+    <View style={[{ height: TOP_BAR_HEIGHT, flexDirection: 'row', alignItems: 'center', gap: tokens.space[3], paddingLeft: tokens.space[3], paddingRight: tokens.space[4] }, style]}>
       {glass && <GlassBackground />}
       <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'flex-start', minWidth: 0 }}>{left}</View>
       <View style={{ maxWidth: 200, minWidth: 0, alignItems: 'center' }}>{center}</View>
-      <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'flex-end', minWidth: 0 }}>{right}</View>
+      <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'flex-end', gap: tokens.space[3], minWidth: 0 }}>{right}</View>
     </View>
   )
 }
 
+/** Actions à droite : 8 pt (`space[3]`) entre deux boutons-icônes, 12 pt (`space[4]`) du bord, sur toutes les barres. */
 export function MobileTopBar(props: MobileTopBarProps) {
+  const t = useT()
   const { space } = useTheme()
 
   if (props.variant === 'media') {
@@ -96,14 +99,14 @@ export function MobileTopBar(props: MobileTopBarProps) {
           props.style,
         ]}
       >
-        <IconButton icon={CaretLeftIcon} label="Retour" media onPress={props.onBack} />
+        <IconButton icon={CaretLeftIcon} label={t('topic.back')} media onPress={props.onBack} />
         {props.right && <View style={{ flexDirection: 'row', gap: space[3] }}>{props.right}</View>}
       </View>
     )
   }
 
   if (props.variant === 'modal') {
-    const { title, cancel = 'Annuler', confirm = 'OK', confirmDisabled, onCancel, onConfirm } = props
+    const { title, cancel = t('topic.cancel'), confirm = 'OK', confirmDisabled, onCancel, onConfirm } = props
     return (
       <ThreeColumns
         glass={props.glass}
@@ -141,7 +144,7 @@ export function MobileTopBar(props: MobileTopBarProps) {
               regular
               icon={CaretLeftIcon}
               onPress={onBack}
-              accessibilityLabel={`Retour, ${back}`}
+              accessibilityLabel={t('mobile.ds.backTo', { back })}
               style={{ paddingHorizontal: 0, alignSelf: 'center' }}
             >
               {back}
@@ -180,7 +183,7 @@ export function MobileTopBar(props: MobileTopBarProps) {
           gap: space[3],
           paddingVertical: space[2],
           paddingLeft: space[5],
-          paddingRight: space[3],
+          paddingRight: space[4],
         },
         style,
       ]}
@@ -197,7 +200,7 @@ export function MobileTopBar(props: MobileTopBarProps) {
           </Text>
         ))}
       </View>
-      {right && <View style={{ flexDirection: 'row', alignItems: 'center' }}>{right}</View>}
+      {right && <View style={{ flexDirection: 'row', alignItems: 'center', gap: space[3] }}>{right}</View>}
     </View>
   )
 }

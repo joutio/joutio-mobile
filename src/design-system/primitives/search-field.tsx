@@ -8,6 +8,7 @@ import { tokens } from '../tokens.generated'
 import { Button } from './button'
 import { PressableScale } from './pressable-scale'
 import { inputStyle, MAX_FONT_SCALE } from './text'
+import { t, useT } from '@/lib/i18n'
 
 export interface SearchFieldProps {
   value: string
@@ -43,8 +44,8 @@ const CANCEL_OUT = FadeOutRight.duration(200).easing(EASING)
 export function SearchField({
   value,
   onChange,
-  placeholder = 'Rechercher',
-  label = 'Rechercher',
+  placeholder = t('home.search'),
+  label = t('home.search'),
   onCancel,
   onSubmit,
   onFocus,
@@ -55,6 +56,7 @@ export function SearchField({
   autoFocus,
   style,
 }: SearchFieldProps) {
+  const t = useT()
   const { colors, radius } = useTheme()
   const [focused, setFocused] = useState(false)
   const localInput = useRef<TextInputInstance>(null)
@@ -111,7 +113,7 @@ export function SearchField({
         {value !== '' && (
           <PressableScale
             accessibilityRole="button"
-            accessibilityLabel="Effacer la recherche"
+            accessibilityLabel={t('titles.clearSearch')}
             pressedScale={1}
             hitSlop={13}
             onPress={() => {
@@ -132,7 +134,7 @@ export function SearchField({
               onCancel()
             }}
           >
-            Annuler
+            {t('topic.cancel')}
           </Button>
         </Animated.View>
       )}

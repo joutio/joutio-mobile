@@ -3,8 +3,9 @@ import { toast } from '@/design-system'
 import { useMe } from '@/features/me'
 import { optimisticUpdate } from '@/lib/optimistic-cache'
 import { queryKeys } from '@/lib/query-keys'
-import type { MeView, PageResponse, PlayerCardView, PlayerProfileView } from '@joutio/client-domain/api-types'
+import type { MeView, PageResponse, PlayerCardView, PlayerProfileView } from '@joutio/client/api-types'
 import { socialService } from '../lib/social-service'
+import { useT } from '@/lib/i18n'
 
 /** Fiche publique d'un joueur. */
 export function usePlayerProfile(userId: string, enabled = true) {
@@ -25,6 +26,7 @@ export function useMyProfile(enabled = true) {
 
 /** Suivre / ne plus suivre un joueur, avec mise à jour immédiate de la fiche et des listes. */
 export function useFollowPlayer(userId: string) {
+  const t = useT()
   const client = useQueryClient()
   const myId = useMe(true).data?.userId ?? ''
   return useMutation({
@@ -84,8 +86,8 @@ export function useFollowPlayer(userId: string) {
       }),
     onError: (_error, follow, context) => {
       context?.rollback()
-      toast.error(follow ? "Le joueur n'a pas pu être suivi" : "Le joueur n'a pas pu être retiré", {
-        description: 'Vérifie ta connexion, puis réessaie.',
+      toast.error(follow ? t('mobile.social.followFailed') : t('mobile.social.unfollowFailed'), {
+        description: t('home.errorText'),
       })
     },
   })

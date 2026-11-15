@@ -1,8 +1,10 @@
 import { useMutation } from '@tanstack/react-query'
 import { toast, useDeviceSettings } from '@/design-system'
 import { syncExpoPush } from '../lib/expo-push'
+import { useT } from '@/lib/i18n'
 
 export function usePushRematches() {
+  const t = useT()
   return useMutation({
     mutationFn: async (enabled: boolean) => {
       const previous = useDeviceSettings.getState().notifyRematches
@@ -14,6 +16,6 @@ export function usePushRematches() {
         throw error
       }
     },
-    onError: () => toast.warning('Le réglage des revanches n’a pas pu être enregistré'),
+    onError: () => toast.warning(t('mobile.notifications.rematchPrefFailed')),
   })
 }

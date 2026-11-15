@@ -28,11 +28,12 @@ import { useMyChallenges } from '@/features/challenges/hooks/use-challenges'
 import { useMe } from '@/features/me'
 import { queryKeys } from '@/lib/query-keys'
 import type { NotificationView } from '@/lib/realtime/personal-notifications'
-import type { PageResponse } from '@joutio/client-domain/api-types'
-import { DAY_LABELS, dayOf, isExpired, type NotificationDay } from '../lib/notifications-service'
+import type { PageResponse } from '@joutio/client/api-types'
+import { dayGroupLabel, dayOf, isExpired, type NotificationDay } from '../lib/notifications-service'
 import { useDeleteAllNotifications, useMarkAllRead, useNotifications } from '../hooks/use-notifications'
 import { NotificationItem } from './notification-item'
 import { feedFooterProps, pagedQuery } from '@/shared/utils/paging'
+import { useT } from '@/lib/i18n'
 
 const GUTTER = tokens.space[5]
 const DAYS: NotificationDay[] = ['today', 'week', 'older']
@@ -46,6 +47,7 @@ const awaiting = (item: NotificationView) => item.type === 'CHALLENGE_RECEIVED' 
  * (confirmé) dans la barre ; balayer une ligne la supprime.
  */
 export function NotificationsScreen() {
+  const t = useT()
   // Fin de liste au-dessus de la tab bar native iOS (`useTabBarInset`).
   const tabInset = useTabBarInset()
   const client = useQueryClient()
@@ -77,14 +79,14 @@ export function NotificationsScreen() {
 
   const confirmClear = () =>
     showDialog({
-      title: 'Supprimer toutes les notifications ?',
-      message: 'Elles disparaîtront de ta boîte. Cette action est définitive.',
+      title: t('notifications.clearTitle'),
+      message: t('notifications.clearText'),
       icon: TrashIcon,
       tone: 'danger',
       sheet: true,
       actions: [
-        { label: 'Tout supprimer', variant: 'filled', tone: 'destructive', onPress: () => removeAll.mutate() },
-        { label: 'Annuler', variant: 'plain', tone: 'neutral' },
+        { label: t('notifications.clear'), variant: 'filled', tone: 'destructive', onPress: () => removeAll.mutate() },
+        { label: t('topic.cancel'), variant: 'plain', tone: 'neutral' },
       ],
     })
 
@@ -95,21 +97,21 @@ export function NotificationsScreen() {
       header={
         <MobileTopBar
           variant="inline"
-          back="Accueil"
+          back={t('nav.home')}
           onBack={() => router.back()}
-          title="Notifications"
+          title={t('home.notifications')}
           right={
-            <View style={{ flexDirection: 'row' }}>
+            <>
               <IconButton
                 icon={ChecksIcon}
-                label="Tout marquer comme lu"
+                label={t('notifications.readAll')}
                 variant="plain"
                 tone="accent"
                 disabled={!anyUnread}
                 onPress={() => readAll.mutate()}
               />
-              <IconButton icon={TrashIcon} label="Tout supprimer" variant="plain" tone="destructive" disabled={items.length === 0} onPress={confirmClear} />
-            </View>
+              <IconButton icon={TrashIcon} label={t('notifications.clear')} variant="plain" tone="destructive" disabled={items.length === 0} onPress={confirmClear} />
+            </>
           }
         />
       }
@@ -125,7 +127,7 @@ export function NotificationsScreen() {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={colors.muted} />}
         >
           {list.isPending ? (
-            <View accessibilityLabel="Chargement" style={{ gap: tokens.space[3], paddingHorizontal: GUTTER, paddingTop: tokens.space[2] }}>
+            <View accessibilityLabel={t('home.loading')} style={{ gap: tokens.space[3], paddingHorizontal: GUTTER, paddingTop: tokens.space[2] }}>
               {[0, 1, 2, 3, 4].map((index) => (
                 <Skeleton key={index} shape="row" style={{ height: 64 }} />
               ))}
@@ -134,24 +136,24 @@ export function NotificationsScreen() {
             <View style={{ flex: 1, justifyContent: 'center', paddingHorizontal: GUTTER }}>
               <EmptyState
                 icon={WarningCircleIcon}
-                title="Impossible de charger tes notifications"
-                description="Vérifie ta connexion, puis réessaie."
+                title={t('notifications.errorTitle')}
+                description={t('home.errorText')}
                 action={
                   <Button style={{ alignSelf: 'center' }} loading={list.isRefetching} onPress={() => void list.refetch()}>
-                    Réessayer
+                    {t('callback.retry')}
                   </Button>
                 }
               />
             </View>
           ) : items.length === 0 ? (
             <View style={{ flex: 1, justifyContent: 'center', paddingHorizontal: GUTTER }}>
-              <EmptyState icon={BellIcon} title="Aucune notification" description="Tes défis, abonnés et récompenses apparaîtront ici." />
+              <EmptyState icon={BellIcon} title={t('notifications.emptyTitle')} description={t('notifications.emptyText')} />
             </View>
           ) : (
             <View style={{ gap: tokens.space[6], paddingHorizontal: GUTTER, paddingTop: tokens.space[2] }}>
               {groups.map((group) => (
                 <View key={group.day} style={{ gap: tokens.space[4] }}>
-                  <SectionHeader title={DAY_LABELS[group.day]} />
+                  <SectionHeader title={dayGroupLabel(group.day)} />
                   <ListGroup surface="surface">
                     {group.items.map((item, index) => (
                       <NotificationItem
@@ -164,7 +166,7 @@ export function NotificationsScreen() {
                   </ListGroup>
                 </View>
               ))}
-              <FeedFooter {...feedFooterProps(pagedQuery(list))} endLabel="Tu as vu toutes tes notifications" />
+              <FeedFooter {...feedFooterProps(pagedQuery(list))} endLabel={t('notifications.end')} />
             </View>
           )}
         </LoadMoreScrollView>

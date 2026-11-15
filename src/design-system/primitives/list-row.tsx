@@ -8,6 +8,7 @@ import { CountBadge } from './icon-button'
 import { PressableScale } from './pressable-scale'
 import { Switch } from './switch'
 import { Text } from './text'
+import { useT } from '@/lib/i18n'
 
 export type ListRowControl = 'chevron' | 'toggle' | 'check' | 'radio' | 'value' | 'none'
 
@@ -57,6 +58,7 @@ export function ListRow({
   forcePressed,
   style,
 }: ListRowProps) {
+  const t = useT()
   const { colors } = useTheme()
   const stateRole = STATE_ROLES[control]
   const SelectIcon = control === 'radio' ? (on ? RadioButtonIcon : CircleIcon) : on ? CheckCircleIcon : CircleIcon
@@ -67,7 +69,7 @@ export function ListRow({
   return (
     <PressableScale
       accessibilityRole={interactive ? (stateRole ?? (control === 'chevron' ? 'link' : 'button')) : 'text'}
-      accessibilityLabel={[label, sub, value, badge ? `${badge} à traiter` : undefined].filter(Boolean).join(', ')}
+      accessibilityLabel={[label, sub, value, badge ? t('mobile.ds.toHandle', { count: badge }) : undefined].filter(Boolean).join(', ')}
       accessibilityState={stateRole ? { checked: on, disabled } : { disabled }}
       disabled={disabled || !interactive}
       pressedScale={1}

@@ -29,13 +29,14 @@ import {
 } from '@/design-system'
 import { dayLabel, formatNumber } from '@/features/topic/lib/format'
 import { useMe } from '@/features/me'
-import type { GameHistoryItemView, GameOutcome } from '@joutio/client-domain/api-types'
+import type { GameHistoryItemView, GameOutcome } from '@joutio/client/api-types'
 import { topicName } from '@/shared/utils/topic-name'
 import { useHistoryGames } from '../hooks/use-history'
 import { DEFAULT_HISTORY_FILTERS, type HistoryFilterState } from '../lib/history-service'
 import { HistoryFiltersSheet, HISTORY_SORTS } from './history-filters-sheet'
 import { feedFooterProps, pagedQuery } from '@/shared/utils/paging'
 import { useRefreshActive } from '@/shared/hooks/use-refresh-active'
+import { t, useT } from '@/lib/i18n'
 
 const GUTTER = tokens.space[5]
 const OUTCOMES: Partial<Record<GameOutcome, MatchOutcome>> = { WIN: 'win', LOSS: 'loss', DRAW: 'draw' }
@@ -50,7 +51,7 @@ export interface HistoryRouteParams {
   [key: string]: string | undefined
 }
 
-const countLabel = (count: number) => `${formatNumber(count)} ${count > 1 ? 'parties' : 'partie'}`
+const countLabel = (count: number) => t(count > 1 ? 'history.countMany' : 'history.countOne', { count: formatNumber(count) })
 
 function Loading() {
   return (
@@ -68,6 +69,7 @@ type DayGroup = { day: string; games: GameHistoryItemView[] }
 
 /** Historique complet (`historique.md`) : filtres type/résultat/tri, pagination de 20 parties, groupement par jour. */
 export function HistoryScreen() {
+  const t = useT()
   // Fin de liste au-dessus de la tab bar native iOS (`useTabBarInset`).
   const tabInset = useTabBarInset()
   const params = useLocalSearchParams<HistoryRouteParams>()
@@ -118,7 +120,7 @@ export function HistoryScreen() {
   // Fiche joueur : le sous-titre est l'adversaire ; sinon on retombe sur le sujet de la première partie (deep link restauré).
   // Depuis le Profil (ni sujet ni adversaire) : toutes les parties, sans sous-titre.
   const subtitle = params.opponentId ? params.opponentName : params.topicId ? (params.topicName ?? games[0]?.topic.names.fr) : undefined
-  const backLabel = params.backLabel ?? (params.opponentId ? 'Joueur' : 'Sujet')
+  const backLabel = params.backLabel ?? (params.opponentId ? t('history.backPlayer') : t('pending.topic'))
 
   return (
     <Screen
@@ -129,12 +131,12 @@ export function HistoryScreen() {
           variant="inline"
           back={backLabel}
           onBack={() => router.back()}
-          title="Toutes les parties"
+          title={t('pending.games')}
           subtitle={subtitle}
           right={
             <IconButton
               icon={SlidersHorizontalIcon}
-              label="Filtrer"
+              label={t('titles.filter')}
               variant="gray"
               tone="neutral"
               badge={active ? 'dot' : undefined}
@@ -162,11 +164,11 @@ export function HistoryScreen() {
         <View style={{ flex: 1, justifyContent: 'center', padding: GUTTER }}>
           <EmptyState
             icon={WarningCircleIcon}
-            title="Impossible de charger tes parties"
-            description="Vérifie ta connexion, puis réessaie."
+            title={t('topic.gamesError')}
+            description={t('home.errorText')}
             action={
               <Button style={{ alignSelf: 'center' }} loading={list.isRefetching} onPress={() => void list.refetch()}>
-                Réessayer
+                {t('callback.retry')}
               </Button>
             }
           />
@@ -175,12 +177,12 @@ export function HistoryScreen() {
         <View style={{ flex: 1, justifyContent: 'center', padding: GUTTER }}>
           <EmptyState
             icon={SwordIcon}
-            title="Aucune partie"
-            description={active ? 'Aucune partie ne correspond à ces filtres.' : 'Lance un duel : tes parties apparaîtront ici.'}
+            title={t('history.emptyTopic')}
+            description={active ? t('history.emptyFiltered') : t('topic.noGamesText')}
             action={
               active ? (
                 <Button style={{ alignSelf: 'center' }} onPress={reset}>
-                  Réinitialiser
+                  {t('topics.reset')}
                 </Button>
               ) : undefined
             }
@@ -219,12 +221,12 @@ export function HistoryScreen() {
                   {countLabel(count)}
                 </Text>
                 <Chip icon={ArrowsDownUpIcon} onPress={() => setSheetOpen(true)}>
-                  {HISTORY_SORTS.find((option) => option.value === filterState.sort)?.label ?? ''}
+                  {HISTORY_SORTS().find((option) => option.value === filterState.sort)?.label ?? ''}
                 </Chip>
               </View>
             }
             ListFooterComponent={
-              <FeedFooter style={{ marginHorizontal: GUTTER }} {...feedFooterProps(pagedQuery(list))} endLabel="Tu as vu toutes tes parties" />
+              <FeedFooter style={{ marginHorizontal: GUTTER }} {...feedFooterProps(pagedQuery(list))} endLabel={t('history.end')} />
             }
             renderItem={({ item: group }) => (
               <View style={{ gap: tokens.space[3], paddingHorizontal: GUTTER, paddingBottom: tokens.space[4] }}>
@@ -239,7 +241,7 @@ export function HistoryScreen() {
                       category={toCategoryCode(game.topic.category)}
                       pictogram={game.topic.pictogramUrl ?? undefined}
                       image={game.topic.imageUrl ?? undefined}
-                      sub={game.opponentType === 'BOT' ? 'Entraînement' : (game.opponent?.pseudonym ?? 'Adversaire')}
+                      sub={game.opponentType === 'BOT' ? t('room.training') : (game.opponent?.pseudonym ?? t('topic.opponent'))}
                       outcome={OUTCOMES[game.outcome] ?? 'draw'}
                       score={`${game.myScore} · ${game.opponentScore}`}
                       bot={game.opponentType === 'BOT'}

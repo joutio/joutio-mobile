@@ -7,6 +7,7 @@ import { useTheme } from '../theme/theme-provider'
 import { tokens } from '../tokens.generated'
 import { PressableScale } from './pressable-scale'
 import { inputStyle, MAX_FONT_SCALE, Text } from './text'
+import { useT } from '@/lib/i18n'
 
 export interface AnswerEditorRowProps {
   value: string
@@ -35,6 +36,7 @@ export function AnswerEditorRow({
   last = false,
   style,
 }: AnswerEditorRowProps) {
+  const t = useT()
   const { colors, radius } = useTheme()
   return (
     <View
@@ -56,8 +58,8 @@ export function AnswerEditorRow({
       <TextInput
         value={value}
         maxLength={maxLength}
-        accessibilityLabel={`Réponse ${index}`}
-        placeholder={placeholder ?? `Réponse ${index}`}
+        accessibilityLabel={t('mobile.ds.answerN', { index })}
+        placeholder={placeholder ?? t('mobile.ds.answerN', { index })}
         placeholderTextColor={colors.muted}
         selectionColor={colors.accent}
         cursorColor={colors.accent}
@@ -72,7 +74,7 @@ export function AnswerEditorRow({
       <PressableScale
         accessibilityRole="radio"
         accessibilityState={{ checked: correct }}
-        accessibilityLabel={`Réponse ${index} : bonne réponse`}
+        accessibilityLabel={t('mobile.ds.answerCorrect', { index })}
         onPress={onMarkCorrect}
         style={{ minHeight: 44, justifyContent: 'center', paddingHorizontal: tokens.space[2] }}
       >
@@ -91,7 +93,7 @@ export function AnswerEditorRow({
         >
           {correct && <CheckIcon size={14} weight="bold" color={colors.onCorrect} />}
           <Text variant="caption" weight="600" color={correct ? 'onCorrect' : 'muted'}>
-            Juste
+            {t('mobile.ds.correct')}
           </Text>
         </View>
       </PressableScale>

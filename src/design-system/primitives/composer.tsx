@@ -5,6 +5,7 @@ import { tokens } from '../tokens.generated'
 import { Chip } from './chip'
 import { IconButton } from './icon-button'
 import { inputStyle, MAX_FONT_SCALE } from './text'
+import { t, useT } from '@/lib/i18n'
 
 export interface ComposerProps {
   value: string
@@ -20,7 +21,8 @@ export interface ComposerProps {
 }
 
 /** Saisie d'un message : champ en pilule et envoi, réponses rapides au-dessus. */
-export function Composer({ value, onChange, onSend, placeholder = 'Message', suggestions = [], onSuggestion, autoFocus, style }: ComposerProps) {
+export function Composer({ value, onChange, onSend, placeholder = t('mobile.chat.message'), suggestions = [], onSuggestion, autoFocus, style }: ComposerProps) {
+  const t = useT()
   const { colors, radius } = useTheme()
   const empty = value.trim() === ''
   const send = () => {
@@ -65,7 +67,7 @@ export function Composer({ value, onChange, onSend, placeholder = 'Message', sug
             },
           ]}
         />
-        <IconButton icon={PaperPlaneTiltIcon} label="Envoyer" variant="filled" tone="accent" disabled={empty} onPress={send} />
+        <IconButton icon={PaperPlaneTiltIcon} label={t('mobile.ds.send')} variant="filled" tone="accent" disabled={empty} onPress={send} />
       </View>
     </View>
   )

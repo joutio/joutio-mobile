@@ -1,3 +1,4 @@
+import type { BadgeCollectionView, BadgeFamily, BadgeItemView } from '@joutio/client/api-types'
 import {
   CalendarCheckIcon,
   CompassIcon,
@@ -17,59 +18,51 @@ import {
   type LadderRung,
   type TierCode,
 } from '@/design-system'
-import { formatNumber } from '@/features/topic/lib/format'
-import type { BadgeCollectionView, BadgeFamily, BadgeItemView } from '@joutio/client-domain/api-types'
+import { formatNumber, type MessageKey } from '@/lib/i18n'
+
+/* Repris de `joutio-web` (`features/profile/lib/badges.ts`) : mêmes clés de texte (`badges.*`), mêmes règles. */
+type T = (key: MessageKey, values?: Record<string, string | number>) => string
 
 const TIERS = Object.keys(tokens.tier) as TierCode[]
 
-/** Nom, emblème et définition de chaque famille (libellés de `joutio-web`, définitions du lab). */
-export const FAMILIES: Record<BadgeFamily, { name: string; icon: Icon; description: string }> = {
-  VOLUME: { name: 'Volume', icon: SwordIcon, description: 'Duels terminés contre des joueurs.' },
-  VICTORY: { name: 'Victoires', icon: CrownIcon, description: 'Duels gagnés contre des joueurs.' },
-  MASTERY: { name: 'Maîtrise', icon: GraduationCapIcon, description: "Points d'expérience de ton meilleur sujet." },
-  EXPLOIT: { name: 'Exploits', icon: SparkleIcon, description: 'Hauts faits ponctuels, chacun à son palier, dans n’importe quel ordre.' },
-  SERIES: { name: 'Série', icon: FireIcon, description: 'Victoires de suite contre des joueurs.' },
-  ASSIDUITY: { name: 'Assiduité', icon: CalendarCheckIcon, description: 'Jours de suite avec au moins un duel terminé.' },
-  SOCIAL: { name: 'Social', icon: UsersIcon, description: 'Abonnés gagnés.' },
-  CHALLENGES: { name: 'Défis', icon: MegaphoneIcon, description: 'Défis lancés à d’autres joueurs.' },
-  VISION: { name: 'Vision', icon: EyeIcon, description: 'Bonnes réponses aux questions illustrées.' },
-  PRECISION: { name: 'Précision', icon: TargetIcon, description: 'Duels terminés sans mauvaise réponse.' },
-  SPEED: { name: 'Rapidité', icon: GaugeIcon, description: 'Bonnes réponses en moins de 3 s, cumulées sur tes duels entre joueurs.' },
-  EXPLORATION: { name: 'Exploration', icon: CompassIcon, description: 'Sujets différents joués.' },
-  COLLECTION: { name: 'Collection', icon: StackIcon, description: 'Badges acquis au total.' },
+/** Emblème de chaque famille ; nom et définition dans les textes (`badges.family.*`). */
+const ICONS: Record<BadgeFamily, Icon> = {
+  VOLUME: SwordIcon,
+  VICTORY: CrownIcon,
+  MASTERY: GraduationCapIcon,
+  EXPLOIT: SparkleIcon,
+  SERIES: FireIcon,
+  ASSIDUITY: CalendarCheckIcon,
+  SOCIAL: UsersIcon,
+  CHALLENGES: MegaphoneIcon,
+  VISION: EyeIcon,
+  PRECISION: TargetIcon,
+  SPEED: GaugeIcon,
+  EXPLORATION: CompassIcon,
+  COLLECTION: StackIcon,
 }
 
-/** Unité d'un compteur, au singulier puis au pluriel, en toutes lettres (« point d'expérience »). */
-const UNITS: Record<string, readonly [string, string]> = {
-  HUMAN_DUELS: ['duel', 'duels'],
-  HUMAN_WINS: ['victoire', 'victoires'],
-  WIN_STREAK: ["victoire d'affilée", "victoires d'affilée"],
-  PERFECT_DUELS: ['duel parfait', 'duels parfaits'],
-  FAST_ANSWERS: ['réponse rapide', 'réponses rapides'],
-  DAILY_STREAK: ["jour d'affilée", "jours d'affilée"],
-  FOLLOWERS_GAINED: ['abonné', 'abonnés'],
-  CHALLENGES_SENT: ['défi lancé', 'défis lancés'],
-  IMAGE_CORRECT: ['question illustrée', 'questions illustrées'],
-  TOPIC_MASTERY: ["point d'expérience", "points d'expérience"],
-  DISTINCT_TOPICS: ['sujet', 'sujets'],
-  EARNED_BADGES: ['badge', 'badges'],
-  ONE_SHOT: ['exploit', 'exploits'],
-}
+/** Unité d'un compteur (`badges.unit.*`), par métrique du BFF. */
+const UNITS = new Set([
+  'HUMAN_DUELS',
+  'HUMAN_WINS',
+  'WIN_STREAK',
+  'PERFECT_DUELS',
+  'FAST_ANSWERS',
+  'DAILY_STREAK',
+  'FOLLOWERS_GAINED',
+  'CHALLENGES_SENT',
+  'IMAGE_CORRECT',
+  'TOPIC_MASTERY',
+  'DISTINCT_TOPICS',
+  'EARNED_BADGES',
+  'ONE_SHOT',
+])
 
-/** Valeur d'échelle (espace réduit) : « XP » pour la maîtrise. */
-const LADDER_UNITS: Record<string, string> = { TOPIC_MASTERY: 'XP' }
+/** Exploits connus (`Badge` de `joutio-profile`), dont l'app a le nom et le critère traduits. */
+const FEATS = new Set(['FIRST_WIN', 'LIGHTNING', 'PERFECT', 'STREAK_MASTER'])
 
-/** Exploits : nom et critère de déblocage en toutes lettres (`BadgeRules` de `joutio-profile`). */
-const FEATS: Record<string, { title: string; rule: string }> = {
-  FIRST_WIN: { title: 'Première victoire', rule: 'Gagner un duel contre un joueur.' },
-  LIGHTNING: { title: 'Éclair', rule: '5 bonnes réponses en moins de 3 s dans un même duel.' },
-  PERFECT: { title: 'Perfectionniste', rule: 'Marquer le score maximal, 160 points, dans un duel.' },
-  STREAK_MASTER: { title: 'Série de feu', rule: 'Gagner 10 duels de suite.' },
-}
-
-const unitOf = (badge: BadgeItemView, count: number) => UNITS[badge.metric]?.[count > 1 ? 1 : 0] ?? ''
-
-export interface BadgeFamilySummary {
+export type BadgeFamilySummary = {
   family: BadgeFamily
   name: string
   icon: Icon
@@ -85,32 +78,48 @@ export interface BadgeFamilySummary {
   rungs: LadderRung[]
 }
 
-/** Une famille de la collection, mise en forme pour `BadgeFamilyRow` et `RankLadder`. */
-export function summarize(family: BadgeFamily, badges: readonly BadgeItemView[]): BadgeFamilySummary {
-  const info = FAMILIES[family] ?? { name: family, icon: SparkleIcon, description: '' }
+/** Une famille de la collection, mise en forme pour `BadgeFamilyRow` et `RankLadder` (comme le mobile). */
+function summarize(family: BadgeFamily, badges: readonly BadgeItemView[], t: T, language: string): BadgeFamilySummary {
+  const known = family in ICONS
   const sorted = [...badges].sort((a, b) => TIERS.indexOf(a.tier) - TIERS.indexOf(b.tier))
   const earned = sorted.filter((badge) => badge.earned).length
   const current = sorted.find((badge) => !badge.earned)
   const progress = current ? Math.round((Math.min(current.progress, current.target) / Math.max(1, current.target)) * 100) : 100
-  const feat = family === 'EXPLOIT'
+  const count = (value: number) => formatNumber(value, language)
+  // Unité en toutes lettres et accordée (« Encore 1 victoire », « Encore 1 166 points d'expérience »).
   const left = current ? Math.max(0, current.target - current.progress) : 0
-  const remaining = current && !feat ? `Encore ${formatNumber(left)} ${unitOf(current, left)}`.trim() : undefined
-  // Exploits : un haut fait nommé par ligne, avec son critère de déblocage (jamais « 1 exploit »).
+  const remaining = current
+    ? UNITS.has(current.metric)
+      ? t(left > 1 ? 'badges.remainingMany' : 'badges.remainingOne', { count: count(left), unit: t(`badges.${left > 1 ? 'unitLong' : 'unitOne'}.${current.metric}` as MessageKey) })
+      : t('badges.remainingPlain', { count: count(left) })
+    : undefined
+  const unit = (badge: BadgeItemView) => (UNITS.has(badge.metric) ? t(`badges.unit.${badge.metric}` as MessageKey) : '')
+  // Exploits : un haut fait nommé par ligne, avec son critère de déblocage en toutes lettres (jamais « 1 exploit »).
+  const feat = family === 'EXPLOIT'
   const rungs = sorted.map<LadderRung>((badge) => ({
     tier: badge.tier,
-    title: feat ? (FEATS[badge.code]?.title ?? badge.label) : undefined,
-    rule: feat ? (FEATS[badge.code]?.rule ?? '') : `${formatNumber(badge.target)} ${LADDER_UNITS[badge.metric] ?? unitOf(badge, badge.target)}`.trim(),
-    status: badge.earned ? 'Acquis' : !feat && badge === current ? `${formatNumber(badge.progress)} / ${formatNumber(badge.target)}` : '—',
+    title: feat ? (FEATS.has(badge.code) ? t(`badges.feat.${badge.code}` as MessageKey) : badge.label) : undefined,
+    rule: feat ? (FEATS.has(badge.code) ? t(`badges.featRule.${badge.code}` as MessageKey) : '') : `${count(badge.target)} ${unit(badge)}`.trim(),
+    status: badge.earned ? t('badges.earned') : !feat && badge === current ? `${count(badge.progress)} / ${count(badge.target)}` : '—',
     earned: badge.earned,
   }))
-  const feats = feat ? sorted.map((badge) => ({ tier: badge.tier, earned: badge.earned })) : undefined
-  return { family, ...info, earned, progress, remaining, feats, rungs }
+  return {
+    family,
+    name: known ? t(`badges.family.${family}` as MessageKey) : family,
+    icon: ICONS[family] ?? SparkleIcon,
+    description: known ? t(`badges.family.${family}.text` as MessageKey) : '',
+    earned,
+    progress,
+    remaining: family === 'EXPLOIT' ? undefined : remaining,
+    feats: family === 'EXPLOIT' ? sorted.map((badge) => ({ tier: badge.tier, earned: badge.earned })) : undefined,
+    rungs,
+  }
 }
 
-/** Familles à échelle (7 paliers), dans l'ordre du serveur ; les exploits ponctuels n'ont pas d'échelle. */
-export function familiesOf(collection: BadgeCollectionView): BadgeFamilySummary[] {
-  return collection.families.filter((group) => group.badges.length > 0).map((group) => summarize(group.family, group.badges))
+/** Familles à échelle, dans l'ordre du serveur. */
+export function familiesOf(collection: BadgeCollectionView, t: T, language: string): BadgeFamilySummary[] {
+  return collection.families.filter((group) => group.badges.length > 0).map((group) => summarize(group.family, group.badges, t, language))
 }
 
-export const badgesSummary = (collection: BadgeCollectionView) =>
-  `${collection.earnedCount} acquis sur ${collection.totalCount} · ${collection.families.length} familles`
+export const badgesSummary = (collection: BadgeCollectionView, t: T) =>
+  t('badges.summary', { earned: collection.earnedCount, total: collection.totalCount, families: collection.families.length })

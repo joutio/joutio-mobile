@@ -1,21 +1,23 @@
 import { Linking } from 'react-native'
 import { Text } from '@/design-system'
 import { config } from '@/lib/config'
+import { useT } from '@/lib/i18n'
 
 /** Mention légale sous la connexion : liens vers le site public. */
 export function LegalNotice() {
+  const t = useT()
   const open = (path: string) => () => {
     Linking.openURL(`${config.siteUrl}${path}`).catch(() => undefined)
   }
   return (
     <Text variant="caption" color="muted" align="center">
-      En continuant, tu acceptes les{' '}
+      {t('onboarding.login.legalBefore')}{' '}
       <Text variant="caption" color="muted" accessibilityRole="link" onPress={open('/terms')} style={{ textDecorationLine: 'underline' }}>
-        conditions d'utilisation
+        {t('onboarding.login.terms')}
       </Text>{' '}
-      et la{' '}
+      {t('onboarding.login.legalBetween')}{' '}
       <Text variant="caption" color="muted" accessibilityRole="link" onPress={open('/privacy')} style={{ textDecorationLine: 'underline' }}>
-        politique de confidentialité
+        {t('onboarding.login.privacy')}
       </Text>
       .
     </Text>

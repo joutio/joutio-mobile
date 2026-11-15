@@ -1,7 +1,7 @@
 import { tokens, type StreakCalendarProps, type StreakDay, type TierCode } from '@/design-system'
-import type { ActivityView, BadgeCollectionView } from '@joutio/client-domain/api-types'
+import type { ActivityView, BadgeCollectionView } from '@joutio/client/api-types'
+import { currentLanguage, formatDate, t, tierKey } from '@/lib/i18n'
 
-const MONTH = new Intl.DateTimeFormat('fr-FR', { month: 'long', year: 'numeric' })
 
 /** `YYYY-MM-DD` d'une date locale (fuseau de l'appareil, celui de l'activité du profil). */
 export const isoDay = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
@@ -35,9 +35,9 @@ export const playedToday = (activity: ActivityView | undefined, now = new Date()
 /** Phrase sous le compteur : ce qu'il faut faire aujourd'hui, ou le record une fois la journée comptée. */
 export function streakHint(activity: ActivityView | undefined, now = new Date()) {
   const count = activity?.currentStreak ?? 0
-  if (count === 0) return "Joue un duel aujourd'hui pour lancer ta série"
-  if (!playedToday(activity, now)) return `Joue un duel aujourd'hui pour passer à ${count + 1}`
-  return `Record ${activity?.longestStreak ?? count}`
+  if (count === 0) return t('streak.start')
+  if (!playedToday(activity, now)) return t('streak.keep', { next: count + 1 })
+  return t('streak.record', { count: activity?.longestStreak ?? count })
 }
 
 /** Calendrier du mois courant. */
@@ -46,10 +46,10 @@ export function calendarOf(activity: ActivityView | undefined, now = new Date())
   const days = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
   const prefix = isoDay(first).slice(0, 8)
   const active = [...playedDays(activity)].filter((date) => date.startsWith(prefix)).map((date) => Number(date.slice(8)))
-  const label = MONTH.format(first)
+  const label = formatDate(first, currentLanguage(), { month: 'long', year: 'numeric' })
   return {
     month: label.charAt(0).toUpperCase() + label.slice(1),
-    legend: active.length > 1 ? `${active.length} jours actifs` : `${active.length} jour actif`,
+    legend: t(active.length > 1 ? 'streak.activeMany' : 'streak.activeOne', { count: active.length }),
     offset: weekday(first),
     days,
     today: now.getDate(),
@@ -64,7 +64,7 @@ export function nextAssiduity(badges: BadgeCollectionView | undefined): { tier: 
   if (!next) return undefined
   return {
     tier: next.tier,
-    label: `Assiduité · ${tokens.tier[next.tier].label} · ${next.progress} / ${next.target} jours`,
+    label: t('streak.nextAssiduity', { tier: t(tierKey(next.tier)), done: next.progress, target: next.target }),
     progress: Math.round((Math.min(next.progress, next.target) / Math.max(1, next.target)) * 100),
   }
 }

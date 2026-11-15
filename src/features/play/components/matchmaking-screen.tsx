@@ -1,4 +1,4 @@
-import { countryName } from '@joutio/client-domain/geo'
+import { countryName } from '@joutio/client/geo'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useLocalSearchParams } from 'expo-router'
 import { router } from '@/shared/navigation/router'
@@ -31,6 +31,7 @@ import { tierOf } from '@/shared/utils/tier'
 import { useAutoTrain, useBotDifficulty, useTicket, useTicketPresence, type PlayTopic } from '../hooks/use-play'
 import { playService } from '../lib/play-service'
 import { userAvatar } from '@/shared/utils/avatar'
+import { currentLanguage, t, tierKey, useT } from '@/lib/i18n'
 
 /** Joueurs décoratifs qui apparaissent sur la carte pendant la recherche (le BFF n'expose pas la file d'attente). */
 const PINS: MapPlayer[] = [
@@ -62,13 +63,14 @@ function useSecondsLeft(deadlineAt: string | null) {
 
 /** Pastille « Partie classée », seule en haut : toutes les actions sont en bas, à portée de pouce. */
 function Chrome() {
+  const t = useT()
   const { colors, radius } = useTheme()
   const insets = useSafeAreaInsets()
   return (
     <View pointerEvents="none" style={{ position: 'absolute', left: 0, right: 0, top: insets.top + tokens.space[4], alignItems: 'center' }}>
       <View style={{ paddingHorizontal: tokens.space[4], paddingVertical: tokens.space[2], borderRadius: radius.full, backgroundColor: colors.glass }}>
         <Text variant="caption" weight="600" color="muted">
-          Partie classée
+          {t('mm.ranked')}
         </Text>
       </View>
     </View>
@@ -88,6 +90,7 @@ export function MatchmakingScreen() {
 }
 
 function MatchmakingScreenContent() {
+  const t = useT()
   const identity = usePlayerIdentity()
   useToastSuppression()
   const params = useLocalSearchParams<MatchmakingRouteParams>()
@@ -110,10 +113,10 @@ function MatchmakingScreenContent() {
   const opponentRating = opponent?.rating ?? null
   const opponentTier = opponentRating !== null && opponent?.provisional !== true ? tierOf(opponentRating) : undefined
   const opponentMeta = [
-    opponentTier ? tokens.tier[opponentTier].label : undefined,
+    opponentTier ? t(tierKey(opponentTier)) : undefined,
     opponentRating !== null ? formatNumber(opponentRating) : undefined,
-    opponent?.country ? countryName(opponent.country) : undefined,
-    'Le duel commence',
+    opponent?.country ? countryName(opponent.country, currentLanguage()) : undefined,
+    t('mm.starting'),
   ]
     .filter(Boolean)
     .join(' · ')
@@ -136,14 +139,14 @@ function MatchmakingScreenContent() {
   const training = useMutation({
     mutationFn: () => playService.createBotRoom(topic.topicId, difficulty),
     onSuccess: ({ id }) => toRoom(id),
-    onError: () => toast.error("L'entraînement n'a pas pu démarrer", { description: 'Vérifie ta connexion, puis réessaie.' }),
+    onError: () => toast.error(t('play.trainingError'), { description: t('home.errorText') }),
   })
   const retry = useMutation({
     mutationFn: () => playService.enqueue(topic.topicId),
     onSuccess: (next) => {
       router.replace({ pathname: '/matchmaking/[ticketId]', params: { ...params, ticketId: next.ticketId } })
     },
-    onError: () => toast.error("La recherche n'a pas pu redémarrer"),
+    onError: () => toast.error(t('mobile.play.searchRestartFailed')),
   })
 
   // Adversaire trouvé : 1,2 s sur sa carte, puis la salle prépare le duel.
@@ -159,7 +162,7 @@ function MatchmakingScreenContent() {
   useEffect(() => {
     if (status === 'EXPIRED' && autoTrain.enabled && !training.isPending && !training.isSuccess) training.mutate()
     if (status === 'FAILED') {
-      toast.error('La recherche a échoué', { description: 'Réessaie dans un instant.' })
+      toast.error(t('mm.failed'), { description: t('mm.failedText') })
       router.back()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -183,7 +186,7 @@ function MatchmakingScreenContent() {
         height={height}
         state={found ? 'found' : 'search'}
         pins={status === 'SEARCHING' ? PINS : []}
-        opponent={found ? { name: opponent?.pseudonym ?? 'Adversaire', src: userAvatar(opponent), ...FOUND_AT, label: opponent?.pseudonym } : undefined}
+        opponent={found ? { name: opponent?.pseudonym ?? t('topic.opponent'), src: userAvatar(opponent), ...FOUND_AT, label: opponent?.pseudonym } : undefined}
       />
       {!found && <Chrome />}
 
@@ -195,7 +198,7 @@ function MatchmakingScreenContent() {
           <View
             accessible
             accessibilityRole="timer"
-            accessibilityLabel={`Recherche d'un adversaire${seconds === null ? '' : `, ${seconds} secondes`}`}
+            accessibilityLabel={seconds === null ? t('mm.searchingShort') : t('mm.searchingA11y', { seconds })}
             style={{
               height: 40,
               flexDirection: 'row',
@@ -207,7 +210,7 @@ function MatchmakingScreenContent() {
             }}
           >
             <Text variant="callout" weight="600" color="onAccent">
-              Recherche d'un adversaire…
+              {t('mm.searching')}
             </Text>
             {seconds !== null && (
               <Text variant="callout" weight="600" mono color="onAccent">
@@ -216,7 +219,7 @@ function MatchmakingScreenContent() {
             )}
           </View>
           <Button full size="L" variant="tinted" tone="destructive" onPress={cancelSearch}>
-            Annuler la recherche
+            {t('mm.cancel')}
           </Button>
         </View>
       )}
@@ -240,7 +243,7 @@ function MatchmakingScreenContent() {
           <Avatar name={opponent?.pseudonym ?? '?'} src={userAvatar(opponent)} size="lg" decorative />
           <View style={{ flex: 1, minWidth: 0 }}>
             <Text variant="caption" weight="600" color="correct">
-              Adversaire trouvé
+              {t('mm.found')}
             </Text>
             <PlayerName name={opponent?.pseudonym ?? '…'} premium={identity.premium(opponent)} />
             <Text variant="caption" color="muted" numberOfLines={1}>
@@ -255,11 +258,11 @@ function MatchmakingScreenContent() {
         <View style={[bottom, { gap: tokens.space[4] }]}>
           <Notice
             tone="training"
-            title="Aucun adversaire, lancement d'un entraînement…"
-            message="Partie sans points d'expérience ni série. Tu pourras retenter un duel humain ensuite."
+            title={t('mm.autoTitle')}
+            message={t('mm.autoText')}
           />
           <Button full size="L" variant="tinted" tone="destructive" onPress={() => router.back()}>
-            {"Annuler l'entraînement"}
+            {t('mm.cancelTraining')}
           </Button>
         </View>
       )}
@@ -280,23 +283,23 @@ function MatchmakingScreenContent() {
         >
           <EmptyState
             icon={RobotIcon}
-            title="Aucun adversaire trouvé"
-            description={`${topic.name} · 10 s de recherche. Relance une recherche, ou entraîne-toi contre un robot (sans expérience gagnée) le temps qu'un adversaire se présente.`}
+            title={t('mm.noneTitle')}
+            description={t('mm.noneText', { topic: topic.name })}
             action={
               <View style={{ alignSelf: 'stretch', gap: tokens.space[3] }}>
                 <Button full size="L" icon={RobotIcon} loading={training.isPending} onPress={() => training.mutate()}>
-                  S'entraîner contre un robot
+                  {t('mm.train')}
                 </Button>
                 <View style={{ flexDirection: 'row', gap: tokens.space[3] }}>
                   <Button full variant="tinted" style={{ flex: 1 }} loading={retry.isPending} onPress={() => retry.mutate()}>
-                    Relancer
+                    {t('mm.retry')}
                   </Button>
                   <Button full variant="gray" tone="neutral" style={{ flex: 1 }} onPress={() => setPickerOpen(true)}>
-                    Défier un ami
+                    {t('mm.friend')}
                   </Button>
                 </View>
                 <Button full variant="plain" tone="neutral" onPress={() => router.back()}>
-                  Fermer
+                  {t('play.close')}
                 </Button>
               </View>
             }

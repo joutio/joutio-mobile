@@ -7,6 +7,7 @@ import { PlayerName } from './player-name'
 import { Avatar } from './avatar'
 import { PressableScale } from './pressable-scale'
 import { Text } from './text'
+import { t, useT } from '@/lib/i18n'
 
 /** Couleur et hauteur de chaque marche, de la 1re à la 3e place. */
 const STEPS: { tier: TierCode; height: number }[] = [
@@ -38,7 +39,7 @@ function Step({ player, rank }: { player: PodiumPlayer; rank: number }) {
   return (
     <PressableScale
       accessibilityRole={player.onPress ? 'button' : 'text'}
-      accessibilityLabel={`${rank}${rank === 1 ? 're' : 'e'} place, ${player.name}, ${player.value}`}
+      accessibilityLabel={rank === 1 ? t('ds.placeFirst', { name: player.name, value: player.value }) : t('ds.placeN', { rank, name: player.name, value: player.value })}
       disabled={!player.onPress}
       onPress={player.onPress}
       style={{ flex: 1, minWidth: 0, alignItems: 'center', gap: tokens.space[2] }}
@@ -79,9 +80,10 @@ function Step({ player, rank }: { player: PodiumPlayer; rank: number }) {
 
 /** Les trois premiers d'un classement : le 1er au centre, le 2e à gauche, le 3e à droite. */
 export function Podium({ players, style }: PodiumProps) {
+  const t = useT()
   const [first, second, third] = players
   return (
-    <View accessibilityLabel="Podium" style={[{ flexDirection: 'row', alignItems: 'flex-end', gap: tokens.space[3] }, style]}>
+    <View accessibilityLabel={t('mobile.ds.podium')} style={[{ flexDirection: 'row', alignItems: 'flex-end', gap: tokens.space[3] }, style]}>
       {second ? <Step player={second} rank={2} /> : <View style={{ flex: 1 }} />}
       {first && <Step player={first} rank={1} />}
       {third ? <Step player={third} rank={3} /> : <View style={{ flex: 1 }} />}

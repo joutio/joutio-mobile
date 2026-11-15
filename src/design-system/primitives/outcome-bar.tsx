@@ -2,6 +2,7 @@ import { View, type StyleProp, type ViewStyle } from 'react-native'
 import { useTheme } from '../theme/theme-provider'
 import { tokens } from '../tokens.generated'
 import { Text } from './text'
+import { useT } from '@/lib/i18n'
 
 export interface OutcomeBarProps {
   wins: number
@@ -38,13 +39,14 @@ function labelPositions(shares: readonly number[]) {
  * pourcentages. Les issues à 0 % ne sont pas affichées, et la couleur ne porte jamais seule l'information.
  */
 export function OutcomeBar({ wins, draws, losses, style }: OutcomeBarProps) {
+  const t = useT()
   const { colors, radius } = useTheme()
   const total = wins + draws + losses
   const percent = (value: number) => (total > 0 ? Math.round((value * 100) / total) : 0)
   const parts = [
-    { key: 'wins', label: 'Victoires', value: wins, color: colors.correct },
-    { key: 'draws', label: 'Nuls', value: draws, color: colors.accent },
-    { key: 'losses', label: 'Défaites', value: losses, color: colors.wrong },
+    { key: 'wins', label: t('profile.wins'), value: wins, color: colors.correct },
+    { key: 'draws', label: t('profile.draws'), value: draws, color: colors.accent },
+    { key: 'losses', label: t('profile.losses'), value: losses, color: colors.wrong },
   ].filter((part) => percent(part.value) > 0)
   if (total === 0 || parts.length === 0) return null
 

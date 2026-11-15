@@ -19,6 +19,7 @@ import { topicName } from '@/shared/utils/topic-name'
 import { useTopics } from '../hooks/use-topics'
 import { DEFAULT_TOPIC_SORT } from '../lib/topics-service'
 import { feedFooterProps, loadMoreOptions, pagedQuery } from '@/shared/utils/paging'
+import { useT } from '@/lib/i18n'
 
 export interface PickedTopic {
   topicId: string
@@ -34,7 +35,7 @@ export function TopicPickerSheet({
   open,
   onClose,
   title,
-  subtitle = 'Choisis un sujet',
+  subtitle,
   busy = false,
   onPick,
 }: {
@@ -46,6 +47,7 @@ export function TopicPickerSheet({
   busy?: boolean
   onPick: (topic: PickedTopic) => void
 }) {
+  const t = useT()
   const [query, setQuery] = useState('')
   const search = useDebounced(query.trim())
   const topics = useTopics({ query: search, categories: [], sort: DEFAULT_TOPIC_SORT, hideFollowed: false }, open)
@@ -62,13 +64,13 @@ export function TopicPickerSheet({
       open={open}
       onClose={onClose}
       title={title}
-      subtitle={subtitle}
+      subtitle={subtitle ?? t('player.pickTopic')}
       tall
       loadMore={loadMoreOptions(paged)}
-      stickyHeader={<SearchField value={query} onChange={setQuery} placeholder="Chercher un sujet" label="Chercher un sujet" />}
+      stickyHeader={<SearchField value={query} onChange={setQuery} placeholder={t('topics.search')} label={t('topics.search')} />}
     >
       {topics.isPending ? (
-        <View accessibilityLabel="Chargement" style={{ gap: tokens.space[3] }}>
+        <View accessibilityLabel={t('home.loading')} style={{ gap: tokens.space[3] }}>
           {Array.from({ length: 6 }, (_, index) => (
             <Skeleton key={index} shape="row" style={{ height: 64 }} />
           ))}
@@ -76,16 +78,16 @@ export function TopicPickerSheet({
       ) : topics.isError ? (
         <EmptyState
           icon={WarningCircleIcon}
-          title="Impossible de charger les sujets"
-          description="Vérifie ta connexion, puis réessaie."
+          title={t('topics.errorTitle')}
+          description={t('home.errorText')}
           action={
             <Button style={{ alignSelf: 'center' }} loading={topics.isRefetching} onPress={() => void topics.refetch()}>
-              Réessayer
+              {t('callback.retry')}
             </Button>
           }
         />
       ) : list.length === 0 ? (
-        <EmptyState icon={MagnifyingGlassIcon} title="Aucun sujet trouvé" description="Essaie un autre mot." />
+        <EmptyState icon={MagnifyingGlassIcon} title={t('topics.emptyTitle')} description={t('player.noTopicText')} />
       ) : (
         <View style={{ gap: tokens.space[4] }}>
           <ListGroup>
@@ -95,6 +97,7 @@ export function TopicPickerSheet({
                 <TopicRow
                   key={topic.topicId}
                   title={name}
+                  official={topic.official ?? false}
                   category={toCategoryCode(topic.category)}
                   pictogram={topic.pictogramUrl ?? undefined}
                   image={topic.imageUrl ?? undefined}
@@ -104,7 +107,7 @@ export function TopicPickerSheet({
               )
             })}
           </ListGroup>
-          <FeedFooter {...feedFooterProps(paged)} endLabel="Tu as vu tous les sujets" />
+          <FeedFooter {...feedFooterProps(paged)} endLabel={t('topics.end')} />
         </View>
       )}
     </MobileSheet>

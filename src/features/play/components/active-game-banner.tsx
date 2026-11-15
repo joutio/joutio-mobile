@@ -4,6 +4,7 @@ import { router } from '@/shared/navigation/router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Banner } from '@/design-system'
 import { usePlaySession } from '../hooks/play-session'
+import { useT } from '@/lib/i18n'
 
 export function useBannerGame() {
   const { games } = usePlaySession()
@@ -16,6 +17,7 @@ export function useBannerGame() {
  * bande à la fois, la connexion l'emporte (choix de `TopBannerHost`). Garde la dernière partie pendant sa sortie.
  */
 export function ActiveGameBanner() {
+  const t = useT()
   const current = useBannerGame()
   const last = useRef(current)
   if (current) last.current = current
@@ -26,10 +28,10 @@ export function ActiveGameBanner() {
       <Banner
         safeTop={insets.top}
         tone="live"
-        title="Partie en cours"
+        title={t('ongoing.title')}
         message={game.topicName}
         action={{
-          label: 'Rejoindre',
+          label: t('ongoing.join'),
           onPress: () =>
             router.push({
               pathname: '/duel/[gameId]',
