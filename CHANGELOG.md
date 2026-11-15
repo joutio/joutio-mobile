@@ -1,3 +1,9 @@
+## [1.47.0](https://github.com/joutio/joutio-mobile/compare/v1.46.1...v1.47.0) (2026-11-15)
+
+### Features
+
+* **profile:** latest titles grouped by unlock date, titles sort ([c3f9246](https://github.com/joutio/joutio-mobile/commit/c3f9246b98bb6fdb3ba500ae2f086510daccdfda))
+
 ## [1.46.1](https://github.com/joutio/joutio-mobile/compare/v1.46.0...v1.46.1) (2026-11-15)
 
 ### Bug Fixes
