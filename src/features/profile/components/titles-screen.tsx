@@ -45,13 +45,24 @@ interface Group {
   titles: TitleView[]
 }
 
+type Sort = 'RECENT' | 'OLDEST' | 'ALPHA'
+const SORTS: readonly { value: Sort; label: 'titles.sortRecent' | 'titles.sortOldest' | 'titles.sortAlpha' }[] = [
+  { value: 'RECENT', label: 'titles.sortRecent' },
+  { value: 'OLDEST', label: 'titles.sortOldest' },
+  { value: 'ALPHA', label: 'titles.sortAlpha' },
+]
+
 const countLabel = (count: number) => t(count > 1 ? 'titles.countMany' : 'titles.countOne', { count })
 
-/** Groupes par sujet (ordre du serveur), titres du palier le plus haut au plus bas. Le BFF ne date pas les déblocages. */
-function groupsOf(titles: readonly TitleView[], tier: MasteryTier | undefined, query: string): Group[] {
+/**
+ * Groupes par sujet, titres du palier le plus haut au plus bas. Les sujets suivent leur dernier déblocage
+ * (`unlockedAt`) : décroissant (« Plus récents »), croissant (« Plus anciens ») ou par nom (« Alphabétique »).
+ */
+function groupsOf(titles: readonly TitleView[], tier: MasteryTier | undefined, query: string, sort: Sort): Group[] {
   const search = query.trim().toLowerCase()
   const groups = new Map<string, Group>()
-  for (const title of titles) {
+  const recentFirst = [...titles].sort((a, b) => b.unlockedAt.localeCompare(a.unlockedAt))
+  for (const title of recentFirst) {
     if (tier && title.tier !== tier) continue
     const topic = topicName(title.topic.names)
     if (search && !`${titleLabel(title)} ${topic}`.toLowerCase().includes(search)) continue
@@ -60,10 +71,12 @@ function groupsOf(titles: readonly TitleView[], tier: MasteryTier | undefined, q
     groups.set(title.topicId, group)
   }
   const list = [...groups.values()].map((group) => ({ ...group, titles: group.titles.sort((a, b) => TIERS.indexOf(a.tier) - TIERS.indexOf(b.tier)) }))
+  if (sort === 'OLDEST') list.reverse()
+  if (sort === 'ALPHA') list.sort((a, b) => a.topic.localeCompare(b.topic))
   return list
 }
 
-/** Tous les titres (`titres.md`) : recherche et filtre par rang ; liste groupée par sujet, 5 sujets par page. */
+/** Tous les titres (`titres.md`) : recherche, filtre par rang et tri ; liste groupée par sujet, 5 sujets par page. */
 export function TitlesScreen() {
   const t = useT()
   // Fin de liste au-dessus de la tab bar native iOS (`useTabBarInset`).
@@ -72,15 +85,16 @@ export function TitlesScreen() {
   const wear = useWearTitle()
   const [query, setQuery] = useState('')
   const [tier, setTier] = useState<MasteryTier>()
+  const [sort, setSort] = useState<Sort>('RECENT')
   const [pages, setPages] = useState(1)
   const [filtersOpen, setFiltersOpen] = useState(false)
   const all = titles.data?.titles ?? []
-  const groups = useMemo(() => groupsOf(all, tier, query), [all, tier, query])
+  const groups = useMemo(() => groupsOf(all, tier, query, sort), [all, tier, query, sort])
   const count = groups.reduce((sum, group) => sum + group.titles.length, 0)
   const shown = groups.slice(0, pages * PAGE_SIZE)
   const source = clientSource(pages, setPages, shown.length < groups.length)
   const { refreshing, refresh } = useGuardedRefresh(() => titles.refetch())
-  const filtered = tier !== undefined
+  const filtered = tier !== undefined || sort !== 'RECENT'
   const hasTitles = all.length > 0
   const change = (next: () => void) => {
     next()
@@ -89,6 +103,7 @@ export function TitlesScreen() {
   const reset = () =>
     change(() => {
       setTier(undefined)
+      setSort('RECENT')
     })
 
   const header = (
@@ -197,6 +212,23 @@ export function TitlesScreen() {
           }
         >
           <View style={{ gap: tokens.space[6] }}>
+            <View style={{ gap: tokens.space[4] }}>
+              <SectionHeader title={t('titles.sort')} />
+              <RadioGroup label={t('titles.sort')}>
+                <ListGroup>
+                  {SORTS.map((option, index) => (
+                    <ListRow
+                      key={option.value}
+                      label={t(option.label)}
+                      control="radio"
+                      on={sort === option.value}
+                      onToggle={() => change(() => setSort(option.value))}
+                      last={index === SORTS.length - 1}
+                    />
+                  ))}
+                </ListGroup>
+              </RadioGroup>
+            </View>
             <View style={{ gap: tokens.space[4] }}>
               <SectionHeader title={t('titles.rank')} />
               <RadioGroup label={t('titles.rank')}>

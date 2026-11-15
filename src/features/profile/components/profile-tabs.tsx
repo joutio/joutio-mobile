@@ -31,7 +31,7 @@ import {
 import { useMe } from '@/features/me'
 import { useWearTitle } from '@/features/topic/hooks/use-topic'
 import { dayLabel, formatNumber } from '@/features/topic/lib/format'
-import type { GameHistoryItemView, GameOutcome, MasteryTier, TitleView, TopicStatView } from '@joutio/client/api-types'
+import type { GameHistoryItemView, GameOutcome, TitleView, TopicStatView } from '@joutio/client/api-types'
 import { topicName } from '@/shared/utils/topic-name'
 import type { BadgeFamilySummary } from '../lib/badges'
 import { rankProgress, titleLabel } from '../lib/format'
@@ -226,8 +226,6 @@ export function BadgesTab({ families, summary, loading, error, retrying, onRetry
 
 // ─── Titres ───
 
-const TIER_ORDER: MasteryTier[] = ['DIAMANT', 'EMERAUDE', 'PLATINE', 'OR', 'ARGENT', 'BRONZE', 'FER']
-
 export interface TitlesTabProps {
   titles: readonly TitleView[] | undefined
   equippedKey: string | null | undefined
@@ -238,10 +236,7 @@ export interface TitlesTabProps {
   onAll: () => void
 }
 
-/**
- * Les 5 titres les plus hauts. Le BFF ne date pas les déblocages (`TitlesView` sans `unlockedAt`) : le groupage par
- * date de la spec attend ce champ (`profil.md` § 5).
- */
+/** Les 5 derniers titres débloqués, groupés par date de déblocage (`profil.md` § 2). */
 export function TitlesTab({ titles, equippedKey, loading, error, retrying, onRetry, onAll }: TitlesTabProps) {
   const t = useT()
   const wear = useWearTitle()
@@ -253,7 +248,14 @@ export function TitlesTab({ titles, equippedKey, loading, error, retrying, onRet
         <EmptyState icon={CrownSimpleIcon} title={t('profile.noTitlesTitle')} description={t('profile.noTitlesText')} />
       </TabScrollView>
     )
-  const shown = [...titles].sort((a, b) => TIER_ORDER.indexOf(a.tier) - TIER_ORDER.indexOf(b.tier)).slice(0, 5)
+  const recent = [...titles].sort((a, b) => b.unlockedAt.localeCompare(a.unlockedAt)).slice(0, 5)
+  const groups: { day: string; titles: TitleView[] }[] = []
+  for (const title of recent) {
+    const day = dayLabel(new Date(title.unlockedAt))
+    const last = groups[groups.length - 1]
+    if (last?.day === day) last.titles.push(title)
+    else groups.push({ day, titles: [title] })
+  }
   return (
     <TabScrollView contentContainerStyle={{ ...PAGE, gap: tokens.space[4] }}>
       <SectionHeader
@@ -264,21 +266,28 @@ export function TitlesTab({ titles, equippedKey, loading, error, retrying, onRet
           </Button>
         }
       />
-      <ListGroup surface="surface">
-        {shown.map((title, index) => (
-          <TitleRow
-            key={title.key}
-            tier={title.tier}
-            title={titleLabel(title)}
-            topic={topicName(title.topic.names)}
-            worn={equippedKey === title.key}
-            wearing={wear.isPending && wear.variables === title.key}
-            disabled={wear.isPending}
-            onWear={() => wear.mutate(equippedKey === title.key ? null : title.key)}
-            last={index === shown.length - 1}
-          />
-        ))}
-      </ListGroup>
+      {groups.map((group) => (
+        <View key={group.day} style={{ gap: tokens.space[3] }}>
+          <Text variant="caption" weight="600" color="muted">
+            {group.day}
+          </Text>
+          <ListGroup surface="surface">
+            {group.titles.map((title, index) => (
+              <TitleRow
+                key={title.key}
+                tier={title.tier}
+                title={titleLabel(title)}
+                topic={topicName(title.topic.names)}
+                worn={equippedKey === title.key}
+                wearing={wear.isPending && wear.variables === title.key}
+                disabled={wear.isPending}
+                onWear={() => wear.mutate(equippedKey === title.key ? null : title.key)}
+                last={index === group.titles.length - 1}
+              />
+            ))}
+          </ListGroup>
+        </View>
+      ))}
     </TabScrollView>
   )
 }
