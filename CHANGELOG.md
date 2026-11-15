@@ -1,3 +1,9 @@
+## [1.46.1](https://github.com/joutio/joutio-mobile/compare/v1.46.0...v1.46.1) (2026-11-15)
+
+### Bug Fixes
+
+* **mobile:** result fits its page, mastery ring keeps its labels, question images uncropped ([fe4a06a](https://github.com/joutio/joutio-mobile/commit/fe4a06a99c03f5f69b355032c9a79f2df70d0ed9))
+
 ## [1.46.0](https://github.com/joutio/joutio-mobile/compare/v1.45.2...v1.46.0) (2026-11-15)
 
 ### Features
