@@ -263,7 +263,6 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
       delta={data?.rated ? (data.eloDelta ?? 0) : 0}
       // Écran court : sans le prochain rang, la place manque (2026-11-14).
       next={compact ? undefined : nextElo}
-      style={compact ? { flex: 1 } : undefined}
     />
   )
   const masteryRing = (
@@ -309,8 +308,8 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
         <View style={{ flex: 1 }} onLayout={(event) => setPageHeight(event.nativeEvent.layout.height)}>
           {pageHeight > 0 && (
             <ResultPages height={pageHeight} page={page} onPageChange={setPage} enabled={hasReview}>
-              {/* Page 1 : le résultat. */}
-              <View style={{ flex: 1, paddingBottom: hasReview ? 0 : insets.bottom + tokens.space[3] }}>
+              {/* Page 1 : le résultat, jamais de défilement ni de débordement (le geste vertical ouvre les détails). */}
+              <View style={{ flex: 1, overflow: 'hidden', paddingBottom: hasReview ? 0 : insets.bottom + tokens.space[3] }}>
                 <View style={{ flex: 1, justifyContent: 'space-between', gap: tokens.space[5], paddingHorizontal: tokens.space[5] }}>
                   <ResultHeader
                     outcome={cancelled ? 'draw' : outcome}
@@ -346,9 +345,9 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
                       }
                     />
                   ) : (
-                    // Écran court : l'Elo et la maîtrise côte à côte ; sinon deux blocs répartis dans la page.
+                    // Écran court : l'Elo et la maîtrise côte à côte, sans jamais passer à la ligne (la page ne défile pas) ; sinon deux blocs répartis dans la page.
                     compact ? (
-                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: tokens.space[5] }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: tokens.space[4] }}>
                         {eloSummary}
                         {masteryRing}
                       </View>

@@ -16,7 +16,7 @@ const [X1, Y1, X2, Y2] = tokens.motion.base.easing.type === 'bezier' ? tokens.mo
 const EASE = Easing.bezier(X1, Y1, X2, Y2)
 /** Sous cette hauteur de bloc, la liste passe en 2 × 2 (container query `jo-question-short` : 519 px au plus). */
 const SHORT_HEIGHT = 519
-/** Image d'une question : 5:4, 370 pt de large au plus (`max-w-[370px]` du lab). */
+/** Image d'une question : ratio de réserve avant chargement (5:4), 370 pt de large au plus (`max-w-[370px]` du lab). */
 const IMAGE_RATIO = 5 / 4
 const IMAGE_MAX_WIDTH = 370
 
@@ -78,7 +78,7 @@ export interface QuestionBlockProps {
 /**
  * Énoncé et réponses d'une manche (`QuestionBlock` du lab), à la taille de son parent qui doit avoir une hauteur.
  * Chaque composante a sa zone dédiée (2026-11-10) : méta, énoncé (deux lignes réservées avec une image, qu'il en
- * fasse une ou deux), image (tout l'espace restant, 5:4 contenue dans sa zone, 370 pt au plus) puis réponses (hauteur
+ * fasse une ou deux), image (tout l'espace restant, contenue à son ratio réel, 370 pt au plus) puis réponses (hauteur
  * propre). L'énoncé est toujours affiché en entier : c'est l'image qui rétrécit (jusqu'à disparaître) si la place manque, elle ne déborde jamais sur l'énoncé ni sous les réponses. Sans image,
  * l'énoncé est centré dans l'espace au-dessus des réponses.
  */
@@ -104,10 +104,13 @@ export function QuestionBlock({
   // `min-h-[max(18cqh,72px)]` en 2 × 2, `min-h-[max(12cqh,64px)]` en liste.
   const cardMin = grid ? Math.max(height * 0.18, 72) : Math.max(height * 0.12, 64)
   const count = answers?.length ?? 0
-  // Image contenue dans sa zone (`object-contain` de la boîte du lab) : 5:4, 370 pt de large au plus.
+  // Image contenue dans sa zone à son ratio réel (2026-11-15 : plus de rognage), 370 pt de large au plus ; 5:4 en
+  // réserve tant qu'elle n'est pas chargée.
   const [zone, setZone] = useState({ width: 0, height: 0 })
-  const imageWidth = Math.max(0, Math.min(zone.width, IMAGE_MAX_WIDTH, zone.height * IMAGE_RATIO))
-  const imageBox = { width: imageWidth, height: imageWidth / IMAGE_RATIO }
+  const [loaded, setLoaded] = useState<{ image: string; ratio: number } | null>(null)
+  const ratio = loaded && loaded.image === image ? loaded.ratio : IMAGE_RATIO
+  const imageWidth = Math.max(0, Math.min(zone.width, IMAGE_MAX_WIDTH, zone.height * ratio))
+  const imageBox = { width: imageWidth, height: imageWidth / ratio }
 
   // `jo-question-lock` : réponses inactives jusqu'à la fin de leur apparition (toujours actives en mouvement réduit).
   const [locked, setLocked] = useState(true)
@@ -152,31 +155,37 @@ export function QuestionBlock({
           </Text>
         </Animated.View>
         {image && (
-          // Rangée `minmax(0, 1fr)` : zone dédiée de l'image, qui s'y contient (5:4) et y est centrée. La boîte est
+          // Rangée `minmax(0, 1fr)` : zone dédiée de l'image, qui s'y contient à son ratio et y est centrée. La boîte est
           // calculée depuis la zone mesurée : `height: 100%` + `aspectRatio` en déduisait une largeur plus grande que
           // l'écran dès que la zone était haute (image débordant sur les côtés, ratio cassé par `maxWidth`, 2026-11-10).
           <View
             onLayout={(event) => setZone({ width: event.nativeEvent.layout.width, height: event.nativeEvent.layout.height })}
             style={{ flex: 1, minHeight: 0, alignSelf: 'stretch', justifyContent: 'center', alignItems: 'center', marginTop: tokens.space[2] }}
           >
-            <Animated.View entering={play ? FADE : undefined} style={imageBox}>
-              {/* Image contenue dans sa zone : rendue seulement une fois le bloc mesuré. Au premier layout, sa boîte est
-                  encore provisoire ; Android (Glide) décodait l'image à cette petite taille, gardée en cache par taille,
-                  et la première page de la revue restait floue (2026-11-07). Pas de sous-échantillonnage non plus. */}
-              {height > 0 && imageBox.width > 0 && (
+            {/* Boîte montée seulement une fois sa taille connue : créée à 0 × 0 au centre de la zone, l'animation d'entrée
+                (Android) la faisait grandir depuis ce point, image décalée en bas à droite (2026-11-15). Rendue aussi
+                après la mesure du bloc : au premier layout, Android (Glide) décodait l'image à une taille provisoire,
+                gardée en cache par taille, et la première page de la revue restait floue (2026-11-07). */}
+            {height > 0 && imageBox.width > 0 && (
+              <Animated.View entering={play ? FADE : undefined} style={imageBox}>
                 <Image
                   source={{ uri: image }}
                   recyclingKey={image}
                   allowDownscaling={false}
-                  contentFit="cover"
+                  // La boîte a le ratio réel de l'image : rien n'est rogné, aucune bande, coins arrondis sur l'image.
+                  contentFit="contain"
+                  onLoad={(event) => {
+                    const { width, height: sourceHeight } = event.source
+                    if (image && width > 0 && sourceHeight > 0) setLoaded({ image, ratio: width / sourceHeight })
+                  }}
                   // Préchargée à la création de la partie (`usePrefetchQuestionImages`) : lue depuis le cache.
                   cachePolicy="memory-disk"
                   transition={0}
                   accessibilityIgnoresInvertColors
                   style={[StyleSheet.absoluteFill, { borderRadius: radius.xl, borderWidth: HAIRLINE, borderColor: colors.border }]}
                 />
-              )}
-            </Animated.View>
+              </Animated.View>
+            )}
           </View>
         )}
       </View>

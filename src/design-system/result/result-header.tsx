@@ -72,10 +72,11 @@ export function ResultHeader({ outcome, topic, me, opponent, style }: ResultHead
   const tones = OUTCOMES()[outcome]
   const [center, setCenter] = useState(0)
   // Une seule taille pour les deux scores, comme `.jo-result-score` du lab : `min(48px, (colonne − 40px) / 3.6)`
-  // (éclair 24 pt + deux gaps de 8 pt, deux scores de 3 chiffres à 0,6 em). Avant la mesure : la taille du token.
+  // (éclair 24 pt + deux gaps de 8 pt, deux scores de 3 chiffres à 0,6 em). Avant la mesure, la place est tenue à la
+  // taille du token mais les scores restent invisibles : affichés puis rétrécis, ils sautaient à l'ouverture (2026-11-15).
   const max = tokens.typography.numericLarge.fontSize
   const size = center > 0 ? Math.min(max, (center - SCORE_CHROME) / SCORE_EM) : max
-  const scoreStyle = { fontSize: size, lineHeight: size }
+  const scoreStyle = { fontSize: size, lineHeight: size, opacity: center > 0 ? 1 : 0 }
   return (
     <View style={[{ alignSelf: 'stretch', gap: tokens.space[5] }, style]}>
       <View style={{ alignItems: 'center', gap: tokens.space[2] }}>

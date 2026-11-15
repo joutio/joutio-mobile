@@ -9,7 +9,11 @@ export interface EloSummaryProps {
   delta: number
   /** Objectif suivant, par exemple `Platine à 1 000 · encore 144`. */
   next?: string
-  /** Écran court : Elo en `numericLarge` au lieu de `numericHero`, à côté de la maîtrise. */
+  /**
+   * Écran court : Elo en `numericLarge` au lieu de `numericHero`, à côté de la maîtrise. Le delta passe sous l'Elo
+   * (2026-11-15) : côte à côte, un Elo à 4 chiffres et la maîtrise ne tenaient pas sur un téléphone de 360 pt, et la
+   * page du résultat ne défile jamais (le geste vertical ouvre les détails).
+   */
   compact?: boolean
   style?: StyleProp<ViewStyle>
 }
@@ -27,7 +31,7 @@ export function EloSummary({ elo, delta, next, compact = false, style }: EloSumm
       <Text variant="callout" weight="600" color="muted">
         {t('social.sortElo')}
       </Text>
-      <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: tokens.space[4] }}>
+      <View style={compact ? { alignItems: 'center' } : { flexDirection: 'row', alignItems: 'baseline', gap: tokens.space[4] }}>
         <Text variant={compact ? 'numericLarge' : 'numericHero'}>{elo}</Text>
         <Text variant="numericMedium" color={delta > 0 ? 'correct' : delta < 0 ? 'wrong' : 'muted'}>{`${sign}${Math.abs(delta)}`}</Text>
       </View>

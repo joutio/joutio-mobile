@@ -185,13 +185,15 @@ function MatchmakingScreenContent() {
         width={width}
         height={height}
         state={found ? 'found' : 'search'}
-        pins={status === 'SEARCHING' ? PINS : []}
+        // L'entraînement automatique garde les joueurs qui apparaissent (2026-11-15), comme la recherche.
+        pins={status === 'SEARCHING' || (status === 'EXPIRED' && autoTrain.enabled) ? PINS : []}
         opponent={found ? { name: opponent?.pseudonym ?? t('topic.opponent'), src: userAvatar(opponent), ...FOUND_AT, label: opponent?.pseudonym } : undefined}
       />
       {!found && <Chrome />}
 
       {status === 'SEARCHING' && (
-        <View style={[bottom, { alignItems: 'center', gap: tokens.space[4] }]}>
+        // Même hauteur que l'entraînement automatique (2026-11-15) : « Annuler la recherche » au même endroit.
+        <View style={[bottom, { bottom: insets.bottom + tokens.space[8], alignItems: 'center', gap: tokens.space[4] }]}>
           <Text variant="title2" align="center">
             {topic.name}
           </Text>
@@ -255,7 +257,8 @@ function MatchmakingScreenContent() {
       )}
 
       {status === 'EXPIRED' && autoTrain.enabled && (
-        <View style={[bottom, { gap: tokens.space[4] }]}>
+        // Plus haut et plus espacé (2026-11-15) : « Annuler l'entraînement » à portée de pouce, loin du bord.
+        <View style={[bottom, { bottom: insets.bottom + tokens.space[8], gap: tokens.space[6] }]}>
           <Notice
             tone="training"
             title={t('mm.autoTitle')}
