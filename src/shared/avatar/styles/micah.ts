@@ -236,6 +236,8 @@ export const micahStyle: AvatarStyleDefinition = {
     'baseColor',
     'backgroundColor',
   ],
+  // Fond des yeux (variantes « ombrées ») : blanc, pas un pastel tiré de la palette DiceBear selon le joueur.
+  fixedColors: { eyeShadowColor: '#ffffff' },
   variants: collectVariants(groups),
   palettes: collectPalettes(groups),
   groups,

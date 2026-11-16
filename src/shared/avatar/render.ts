@@ -40,6 +40,7 @@ export function toDicebearOptions(options: AvatarOptions): StyleOptions {
   for (const [field, derived] of Object.entries(definition.derivedColors ?? {})) {
     result[field] = [options[derived.from] || definition.defaults[derived.from] || derived.fallback]
   }
+  for (const [field, color] of Object.entries(definition.fixedColors ?? {})) result[field] = [color]
   for (const [field, transparentNone] of Object.entries(definition.transparentNoneFields ?? {})) {
     if (options[field] !== 'none') continue
     result[transparentNone.color] = ['#00000000']

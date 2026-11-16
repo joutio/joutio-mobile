@@ -60,6 +60,11 @@ export interface AvatarStyleDefinition {
    * recalculées à chaque rendu et jamais persistées.
    */
   derivedColors?: Record<string, { from: string; fallback: string }>
+  /**
+   * Options couleur **fixes**, hors palette et jamais persistées (ex. fond des yeux Micah en blanc) : sans elles,
+   * DiceBear tire une couleur de sa propre palette selon la graine.
+   */
+  fixedColors?: Record<string, string>
   /** Variantes disponibles par champ (dérivé des groupes). */
   variants: Record<string, readonly string[]>
   /** Palettes proposées par champ couleur (dérivé des groupes). */
