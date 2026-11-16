@@ -1,15 +1,13 @@
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Banner } from '@/design-system'
 import type { ConnectionBannerState } from '@/shared/hooks/use-connection-banner'
 
 /**
- * Bannière de connexion globale (`etats-systeme.md`, `feedback.md`) : bande `Banner` collée en haut de la fenêtre,
- * **au-dessus** de la barre du haut de l'écran, qu'elle pousse vers le bas — toujours visible, quel que soit le
- * défilement. Elle prend la safe area haute à son compte ; le layout retire alors cette safe area aux écrans dessous.
+ * Bannière de connexion globale (`etats-systeme.md`, `feedback.md`) : bande `Banner` en tête de chaque écran (`TopBannerFrame`),
+ * **au-dessus** de sa barre du haut, qu'elle pousse vers le bas — toujours visible, quel que soit le défilement. Elle
+ * porte la safe area haute (`safeTop`) ; l'écran dessous n'en tient plus compte (`useScreenTopInset`).
  */
-export function ConnectionBanner({ state, onRetry }: { state: ConnectionBannerState; onRetry: () => void }) {
-  const insets = useSafeAreaInsets()
+export function ConnectionBanner({ state, onRetry, safeTop }: { state: ConnectionBannerState; onRetry: () => void; safeTop: number }) {
   if (state === 'hidden') return null
-  // Entrée et sortie animées par `TopBannerHost`.
-  return <Banner connection={state} onRetry={onRetry} safeTop={insets.top} />
+  // Entrée et sortie animées par `TopBannerFrame`.
+  return <Banner connection={state} onRetry={onRetry} safeTop={safeTop} />
 }

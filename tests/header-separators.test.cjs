@@ -51,6 +51,9 @@ function harness() {
   mocks['react-native-keyboard-controller'] = { KeyboardAwareScrollView: 'KeyboardScroll' }
   mocks['react-native-safe-area-context'] = { useSafeAreaInsets: () => ({ top: 0, bottom: 0 }) }
   mocks['./drag-to-load-more'] = { DragToLoadMore: 'LoadMore', LoadMoreScrollView: 'LoadMoreScroll' }
+  mocks['./top-banner'] = { TopBannerFrame: 'TopBannerFrame', useScreenTopInset: () => 0 }
+  mocks['./field-reveal'] = { FieldRevealContext: { Provider: 'FieldRevealProvider' } }
+  mocks['./glass'] = { BottomBarBackground: 'BottomBarBackground' }
   const { Screen } = load('../src/design-system/mobile/screen.tsx')
   const screen = Screen({ header: jsx('Header', {}), scroll: false, children: null })
   context = find(screen, 'HeaderProvider').props.value

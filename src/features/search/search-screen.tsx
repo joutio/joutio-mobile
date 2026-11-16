@@ -2,7 +2,6 @@ import { useLocalSearchParams } from 'expo-router'
 import { router } from '@/shared/navigation/router'
 import { useState } from 'react'
 import { ScrollView, View } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import {
   Button,
   ClockCounterClockwiseIcon,
@@ -22,6 +21,8 @@ import {
   WifiSlashIcon,
   tabBarScrollInsets,
   useTabBarInset,
+  TopBannerFrame,
+  useScreenTopInset,
 } from '@/design-system'
 import { usePlayerIdentity } from '@/features/me'
 import { openTopic } from '@/features/topic'
@@ -47,7 +48,7 @@ export function SearchScreen({ stack }: { stack: SearchStack }) {
   // Fin de liste au-dessus de la tab bar native iOS (`useTabBarInset`).
   const tabInset = useTabBarInset()
   const { colors } = useTheme()
-  const insets = useSafeAreaInsets()
+  const screenTop = useScreenTopInset()
   const online = useOnline()
   const { q } = useLocalSearchParams<{ q?: string }>()
   const [query, setQuery] = useState(q ?? '')
@@ -119,9 +120,7 @@ export function SearchScreen({ stack }: { stack: SearchStack }) {
         />
       )
     if (items.length === 0)
-      return (
-        <EmptyState icon={MagnifyingGlassIcon} title={t('search.noResult', { query: query.trim() })} description={t('search.noResultText')} />
-      )
+      return <EmptyState icon={MagnifyingGlassIcon} title={t('search.noResult', { query: query.trim() })} description={t('search.noResultText')} />
     return (
       <>
         {topics.length > 0 && (
@@ -168,31 +167,33 @@ export function SearchScreen({ stack }: { stack: SearchStack }) {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top }}>
-      <View style={{ paddingHorizontal: tokens.space[5], paddingVertical: tokens.space[2] }}>
-        <SearchField
-          value={query}
-          onChange={setQuery}
-          placeholder={t('search.placeholder')}
-          label={t('search.label')}
-          autoFocus
-          onCancel={() => (query ? setQuery('') : router.back())}
-        />
+    <TopBannerFrame style={{ backgroundColor: colors.bg }}>
+      <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: screenTop }}>
+        <View style={{ paddingHorizontal: tokens.space[5], paddingVertical: tokens.space[2] }}>
+          <SearchField
+            value={query}
+            onChange={setQuery}
+            placeholder={t('search.placeholder')}
+            label={t('search.label')}
+            autoFocus
+            onCancel={() => (query ? setQuery('') : router.back())}
+          />
+        </View>
+        <ScrollView
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          showsVerticalScrollIndicator={false}
+          {...tabBarScrollInsets(tabInset)}
+          contentContainerStyle={{
+            gap: tokens.space[6],
+            paddingHorizontal: tokens.space[5],
+            paddingTop: tokens.space[2],
+            paddingBottom: tokens.space[7],
+          }}
+        >
+          {content()}
+        </ScrollView>
       </View>
-      <ScrollView
-        keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="on-drag"
-        showsVerticalScrollIndicator={false}
-        {...tabBarScrollInsets(tabInset)}
-        contentContainerStyle={{
-          gap: tokens.space[6],
-          paddingHorizontal: tokens.space[5],
-          paddingTop: tokens.space[2],
-          paddingBottom: tokens.space[7],
-        }}
-      >
-        {content()}
-      </ScrollView>
-    </View>
+    </TopBannerFrame>
   )
 }

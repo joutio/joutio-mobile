@@ -1,9 +1,24 @@
 import { ScrollEdgeContext } from './scroll-edge'
+import { BottomBarBackground } from './glass'
+import { TopBannerFrame, useScreenTopInset } from './top-banner'
 import { scrollEdgeProgress } from './header-geometry'
 import { tabBarScrollInsets, withBottomInset } from './tab-bar-inset'
 import { useCallback, useContext, useMemo, useRef, type ReactNode, type Ref } from 'react'
 import { FieldRevealContext } from './field-reveal'
-import { Keyboard, RefreshControl, ScrollView, View, type LayoutChangeEvent, type NativeScrollEvent, type NativeSyntheticEvent, type ScrollViewInstance, type ScrollViewProps, type ViewInstance, type StyleProp, type ViewStyle } from 'react-native'
+import {
+  Keyboard,
+  RefreshControl,
+  ScrollView,
+  View,
+  type LayoutChangeEvent,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+  type ScrollViewInstance,
+  type ScrollViewProps,
+  type ViewInstance,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native'
 import { HeaderHeightContext } from 'expo-router/react-navigation'
 import { Platform } from 'react-native'
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller'
@@ -80,6 +95,7 @@ export function Screen({
 }: ScreenProps) {
   const { colors } = useTheme()
   const insets = useSafeAreaInsets()
+  const screenTop = useScreenTopInset()
   const headerHeight = useContext(HeaderHeightContext) ?? 0
   // iOS : l'en-tête natif est translucide et posé sur le contenu ; un contenu fixe doit le contourner.
   const underHeader = nativeHeader && Platform.OS === 'ios'
@@ -118,7 +134,11 @@ export function Screen({
     onScroll: (event: NativeSyntheticEvent<NativeScrollEvent>) => {
       headerOffset.value = event.nativeEvent.contentOffset.y + event.nativeEvent.contentInset.top
       if (bottomBar) {
-        metrics.current = { offset: event.nativeEvent.contentOffset.y, content: event.nativeEvent.contentSize.height, frame: event.nativeEvent.layoutMeasurement.height }
+        metrics.current = {
+          offset: event.nativeEvent.contentOffset.y,
+          content: event.nativeEvent.contentSize.height,
+          frame: event.nativeEvent.layoutMeasurement.height,
+        }
         updateFooterEdge()
       }
       scrollProps?.onScroll?.(event)
@@ -188,7 +208,8 @@ export function Screen({
   const extras = (
     <>
       {bottomBar && (
-        <View style={{ paddingBottom: tabBarOwnsBottom ? 0 : insets.bottom, backgroundColor: colors.bg }}>
+        <View style={{ paddingBottom: tabBarOwnsBottom ? 0 : insets.bottom }}>
+          <BottomBarBackground />
           {bottomBar}
           {/* Après la barre : son fond ne couvre pas le filet. */}
           <HeaderSeparator progress={footerEdge} edge="top" />
@@ -210,11 +231,11 @@ export function Screen({
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+    <TopBannerFrame style={{ backgroundColor: colors.bg }}>
       <StickyHeaderContext.Provider value={headerContext}>
         <ScrollEdgeContext.Provider value={headerOffset}>
           {!nativeHeader && (
-            <View collapsable={false} style={{ paddingTop: insets.top, zIndex: 30, elevation: 1, shadowColor: 'transparent' }}>
+            <View collapsable={false} style={{ paddingTop: screenTop, zIndex: 30, elevation: 1, shadowColor: 'transparent' }}>
               {header}
               {header && <HeaderSeparator progress={separator} />}
             </View>
@@ -229,6 +250,6 @@ export function Screen({
           {extras}
         </ScrollEdgeContext.Provider>
       </StickyHeaderContext.Provider>
-    </View>
+    </TopBannerFrame>
   )
 }

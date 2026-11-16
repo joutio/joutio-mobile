@@ -27,6 +27,8 @@ import {
   type RoundResult,
   type TierCode,
   TOP_BAR_HEIGHT,
+  TopBannerFrame,
+  useScreenTopInset,
 } from '@/design-system'
 import { useMe } from '@/features/me'
 import { useBotDifficulty, useStartMatchmaking, useStartTraining } from '@/features/play/hooks/use-play'
@@ -132,6 +134,7 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
   const t = useT()
   const { colors } = useTheme()
   const insets = useSafeAreaInsets()
+  const screenTop = useScreenTopInset()
   const me = useMe(true)
   const userId = me.data?.userId ?? ''
   const language = useLanguage()
@@ -232,7 +235,11 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
         />
       )
     })
-    return <UnlockSequence pages={pages} step={step} onStepChange={setStep} onDone={() => setSequenceDone(true)} onShare={share} />
+    return (
+      <TopBannerFrame style={{ backgroundColor: colors.bg }}>
+        <UnlockSequence pages={pages} step={step} onStepChange={setStep} onDone={() => setSequenceDone(true)} onShare={share} />
+      </TopBannerFrame>
+    )
   }
 
   // ─── Résultat ───
@@ -241,7 +248,11 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
   const nextTier = myTier ? ORDER[ORDER.indexOf(myTier) + 1] : undefined
   const nextElo = nextTier
     ? tokens.tier[nextTier].minElo > rating
-      ? t('result.nextEloLeft', { tier: tierLabel(nextTier), elo: formatNumber(tokens.tier[nextTier].minElo), left: formatNumber(tokens.tier[nextTier].minElo - rating) })
+      ? t('result.nextEloLeft', {
+          tier: tierLabel(nextTier),
+          elo: formatNumber(tokens.tier[nextTier].minElo),
+          left: formatNumber(tokens.tier[nextTier].minElo - rating),
+        })
       : t('result.nextElo', { tier: tierLabel(nextTier), elo: formatNumber(tokens.tier[nextTier].minElo) })
     : undefined
   const mastery = data?.topicMastery
@@ -269,73 +280,73 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
 
   return (
     <>
-      <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top }}>
-        <View
-          style={{ height: TOP_BAR_HEIGHT, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: tokens.space[3] }}
-        >
-          <View style={{ flexDirection: 'row', gap: tokens.space[2] }}>
-            {!bot && !cancelled && (
-              <>
-                {RESULT_CHAT_ENABLED && (
-                  <IconButton
-                    icon={ChatCircleIcon}
-                    label={t('mobile.result.messageTo', { name: opponentName })}
-                    badge="dot"
-                    onPress={() =>
-                      router.push({
-                        pathname: '/result/[gameId]/chat',
-                        params: { gameId, opponentName, recap: chatRecap },
-                      })
-                    }
-                  />
-                )}
-                {opponentId && !data?.opponentDeleted && <IconButton icon={FlagIcon} label={t('result.reportPlayer', { name: opponentName })} onPress={() => setReportOpen(true)} />}
-              </>
-            )}
-          </View>
-          <IconButton icon={XIcon} label={t('result.quit')} onPress={() => router.back()} />
-        </View>
-        <View style={{ flex: 1 }} onLayout={(event) => setPageHeight(event.nativeEvent.layout.height)}>
-          {pageHeight > 0 && (
-            <ResultPages height={pageHeight} page={page} onPageChange={setPage} enabled={hasReview}>
-              {/* Page 1 : le résultat, jamais de défilement ni de débordement (le geste vertical ouvre les détails). */}
-              <View style={{ flex: 1, overflow: 'hidden', paddingBottom: hasReview ? 0 : insets.bottom + tokens.space[3] }}>
-                <View style={{ flex: 1, justifyContent: 'space-between', gap: tokens.space[5], paddingHorizontal: tokens.space[5] }}>
-                  <ResultHeader
-                    outcome={cancelled ? 'draw' : outcome}
-                    topic={topic}
-                    me={{
-                      name: myName,
-                      src: myAvatar,
-                      tier: myTier,
-                      score: myScore,
-                      streak: streakOf(game, userId),
-                      meta: bot ? t('result.trainingElo', { elo: formatNumber(rating) }) : undefined,
-                      premium: identity.myPremium,
-                      onOpen: identity.open(userId),
-                    }}
-                    opponent={{
-                      name: opponentName,
-                      src: opponentAvatar,
-                      tier: opponentTier,
-                      score: theirScore,
-                      streak: streakOf(game, opponentId),
-                      meta: bot ? (BOT_LEVEL()[data?.botDifficulty ?? game.botDifficulty ?? ''] ?? t('topic.bot')) : undefined,
-                      premium: !bot && opponentPremium,
-                      // Le robot et un compte supprimé n'ont pas de fiche.
-                      onOpen: bot || data?.opponentDeleted ? undefined : identity.open(opponentId),
-                    }}
-                  />
-                  {bot || cancelled ? (
-                    <Notice
-                      tone="training"
-                      title={cancelled ? t('result.cancelled') : t('room.training')}
-                      message={
-                        cancelled ? t('result.cancelledText') : t('result.trainingText')
+      <TopBannerFrame style={{ backgroundColor: colors.bg }}>
+        <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: screenTop }}>
+          <View
+            style={{ height: TOP_BAR_HEIGHT, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: tokens.space[3] }}
+          >
+            <View style={{ flexDirection: 'row', gap: tokens.space[2] }}>
+              {!bot && !cancelled && (
+                <>
+                  {RESULT_CHAT_ENABLED && (
+                    <IconButton
+                      icon={ChatCircleIcon}
+                      label={t('mobile.result.messageTo', { name: opponentName })}
+                      badge="dot"
+                      onPress={() =>
+                        router.push({
+                          pathname: '/result/[gameId]/chat',
+                          params: { gameId, opponentName, recap: chatRecap },
+                        })
                       }
                     />
-                  ) : (
-                    // Écran court : l'Elo et la maîtrise côte à côte, sans jamais passer à la ligne (la page ne défile pas) ; sinon deux blocs répartis dans la page.
+                  )}
+                  {opponentId && !data?.opponentDeleted && (
+                    <IconButton icon={FlagIcon} label={t('result.reportPlayer', { name: opponentName })} onPress={() => setReportOpen(true)} />
+                  )}
+                </>
+              )}
+            </View>
+            <IconButton icon={XIcon} label={t('result.quit')} onPress={() => router.back()} />
+          </View>
+          <View style={{ flex: 1 }} onLayout={(event) => setPageHeight(event.nativeEvent.layout.height)}>
+            {pageHeight > 0 && (
+              <ResultPages height={pageHeight} page={page} onPageChange={setPage} enabled={hasReview}>
+                {/* Page 1 : le résultat, jamais de défilement ni de débordement (le geste vertical ouvre les détails). */}
+                <View style={{ flex: 1, overflow: 'hidden', paddingBottom: hasReview ? 0 : insets.bottom + tokens.space[3] }}>
+                  <View style={{ flex: 1, justifyContent: 'space-between', gap: tokens.space[5], paddingHorizontal: tokens.space[5] }}>
+                    <ResultHeader
+                      outcome={cancelled ? 'draw' : outcome}
+                      topic={topic}
+                      me={{
+                        name: myName,
+                        src: myAvatar,
+                        tier: myTier,
+                        score: myScore,
+                        streak: streakOf(game, userId),
+                        meta: bot ? t('result.trainingElo', { elo: formatNumber(rating) }) : undefined,
+                        premium: identity.myPremium,
+                        onOpen: identity.open(userId),
+                      }}
+                      opponent={{
+                        name: opponentName,
+                        src: opponentAvatar,
+                        tier: opponentTier,
+                        score: theirScore,
+                        streak: streakOf(game, opponentId),
+                        meta: bot ? (BOT_LEVEL()[data?.botDifficulty ?? game.botDifficulty ?? ''] ?? t('topic.bot')) : undefined,
+                        premium: !bot && opponentPremium,
+                        // Le robot et un compte supprimé n'ont pas de fiche.
+                        onOpen: bot || data?.opponentDeleted ? undefined : identity.open(opponentId),
+                      }}
+                    />
+                    {bot || cancelled ? (
+                      <Notice
+                        tone="training"
+                        title={cancelled ? t('result.cancelled') : t('room.training')}
+                        message={cancelled ? t('result.cancelledText') : t('result.trainingText')}
+                      />
+                    ) : // Écran court : l'Elo et la maîtrise côte à côte, sans jamais passer à la ligne (la page ne défile pas) ; sinon deux blocs répartis dans la page.
                     compact ? (
                       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: tokens.space[4] }}>
                         {eloSummary}
@@ -346,76 +357,76 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
                         {eloSummary}
                         {masteryRing}
                       </>
-                    )
-                  )}
-                  <View style={{ flexDirection: 'row', gap: tokens.space[3] }}>
-                    <View style={{ flex: 1 }}>
-                      {bot ? (
+                    )}
+                    <View style={{ flexDirection: 'row', gap: tokens.space[3] }}>
+                      <View style={{ flex: 1 }}>
+                        {bot ? (
+                          <Button
+                            full
+                            icon={LightningIcon}
+                            loading={training.isPending}
+                            onPress={() => {
+                              router.back()
+                              training.mutate({ topic: playTopic, difficulty })
+                            }}
+                          >
+                            {t('result.replay')}
+                          </Button>
+                        ) : (
+                          <Button
+                            full
+                            icon={LightningIcon}
+                            loading={rematch.sending}
+                            disabled={rematch.state !== 'idle' || !opponentId}
+                            onPress={() => void rematch.send()}
+                          >
+                            {rematch.state === 'pending' && rematch.seconds > 0
+                              ? t('result.rematchWaiting', { seconds: rematch.seconds })
+                              : rematch.state === 'refused'
+                                ? t('result.rematchRefused')
+                                : t('result.rematch')}
+                          </Button>
+                        )}
+                      </View>
+                      <View style={{ flex: 1 }}>
                         <Button
                           full
-                          icon={LightningIcon}
-                          loading={training.isPending}
+                          variant="gray"
+                          tone="neutral"
+                          loading={matchmaking.isPending}
                           onPress={() => {
                             router.back()
-                            training.mutate({ topic: playTopic, difficulty })
+                            matchmaking.mutate(playTopic)
                           }}
                         >
-                          {t('result.replay')}
+                          {t('result.newOpponent')}
                         </Button>
-                      ) : (
-                        <Button
-                          full
-                          icon={LightningIcon}
-                          loading={rematch.sending}
-                          disabled={rematch.state !== 'idle' || !opponentId}
-                          onPress={() => void rematch.send()}
-                        >
-                          {rematch.state === 'pending' && rematch.seconds > 0
-                            ? t('result.rematchWaiting', { seconds: rematch.seconds })
-                            : rematch.state === 'refused'
-                              ? t('result.rematchRefused')
-                              : t('result.rematch')}
-                        </Button>
-                      )}
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Button
-                        full
-                        variant="gray"
-                        tone="neutral"
-                        loading={matchmaking.isPending}
-                        onPress={() => {
-                          router.back()
-                          matchmaking.mutate(playTopic)
-                        }}
-                      >
-                        {t('result.newOpponent')}
-                      </Button>
+                      </View>
                     </View>
                   </View>
+                  {hasReview && (
+                    <SwipeHint
+                      direction="up"
+                      title={t('result.details')}
+                      hint={t('result.swipeUp')}
+                      label={t('result.openDetails')}
+                      accessibilityHint={t('mobile.result.reviewA11y')}
+                      bottomInset={insets.bottom}
+                      onPress={() => setPage(1)}
+                    />
+                  )}
                 </View>
-                {hasReview && (
-                  <SwipeHint
-                    direction="up"
-                    title={t('result.details')}
-                    hint={t('result.swipeUp')}
-                    label={t('result.openDetails')}
-                    accessibilityHint={t('mobile.result.reviewA11y')}
-                    bottomInset={insets.bottom}
-                    onPress={() => setPage(1)}
-                  />
-                )}
-              </View>
-              {/* Page 2 : Détails du duel. */}
-              {hasReview ? (
-                <View style={{ flex: 1, paddingBottom: insets.bottom + tokens.space[3] }}>
-                  <DuelReview game={game} me={userId} myName={myName} opponentName={opponentName} canReport compact={compact} />
-                </View>
-              ) : null}
-            </ResultPages>
-          )}
+                {/* Page 2 : Détails du duel. */}
+                {hasReview ? (
+                  <View style={{ flex: 1, paddingBottom: insets.bottom + tokens.space[3] }}>
+                    <DuelReview game={game} me={userId} myName={myName} opponentName={opponentName} canReport compact={compact} />
+                  </View>
+                ) : null}
+              </ResultPages>
+            )}
+          </View>
         </View>
-      </View>
+      </TopBannerFrame>
       {opponentId && (
         <ReportPlayerSheet
           open={reportOpen}

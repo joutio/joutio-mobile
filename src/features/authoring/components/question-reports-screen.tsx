@@ -7,11 +7,11 @@ import {
   Button,
   CheckCircleIcon,
   ClockCounterClockwiseIcon,
-  DetentSheet,
   EmptyState,
   FlagIcon,
   MobileTopBar,
   PencilSimpleIcon,
+  PersistentSheet,
   Pill,
   ProhibitIcon,
   QuestionBlock,
@@ -170,7 +170,7 @@ function ReportCard({ report, highlighted }: { report: OwnerQuestionReport; high
 
 /**
  * Signalements d'un sujet, en file de tri (`creation.md`, Signalements d'une question) : la question en plein écran,
- * telle que les joueurs la voient (Actuelle / Signalée), et ses signalements anonymes dans une `DetentSheet`. On
+ * telle que les joueurs la voient (Actuelle / Signalée), et ses signalements anonymes dans une `PersistentSheet` (feuille native à crans). On
  * balaie entre les questions ; après « Clore », la suivante arrive. Écran de tâche, hors onglets ; le retour revient
  * à l'écran d'origine (Modération ou Notifications).
  */
@@ -309,7 +309,7 @@ export function QuestionReportsScreen() {
             </View>
           ))}
         </PagerView>
-        <DetentSheet
+        <PersistentSheet
           label={t('workshop.reportsOfQuestion')}
           detent={detent}
           onDetentChange={setDetent}
@@ -380,7 +380,7 @@ export function QuestionReportsScreen() {
               {t('mobile.authoring.allTopicReports')}
             </Button>
           )}
-        </DetentSheet>
+        </PersistentSheet>
       </View>
     </Screen>
   )

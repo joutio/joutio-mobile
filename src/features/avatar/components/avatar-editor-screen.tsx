@@ -15,6 +15,8 @@ import {
   tokens,
   useTheme,
   type TabsScrollPage,
+  TopBannerFrame,
+  useScreenTopInset,
 } from '@/design-system'
 import { useMe } from '@/features/me'
 import { usePremiumSheet } from '@/features/premium/premium-store'
@@ -65,6 +67,7 @@ export function AvatarEditorScreen() {
   const t = useT()
   const { colors } = useTheme()
   const insets = useSafeAreaInsets()
+  const screenTop = useScreenTopInset()
   const { width: screenWidth } = useWindowDimensions()
   const tile = { width: tileWidth(screenWidth) }
   const me = useMe(true)
@@ -92,20 +95,20 @@ export function AvatarEditorScreen() {
     <View key={item.id} style={{ gap: tokens.space[6] }}>
       {item.variantField && item.variants && (
         <RadioGroup label={avatarT(item.labelKey)} style={{ flexDirection: 'row', flexWrap: 'wrap', gap: TILE_GAP }}>
-            {[...(item.allowsNone ? ['none'] : []), ...item.variants].map((variant) => {
-              const field = item.variantField as string
-              const current = choice[field] ?? definition?.defaults[field]
-              return (
-                <OptionTile
-                  key={variant}
-                  label={variant === 'none' ? avatarT(NONE_LABEL_KEY) : variantLabel(item, variant)}
-                  image={render({ ...choice, [field]: variant }) ?? ''}
-                  selected={current === variant}
-                  onSelect={() => set({ [field]: variant })}
-                  style={tile}
-                />
-              )
-            })}
+          {[...(item.allowsNone ? ['none'] : []), ...item.variants].map((variant) => {
+            const field = item.variantField as string
+            const current = choice[field] ?? definition?.defaults[field]
+            return (
+              <OptionTile
+                key={variant}
+                label={variant === 'none' ? avatarT(NONE_LABEL_KEY) : variantLabel(item, variant)}
+                image={render({ ...choice, [field]: variant }) ?? ''}
+                selected={current === variant}
+                onSelect={() => set({ [field]: variant })}
+                style={tile}
+              />
+            )
+          })}
         </RadioGroup>
       )}
       {item.colorField && item.colors && (
@@ -174,33 +177,35 @@ export function AvatarEditorScreen() {
   const pages = [stylePage, ...sectionPages]
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top, paddingBottom: insets.bottom }}>
-      <MobileTopBar
-        variant="modal"
-        title={t('avatar.title')}
-        cancel={t('topic.cancel')}
-        confirm={t('settings.save')}
-        confirmLoading={save.isPending}
-        confirmDisabled={!changed || save.isPending}
-        onCancel={() => router.back()}
-        onConfirm={() => {
-          save.mutate(JSON.stringify(choice), { onSuccess: () => router.back() })
-        }}
-      />
-      <View style={{ alignItems: 'center', gap: tokens.space[3], paddingVertical: tokens.space[4] }}>
-        <Avatar name={data?.pseudonym ?? t('common.me')} src={render(choice)} size="preview" />
-      </View>
-      <View style={{ flex: 1 }}>
-        <TabsScrollView<string>
-          key={style}
-          label={t('avatar.tabs')}
-          value={current}
-          onChange={setTab}
-          pages={pages}
-          scrollToTopPill={false}
-          scrollableTabs={pages.length > 4}
+    <TopBannerFrame style={{ backgroundColor: colors.bg }}>
+      <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: screenTop, paddingBottom: insets.bottom }}>
+        <MobileTopBar
+          variant="modal"
+          title={t('avatar.title')}
+          cancel={t('topic.cancel')}
+          confirm={t('settings.save')}
+          confirmLoading={save.isPending}
+          confirmDisabled={!changed || save.isPending}
+          onCancel={() => router.back()}
+          onConfirm={() => {
+            save.mutate(JSON.stringify(choice), { onSuccess: () => router.back() })
+          }}
         />
+        <View style={{ alignItems: 'center', gap: tokens.space[3], paddingVertical: tokens.space[4] }}>
+          <Avatar name={data?.pseudonym ?? t('common.me')} src={render(choice)} size="preview" />
+        </View>
+        <View style={{ flex: 1 }}>
+          <TabsScrollView<string>
+            key={style}
+            label={t('avatar.tabs')}
+            value={current}
+            onChange={setTab}
+            pages={pages}
+            scrollToTopPill={false}
+            scrollableTabs={pages.length > 4}
+          />
+        </View>
       </View>
-    </View>
+    </TopBannerFrame>
   )
 }

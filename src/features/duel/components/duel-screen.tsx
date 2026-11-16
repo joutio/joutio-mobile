@@ -25,9 +25,11 @@ import {
   type AnswerCardProps,
   type RoundResult,
   useDeviceSettings,
+  TopBannerFrame,
+  useScreenTopInset,
 } from '@/design-system'
 import { useMe } from '@/features/me'
-import { useServerClock } from '@/lib/realtime/server-clock'
+import { readServerNow, useServerClock } from '@/lib/realtime/server-clock'
 import { tierOf } from '@/shared/utils/tier'
 import { countryFlag, countryName } from '@joutio/client/geo'
 import { sortedRounds } from '@joutio/client/game'
@@ -98,6 +100,7 @@ function DuelScreenContent() {
   useServerClock()
   const { colors } = useTheme()
   const insets = useSafeAreaInsets()
+  const screenTop = useScreenTopInset()
   const me = useMe(true)
   const userId = me.data?.userId ?? ''
   const stream = useGameStream(gameId)
@@ -251,117 +254,119 @@ function DuelScreenContent() {
 
   return (
     <ForceDark>
-      <View style={{ flex: 1, backgroundColor: colors.bg }}>
-        {playing && (
-          <View style={{ flex: 1, paddingTop: insets.top }}>
-            <TimerBar
-              seconds={arena.timeLeftDisplay}
-              state={timerState}
-              first={arena.firstAnswerPctValue === null ? undefined : (arena.firstAnswerPctValue / 100) * 10}
-              deadline={timerState === 'running' && arena.answerDeadlineAt ? { at: arena.answerDeadlineAt, now: () => now } : undefined}
+      <TopBannerFrame style={{ backgroundColor: colors.bg }}>
+        <View style={{ flex: 1, backgroundColor: colors.bg }}>
+          {playing && (
+            <View style={{ flex: 1, paddingTop: screenTop }}>
+              <TimerBar
+                seconds={arena.timeLeftDisplay}
+                state={timerState}
+                first={arena.firstAnswerPctValue === null ? undefined : (arena.firstAnswerPctValue / 100) * 10}
+                deadline={timerState === 'running' && arena.answerDeadlineAt ? { at: arena.answerDeadlineAt, now: readServerNow } : undefined}
+              />
+              <DuelHeader
+                me={{
+                  name: myName,
+                  src: myAvatar,
+                  premium: myPremium,
+                  score: arena.myScore,
+                  tier: myTier,
+                  scoreState: arena.gauge.you === 'idle' ? 'rest' : arena.gauge.you,
+                }}
+                opponent={{
+                  name: opponentName,
+                  src: opponentAvatar,
+                  premium: opponentPremium,
+                  score: arena.theirScore,
+                  scoreState: arena.gauge.them === 'idle' ? 'rest' : arena.gauge.them,
+                }}
+                seconds={seconds}
+                timerState={timerState}
+              />
+              {/* Comme le lab : jauges posées sur les bords, bloc avec ses marges (16 côtés, 8 haut, zone sûre + 16 bas). */}
+              <View style={{ flex: 1, minHeight: 0 }}>
+                <ScoreGauge
+                  style={{ position: 'absolute', top: 0, bottom: 0, left: 0 }}
+                  value={arena.myScore}
+                  max={MAX_SCORE}
+                  label={t('duel.score', { name: myName })}
+                  state={arena.gauge.you !== 'idle' ? arena.gauge.you : 'rest'}
+                />
+                <ScoreGauge
+                  style={{ position: 'absolute', top: 0, bottom: 0, right: 0 }}
+                  value={arena.theirScore}
+                  max={MAX_SCORE}
+                  label={t('duel.score', { name: opponentName })}
+                  state={arena.gauge.them !== 'idle' ? arena.gauge.them : 'rest'}
+                />
+                <View style={{ flex: 1, paddingHorizontal: tokens.space[5], paddingTop: tokens.space[3], paddingBottom: insets.bottom + tokens.space[5] }}>
+                  <QuestionBlock
+                    // Remonté à la fin de l'intro pour rejouer l'énoncé et les réponses à la première frame visible.
+                    key={`question-${arena.roundIndex}-${questionReady ? 'ready' : 'intro'}`}
+                    text={arena.questionText}
+                    meta={t('duel.meta', { topic, round: roundNumber, total: ROUNDS })}
+                    image={arena.imageUrl ?? undefined}
+                    answers={answers}
+                    answersShown={answersShown}
+                    animated={animateQuestion}
+                    details={answerDetails}
+                  />
+                </View>
+              </View>
+            </View>
+          )}
+          {scene.kind === 'roundIntro' && introDone !== scene.round && (
+            <RoundIntro
+              key={`intro-${scene.round}`}
+              round={scene.round + 1}
+              total={ROUNDS}
+              topic={topic}
+              category={category}
+              results={results}
+              bonus={scene.bonus}
+              animated
+              duration={ROUND_INTRO_MS}
+              elapsedMs={scene.elapsedMs > LATE_JOIN_MS ? scene.elapsedMs : 0}
+              onComplete={() => setIntroDone(scene.round)}
             />
-            <DuelHeader
+          )}
+          {versus && (
+            <VersusIntro
+              key="versus"
               me={{
                 name: myName,
                 src: myAvatar,
                 premium: myPremium,
-                score: arena.myScore,
                 tier: myTier,
-                scoreState: arena.gauge.you === 'idle' ? 'rest' : arena.gauge.you,
+                title: myTitle,
+                rating: me.data?.progression?.rating,
+                country: countryLabel(me.data?.country),
               }}
               opponent={{
                 name: opponentName,
                 src: opponentAvatar,
                 premium: opponentPremium,
-                score: arena.theirScore,
-                scoreState: arena.gauge.them === 'idle' ? 'rest' : arena.gauge.them,
+                tier: opponentTier,
+                title: opponentTitle,
+                rating: opponentProgression?.rating,
+                country: countryLabel(opponentProfile.data?.country),
+                detail: game.player2Type === 'BOT' ? t('room.training') : undefined,
               }}
-              seconds={seconds}
-              timerState={timerState}
+              topic={topic}
+              category={category}
+              rounds={ROUNDS}
+              animated
+              duration={VS_DURATION_MS + SWOOSH_DURATION_MS}
+              elapsedMs={versusElapsed}
             />
-            {/* Comme le lab : jauges posées sur les bords, bloc avec ses marges (16 côtés, 8 haut, zone sûre + 16 bas). */}
-            <View style={{ flex: 1, minHeight: 0 }}>
-              <ScoreGauge
-                style={{ position: 'absolute', top: 0, bottom: 0, left: 0 }}
-                value={arena.myScore}
-                max={MAX_SCORE}
-                label={t('duel.score', { name: myName })}
-                state={arena.gauge.you !== 'idle' ? arena.gauge.you : 'rest'}
-              />
-              <ScoreGauge
-                style={{ position: 'absolute', top: 0, bottom: 0, right: 0 }}
-                value={arena.theirScore}
-                max={MAX_SCORE}
-                label={t('duel.score', { name: opponentName })}
-                state={arena.gauge.them !== 'idle' ? arena.gauge.them : 'rest'}
-              />
-              <View style={{ flex: 1, paddingHorizontal: tokens.space[5], paddingTop: tokens.space[3], paddingBottom: insets.bottom + tokens.space[5] }}>
-                <QuestionBlock
-                  // Remonté à la fin de l'intro pour rejouer l'énoncé et les réponses à la première frame visible.
-                  key={`question-${arena.roundIndex}-${questionReady ? 'ready' : 'intro'}`}
-                  text={arena.questionText}
-                  meta={t('duel.meta', { topic, round: roundNumber, total: ROUNDS })}
-                  image={arena.imageUrl ?? undefined}
-                  answers={answers}
-                  answersShown={answersShown}
-                  animated={animateQuestion}
-                  details={answerDetails}
-                />
-              </View>
+          )}
+          {scene.kind === 'waiting' && (
+            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+              <SplashLogo variant="loading" />
             </View>
-          </View>
-        )}
-        {scene.kind === 'roundIntro' && introDone !== scene.round && (
-          <RoundIntro
-            key={`intro-${scene.round}`}
-            round={scene.round + 1}
-            total={ROUNDS}
-            topic={topic}
-            category={category}
-            results={results}
-            bonus={scene.bonus}
-            animated
-            duration={ROUND_INTRO_MS}
-            elapsedMs={scene.elapsedMs > LATE_JOIN_MS ? scene.elapsedMs : 0}
-            onComplete={() => setIntroDone(scene.round)}
-          />
-        )}
-        {versus && (
-          <VersusIntro
-            key="versus"
-            me={{
-              name: myName,
-              src: myAvatar,
-              premium: myPremium,
-              tier: myTier,
-              title: myTitle,
-              rating: me.data?.progression?.rating,
-              country: countryLabel(me.data?.country),
-            }}
-            opponent={{
-              name: opponentName,
-              src: opponentAvatar,
-              premium: opponentPremium,
-              tier: opponentTier,
-              title: opponentTitle,
-              rating: opponentProgression?.rating,
-              country: countryLabel(opponentProfile.data?.country),
-              detail: game.player2Type === 'BOT' ? t('room.training') : undefined,
-            }}
-            topic={topic}
-            category={category}
-            rounds={ROUNDS}
-            animated
-            duration={VS_DURATION_MS + SWOOSH_DURATION_MS}
-            elapsedMs={versusElapsed}
-          />
-        )}
-        {scene.kind === 'waiting' && (
-          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-            <SplashLogo variant="loading" />
-          </View>
-        )}
-      </View>
+          )}
+        </View>
+      </TopBannerFrame>
     </ForceDark>
   )
 }

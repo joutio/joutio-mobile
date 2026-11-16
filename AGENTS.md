@@ -268,7 +268,9 @@ sans ligne de co-auteur.
   (natif, SwiftUI / Compose), jamais un `ScrollView` piloté par `contentOffset` ; onglets et points suivent la page
   **pendant** le glissé (`onPageScroll`, arrondi de `position + offset`), pas seulement à l'arrêt.
 - **Clavier** (2026-11-07) : `Screen` défile dans un `KeyboardAwareScrollView` (keyboard-controller, `bottomOffset` 24,
-  `keyboardShouldPersistTaps="handled"`) sauf en-tête natif ou liste paginée ; feuilles : `keyboardScrollOffset` et pied
+  `keyboardShouldPersistTaps="handled"`) sauf en-tête natif ou liste paginée ; formulaire à plusieurs champs :
+  `FieldToolbar` (‹ › OK de keyboard-controller, `bottomOffset` + `FIELD_TOOLBAR_HEIGHT`) et « Suivant » du clavier
+  (`returnKeyType="next"`, `focusNextField`) sur les champs d'une ligne, éditeur de question (2026-11-16) ; feuilles : `keyboardScrollOffset` et pied
   qui remonte avec `keyboardOffset` ; chat : `KeyboardAvoidingView` de keyboard-controller ; Android
   `softwareKeyboardLayoutMode: 'resize'` (**nouveau dev build**).
 - **Défilement collé** : `StickyBar` + `stickyHeaderIndices` et `useStickyBar()` ; sous une barre compacte
@@ -441,8 +443,9 @@ Décision utilisateur : supprimer l’ancien dépôt GitHub `joutio/joutio-mobil
   compte passe en `(app)/delete-account`. Retour natif partout, sans `dismissTo` ni `usePreventRemove`.
 - **Signalements** : `(app)/workshop/[id]/reports/[questionId]` (`highlight`, `from=notifications`), file de tri sur
   `GET /api/question-reports/topics/{id}` : question en plein écran (`QuestionBlock` du duel, Actuelle / Signalée),
-  pager natif entre les questions, signalements anonymes dans la `DetentSheet` (feuille **persistante** dans l'écran,
-  Gesture Handler v3 + Reanimated en `transform` ; TrueSheet est modale et bloquerait le retour et l'éditeur),
+  pager natif entre les questions, signalements anonymes dans la `PersistentSheet` (2026-11-16 : feuille **native**
+  TrueSheet persistante, crans `peek`/58 %/94 %, sans voile ni fermeture ; TrueSheet s'efface quand l'écran est recouvert
+  ou quitté et revient avec lui, retour Android rendu à la navigation — remplace la `DetentSheet` maison),
   historique en une ligne, Clore (confirmé) / Modifier. Une notification `QUESTION_REPORTED` résout la question
   (`GET /api/question-reports/{id}`) et pousse cet écran par-dessus la boîte ; ligne anonyme « Question signalée ».
 - **Mes sujets › À traiter** (`GET /api/topics/contributed/todo`) : pastille `TopicRow.badge`, ouverture sur Mon sujet.
@@ -512,6 +515,14 @@ Décision utilisateur : supprimer l’ancien dépôt GitHub `joutio/joutio-mobil
 - Revanche acceptée depuis le duel ou le résultat : la salle remplace l'écran ; déblocages sans défilement (héros
   compressible) ; « Partager le lien » en action pleine au-dessus de « Fermer le salon » ; notifications sur deux lignes ;
   `Notice`/`Banner` ton `warning` (nom de sujet déjà pris).
-- **Bande du haut sans saccade** (`TopBannerHost`) : une seule mise en page par entrée et par sortie (cale fixe), seule la
+- **Surfaces basses d'actions** (2026-11-16) : barre d'actions de `Screen`, `ParallaxScreen`, `CollapsibleTabsScreen`
+  et saisie du chat ont **la couleur de la barre d'onglets Android** (`BottomBarBackground` : teinte `glass` sur `bg`,
+  opaque). Les pieds de feuille gardent la couleur de leur feuille (`surface`).
+- **Bande du haut portée par l'écran** (remplace `TopBannerHost`) : le layout `(app)` choisit la bande
+  (`TopBannerProvider`), chaque écran la rend en tête de sa mise en page (`TopBannerFrame`, intégré à `Screen`,
+  `ParallaxScreen`, `CollapsibleTabsScreen` ; posé à la main sur les écrans plein écran : duel, matchmaking, résultat,
+  chat, recherche, éditeurs en modale). Zone sûre haute par `useScreenTopInset()` (0 sous la bande), jamais
+  `insets.top` directement dans `(app)` ; plus de surcharge de `SafeAreaInsetsContext` (les modales plein écran iOS
+  passaient sous la barre d'état). Une seule mise en page par entrée et par sortie (cale fixe), seule la
   bande s'anime en `transform`/opacité. La cale animée image par image redimensionnait le navigateur d'onglets : re-rendu
   de `BottomTabView` (react-navigation) et du `UITabBarController` iOS à chaque image.

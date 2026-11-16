@@ -1,4 +1,4 @@
-import { TextInput, View, type StyleProp, type ViewStyle } from 'react-native'
+import { TextInput, View, type StyleProp, type TextInputProps, type ViewStyle } from 'react-native'
 import { CheckIcon } from '../icons'
 import { tint } from '../theme/color'
 import { fontFace } from '../theme/fonts'
@@ -9,7 +9,7 @@ import { PressableScale } from './pressable-scale'
 import { inputStyle, MAX_FONT_SCALE, Text } from './text'
 import { useT } from '@/lib/i18n'
 
-export interface AnswerEditorRowProps {
+export interface AnswerEditorRowProps extends Pick<TextInputProps, 'returnKeyType' | 'submitBehavior' | 'onSubmitEditing'> {
   value: string
   onChange?: (value: string) => void
   /** Bonne réponse. */
@@ -35,6 +35,9 @@ export function AnswerEditorRow({
   placeholder,
   last = false,
   style,
+  returnKeyType,
+  submitBehavior,
+  onSubmitEditing,
 }: AnswerEditorRowProps) {
   const t = useT()
   const { colors, radius } = useTheme()
@@ -65,6 +68,9 @@ export function AnswerEditorRow({
         cursorColor={colors.accent}
         maxFontSizeMultiplier={MAX_FONT_SCALE}
         onChangeText={onChange}
+        returnKeyType={returnKeyType}
+        submitBehavior={submitBehavior}
+        onSubmitEditing={onSubmitEditing}
         style={[
           inputStyle('body'),
           { flex: 1, minWidth: 0, paddingVertical: tokens.space[3], color: colors.text },

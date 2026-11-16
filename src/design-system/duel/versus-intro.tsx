@@ -1,4 +1,5 @@
 import { StyleSheet, View, useWindowDimensions } from 'react-native'
+import { useScreenTopInset } from '../mobile/top-banner'
 import Animated, { useAnimatedStyle } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { CategoryIcon } from '../brand/category-icon'
@@ -47,6 +48,7 @@ function Panel({ player, side, t, height }: { player: VersusPlayer; side: 'top' 
   const tr = useT()
   const { colors } = useTheme()
   const insets = useSafeAreaInsets()
+  const screenTop = useScreenTopInset()
   const top = side === 'top'
   // Halo du palier ; sans palier (robot, profil en chargement) : halo gris neutre, jamais l'accent doré.
   const glow = player.tier ? tokens.tier[player.tier].hex : colors.muted
@@ -100,7 +102,7 @@ function Panel({ player, side, t, height }: { player: VersusPlayer; side: 'top' 
             alignItems: 'center',
             gap: tokens.space[5],
           },
-          top ? { top: insets.top + 40 } : { bottom: insets.bottom + 40 },
+          top ? { top: screenTop + 40 } : { bottom: insets.bottom + 40 },
           content,
         ]}
       >
@@ -114,8 +116,11 @@ function Panel({ player, side, t, height }: { player: VersusPlayer; side: 'top' 
           )}
           {(player.rating !== undefined || player.country || player.detail) && (
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: tokens.space[3], justifyContent: top ? 'flex-start' : 'flex-end' }}>
-              {player.rating !== undefined &&
-                player.tier && <Badge variant="tier" tier={player.tier}>{tr('common.dotPair', { a: tr(tierKey(player.tier)), b: player.rating })}</Badge>}
+              {player.rating !== undefined && player.tier && (
+                <Badge variant="tier" tier={player.tier}>
+                  {tr('common.dotPair', { a: tr(tierKey(player.tier)), b: player.rating })}
+                </Badge>
+              )}
               {player.country && <Pill>{player.country}</Pill>}
               {player.detail && <Pill>{player.detail}</Pill>}
             </View>

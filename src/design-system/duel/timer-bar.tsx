@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect } from 'react'
 import { View, type StyleProp, type ViewStyle } from 'react-native'
 import Animated, { Easing, ReduceMotion, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
 import { alpha } from '../theme/color'
@@ -7,9 +7,9 @@ import { t } from '@/lib/i18n'
 
 export type TimerState = 'running' | 'low' | 'frozen' | 'expired'
 
-/** Rouge du décompte, commun à `TimerBar` et `DuelHeader`. */
+/** Rouge du décompte, commun à `TimerBar` et `DuelHeader` : 0 compris. */
 export const isTimerUrgent = (seconds: number, state: TimerState = 'running', lowAt = 3) =>
-  state === 'low' || state === 'expired' || (state === 'running' && seconds > 0 && seconds <= lowAt)
+  state === 'low' || state === 'expired' || (state === 'running' && seconds <= lowAt)
 
 export interface TimerBarProps {
   /** Secondes restantes (décimales acceptées), calculées par l'appelant. */
@@ -20,7 +20,7 @@ export interface TimerBarProps {
   first?: number
   state?: TimerState
   lowAt?: number
-  /** Échéance (ms epoch serveur) et horloge : la barre descend seule, à 60 ips, jusqu'à 0. */
+  /** Échéance (ms epoch serveur) et horloge stable (`readServerNow`) : la barre descend seule, à 60 ips, jusqu'à 0. */
   deadline?: { at: number; now: () => number }
   style?: StyleProp<ViewStyle>
 }
@@ -34,16 +34,16 @@ export function TimerBar({ seconds, total = 10, first, state = 'running', lowAt 
   const fraction = state === 'expired' ? 0 : Math.max(0, Math.min(1, seconds / total))
   const width = useSharedValue(fraction)
   const deadlineAt = deadline?.at
-  // `deadline.now` change à chaque rendu (tick de 100 ms) : une ref évite de relancer l'animation pour autant.
-  const now = useRef(deadline?.now)
-  now.current = deadline?.now
+  // Horloge stable (`readServerNow`) lue à l'instant du départ : l'animation n'est relancée qu'au changement d'état ou
+  // d'échéance, et part du temps réellement restant (pas du dernier tick).
+  const now = deadline?.now
 
   useEffect(() => {
-    if (state !== 'running' || deadlineAt == null) return
-    const remaining = Math.max(0, deadlineAt - (now.current?.() ?? Date.now()))
+    if (state !== 'running' || deadlineAt == null || now == null) return
+    const remaining = Math.max(0, deadlineAt - now())
     width.value = Math.max(0, Math.min(1, remaining / 1000 / total))
     width.value = withTiming(0, { duration: remaining, easing: Easing.linear, reduceMotion: ReduceMotion.Never })
-  }, [state, deadlineAt, total, width])
+  }, [state, deadlineAt, now, total, width])
 
   useEffect(() => {
     if (state === 'running' && deadlineAt != null) return
@@ -61,7 +61,11 @@ export function TimerBar({ seconds, total = 10, first, state = 'running', lowAt 
     <View
       accessible
       accessibilityRole="progressbar"
-      accessibilityLabel={first === undefined ? t('ds.timeLeft', { seconds: Math.ceil(seconds) }) : t('ds.timeLeftFirst', { seconds: Math.ceil(seconds), first: Math.ceil(first) })}
+      accessibilityLabel={
+        first === undefined
+          ? t('ds.timeLeft', { seconds: Math.ceil(seconds) })
+          : t('ds.timeLeftFirst', { seconds: Math.ceil(seconds), first: Math.ceil(first) })
+      }
       accessibilityValue={{ min: 0, max: total, now: Math.ceil(seconds) }}
       style={[{ height: 8, alignSelf: 'stretch', overflow: 'hidden' }, style]}
     >

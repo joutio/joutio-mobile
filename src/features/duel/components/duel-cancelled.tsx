@@ -2,7 +2,18 @@ import { router } from '@/shared/navigation/router'
 import { useState } from 'react'
 import { View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { Button, EmptyState, ForceDark, HourglassLowIcon, toast, tokens, useTheme, UserCircleDashedIcon } from '@/design-system'
+import {
+  Button,
+  EmptyState,
+  ForceDark,
+  HourglassLowIcon,
+  toast,
+  tokens,
+  useTheme,
+  UserCircleDashedIcon,
+  TopBannerFrame,
+  useScreenTopInset,
+} from '@/design-system'
 import { playService } from '@/features/play/lib/play-service'
 import { useT } from '@/lib/i18n'
 
@@ -13,6 +24,7 @@ import { useT } from '@/lib/i18n'
 export function DuelCancelled({ started, topicId, topicName, category }: { started: boolean; topicId?: string; topicName: string; category?: string }) {
   const t = useT()
   const insets = useSafeAreaInsets()
+  const screenTop = useScreenTopInset()
   const [searching, setSearching] = useState(false)
 
   const search = async () => {
@@ -29,15 +41,11 @@ export function DuelCancelled({ started, topicId, topicName, category }: { start
 
   return (
     <ForceDark>
-      <Content insetsTop={insets.top} insetsBottom={insets.bottom}>
+      <Content insetsTop={screenTop} insetsBottom={insets.bottom}>
         <EmptyState
           icon={started ? HourglassLowIcon : UserCircleDashedIcon}
           title={started ? t('duel.expired') : t('duel.absent')}
-          description={
-            started
-              ? t('duel.expiredText')
-              : t('duel.absentText')
-          }
+          description={started ? t('duel.expiredText') : t('duel.absentText')}
           action={
             <View style={{ alignSelf: 'stretch', gap: tokens.space[2] }}>
               <Button full loading={searching} onPress={() => void search()}>
@@ -57,17 +65,19 @@ export function DuelCancelled({ started, topicId, topicName, category }: { start
 function Content({ insetsTop, insetsBottom, children }: { insetsTop: number; insetsBottom: number; children: React.ReactNode }) {
   const { colors } = useTheme()
   return (
-    <View
-      style={{
-        flex: 1,
-        justifyContent: 'center',
-        paddingHorizontal: tokens.space[5],
-        paddingTop: insetsTop,
-        paddingBottom: insetsBottom,
-        backgroundColor: colors.bg,
-      }}
-    >
-      {children}
-    </View>
+    <TopBannerFrame style={{ backgroundColor: colors.bg }}>
+      <View
+        style={{
+          flex: 1,
+          justifyContent: 'center',
+          paddingHorizontal: tokens.space[5],
+          paddingTop: insetsTop,
+          paddingBottom: insetsBottom,
+          backgroundColor: colors.bg,
+        }}
+      >
+        {children}
+      </View>
+    </TopBannerFrame>
   )
 }

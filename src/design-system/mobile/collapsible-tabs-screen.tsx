@@ -1,4 +1,6 @@
 import { Image } from 'expo-image'
+import { BottomBarBackground } from './glass'
+import { TopBannerFrame, useScreenTopInset } from './top-banner'
 import { useContext, useImperativeHandle, useRef, useState, type ReactNode, type Ref } from 'react'
 import { SectionList, StyleSheet, View } from 'react-native'
 import {
@@ -125,7 +127,21 @@ interface HeroProps {
 }
 
 /** Image en parallaxe et titre qui s'efface : l'en-tête que le natif replie. */
-function Hero({ heroHeight, image, title, premium = false, official = false, eyebrow, centered, intro, scroll, pull, titleStart, titleLength, barHeight }: HeroProps) {
+function Hero({
+  heroHeight,
+  image,
+  title,
+  premium = false,
+  official = false,
+  eyebrow,
+  centered,
+  intro,
+  scroll,
+  pull,
+  titleStart,
+  titleLength,
+  barHeight,
+}: HeroProps) {
   const { colors } = useTheme()
   const reduced = useReducedMotion()
   const imageStyle = useAnimatedStyle(() => ({ transform: heroImageTransform(scroll.value - pull.value, reduced, heroHeight) }))
@@ -216,7 +232,8 @@ export function CollapsibleTabsScreen<T extends string>({
   // Dans un onglet, la barre d'onglets porte déjà la zone sûre du bas.
   const inTabs = useContext(BottomTabBarHeightContext) !== undefined
   const bottomInset = inTabs ? 0 : insets.bottom
-  const barHeight = insets.top + TOP_BAR_HEIGHT
+  // Sous la bande du haut, la barre compacte n'a plus de safe area à couvrir.
+  const barHeight = useScreenTopInset() + TOP_BAR_HEIGHT
   const refresh = usePageRefresh(onRefresh)
   const headerGeometry = refresh.header
   // L'écran s'ouvre tout de suite : en-tête et onglets d'abord, contenu des pages après l'animation d'entrée.
@@ -317,7 +334,7 @@ export function CollapsibleTabsScreen<T extends string>({
   )
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+    <TopBannerFrame style={{ backgroundColor: colors.bg }}>
       <CollapsibleTabView
         ref={inner}
         navigationState={{ index, routes }}
@@ -397,14 +414,14 @@ export function CollapsibleTabsScreen<T extends string>({
             right: 0,
             bottom: 0,
             paddingBottom: bottomInset,
-            backgroundColor: colors.surface,
             borderTopWidth: HAIRLINE,
             borderTopColor: colors.border,
           }}
         >
+          <BottomBarBackground />
           {bottomBar}
         </View>
       )}
-    </View>
+    </TopBannerFrame>
   )
 }

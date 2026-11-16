@@ -1,4 +1,5 @@
 import PagerView, { type PagerViewRef } from '@expo/ui/community/pager-view'
+import { useScreenTopInset } from '../mobile/top-banner'
 import { useRef, type ReactNode } from 'react'
 import { View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -28,6 +29,7 @@ function Body({ pages, step, onStepChange, onDone, onShare }: UnlockSequenceProp
   const t = useT()
   const { colors, radius } = useTheme()
   const insets = useSafeAreaInsets()
+  const screenTop = useScreenTopInset()
   const pager = useRef<PagerViewRef>(null)
   const steps = pages.length
   const last = step >= steps - 1
@@ -37,7 +39,7 @@ function Body({ pages, step, onStepChange, onDone, onShare }: UnlockSequenceProp
     onStepChange(step + 1)
   }
   return (
-    <View style={{ flex: 1, overflow: 'hidden', backgroundColor: colors.bg, paddingTop: insets.top }}>
+    <View style={{ flex: 1, overflow: 'hidden', backgroundColor: colors.bg, paddingTop: screenTop }}>
       <View style={{ height: 52, flexDirection: 'row', alignItems: 'center', paddingLeft: tokens.space[5], paddingRight: tokens.space[3] }}>
         <View style={{ flex: 1 }} />
         <PageDots count={steps} index={step} />
@@ -67,7 +69,14 @@ function Body({ pages, step, onStepChange, onDone, onShare }: UnlockSequenceProp
           paddingBottom: insets.bottom + tokens.space[7],
         }}
       >
-        <IconButton icon={ShareNetworkIcon} label={t('profile.share')} variant="gray" size="L" onPress={onShare} style={{ width: 52, borderRadius: radius.sm }} />
+        <IconButton
+          icon={ShareNetworkIcon}
+          label={t('profile.share')}
+          variant="gray"
+          size="L"
+          onPress={onShare}
+          style={{ width: 52, borderRadius: radius.sm }}
+        />
         <View style={{ flex: 1 }}>
           <Button full onPress={next}>
             {last ? t('mobile.ds.seeResult') : t('onboarding.universes.continue')}

@@ -3,11 +3,25 @@ import { ScrollView, View } from 'react-native'
 // keyboard-controller : même comportement sur iOS et Android bord à bord (le KeyboardAvoidingView de RN ne bougeait pas sur Android).
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { CaretLeftIcon, Composer, HAIRLINE, IconButton, Message, Pill, Text, tokens, useTheme, TOP_BAR_HEIGHT } from '@/design-system'
+import {
+  CaretLeftIcon,
+  Composer,
+  HAIRLINE,
+  IconButton,
+  Message,
+  Pill,
+  Text,
+  tokens,
+  useTheme,
+  TOP_BAR_HEIGHT,
+  BottomBarBackground,
+  TopBannerFrame,
+  useScreenTopInset,
+} from '@/design-system'
 import { t, useT } from '@/lib/i18n'
 
 /** Réponses rapides du chat d'après-duel. */
-const SUGGESTIONS = () => ([t('mobile.chat.wellPlayed'), t('mobile.chat.rematch'), t('mobile.chat.tooGood'), 'GG'])
+const SUGGESTIONS = () => [t('mobile.chat.wellPlayed'), t('mobile.chat.rematch'), t('mobile.chat.tooGood'), 'GG']
 
 interface ChatMessage {
   id: string
@@ -30,6 +44,7 @@ export function DuelChat({ gameId, opponentName, recap, onBack }: { gameId: stri
   const t = useT()
   const { colors } = useTheme()
   const insets = useSafeAreaInsets()
+  const screenTop = useScreenTopInset()
   const [draft, setDraft] = useState('')
   const [messages, setMessages] = useState<ChatMessage[]>(() => conversations.get(gameId) ?? [OPENING()])
   useEffect(() => {
@@ -42,39 +57,42 @@ export function DuelChat({ gameId, opponentName, recap, onBack }: { gameId: stri
     setDraft('')
   }
   return (
-    <KeyboardAvoidingView behavior="padding" style={{ flex: 1, backgroundColor: colors.bg }}>
-      <View
-        style={{
-          paddingTop: insets.top,
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: tokens.space[3],
-          paddingHorizontal: tokens.space[3],
-          minHeight: TOP_BAR_HEIGHT + insets.top,
-        }}
-      >
-        <IconButton icon={CaretLeftIcon} label={t('mobile.chat.backToResult')} onPress={onBack} />
-        <Text variant="headline" numberOfLines={1} style={{ flex: 1 }}>
-          {opponentName}
-        </Text>
-      </View>
-      <ScrollView contentContainerStyle={{ gap: tokens.space[3], paddingHorizontal: tokens.space[5], paddingVertical: tokens.space[3] }}>
-        <Pill style={{ alignSelf: 'center' }}>{recap}</Pill>
-        {messages.map((message) => (
-          <Message key={message.id} text={message.text} from={message.mine ? 'me' : 'opp'} author={message.mine ? undefined : opponentName} />
-        ))}
-      </ScrollView>
-      <View
-        style={{
-          borderTopWidth: HAIRLINE,
-          borderTopColor: colors.border,
-          paddingHorizontal: tokens.space[5],
-          paddingTop: tokens.space[3],
-          paddingBottom: insets.bottom + tokens.space[3],
-        }}
-      >
-        <Composer value={draft} onChange={setDraft} onSend={send} placeholder={t('mobile.chat.message')} suggestions={SUGGESTIONS()} onSuggestion={send} />
-      </View>
-    </KeyboardAvoidingView>
+    <TopBannerFrame style={{ backgroundColor: colors.bg }}>
+      <KeyboardAvoidingView behavior="padding" style={{ flex: 1, backgroundColor: colors.bg }}>
+        <View
+          style={{
+            paddingTop: screenTop,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: tokens.space[3],
+            paddingHorizontal: tokens.space[3],
+            minHeight: TOP_BAR_HEIGHT + screenTop,
+          }}
+        >
+          <IconButton icon={CaretLeftIcon} label={t('mobile.chat.backToResult')} onPress={onBack} />
+          <Text variant="headline" numberOfLines={1} style={{ flex: 1 }}>
+            {opponentName}
+          </Text>
+        </View>
+        <ScrollView contentContainerStyle={{ gap: tokens.space[3], paddingHorizontal: tokens.space[5], paddingVertical: tokens.space[3] }}>
+          <Pill style={{ alignSelf: 'center' }}>{recap}</Pill>
+          {messages.map((message) => (
+            <Message key={message.id} text={message.text} from={message.mine ? 'me' : 'opp'} author={message.mine ? undefined : opponentName} />
+          ))}
+        </ScrollView>
+        <View
+          style={{
+            borderTopWidth: HAIRLINE,
+            borderTopColor: colors.border,
+            paddingHorizontal: tokens.space[5],
+            paddingTop: tokens.space[3],
+            paddingBottom: insets.bottom + tokens.space[3],
+          }}
+        >
+          <BottomBarBackground />
+          <Composer value={draft} onChange={setDraft} onSend={send} placeholder={t('mobile.chat.message')} suggestions={SUGGESTIONS()} onSuggestion={send} />
+        </View>
+      </KeyboardAvoidingView>
+    </TopBannerFrame>
   )
 }

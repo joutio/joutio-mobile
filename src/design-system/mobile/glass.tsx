@@ -15,3 +15,17 @@ export function GlassBackground() {
     </View>
   )
 }
+
+/**
+ * Fond des surfaces basses qui portent des actions (barre d'actions d'un écran, saisie du chat) : **la couleur de la
+ * barre d'onglets Android** (`JoTabBar`, teinte `glass` sur le fond de l'écran), opaque, que la barre soit posée sous le
+ * contenu ou par-dessus.
+ */
+export function BottomBarBackground() {
+  const { colors } = useTheme()
+  return (
+    <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: colors.bg }]}>
+      <GlassBackground />
+    </View>
+  )
+}

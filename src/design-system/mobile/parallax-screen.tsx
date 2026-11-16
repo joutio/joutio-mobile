@@ -1,4 +1,6 @@
 import { compactHeaderEdge } from './header-geometry'
+import { BottomBarBackground } from './glass'
+import { TopBannerFrame, useScreenTopInset } from './top-banner'
 import { HeaderSeparator } from './header-separator'
 import { Image } from 'expo-image'
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react'
@@ -287,7 +289,8 @@ export function ParallaxScreen({
   const [docked, setDocked] = useState(false)
   const [viewport, setViewport] = useState(0)
 
-  const barHeight = insets.top + TOP_BAR_HEIGHT
+  // Sous la bande du haut, la barre compacte n'a plus de safe area à couvrir.
+  const barHeight = useScreenTopInset() + TOP_BAR_HEIGHT
   // Seule la `JoTabBar` d'Android porte la zone sûre du bas ; la tab bar native iOS flotte sur le contenu.
   const tabBarOwnsBottom = inTabs && Platform.OS !== 'ios'
   // Position du titre dans l'image, mesurée : la barre prend le relais au moment exact où il passe dessous.
@@ -315,128 +318,130 @@ export function ParallaxScreen({
 
   return (
     <ParallaxProgressProvider progress={progress}>
-      <View style={[{ flex: 1, backgroundColor: colors.bg }, style]} onLayout={(event) => setViewport(event.nativeEvent.layout.height)}>
-        <GestureDetector gesture={stretch.pan}>
-          <Animated.ScrollView
-            ref={scrollRef}
-            onScroll={onScroll}
-            scrollEventThrottle={16}
-            showsVerticalScrollIndicator={false}
-            contentInsetAdjustmentBehavior="never"
-            overScrollMode="never"
-            refreshControl={
-              onRefresh ? (
-                <RefreshControl
-                  refreshing={refreshing}
-                  onRefresh={refresh}
-                  tintColor={colors.muted}
-                  colors={[colors.accentInk]}
-                  progressBackgroundColor={colors.surface}
-                  progressViewOffset={barHeight}
-                />
-              ) : undefined
-            }
-          >
-            {/* Le zoom reste dans le contenu pour laisser visible le contrôle système au-dessus. */}
-            <View style={{ overflow: 'hidden' }}>
-              <View style={{ height: heroHeight, backgroundColor: colors.surface }} accessible accessibilityRole="header" accessibilityLabel={title}>
-                {image !== undefined && (
-                  <Animated.View style={[StyleSheet.absoluteFill, imageStyle]}>
-                    <Image source={image} contentFit="cover" style={StyleSheet.absoluteFill} />
-                  </Animated.View>
-                )}
-                {/* Fondu vers le fond en bas ; en haut, la barre d'état reste lisible sur n'importe quelle image. */}
-                <View
-                  style={[
-                    StyleSheet.absoluteFill,
-                    { experimental_backgroundImage: `linear-gradient(to top, ${colors.bg}, ${alpha(colors.bg, 0.4)}, transparent)` },
-                  ]}
-                />
-                <Animated.View
-                  onLayout={(event) => {
-                    const { y, height } = event.nativeEvent.layout
-                    titleStart.value = y - barHeight
-                    titleLength.value = height
-                  }}
-                  style={[
-                    {
-                      position: 'absolute',
-                      left: tokens.space[5],
-                      right: tokens.space[5],
-                      bottom: tokens.space[4],
-                      gap: tokens.space[2],
-                      alignItems: centered ? 'center' : 'flex-start',
-                    },
-                    titleStyle,
-                  ]}
-                >
-                  {eyebrow}
-                  {premium ? (
-                    <PlayerName name={title} premium badgeSize={22} variant="title1" justify={centered ? 'center' : 'flex-start'} />
-                  ) : (
-                    <Text variant="title1" align={centered ? 'center' : 'left'}>
-                      {title}
-                    </Text>
+      <TopBannerFrame style={[{ backgroundColor: colors.bg }, style]}>
+        <View style={{ flex: 1 }} onLayout={(event) => setViewport(event.nativeEvent.layout.height)}>
+          <GestureDetector gesture={stretch.pan}>
+            <Animated.ScrollView
+              ref={scrollRef}
+              onScroll={onScroll}
+              scrollEventThrottle={16}
+              showsVerticalScrollIndicator={false}
+              contentInsetAdjustmentBehavior="never"
+              overScrollMode="never"
+              refreshControl={
+                onRefresh ? (
+                  <RefreshControl
+                    refreshing={refreshing}
+                    onRefresh={refresh}
+                    tintColor={colors.muted}
+                    colors={[colors.accentInk]}
+                    progressBackgroundColor={colors.surface}
+                    progressViewOffset={barHeight}
+                  />
+                ) : undefined
+              }
+            >
+              {/* Le zoom reste dans le contenu pour laisser visible le contrôle système au-dessus. */}
+              <View style={{ overflow: 'hidden' }}>
+                <View style={{ height: heroHeight, backgroundColor: colors.surface }} accessible accessibilityRole="header" accessibilityLabel={title}>
+                  {image !== undefined && (
+                    <Animated.View style={[StyleSheet.absoluteFill, imageStyle]}>
+                      <Image source={image} contentFit="cover" style={StyleSheet.absoluteFill} />
+                    </Animated.View>
                   )}
-                </Animated.View>
-              </View>
-            </View>
-            {intro && <View style={{ paddingHorizontal: tokens.space[5], paddingTop: tokens.space[2], paddingBottom: tokens.space[3] }}>{intro}</View>}
-            {/* Le contenu remplit au moins l'espace sous la barre compacte : assez pour replier, sans défilement à vide. */}
-            <View style={{ minHeight: Math.max(0, viewport - barHeight), paddingBottom: bottomBar || tabBarOwnsBottom ? 0 : insets.bottom }}>
-              {ready ? (
-                children
-              ) : (
-                <View style={{ gap: tokens.space[4], paddingHorizontal: tokens.space[5], paddingTop: tokens.space[2] }}>
-                  <Skeleton shape="row" />
-                  <Skeleton shape="card" />
+                  {/* Fondu vers le fond en bas ; en haut, la barre d'état reste lisible sur n'importe quelle image. */}
+                  <View
+                    style={[
+                      StyleSheet.absoluteFill,
+                      { experimental_backgroundImage: `linear-gradient(to top, ${colors.bg}, ${alpha(colors.bg, 0.4)}, transparent)` },
+                    ]}
+                  />
+                  <Animated.View
+                    onLayout={(event) => {
+                      const { y, height } = event.nativeEvent.layout
+                      titleStart.value = y - barHeight
+                      titleLength.value = height
+                    }}
+                    style={[
+                      {
+                        position: 'absolute',
+                        left: tokens.space[5],
+                        right: tokens.space[5],
+                        bottom: tokens.space[4],
+                        gap: tokens.space[2],
+                        alignItems: centered ? 'center' : 'flex-start',
+                      },
+                      titleStyle,
+                    ]}
+                  >
+                    {eyebrow}
+                    {premium ? (
+                      <PlayerName name={title} premium badgeSize={22} variant="title1" justify={centered ? 'center' : 'flex-start'} />
+                    ) : (
+                      <Text variant="title1" align={centered ? 'center' : 'left'}>
+                        {title}
+                      </Text>
+                    )}
+                  </Animated.View>
                 </View>
-              )}
-            </View>
-          </Animated.ScrollView>
-        </GestureDetector>
+              </View>
+              {intro && <View style={{ paddingHorizontal: tokens.space[5], paddingTop: tokens.space[2], paddingBottom: tokens.space[3] }}>{intro}</View>}
+              {/* Le contenu remplit au moins l'espace sous la barre compacte : assez pour replier, sans défilement à vide. */}
+              <View style={{ minHeight: Math.max(0, viewport - barHeight), paddingBottom: bottomBar || tabBarOwnsBottom ? 0 : insets.bottom }}>
+                {ready ? (
+                  children
+                ) : (
+                  <View style={{ gap: tokens.space[4], paddingHorizontal: tokens.space[5], paddingTop: tokens.space[2] }}>
+                    <Skeleton shape="row" />
+                    <Skeleton shape="card" />
+                  </View>
+                )}
+              </View>
+            </Animated.ScrollView>
+          </GestureDetector>
 
-        {floating && <View style={{ position: 'absolute', right: tokens.space[5], bottom: tokens.space[5] }}>{floating}</View>}
+          {floating && <View style={{ position: 'absolute', right: tokens.space[5], bottom: tokens.space[5] }}>{floating}</View>}
 
-        {/* Lisibilité de la barre d'état : épinglé à l'écran (pas dans le contenu), il reste en place au rebond et
+          {/* Lisibilité de la barre d'état : épinglé à l'écran (pas dans le contenu), il reste en place au rebond et
             s'efface quand la barre compacte devient opaque. */}
-        <Animated.View
-          pointerEvents="none"
-          style={[
-            {
-              position: 'absolute',
-              left: 0,
-              right: 0,
-              top: 0,
-              height: 112,
-              zIndex: 15,
-              experimental_backgroundImage: `linear-gradient(to bottom, ${alpha(colors.bg, 0.8)}, transparent)`,
-            },
-            statusScrim,
-          ]}
-        />
+          <Animated.View
+            pointerEvents="none"
+            style={[
+              {
+                position: 'absolute',
+                left: 0,
+                right: 0,
+                top: 0,
+                height: 112,
+                zIndex: 15,
+                experimental_backgroundImage: `linear-gradient(to bottom, ${alpha(colors.bg, 0.8)}, transparent)`,
+              },
+              statusScrim,
+            ]}
+          />
 
-        <View pointerEvents="box-none" style={{ position: 'absolute', left: 0, right: 0, top: 0, height: barHeight, zIndex: 20 }}>
-          <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: colors.bg }, barStyle]} />
-          <HeaderSeparator progress={separator} />
-          <CompactBarRow title={title} premium={premium} back={back} onBack={onBack} right={rightContent} titleStart={barTitleStart} titleStyle={barStyle} />
-        </View>
-
-        {bottomBar && (
-          <View
-            style={{
-              borderTopWidth: HAIRLINE,
-              borderTopColor: colors.border,
-              backgroundColor: colors.bg,
-              paddingHorizontal: tokens.space[5],
-              paddingTop: tokens.space[3],
-              paddingBottom: tokens.space[3] + (tabBarOwnsBottom ? 0 : insets.bottom),
-            }}
-          >
-            {bottomBar}
+          <View pointerEvents="box-none" style={{ position: 'absolute', left: 0, right: 0, top: 0, height: barHeight, zIndex: 20 }}>
+            <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: colors.bg }, barStyle]} />
+            <HeaderSeparator progress={separator} />
+            <CompactBarRow title={title} premium={premium} back={back} onBack={onBack} right={rightContent} titleStart={barTitleStart} titleStyle={barStyle} />
           </View>
-        )}
-      </View>
+
+          {bottomBar && (
+            <View
+              style={{
+                borderTopWidth: HAIRLINE,
+                borderTopColor: colors.border,
+                paddingHorizontal: tokens.space[5],
+                paddingTop: tokens.space[3],
+                paddingBottom: tokens.space[3] + (tabBarOwnsBottom ? 0 : insets.bottom),
+              }}
+            >
+              <BottomBarBackground />
+              {bottomBar}
+            </View>
+          )}
+        </View>
+      </TopBannerFrame>
     </ParallaxProgressProvider>
   )
 }

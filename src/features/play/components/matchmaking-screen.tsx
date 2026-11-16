@@ -22,6 +22,8 @@ import {
   useToastSuppression,
   type MapPlayer,
   PlayerName,
+  TopBannerFrame,
+  useScreenTopInset,
 } from '@/design-system'
 import { usePlayerIdentity } from '@/features/me'
 import { PlayerPickerSheet } from '@/features/topic/components/duel-sheet'
@@ -66,9 +68,9 @@ function useSecondsLeft(deadlineAt: string | null) {
 function Chrome() {
   const t = useT()
   const { colors, radius } = useTheme()
-  const insets = useSafeAreaInsets()
+  const screenTop = useScreenTopInset()
   return (
-    <View pointerEvents="none" style={{ position: 'absolute', left: 0, right: 0, top: insets.top + tokens.space[4], alignItems: 'center' }}>
+    <View pointerEvents="none" style={{ position: 'absolute', left: 0, right: 0, top: screenTop + tokens.space[4], alignItems: 'center' }}>
       <View style={{ paddingHorizontal: tokens.space[4], paddingVertical: tokens.space[2], borderRadius: radius.full, backgroundColor: colors.glass }}>
         <Text variant="caption" weight="600" color="muted">
           {t('mm.ranked')}
@@ -181,145 +183,145 @@ function MatchmakingScreenContent() {
   const found = status === 'MATCHED'
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.bg }}>
-      <MatchmakingMap
-        width={width}
-        height={height}
-        state={found ? 'found' : 'search'}
-        // L'entraînement automatique garde les joueurs qui apparaissent (2026-11-15), comme la recherche.
-        pins={status === 'SEARCHING' || (status === 'EXPIRED' && autoTrain.enabled) ? PINS : []}
-        opponent={found ? { name: opponent?.pseudonym ?? t('topic.opponent'), src: userAvatar(opponent), ...FOUND_AT, label: opponent?.pseudonym } : undefined}
-      />
-      {!found && <Chrome />}
+    <TopBannerFrame style={{ backgroundColor: colors.bg }}>
+      <View style={{ flex: 1, backgroundColor: colors.bg }}>
+        <MatchmakingMap
+          width={width}
+          height={height}
+          state={found ? 'found' : 'search'}
+          // L'entraînement automatique garde les joueurs qui apparaissent (2026-11-15), comme la recherche.
+          pins={status === 'SEARCHING' || (status === 'EXPIRED' && autoTrain.enabled) ? PINS : []}
+          opponent={
+            found ? { name: opponent?.pseudonym ?? t('topic.opponent'), src: userAvatar(opponent), ...FOUND_AT, label: opponent?.pseudonym } : undefined
+          }
+        />
+        {!found && <Chrome />}
 
-      {status === 'SEARCHING' && (
-        // Même hauteur que l'entraînement automatique (2026-11-15) : « Annuler la recherche » au même endroit.
-        <View style={[bottom, { bottom: insets.bottom + tokens.space[8], alignItems: 'center', gap: tokens.space[4] }]}>
-          <Text variant="title2" align="center">
-            {topic.name}
-          </Text>
-          <View
-            accessible
-            accessibilityRole="timer"
-            accessibilityLabel={seconds === null ? t('mm.searchingShort') : t('mm.searchingA11y', { seconds })}
-            style={{
-              height: 40,
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: tokens.space[4],
-              paddingHorizontal: tokens.space[5],
-              borderRadius: radius.full,
-              backgroundColor: colors.accent,
-            }}
-          >
-            <Text variant="callout" weight="600" color="onAccent">
-              {t('mm.searching')}
+        {status === 'SEARCHING' && (
+          // Même hauteur que l'entraînement automatique (2026-11-15) : « Annuler la recherche » au même endroit.
+          <View style={[bottom, { bottom: insets.bottom + tokens.space[8], alignItems: 'center', gap: tokens.space[4] }]}>
+            <Text variant="title2" align="center">
+              {topic.name}
             </Text>
-            {seconds !== null && (
-              <Text variant="callout" weight="600" mono color="onAccent">
-                {seconds} s
+            <View
+              accessible
+              accessibilityRole="timer"
+              accessibilityLabel={seconds === null ? t('mm.searchingShort') : t('mm.searchingA11y', { seconds })}
+              style={{
+                height: 40,
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: tokens.space[4],
+                paddingHorizontal: tokens.space[5],
+                borderRadius: radius.full,
+                backgroundColor: colors.accent,
+              }}
+            >
+              <Text variant="callout" weight="600" color="onAccent">
+                {t('mm.searching')}
               </Text>
-            )}
+              {seconds !== null && (
+                <Text variant="callout" weight="600" mono color="onAccent">
+                  {seconds} s
+                </Text>
+              )}
+            </View>
+            <Button full size="L" variant="tinted" tone="destructive" onPress={cancelSearch}>
+              {t('mm.cancel')}
+            </Button>
           </View>
-          <Button full size="L" variant="tinted" tone="destructive" onPress={cancelSearch}>
-            {t('mm.cancel')}
-          </Button>
-        </View>
-      )}
+        )}
 
-      {found && (
-        <View
-          style={[
-            bottom,
-            {
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: tokens.space[5],
-              padding: tokens.space[5],
-              borderRadius: radius.lg,
-              borderWidth: 1,
-              borderColor: colors.border,
-              backgroundColor: colors.surface,
-            },
-          ]}
-        >
-          <Avatar name={opponent?.pseudonym ?? '?'} src={userAvatar(opponent)} size="lg" decorative />
-          <View style={{ flex: 1, minWidth: 0 }}>
-            <Text variant="caption" weight="600" color="correct">
-              {t('mm.found')}
-            </Text>
-            <PlayerName name={opponent?.pseudonym ?? '…'} premium={identity.premium(opponent)} />
-            <Text variant="caption" color="muted" numberOfLines={1}>
-              {opponentMeta}
-            </Text>
+        {found && (
+          <View
+            style={[
+              bottom,
+              {
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: tokens.space[5],
+                padding: tokens.space[5],
+                borderRadius: radius.lg,
+                borderWidth: 1,
+                borderColor: colors.border,
+                backgroundColor: colors.surface,
+              },
+            ]}
+          >
+            <Avatar name={opponent?.pseudonym ?? '?'} src={userAvatar(opponent)} size="lg" decorative />
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text variant="caption" weight="600" color="correct">
+                {t('mm.found')}
+              </Text>
+              <PlayerName name={opponent?.pseudonym ?? '…'} premium={identity.premium(opponent)} />
+              <Text variant="caption" color="muted" numberOfLines={1}>
+                {opponentMeta}
+              </Text>
+            </View>
+            <CheckCircleIcon size={30} weight="fill" color={colors.correct} />
           </View>
-          <CheckCircleIcon size={30} weight="fill" color={colors.correct} />
-        </View>
-      )}
+        )}
 
-      {status === 'EXPIRED' && autoTrain.enabled && (
-        // Plus haut et plus espacé (2026-11-15) : « Annuler l'entraînement » à portée de pouce, loin du bord.
-        <View style={[bottom, { bottom: insets.bottom + tokens.space[8], gap: tokens.space[6] }]}>
-          <Notice
-            tone="training"
-            title={t('mm.autoTitle')}
-            message={t('mm.autoText')}
-          />
-          <Button full size="L" variant="tinted" tone="destructive" onPress={() => router.back()}>
-            {t('mm.cancelTraining')}
-          </Button>
-        </View>
-      )}
+        {status === 'EXPIRED' && autoTrain.enabled && (
+          // Plus haut et plus espacé (2026-11-15) : « Annuler l'entraînement » à portée de pouce, loin du bord.
+          <View style={[bottom, { bottom: insets.bottom + tokens.space[8], gap: tokens.space[6] }]}>
+            <Notice tone="training" title={t('mm.autoTitle')} message={t('mm.autoText')} />
+            <Button full size="L" variant="tinted" tone="destructive" onPress={() => router.back()}>
+              {t('mm.cancelTraining')}
+            </Button>
+          </View>
+        )}
 
-      {status === 'EXPIRED' && !autoTrain.enabled && (
-        <View
-          style={[
-            bottom,
-            {
-              borderRadius: radius.xl,
-              borderWidth: 1,
-              borderColor: colors.border,
-              backgroundColor: colors.surface,
-              paddingVertical: tokens.space[6],
-              paddingHorizontal: tokens.space[5],
-            },
-          ]}
-        >
-          <EmptyState
-            icon={RobotIcon}
-            title={t('mm.noneTitle')}
-            description={t('mm.noneText', { topic: topic.name })}
-            action={
-              <View style={{ alignSelf: 'stretch', gap: tokens.space[3] }}>
-                <Button full size="L" icon={RobotIcon} loading={training.isPending} onPress={() => training.mutate()}>
-                  {t('mm.train')}
-                </Button>
-                <View style={{ flexDirection: 'row', gap: tokens.space[3] }}>
-                  <Button full variant="tinted" style={{ flex: 1 }} loading={retry.isPending} onPress={() => retry.mutate()}>
-                    {t('mm.retry')}
+        {status === 'EXPIRED' && !autoTrain.enabled && (
+          <View
+            style={[
+              bottom,
+              {
+                borderRadius: radius.xl,
+                borderWidth: 1,
+                borderColor: colors.border,
+                backgroundColor: colors.surface,
+                paddingVertical: tokens.space[6],
+                paddingHorizontal: tokens.space[5],
+              },
+            ]}
+          >
+            <EmptyState
+              icon={RobotIcon}
+              title={t('mm.noneTitle')}
+              description={t('mm.noneText', { topic: topic.name })}
+              action={
+                <View style={{ alignSelf: 'stretch', gap: tokens.space[3] }}>
+                  <Button full size="L" icon={RobotIcon} loading={training.isPending} onPress={() => training.mutate()}>
+                    {t('mm.train')}
                   </Button>
-                  <Button full variant="gray" tone="neutral" style={{ flex: 1 }} onPress={() => setPickerOpen(true)}>
-                    {t('mm.friend')}
+                  <View style={{ flexDirection: 'row', gap: tokens.space[3] }}>
+                    <Button full variant="tinted" style={{ flex: 1 }} loading={retry.isPending} onPress={() => retry.mutate()}>
+                      {t('mm.retry')}
+                    </Button>
+                    <Button full variant="gray" tone="neutral" style={{ flex: 1 }} onPress={() => setPickerOpen(true)}>
+                      {t('mm.friend')}
+                    </Button>
+                  </View>
+                  <Button full variant="plain" tone="neutral" onPress={() => router.back()}>
+                    {t('play.close')}
                   </Button>
                 </View>
-                <Button full variant="plain" tone="neutral" onPress={() => router.back()}>
-                  {t('play.close')}
-                </Button>
-              </View>
-            }
-          />
-        </View>
-      )}
+              }
+            />
+          </View>
+        )}
 
-      <PlayerPickerSheet
-        open={pickerOpen}
-        onClose={() => setPickerOpen(false)}
-        topic={topic}
-        onSent={() => {
-          setPickerOpen(false)
-          router.back()
-        }}
-      />
-    </View>
+        <PlayerPickerSheet
+          open={pickerOpen}
+          onClose={() => setPickerOpen(false)}
+          topic={topic}
+          onSent={() => {
+            setPickerOpen(false)
+            router.back()
+          }}
+        />
+      </View>
+    </TopBannerFrame>
   )
 }
