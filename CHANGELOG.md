@@ -1,3 +1,9 @@
+## [1.48.0](https://github.com/joutio/joutio-mobile/compare/v1.47.0...v1.48.0) (2026-11-16)
+
+### Features
+
+* realtime cache refresh, upload progress, waiting rooms badge, ranked from first duel ([250fd64](https://github.com/joutio/joutio-mobile/commit/250fd649d631625569922fbbc209787f1100334d))
+
 ## [1.47.0](https://github.com/joutio/joutio-mobile/compare/v1.46.1...v1.47.0) (2026-11-15)
 
 ### Features
