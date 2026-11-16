@@ -1,3 +1,9 @@
+## [1.49.0](https://github.com/joutio/joutio-mobile/compare/v1.48.0...v1.49.0) (2026-11-16)
+
+### Features
+
+* screen-owned top banner, native report sheet, keyboard toolbar, timer in sync ([ca81af5](https://github.com/joutio/joutio-mobile/commit/ca81af5776eccfa1d3cc67132cad34317a679959))
+
 ## [1.48.0](https://github.com/joutio/joutio-mobile/compare/v1.47.0...v1.48.0) (2026-11-16)
 
 ### Features
