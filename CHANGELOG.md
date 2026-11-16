@@ -1,3 +1,9 @@
+## [1.49.1](https://github.com/joutio/joutio-mobile/compare/v1.49.0...v1.49.1) (2026-11-16)
+
+### Bug Fixes
+
+* **avatar:** Micah eye whites are white ([c707127](https://github.com/joutio/joutio-mobile/commit/c707127e53d57ccfdeb0404d35f026c5a55d5162))
+
 ## [1.49.0](https://github.com/joutio/joutio-mobile/compare/v1.48.0...v1.49.0) (2026-11-16)
 
 ### Features
