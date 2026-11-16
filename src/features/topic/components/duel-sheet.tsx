@@ -94,7 +94,7 @@ export function PlayerPickerSheet({ open, onClose, topic, onSent }: { open: bool
                   name={player.pseudonym}
                   premium={identity.premium(player)}
                   src={userAvatar(player)}
-                  tier={player.provisional ? undefined : tierOf(player.rating)}
+                  tier={tierOf(player.rating)}
                   presence={player.presence?.status === 'ONLINE' ? 'online' : 'offline'}
                   sub={player.presence?.status === 'ONLINE' ? t('presence.online') : undefined}
                   chevron

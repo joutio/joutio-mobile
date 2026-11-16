@@ -3,7 +3,7 @@ import { MAX_PSEUDONYM } from '@joutio/client/profile'
 import type { ApiError } from '@joutio/client/api-types'
 import { useNavigation, usePreventRemove } from 'expo-router'
 import { router } from '@/shared/navigation/router'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { View } from 'react-native'
 import {
   Avatar,
@@ -52,7 +52,9 @@ export function EditProfileScreen() {
   const initial: Draft = { pseudonym: me?.pseudonym ?? '', bio: me?.bio ?? '', country: me?.country ?? null, bannerUrl: me?.bannerUrl ?? null }
   const [draft, setDraft] = useState<Draft>(initial)
   const [countryOpen, setCountryOpen] = useState(false)
-  const [uploading, setUploading] = useState(false)
+  // Avancement de l'envoi d'image (0 à 100) ; `undefined` hors envoi.
+  const [progress, setProgress] = useState<number | undefined>(undefined)
+  const uploading = progress !== undefined
   const [saving, setSaving] = useState(false)
   const savePseudonym = useUpdateMe('pseudonym')
   const saveBio = useUpdateMe('bio')
@@ -88,19 +90,22 @@ export function EditProfileScreen() {
     }),
   )
 
+  const picking = useRef(false)
   const pickBanner = async () => {
-    if (uploading) return
-    setUploading(true)
+    if (uploading || picking.current) return
+    picking.current = true
     try {
       const asset = await pickImage(BANNER_ASPECT)
       if (!asset) return
-      const media = await uploadImage(asset)
+      setProgress(0)
+      const media = await uploadImage(asset, setProgress)
       setDraft((current) => ({ ...current, bannerUrl: media.url }))
     } catch (error) {
       const problem = error as Partial<ApiError> | undefined
       toast.error(t('settings.imageError'), { description: problem?.detail || problem?.message || t('settings.imageRule') })
     } finally {
-      setUploading(false)
+      picking.current = false
+      setProgress(undefined)
     }
   }
 
@@ -139,8 +144,8 @@ export function EditProfileScreen() {
     >
       <ImagePicker
         image={draft.bannerUrl ?? undefined}
-        hint={t('mobile.profile.bannerHint')}
-        busy={uploading}
+        hint={uploading ? t('media.uploadingPercent', { percent: progress }) : t('mobile.profile.bannerHint')}
+        progress={progress}
         onPick={() => void pickBanner()}
         onRemove={() => setDraft({ ...draft, bannerUrl: null })}
       />

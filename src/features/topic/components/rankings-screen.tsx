@@ -203,7 +203,7 @@ export function RankingsScreen() {
                     players={podium.map((entry) => ({
                       name: entry.pseudonym,
                       src: userAvatar(entry),
-                      tier: entry.provisional ? undefined : tierOf(entry.rating),
+                      tier: tierOf(entry.rating),
                       value: formatNumber(scoreOf(entry)),
                       premium: identity.premium(entry),
                       onPress: identity.open(entry.userId),
@@ -237,7 +237,7 @@ export function RankingsScreen() {
                     onPress={identity.open(entry.userId)}
                     chevron
                     src={userAvatar(entry)}
-                    tier={entry.provisional ? undefined : tierOf(entry.rating)}
+                    tier={tierOf(entry.rating)}
                     sub={boardSub(entry)}
                     trail={formatNumber(scoreOf(entry))}
                     highlight={entry.userId === meEntry?.userId}

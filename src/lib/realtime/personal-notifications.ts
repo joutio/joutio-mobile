@@ -1,3 +1,4 @@
+import type { RoomPresence } from '@joutio/client/rooms'
 import { useEffect, useRef } from 'react'
 import { subscribeStomp } from '../ws'
 
@@ -60,4 +61,25 @@ export function usePersonalNotifications(
       wantsResync ? onConnect : undefined,
     )
   }, [userId, wantsResync])
+}
+
+/**
+ * Présence d'un joueur dans un de mes salons (`ROOM_PRESENCE`, éphémère, hors inbox, 2026-11-16) : poussée sur le
+ * même flux personnel, sans `notificationId`.
+ */
+export function useRoomPresenceEvents(userId: string | undefined, handler: (presence: RoomPresence) => void) {
+  const ref = useRef(handler)
+  ref.current = handler
+  useEffect(() => {
+    if (!userId) return
+    return subscribeStomp(`/topic/notifications/${userId}`, (message) => {
+      let envelope: { eventType?: string; payload?: RoomPresence }
+      try {
+        envelope = JSON.parse(message.body) as typeof envelope
+      } catch {
+        return
+      }
+      if (envelope.eventType === 'ROOM_PRESENCE' && envelope.payload?.roomId) ref.current(envelope.payload)
+    })
+  }, [userId])
 }

@@ -2,6 +2,7 @@ import { optimisticUpdate } from '@/lib/optimistic-cache'
 import { queryKeys } from '@/lib/query-keys'
 import { settleChallenge } from '../lib/play-cache'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { usePathname } from 'expo-router'
 import { router } from '@/shared/navigation/router'
 import { useEffect, useState } from 'react'
 import { View } from 'react-native'
@@ -46,12 +47,16 @@ export function RematchHost() {
     if (request && request.expiresAt && seconds <= 0) close()
   }, [request, seconds])
 
+  const pathname = usePathname()
   const accept = useMutation({
     mutationFn: (challengeId: string) => rematchService.accept(challengeId),
     onMutate: (id: string) => optimisticUpdate(client, [queryKeys.challenges()], () => settleChallenge(client, id, 'ACCEPTED')),
     onSuccess: (_result, challengeId) => {
       close()
-      router.push({
+      // Revanche acceptée depuis le résultat : la salle remplace la partie précédente, Quitter ne ramène pas à
+      // l'ancien résultat (2026-11-16).
+      const navigate = /^\/(duel|result)\//.test(pathname) ? router.replace : router.push
+      navigate({
         pathname: '/room/[roomId]',
         params: { roomId: roomOfChallenge(challengeId), topicId: request?.topicId ?? '', topicName: opponent.topic, category: '' },
       })

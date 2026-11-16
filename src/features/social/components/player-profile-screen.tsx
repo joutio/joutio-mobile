@@ -101,8 +101,7 @@ export function PlayerProfileScreen() {
   const titleText = titleTier ? (titleOverview.data?.titles?.fr?.[titleTier] ?? titleOverview.data?.topic.names?.fr ?? '') : ''
 
   const rating = data?.progression?.rating
-  const provisional = data?.progression?.provisional ?? true
-  const tier = rating != null && !provisional ? tierOf(rating) : undefined
+  const tier = rating != null ? tierOf(rating) : undefined
   const canAct = Boolean(data && !data.isMe && !data.suspended && !blocked)
   const latest =
     games.data?.pages
@@ -116,7 +115,6 @@ export function PlayerProfileScreen() {
         pseudonym: data.pseudonym,
         avatarOptions: data.avatarOptions,
         rating: rating ?? 0,
-        provisional,
         following: data.following,
         presence: data.presence,
         suspended: data.suspended,
@@ -211,7 +209,7 @@ export function PlayerProfileScreen() {
                   </ScrollView>
                 )}
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: tokens.space[3] }}>
-                  {tier ? <Badge variant="tier" tier={tier}>{t('common.dotPair', { a: tierLabel(tier), b: formatNumber(rating ?? 0) })}</Badge> : <Pill>{t('profile.unranked')}</Pill>}
+                  {tier && <Badge variant="tier" tier={tier}>{t('common.dotPair', { a: tierLabel(tier), b: formatNumber(rating ?? 0) })}</Badge>}
                   {data.country && <Pill>{`${countryFlag(data.country)} ${countryName(data.country, currentLanguage())}`}</Pill>}
                   {data.suspended && <Pill tone="suspended">{t('onboarding.ended.suspendedTitle')}</Pill>}
                   {blocked && <Pill tone="wrong">{t('mobile.social.blockedBadge')}</Pill>}

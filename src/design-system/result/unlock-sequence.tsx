@@ -1,6 +1,6 @@
 import PagerView, { type PagerViewRef } from '@expo/ui/community/pager-view'
 import { useRef, type ReactNode } from 'react'
-import { ScrollView, View } from 'react-native'
+import { View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ShareNetworkIcon } from '../icons'
 import { Button } from '../primitives/button'
@@ -49,15 +49,12 @@ function Body({ pages, step, onStepChange, onDone, onShare }: UnlockSequenceProp
           )}
         </View>
       </View>
-      {/* Balayage horizontal entre les déblocages (pager natif) ; chacun défile entre les deux barres si l'écran est court. */}
+      {/* Balayage horizontal entre les déblocages (pager natif) ; chacun tient entre les deux barres, sans défiler
+          (2026-11-16) : son héros se comprime sur un écran court. */}
       <PagerView ref={pager} style={{ flex: 1 }} initialPage={step} onPageSelected={(event) => onStepChange(event.nativeEvent.position)}>
         {pages.map((page, index) => (
-          <View key={index} style={{ flex: 1 }}>
-            <UnlockActiveContext.Provider value={index === step}>
-              <ScrollView style={{ flex: 1 }} contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false} bounces={false}>
-                {page}
-              </ScrollView>
-            </UnlockActiveContext.Provider>
+          <View key={index} style={{ flex: 1, overflow: 'hidden' }}>
+            <UnlockActiveContext.Provider value={index === step}>{page}</UnlockActiveContext.Provider>
           </View>
         ))}
       </PagerView>

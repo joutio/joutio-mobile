@@ -1,5 +1,5 @@
 import { View, type StyleProp, type ViewStyle } from 'react-native'
-import { ArrowClockwiseIcon, CheckCircleIcon, InfoIcon, RobotIcon, SwordIcon, WifiSlashIcon, type Icon } from '../icons'
+import { ArrowClockwiseIcon, CheckCircleIcon, InfoIcon, RobotIcon, SwordIcon, WarningIcon, WifiSlashIcon, type Icon } from '../icons'
 import { mix } from '../theme/color'
 import { HAIRLINE } from '../theme/hairline'
 import { useTheme } from '../theme/theme-provider'
@@ -8,7 +8,7 @@ import { Button } from './button'
 import { Text } from './text'
 import { t, useT } from '@/lib/i18n'
 
-export type BannerTone = 'error' | 'success' | 'info' | 'live' | 'training'
+export type BannerTone = 'error' | 'warning' | 'success' | 'info' | 'live' | 'training'
 
 /** États de la bannière de connexion globale (`etats-systeme.md`) : réseau et temps réel. */
 export type BannerConnection = 'offline' | 'reconnecting' | 'retrying' | 'failed' | 'restored'
@@ -79,6 +79,7 @@ export function Banner(props: BannerProps) {
   // Teinte posée sur `bg` : la bande reste opaque sous la barre d'état.
   const tones = {
     error: { icon: WifiSlashIcon, iconColor: colors.wrong, background: mix(colors.wrong, colors.bg, 0.12), filledAction: false, fill: false },
+    warning: { icon: WarningIcon, iconColor: colors.accentInk, background: mix(colors.accent, colors.bg, 0.12), filledAction: false, fill: true },
     success: { icon: CheckCircleIcon, iconColor: colors.correct, background: mix(colors.correct, colors.bg, 0.12), filledAction: false, fill: true },
     info: { icon: InfoIcon, iconColor: colors.muted, background: colors.raised, filledAction: false, fill: false },
     live: { icon: SwordIcon, iconColor: colors.accentInk, background: colors.warm, filledAction: true, fill: true },

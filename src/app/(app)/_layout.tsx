@@ -7,6 +7,7 @@ import { View } from 'react-native'
 import { TopBannerHost } from '@/shared/components/top-banner-host'
 import { nativeHeaderOptions, useTheme } from '@/design-system'
 import { NotificationsRuntime } from '@/features/notifications/components/notifications-runtime'
+import { RealtimeInvalidation } from '@/features/realtime/realtime-invalidation'
 import { RematchHost } from '@/features/play/components/rematch-host'
 import { PremiumHost } from '@/features/premium/premium-host'
 import { ConnectionBanner } from '@/shared/components/connection-banner'
@@ -68,6 +69,8 @@ function AppNavigation() {
           </Stack>
       </TopBannerHost>
       {/* Demandes de revanche reçues, au-dessus de tout écran (sauf pendant un duel). */}
+      {/* Événements poussés par le serveur : chaque type relit les vues qu'il touche (table unique). */}
+      <RealtimeInvalidation />
       <NotificationsRuntime />
       <RematchHost />
       {/* Feuille Premium, ouverte depuis Réglages, Maîtrise ou l'éditeur d'avatar. */}

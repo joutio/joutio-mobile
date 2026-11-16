@@ -10,7 +10,7 @@ import { useT } from '@/lib/i18n'
 /** Fiche publique d'un joueur. */
 export function usePlayerProfile(userId: string, enabled = true) {
   return useQuery({
-    queryKey: ['profiles', userId, 'profile'],
+    queryKey: queryKeys.profiles.profile(userId),
     queryFn: () => socialService.profile(userId),
     enabled: enabled && Boolean(userId),
     staleTime: 30_000,
@@ -42,7 +42,7 @@ export function useFollowPlayer(userId: string) {
         client.setQueryData<PlayerProfileView>(queryKeys.profiles.profile(myId), (profile) =>
           profile ? { ...profile, followingCount: Math.max(0, profile.followingCount + delta) } : profile,
         )
-        for (const [key, data] of client.getQueriesData<InfiniteData<PageResponse<PlayerCardView>>>({ queryKey: ['contacts'] })) {
+        for (const [key, data] of client.getQueriesData<InfiniteData<PageResponse<PlayerCardView>>>({ queryKey: queryKeys.contacts.all() })) {
           const remove = !follow && key[1] === myId && key[2] === 'following'
           const contained = data?.pages.some((page) => page.content.some((player) => player.userId === userId)) ?? false
           const add =
@@ -58,7 +58,6 @@ export function useFollowPlayer(userId: string) {
                 pseudonym: previous.pseudonym,
                 avatarOptions: previous.avatarOptions,
                 rating: previous.progression?.rating ?? 0,
-                provisional: previous.progression?.provisional ?? true,
                 following: true,
                 presence: previous.presence,
                 suspended: previous.suspended,
@@ -98,7 +97,7 @@ export function useHeadToHead(against: string) {
   const me = useMe(true)
   const userId = me.data?.userId ?? ''
   return useQuery({
-    queryKey: ['profiles', userId, 'head-to-head', against],
+    queryKey: queryKeys.profiles.headToHead(userId, against),
     queryFn: () => socialService.headToHead(userId, against),
     enabled: Boolean(userId && against),
     staleTime: 60_000,

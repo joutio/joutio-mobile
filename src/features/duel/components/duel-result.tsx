@@ -46,7 +46,7 @@ import { ResultPages } from './result-pages'
 import { DuelReview, reviewRoundsOf } from './duel-review'
 import { ReportPlayerSheet } from './report-sheets'
 import { useMyAvatar } from '@/features/avatar/lib/avatar-preview'
-import { usePlayerAvatar, usePlayerPremium, usePlayerRanked } from '@/features/social/hooks/use-player-avatar'
+import { usePlayerAvatar, usePlayerPremium } from '@/features/social/hooks/use-player-avatar'
 import { usePlayerIdentity } from '@/features/me'
 import { t, useLanguage, useT } from '@/lib/i18n'
 
@@ -71,8 +71,7 @@ function unlocksOf(result: GameResultView, streakDays: number | null): Unlock[] 
   if (result.botGame) return []
   const unlocks: Unlock[] = streakDays ? [{ kind: 'streak', days: streakDays }] : []
   const delta = result.eloDelta ?? 0
-  // Rang provisoire : pas encore de palier acquis, donc pas de promotion à célébrer.
-  if (result.rated && delta > 0 && !result.progression.provisional) {
+  if (result.rated && delta > 0) {
     const from = tierOf(result.progression.rating - delta)
     const tier = tierOf(result.progression.rating)
     if (from !== tier) unlocks.push({ kind: 'rank', from, tier })
@@ -175,17 +174,8 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
   // courant du profil. Le repli sur `/api/me` ne sert qu'avant l'arrivée du bilan.
   const gameProgression = data?.progression
   const rating = gameProgression?.rating ?? me.data?.progression?.rating ?? 0
-  const myTier = gameProgression
-    ? gameProgression.provisional
-      ? undefined
-      : tierOf(gameProgression.rating)
-    : me.data?.progression && !me.data.progression.provisional
-      ? tierOf(me.data.progression.rating)
-      : undefined
-  // `opponentRated` dit seulement que la partie a compté pour son Elo, y compris en période provisoire : le cadre
-  // attend un rang acquis (profil non provisoire), comme le mien. Sinon, avatar sans cadre (lab), jamais le Fer.
-  const opponentRanked = usePlayerRanked(opponentId, !bot)
-  const opponentTier = data && data.opponentRated && data.opponentRating != null && opponentRanked ? tierOf(data.opponentRating) : undefined
+  const myTier = gameProgression ? tierOf(gameProgression.rating) : me.data?.progression ? tierOf(me.data.progression.rating) : undefined
+  const opponentTier = data && data.opponentRated && data.opponentRating != null ? tierOf(data.opponentRating) : undefined
   // La série est lue avant d'ouvrir la séquence : son écran vient en premier et ne doit pas s'insérer en cours de route.
   const streak = useStreakUnlock(gameId, userId, celebrate && !bot)
   const streakPending = celebrate && !sequenceDone && !bot && !streak.isFetched
@@ -320,7 +310,7 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
                       tier: myTier,
                       score: myScore,
                       streak: streakOf(game, userId),
-                      meta: bot ? t('result.unranked', { elo: formatNumber(rating) }) : undefined,
+                      meta: bot ? t('result.trainingElo', { elo: formatNumber(rating) }) : undefined,
                       premium: identity.myPremium,
                       onOpen: identity.open(userId),
                     }}

@@ -26,8 +26,6 @@ export interface AvatarProps {
   src?: string | number
   size?: AvatarSize
   tier?: TierCode
-  /** Classement non établi : filet pointillé, image désaturée. */
-  provisional?: boolean
   /** Rang pas encore atteint. */
   locked?: boolean
   presence?: Presence
@@ -44,7 +42,7 @@ const initials = (name: string) =>
     .join('')
     .toUpperCase()
 
-export function Avatar({ name, src, size = 'md', tier, provisional = false, locked = false, presence, decorative = false, style }: AvatarProps) {
+export function Avatar({ name, src, size = 'md', tier, locked = false, presence, decorative = false, style }: AvatarProps) {
   const t = useT()
   const { colors, radius } = useTheme()
   const px = AVATAR_SIZES[size]
@@ -52,8 +50,7 @@ export function Avatar({ name, src, size = 'md', tier, provisional = false, lock
   // Un seul nom accessible : l'état n'est jamais porté par la seule couleur (kit § 6).
   const label = [
     name,
-    tier && !provisional ? t('mobile.ds.rankA11y', { tier: t(tierKey(tier)) }) : undefined,
-    provisional ? t('mobile.ds.provisional') : undefined,
+    tier ? t('mobile.ds.rankA11y', { tier: t(tierKey(tier)) }) : undefined,
     locked ? t('mobile.profile.locked') : undefined,
     presence ? PRESENCE_LABEL()[presence] : undefined,
   ]
@@ -97,7 +94,7 @@ export function Avatar({ name, src, size = 'md', tier, provisional = false, lock
     </View>
   )
 
-  const framed = tier && !provisional && px >= FRAME_MIN_SIZE
+  const framed = tier && px >= FRAME_MIN_SIZE
 
   return (
     <View
@@ -116,10 +113,7 @@ export function Avatar({ name, src, size = 'md', tier, provisional = false, lock
         <View
           style={[
             { flex: 1, borderRadius: radius.full },
-            // Anneau pointillé **à l'extérieur** (2026-11-07) : le visage garde toute sa taille, comme un avatar classé
-            // (Profil et Fiche joueur à la même grandeur).
-            provisional && { outlineWidth: 2, outlineStyle: 'dashed', outlineColor: colors.border, outlineOffset: 2 },
-            tier && !provisional && { outlineWidth: 2, outlineStyle: 'solid', outlineColor: tokens.tier[tier].hex },
+            tier && { outlineWidth: 2, outlineStyle: 'solid', outlineColor: tokens.tier[tier].hex },
           ]}
         >
           {image}

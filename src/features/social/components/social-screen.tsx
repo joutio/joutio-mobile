@@ -151,7 +151,7 @@ function PeopleList({
                   name={player.pseudonym}
                   premium={identity.premium(player)}
                   src={userAvatar(player)}
-                  tier={player.provisional ? undefined : tierOf(player.rating)}
+                  tier={tierOf(player.rating)}
                   presence={presenceOf(player.presence)}
                   sub={presenceSub(player.presence)}
                   last={index === players.length - 1}

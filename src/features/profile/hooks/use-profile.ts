@@ -97,7 +97,7 @@ export function useUpdateMe<K extends MeField>(field: K) {
         if (field !== 'interests')
           client.setQueryData<PlayerProfileView>(queryKeys.profiles.profile(userId), (profile) => (profile ? { ...profile, [field]: value } : profile))
         if (field === 'pseudonym' || field === 'avatarOptions') {
-          client.setQueriesData<InfiniteData<PageResponse<PlayerCardView>>>({ queryKey: ['contacts'] }, (data) =>
+          client.setQueriesData<InfiniteData<PageResponse<PlayerCardView>>>({ queryKey: queryKeys.contacts.all() }, (data) =>
             data
               ? {
                   ...data,

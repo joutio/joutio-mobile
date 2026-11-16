@@ -30,7 +30,7 @@ export interface ResultPlayer {
   score: number
   /** Résultat de chaque manche. */
   streak: readonly RoundResult[]
-  /** Sous le nom, par exemple `Elo 856 · non classé`. */
+  /** Sous le nom, par exemple `Elo 856 · entraînement, sans effet sur l'Elo`. */
   meta?: string
   /** `PremiumBadge` après le pseudonyme. */
   premium?: boolean

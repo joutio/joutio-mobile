@@ -48,7 +48,7 @@ export function useGameResult(gameId: string, enabled: boolean, waitForReward = 
   const client = useQueryClient()
   const applied = useRef<string | null>(null)
   const result = useQuery({
-    queryKey: ['games', gameId, 'result'],
+    queryKey: queryKeys.games.result(gameId),
     queryFn: () => gameService.result(gameId),
     enabled,
     retry: 3,
@@ -83,10 +83,10 @@ export function useGameResult(gameId: string, enabled: boolean, waitForReward = 
     // Une partie terminée est un résultat calculé par le serveur, pas une mutation du joueur : les vues qu'elle touche
     // se relisent une fois le bilan arrivé (écran actif tout de suite, les autres à leur prochain affichage). Sans ça,
     // l'historique, les parties du sujet, le classement, la série et les sujets joués restaient figés jusqu'au tiré.
-    if (me) void client.invalidateQueries({ queryKey: ['profiles', me.userId] })
+    if (me) void client.invalidateQueries({ queryKey: queryKeys.profiles.all(me.userId) })
     void client.invalidateQueries({ queryKey: queryKeys.topic.all(data.topic.topicId) })
     void client.invalidateQueries({ queryKey: queryKeys.home() })
-    void client.invalidateQueries({ queryKey: ['active-games'] })
+    void client.invalidateQueries({ queryKey: queryKeys.games.activeAll() })
     void client.invalidateQueries({ queryKey: queryKeys.rooms() })
   }, [client, gameId, result.data, waitForReward])
   return result
@@ -98,7 +98,7 @@ export function useGameResult(gameId: string, enabled: boolean, waitForReward = 
  */
 export function useGameHistory(gameId: string) {
   return useQuery({
-    queryKey: ['games', gameId, 'notifications'],
+    queryKey: queryKeys.games.notifications(gameId),
     queryFn: () => gameService.notifications(gameId),
     enabled: Boolean(gameId),
     staleTime: Infinity,
@@ -142,7 +142,7 @@ export function usePrefetchQuestionImages(urls: readonly string[]) {
  */
 export function useStreakUnlock(gameId: string, userId: string | undefined, enabled: boolean) {
   return useQuery({
-    queryKey: ['games', gameId, 'streak-unlock'],
+    queryKey: queryKeys.games.streakUnlock(gameId),
     queryFn: async () => streakDayUnlocked(await profileService.activity(userId ?? ''), activityDate(readServerNow())),
     enabled: enabled && Boolean(userId),
     staleTime: Infinity,

@@ -83,7 +83,9 @@ export function QuestionEditorScreen() {
   const [loaded, setLoaded] = useState(!questionId || original !== undefined)
   const [language, setLanguage] = useState<Language>('fr')
   const [imageChanged, setImageChanged] = useState(false)
-  const [uploading, setUploading] = useState(false)
+  // Avancement de l'envoi d'image (0 à 100) ; `undefined` hors envoi.
+  const [progress, setProgress] = useState<number | undefined>(undefined)
+  const uploading = progress !== undefined
   // Confirmations rendues dans cet écran : le `Modal` du `DialogHost` racine reste sous une modale plein écran iOS.
   const [confirm, setConfirm] = useState<'archive' | 'delete'>()
 
@@ -112,15 +114,15 @@ export function QuestionEditorScreen() {
   const pick = async () => {
     const asset = await pickImage(QUESTION_IMAGE_ASPECT)
     if (!asset) return
-    setUploading(true)
+    setProgress(0)
     try {
-      const media = await uploadImage(asset)
+      const media = await uploadImage(asset, setProgress)
       setDraft((current) => ({ ...current, imageUrl: media.url }))
       setImageChanged(true)
     } catch {
       toast.error(t('settings.imageError'), { description: t('mobile.authoring.imageFormat') })
     } finally {
-      setUploading(false)
+      setProgress(undefined)
     }
   }
 
@@ -165,8 +167,8 @@ export function QuestionEditorScreen() {
       >
         <ImagePicker
           image={draft.imageUrl}
-          hint={t('workshop.imageHint')}
-          busy={uploading}
+          hint={uploading ? t('media.uploadingPercent', { percent: progress }) : t('workshop.imageHint')}
+          progress={progress}
           onPick={() => void pick()}
           onRemove={() => {
             setDraft({ ...draft, imageUrl: undefined, alt: { fr: '', en: '' } })

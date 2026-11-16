@@ -98,7 +98,7 @@ export function UnlockContent({ tier, accent, crumbLead, crumbFrom, hero, heroMo
   const ink = tier ? mix(glow, colors.text, 0.6) : (accent?.ink ?? colors.accentInk)
   const crumbTo = tier ? t(tierKey(tier)) : (accent?.label ?? '')
   return (
-    <View style={{ flexGrow: 1, alignItems: 'center', gap: tokens.space[4], paddingHorizontal: tokens.space[6], paddingTop: tokens.space[5] }}>
+    <View style={{ flex: 1, minHeight: 0, alignItems: 'center', gap: tokens.space[4], paddingHorizontal: tokens.space[6], paddingTop: tokens.space[5] }}>
       <View
         pointerEvents="none"
         style={{
@@ -121,7 +121,8 @@ export function UnlockContent({ tier, accent, crumbLead, crumbFrom, hero, heroMo
           {crumbTo}
         </Text>
       </View>
-      <View style={{ height: 236, alignItems: 'center', justifyContent: 'center' }}>
+      {/* Écran court : le héros (236 pt, surtout de l'air autour du ruban ou du cadre) se comprime, rien ne défile. */}
+      <View style={{ flexBasis: 236, flexShrink: 1, minHeight: 0, alignItems: 'center', justifyContent: 'center' }}>
         <Hero motion={heroMotion}>{hero}</Hero>
       </View>
       <Text variant="callout" weight="600" color={ink}>
@@ -134,7 +135,7 @@ export function UnlockContent({ tier, accent, crumbLead, crumbFrom, hero, heroMo
         {text}
       </Text>
       {extra && <View style={{ marginTop: tokens.space[2], minHeight: 32, alignItems: 'center', justifyContent: 'center' }}>{extra}</View>}
-      <View style={{ flex: 1 }} />
+      <View style={{ flex: 1, minHeight: 0 }} />
       {next && (
         <View
           style={{

@@ -25,13 +25,10 @@ export function settleChallenge(client: QueryClient, id: string, status: Challen
   client.setQueryData<ChallengeView[]>(queryKeys.challenges(), (items) => items?.map((item) => (item.challengeId === id ? { ...item, status } : item)))
 }
 
-/** Sync both list consumers and the detail used when returning from the room. */
+/** Met à jour la liste des salons (une seule requête partagée) et le détail relu au retour dans le salon. */
 export function settleRoom(client: QueryClient, id: string, status: RoomStatus) {
-  client.setQueriesData<RoomView[]>(
-    { predicate: (query) => query.queryKey[0] === 'tracked-rooms' || (query.queryKey[0] === 'rooms' && query.queryKey[1] === 'mine') },
-    (items) => items?.map((item) => (item.roomId === id ? { ...item, status } : item)),
-  )
-  client.setQueryData<RoomView>(['rooms', id], (item) => (item ? { ...item, status } : item))
+  client.setQueryData<RoomView[]>(queryKeys.rooms(), (items) => items?.map((item) => (item.roomId === id ? { ...item, status } : item)))
+  client.setQueryData<RoomView>(queryKeys.room(id), (item) => (item ? { ...item, status } : item))
   if (status !== 'WAITING_PLAYERS')
     client.setQueryData<ChallengeView[]>(queryKeys.challenges(), (items) =>
       items?.map((item) =>

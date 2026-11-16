@@ -200,7 +200,7 @@ export function useContacts(direction: 'following' | 'followers', query: string,
   const me = useMe(true)
   const userId = me.data?.userId ?? ''
   return useInfiniteQuery({
-    queryKey: ['contacts', userId, direction, query, sort],
+    queryKey: queryKeys.contacts.list(userId, direction, query, sort),
     queryFn: ({ pageParam }) => playService.contacts(userId, direction, query, sort, pageParam),
     initialPageParam: 0,
     getNextPageParam: (last) => (last.last ? undefined : last.page + 1),
@@ -214,7 +214,7 @@ export function useContacts(direction: 'following' | 'followers', query: string,
 
 /** Salle : vue REST (sujet, adversaire) et état replié des notifications (REST à l'ouverture, puis STOMP). */
 export function useRoom(roomId: string) {
-  const view = useQuery({ queryKey: ['rooms', roomId], queryFn: () => playService.room(roomId), staleTime: Infinity, retry: 2 })
+  const view = useQuery({ queryKey: queryKeys.room(roomId), queryFn: () => playService.room(roomId), staleTime: Infinity, retry: 2 })
   const stream = useNotificationStream<RoomNotification, Room>(
     roomId
       ? {

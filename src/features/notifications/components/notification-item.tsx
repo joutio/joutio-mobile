@@ -73,7 +73,7 @@ export function NotificationItem({ notification, challenge, last }: { notificati
           ? {
               name,
               src: profile ? (avatarSvg(profile.avatarOptions, profile.userId) ?? undefined) : undefined,
-              tier: profile?.progression && !profile.progression.provisional ? tierOf(profile.progression.rating) : undefined,
+              tier: profile?.progression ? tierOf(profile.progression.rating) : undefined,
             }
           : undefined
       }

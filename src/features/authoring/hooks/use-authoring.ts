@@ -1,4 +1,5 @@
-import { descriptionsDraft } from '@joutio/client/authoring'
+import { descriptionsDraft, sameNameTopic } from '@joutio/client/authoring'
+import { useDebounced } from '@/shared/hooks/use-debounced'
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { toast, type CategoryCode } from '@/design-system'
 import { useMe } from '@/features/me'
@@ -26,7 +27,7 @@ import { authoringService } from '../lib/authoring-service'
 import { t, useT } from '@/lib/i18n'
 
 function closeCachedReports(client: QueryClient, topicId: string, questionId: string, status: 'RESOLVED' | 'DISMISSED') {
-  client.setQueriesData<ReportDetail>({ queryKey: ['authoring', topicId, 'report-detail'] }, (detail) =>
+  client.setQueriesData<ReportDetail>({ queryKey: queryKeys.authoring.reportDetails(topicId) }, (detail) =>
     detail?.questionId === questionId && detail.report.status === 'OPEN' ? { ...detail, report: { ...detail.report, status } } : detail,
   )
   client.setQueryData<OwnerQuestionReport[]>(['authoring', topicId, 'question-reports', questionId], (items) =>
@@ -96,7 +97,7 @@ export function useMyTopics(enabled = true) {
 
 /** Un de mes sujets, lu dans la liste Mes sujets (le BFF n'a pas de vue auteur d'un sujet seul). */
 export function useMyTopic(topicId: string) {
-  const workshop = useQuery({ queryKey: ['authoring', topicId, 'workshop'], queryFn: () => authoringService.workshop(topicId), enabled: Boolean(topicId) })
+  const workshop = useQuery({ queryKey: queryKeys.authoring.workshop(topicId), queryFn: () => authoringService.workshop(topicId), enabled: Boolean(topicId) })
   return { ...workshop, topic: workshop.data?.topic, permissions: workshop.data?.permissions, titles: workshop.data?.titles ?? null, closedReason: workshop.data?.closedReason ?? null }
 }
 
@@ -155,7 +156,7 @@ function patchTopic(client: QueryClient, topicId: string, patch: (topic: TopicCa
   )
   client.setQueryData<TopicOverviewView>(queryKeys.topic.overview(topicId), (view) => (view ? { ...view, topic: patch(view.topic) } : view))
   const apply = (topic: TopicCardView) => (topic.topicId === topicId ? patch(topic) : topic)
-  client.setQueriesData<InfiniteData<TopicPage>>({ queryKey: ['topics', 'list'] }, (data) =>
+  client.setQueriesData<InfiniteData<TopicPage>>({ queryKey: queryKeys.topics.lists() }, (data) =>
     data ? { ...data, pages: data.pages.map((page) => ({ ...page, topics: page.topics.map(apply) })) } : data,
   )
   client.setQueryData<HomeView>(queryKeys.home(), (home) =>
@@ -520,7 +521,7 @@ export function useDismissReports(topicId: string) {
 }
 
 export function useTeam(topicId: string) {
-  return useQuery({ queryKey: ['authoring', topicId, 'team'], queryFn: () => authoringService.team(topicId), enabled: Boolean(topicId) })
+  return useQuery({ queryKey: queryKeys.authoring.team(topicId), queryFn: () => authoringService.team(topicId), enabled: Boolean(topicId) })
 }
 export function useTeamChange(topicId: string) {
   const t = useT()
@@ -602,4 +603,19 @@ export function useArchiveQuestion(topicId: string) {
       toast.error(t('workshop.lifecycleError'))
     },
   })
+}
+
+/**
+ * Sujet publié qui porte déjà ce nom (2026-11-16) : avertissement non bloquant de la feuille « Nouveau sujet », pour
+ * inciter à un titre plus original et plus facile à retrouver. Recherche après 300 ms sans frappe, dès 3 caractères.
+ */
+export function useSameNameTopic(name: string) {
+  const search = useDebounced(name.trim(), 300)
+  const candidates = useQuery({
+    queryKey: queryKeys.authoring.named(search),
+    queryFn: () => authoringService.topicsNamed(search),
+    enabled: search.length >= 3,
+    staleTime: 60_000,
+  })
+  return search.length >= 3 && search === name.trim() ? sameNameTopic(search, candidates.data?.content) : undefined
 }

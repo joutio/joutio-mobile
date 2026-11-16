@@ -39,6 +39,8 @@ export const authoringService = {
   myTopics: () => api.get<PageResponse<TopicCardView>>('/api/topics/contributed', { params: { page: 0, size: 100 } }),
   /** Sujets dont je suis le créateur (`mine=true`, exclusif des autres filtres) : seuls comptent dans le plafond. */
   createdTopics: () => api.get<PageResponse<TopicCardView>>(ENDPOINTS.topics.list, { params: { mine: true, page: 0, size: 100 } }),
+  /** Sujets publiés dont le nom contient `query` (catalogue) : l'atelier y cherche un nom identique. */
+  topicsNamed: (query: string) => api.get<PageResponse<TopicCardView>>(ENDPOINTS.topics.list, { params: { q: query, page: 0, size: 20 } }),
 
   createTopic: (name: string, category: CategoryCode) => api.post<IdResponse>(ENDPOINTS.topics.list, { names: { fr: name }, category }),
 

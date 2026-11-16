@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { Modal, Pressable, StyleSheet, View } from 'react-native'
+import { TrueSheetOverlay } from '@lodev09/react-native-true-sheet'
+import { BackHandler, Pressable, StyleSheet, View } from 'react-native'
 import Animated, { Easing, ReduceMotion, useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { scheduleOnRN } from 'react-native-worklets'
@@ -38,8 +39,13 @@ export interface DialogOptions {
   sheet?: boolean
   /** Confirmation d'un écran immersif : le panneau reste sombre même si le thème système est clair. */
   forceDark?: boolean
-  /** Fermeture sans choix (voile, retour Android) ; avec `showDialog` uniquement. */
+  /** Fermeture sans choix (voile, retour Android, remplacement par un autre dialog) ; avec `showDialog` uniquement. */
   onClose?: () => void
+  /**
+   * Le dialog a quitté l'écran (fin de l'animation de fermeture). Un écran système à présenter ensuite (sélecteur de
+   * photo) attend ce signal plutôt que le toucher du bouton (2026-11-16).
+   */
+  onDismissed?: () => void
 }
 
 export interface DialogProps extends DialogOptions {
@@ -58,7 +64,7 @@ const CLOSE_TIMING = { duration: 140, easing: Easing.in(Easing.quad), reduceMoti
  * Même mouvement que `Menu` : le panneau grandit de 86 % à 100 % en ressort (depuis son centre, ou son bord bas en
  * feuille), le voile suit ; la fermeture le rétracte en 140 ms. Sous mouvement réduit, il apparaît d'un coup.
  */
-export function Dialog({ open, onClose, title, message, icon: IconComponent, tone = 'neutral', actions, sheet = false }: DialogProps) {
+export function Dialog({ open, onClose, onDismissed, title, message, icon: IconComponent, tone = 'neutral', actions, sheet = false }: DialogProps) {
   const t = useT()
   const { colors, radius } = useTheme()
   const insets = useSafeAreaInsets()
@@ -71,6 +77,27 @@ export function Dialog({ open, onClose, title, message, icon: IconComponent, ton
   }
   const [mounted, setMounted] = useState(open)
   const progress = useSharedValue(0)
+  const dismissed = useRef(onDismissed)
+  dismissed.current = onDismissed
+  const shown = useRef(false)
+  useEffect(() => {
+    if (mounted) shown.current = true
+    else if (shown.current) {
+      shown.current = false
+      dismissed.current?.()
+    }
+  }, [mounted])
+  // Retour Android : ferme le dialog sans choix (l'overlay n'a pas de `onRequestClose`, contrairement à `Modal`).
+  const dismissRef = useRef(dismiss)
+  dismissRef.current = dismiss
+  useEffect(() => {
+    if (!open) return
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      dismissRef.current()
+      return true
+    })
+    return () => subscription.remove()
+  }, [open])
 
   useEffect(() => {
     if (open) {
@@ -125,7 +152,11 @@ export function Dialog({ open, onClose, title, message, icon: IconComponent, ton
   }
 
   return (
-    <Modal visible transparent animationType="none" statusBarTranslucent navigationBarTranslucent onRequestClose={dismiss}>
+    // `TrueSheetOverlay` (2026-11-16, remplace `Modal`) : couche native au-dessus de toute feuille présentée. Une `Modal`
+    // se présentait depuis le contrôleur racine, qui présente déjà la TrueSheet : le dialog ouvert depuis une feuille
+    // (vignette, pictogramme) n'était pas touchable. Aucun contrôleur n'est présenté : le sélecteur de photo s'ouvre
+    // ensuite sans course avec une modale en train de partir.
+    <TrueSheetOverlay>
       <View
         style={[
           StyleSheet.absoluteFill,
@@ -209,7 +240,7 @@ export function Dialog({ open, onClose, title, message, icon: IconComponent, ton
           </View>
         </Animated.View>
       </View>
-    </Modal>
+    </TrueSheetOverlay>
   )
 }
 
@@ -225,7 +256,13 @@ let sequence = 0
 const useDialogStore = create<DialogStore>((set) => ({
   current: null,
   open: false,
-  show: (options) => set({ current: { ...options, key: ++sequence }, open: true }),
+  show: (options) =>
+    set((state) => {
+      // Un dialog encore ouvert est remplacé : il se ferme sans choix (sa promesse éventuelle se résout).
+      const replaced = state.open ? state.current : null
+      if (replaced) queueMicrotask(() => replaced.onClose?.())
+      return { current: { ...options, key: ++sequence }, open: true }
+    }),
   close: () => set({ open: false }),
 }))
 

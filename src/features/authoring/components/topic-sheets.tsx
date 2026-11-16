@@ -1,11 +1,14 @@
 import { MAX_DESCRIPTION } from '@joutio/client/authoring'
 import { useEffect, useState } from 'react'
 import { View } from 'react-native'
-import { Button, Field, ListGroup, ListRow, MobileSheet, RadioGroup, Segmented, Text, tokens, type CategoryCode } from '@/design-system'
+import { Button, Field, ListGroup, ListRow, MobileSheet, Notice, RadioGroup, Segmented, Text, tokens, type CategoryCode } from '@/design-system'
 import type { Language } from '@joutio/client/api-types'
 import { MAX_NAME } from '@joutio/client/authoring'
 import type { Localized } from '@joutio/client/authoring'
 import { LANGUAGE_NAME, categoryKey, t, useT } from '@/lib/i18n'
+import { router } from '@/shared/navigation/router'
+import { topicName } from '@/shared/utils/topic-name'
+import { useSameNameTopic } from '../hooks/use-authoring'
 
 export const UNIVERSES = Object.keys(tokens.category) as CategoryCode[]
 /** Nom de l'univers dans la langue courante (lu au rendu). */
@@ -71,6 +74,7 @@ export function CreateTopicSheet({
   const t = useT()
   const [name, setName] = useState('')
   const [category, setCategory] = useState<CategoryCode>('GENERAL')
+  const sameName = useSameNameTopic(name)
   const [universeOpen, setUniverseOpen] = useState(false)
   useEffect(() => {
     if (!open) return
@@ -98,6 +102,20 @@ export function CreateTopicSheet({
             counter={t('mobile.authoring.counter', { count: name.length, max: MAX_NAME })}
             onChangeText={setName}
           />
+          {sameName && (
+            <Notice
+              tone="warning"
+              title={t('workshop.duplicateName')}
+              message={topicName(sameName.names)}
+              action={{
+                label: t('workshop.duplicateNameOpen'),
+                onPress: () => {
+                  onClose()
+                  router.push({ pathname: '/home/topic/[id]', params: { id: sameName.topicId } })
+                },
+              }}
+            />
+          )}
           <ListGroup>
             <ListRow label={t('topics.universes')} control="chevron" value={universeLabel(category)} onPress={() => setUniverseOpen(true)} last />
           </ListGroup>

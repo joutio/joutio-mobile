@@ -2,13 +2,13 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { AppState } from 'react-native'
 import { useConnectionStore } from '@/lib/ws'
-import { usePersonalNotifications } from '@/lib/realtime/personal-notifications'
 import { challengesService } from '@/features/challenges/lib/challenges-service'
 import { gameService } from '@/features/duel/lib/game-service'
 import { reconcileRooms } from '../lib/play-cache'
 import { topicName } from '@/shared/utils/topic-name'
 import { RoomWatch } from '../components/room-watch'
 import { GameWatch } from '../components/game-watch'
+import { queryKeys } from '@/lib/query-keys'
 
 export interface OngoingGame {
   gameId: string
@@ -40,10 +40,10 @@ export function PlaySessionProvider({ userId, children }: { userId: string; chil
   const finished = useRef(new Set<string>())
   const retiredRooms = useRef(new Set<string>())
   const connection = useConnectionStore((state) => state.status)
-  const active = useQuery({ queryKey: ['active-games', userId], queryFn: gameService.active, enabled: Boolean(userId) })
+  const active = useQuery({ queryKey: queryKeys.games.active(userId ?? ''), queryFn: gameService.active, enabled: Boolean(userId) })
   const rooms = useQuery({
-    queryKey: ['tracked-rooms', userId],
-    queryFn: async () => reconcileRooms(client.getQueryData(['tracked-rooms', userId]), await challengesService.rooms()),
+    queryKey: queryKeys.rooms(),
+    queryFn: async () => reconcileRooms(client.getQueryData(queryKeys.rooms()), await challengesService.rooms()),
     enabled: Boolean(userId),
   })
   const refresh = useCallback(() => {
@@ -60,9 +60,6 @@ export function PlaySessionProvider({ userId, children }: { userId: string; chil
     })
     return () => subscription.remove()
   }, [refresh])
-  usePersonalNotifications(userId, (notification, deleted) => {
-    if (!deleted && notification.type === 'ROOM_ACCEPTED') refresh()
-  })
 
   const trackRoom = useCallback((id: string) => {
     if (!retiredRooms.current.has(id)) setRoomIds((ids) => (ids.includes(id) ? ids : [...ids, id]))

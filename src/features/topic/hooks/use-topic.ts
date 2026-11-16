@@ -80,7 +80,7 @@ export function useFollowTopic(topicId: string) {
           topic.topicId === topicId
             ? { ...topic, followed: follow, followersCount: Math.max(0, topic.followersCount + (topic.followed === follow ? 0 : follow ? 1 : -1)) }
             : topic
-        for (const [key, data] of client.getQueriesData<InfiniteData<TopicPage>>({ queryKey: ['topics', 'list'] })) {
+        for (const [key, data] of client.getQueriesData<InfiniteData<TopicPage>>({ queryKey: queryKeys.topics.lists() })) {
           const filters = key[2] as { followed?: boolean; hideFollowed?: boolean; query?: string; categories?: readonly string[] }
           const card = previous?.topic
           const add =

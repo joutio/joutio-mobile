@@ -21,7 +21,7 @@ export interface VersusPlayer {
   src?: string
   /** Titre porté. */
   title?: string
-  /** Elo : avec `tier`, pastille de palier « Or · 867 » comme sur Profil ; sans palier (provisoire), « Non classé ». */
+  /** Elo : avec `tier`, pastille de palier « Or · 867 » comme sur Profil ; sans palier (robot, profil en chargement), rien. */
   rating?: number
   /** Pays déjà formaté (« 🇫🇷 France »), en pastille neutre comme sur Profil. */
   country?: string
@@ -48,7 +48,7 @@ function Panel({ player, side, t, height }: { player: VersusPlayer; side: 'top' 
   const { colors } = useTheme()
   const insets = useSafeAreaInsets()
   const top = side === 'top'
-  // Halo du palier ; sans palier (non classé, robot, profil en chargement) : halo gris neutre, jamais l'accent doré.
+  // Halo du palier ; sans palier (robot, profil en chargement) : halo gris neutre, jamais l'accent doré.
   const glow = player.tier ? tokens.tier[player.tier].hex : colors.muted
   const panel = useAnimatedStyle(() => {
     const y = keyframe(t.value, [
@@ -115,7 +115,7 @@ function Panel({ player, side, t, height }: { player: VersusPlayer; side: 'top' 
           {(player.rating !== undefined || player.country || player.detail) && (
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: tokens.space[3], justifyContent: top ? 'flex-start' : 'flex-end' }}>
               {player.rating !== undefined &&
-                (player.tier ? <Badge variant="tier" tier={player.tier}>{tr('common.dotPair', { a: tr(tierKey(player.tier)), b: player.rating })}</Badge> : <Pill>{tr('profile.unranked')}</Pill>)}
+                player.tier && <Badge variant="tier" tier={player.tier}>{tr('common.dotPair', { a: tr(tierKey(player.tier)), b: player.rating })}</Badge>}
               {player.country && <Pill>{player.country}</Pill>}
               {player.detail && <Pill>{player.detail}</Pill>}
             </View>

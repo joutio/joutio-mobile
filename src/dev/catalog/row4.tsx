@@ -249,6 +249,7 @@ export function NoticeDemo() {
   return (
     <>
       <Notice title="Hors connexion" message="Les données affichées peuvent dater." action={{ label: 'Réessayer' }} />
+      <Notice tone="warning" title="Un sujet porte déjà ce nom. Un titre plus original sera plus facile à retrouver." message="Rois de France" action={{ label: 'Voir ce sujet' }} />
       <Notice tone="info" title="Sujet complet" message="Retire une question pour en ajouter une autre." />
       <Notice tone="live" title="Sofia R. t'attend" message="Manche 3 sur 7" />
       <Notice tone="training" title="Entraînement" message="Sans Elo ni points d'expérience." />

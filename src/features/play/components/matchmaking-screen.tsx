@@ -32,6 +32,7 @@ import { useAutoTrain, useBotDifficulty, useTicket, useTicketPresence, type Play
 import { playService } from '../lib/play-service'
 import { userAvatar } from '@/shared/utils/avatar'
 import { currentLanguage, t, tierKey, useT } from '@/lib/i18n'
+import { queryKeys } from '@/lib/query-keys'
 
 /** Joueurs décoratifs qui apparaissent sur la carte pendant la recherche (le BFF n'expose pas la file d'attente). */
 const PINS: MapPlayer[] = [
@@ -107,11 +108,11 @@ function MatchmakingScreenContent() {
   const [pickerOpen, setPickerOpen] = useState(false)
 
   const roomId = ticket.state?.roomId ?? null
-  const room = useQuery({ queryKey: ['rooms', roomId], queryFn: () => playService.room(roomId ?? ''), enabled: Boolean(roomId) })
+  const room = useQuery({ queryKey: queryKeys.room(roomId ?? ''), queryFn: () => playService.room(roomId ?? ''), enabled: Boolean(roomId) })
   // La notification MATCHED porte déjà l'adversaire enrichi ; la salle reste le repli (ancien BFF, reprise REST).
   const opponent = ticket.state?.opponent ?? room.data?.opponent
   const opponentRating = opponent?.rating ?? null
-  const opponentTier = opponentRating !== null && opponent?.provisional !== true ? tierOf(opponentRating) : undefined
+  const opponentTier = opponentRating !== null ? tierOf(opponentRating) : undefined
   const opponentMeta = [
     opponentTier ? t(tierKey(opponentTier)) : undefined,
     opponentRating !== null ? formatNumber(opponentRating) : undefined,

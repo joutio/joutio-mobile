@@ -191,9 +191,9 @@ function DuelScreenContent() {
   const isPlayer1 = game?.player1Id === userId
   const myName = me.data?.pseudonym ?? t('common.me')
   const opponentName = (isPlayer1 ? game?.player2Name : game?.player1Name) ?? (game?.player2Type === 'BOT' ? t('topic.bot') : t('topic.opponent'))
-  const myTier = me.data?.progression && !me.data.progression.provisional ? tierOf(me.data.progression.rating) : undefined
+  const myTier = me.data?.progression ? tierOf(me.data.progression.rating) : undefined
   const opponentProgression = opponentProfile.data?.progression
-  const opponentTier = opponentProgression && !opponentProgression.provisional ? tierOf(opponentProgression.rating) : undefined
+  const opponentTier = opponentProgression ? tierOf(opponentProgression.rating) : undefined
   const countryLabel = (code?: string | null) => (code ? `${countryFlag(code)} ${countryName(code, currentLanguage())}` : undefined)
 
   if (!game || !stream.status?.loaded) {

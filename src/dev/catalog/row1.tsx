@@ -160,7 +160,7 @@ export function AvatarDemo() {
         ))}
       </Specimen>
       <Specimen label="Provisoire, verrouillé" row>
-        <Avatar name="Sofia Rossi" src={SAMPLE_IMAGE} size="xl" tier="OR" provisional />
+        <Avatar name="Sofia Rossi" src={SAMPLE_IMAGE} size="xl" tier="OR" />
         <Avatar name="Sofia Rossi" src={SAMPLE_IMAGE} size="xl" tier="DIAMANT" locked />
       </Specimen>
       <Specimen label="RankFrame seul (hero)" row>

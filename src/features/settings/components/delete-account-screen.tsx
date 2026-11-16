@@ -35,7 +35,7 @@ export function DeleteAccountScreen() {
 
   const rating = data?.progression?.rating
   const rank =
-    data?.progression && !data.progression.provisional && rating !== undefined ? t('deletion.rank', { tier: tierLabel(tierOf(rating)), rating: formatNumber(rating) }) : ''
+    data?.progression && rating !== undefined ? t('deletion.rank', { tier: tierLabel(tierOf(rating)), rating: formatNumber(rating) }) : ''
   const summary = t('deletion.summary', { rank, badges: badges.data?.earnedCount ?? 0, titles: titles.data?.titles.length ?? 0 })
 
   if (remove.isSuccess) {

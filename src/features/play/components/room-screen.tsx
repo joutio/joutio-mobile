@@ -172,7 +172,7 @@ export function RoomScreen() {
   }
 
   const myName = me.data?.pseudonym ?? ''
-  const myTier = me.data?.progression && !me.data.progression.provisional ? tierOf(me.data.progression.rating) : undefined
+  const myTier = me.data?.progression ? tierOf(me.data.progression.rating) : undefined
   const meSeat: RoomPlayer = {
     name: myName,
     src: myAvatar,
@@ -188,7 +188,7 @@ export function RoomScreen() {
           name: opponentName ?? t('topic.opponent'),
           premium: identity.premium(opponentView ?? fetched.data, opponentId),
           src: userAvatar(opponentView ?? fetched.data ?? undefined),
-          tier: opponentView?.rating != null && !opponentView.provisional ? tierOf(opponentView.rating) : undefined,
+          tier: opponentView?.rating != null ? tierOf(opponentView.rating) : undefined,
           away: !opponentPresent,
         }
       : undefined
@@ -227,6 +227,11 @@ export function RoomScreen() {
                 {wizzSeconds > 0 ? t('room.wizzIn', { seconds: wizzSeconds }) : t('room.wizz', { name: opponentName ?? t('room.opponentFallback') })}
               </Button>
             )}
+            {shared && waiting && (
+              <Button full size="L" icon={ShareNetworkIcon} onPress={() => shareLink({ kind: 'room', id: roomId, message: t('mobile.room.shareMessage', { topic }) })}>
+                {t('share.roomButton')}
+              </Button>
+            )}
             {isInitiator && (
               <Button full size="L" variant="tinted" tone="destructive" loading={cancellation.isPending} disabled={cancellation.isPending} onPress={cancel}>
                 {cancelLabel}
@@ -253,18 +258,6 @@ export function RoomScreen() {
         </View>
         <RoomPlayers me={meSeat} opponent={opponentSeat} />
         <PreparationSteps steps={PREPARATION_STEPS.map((item) => ({ ...item, label: `${t(STEP_LABEL[item.id])}…` }))} current={step} detail={detail} engaged={engaged} complete={preparationComplete(roomStatus)} />
-        {shared && waiting && (
-          <>
-            <Button
-              full
-              icon={ShareNetworkIcon}
-              variant="tinted"
-              onPress={() => shareLink({ kind: 'room', id: roomId, message: t('mobile.room.shareMessage', { topic }) })}
-            >
-              {t('share.roomButton')}
-            </Button>
-          </>
-        )}
       </Salon>
     </>
   )

@@ -2,11 +2,11 @@ import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tansta
 import { router } from '@/shared/navigation/router'
 import { toast } from '@/design-system'
 import { useMe } from '@/features/me'
-import type { RoomView } from '@joutio/client/rooms'
+import { applyRoomPresence, type RoomView } from '@joutio/client/rooms'
 import { roomOfChallenge } from '@/features/play/hooks/use-rematch'
 import { optimisticUpdate } from '@/lib/optimistic-cache'
 import { queryKeys } from '@/lib/query-keys'
-import { usePersonalNotifications } from '@/lib/realtime/personal-notifications'
+import { useRoomPresenceEvents } from '@/lib/realtime/personal-notifications'
 import type { ChallengeView } from '@joutio/client/api-types'
 import { topicName } from '@/shared/utils/topic-name'
 import { reconcileChallenges, reconcileRooms, settleChallenge, settleRoom } from '@/features/play/lib/play-cache'
@@ -54,21 +54,20 @@ export function refreshChallenges(client: QueryClient) {
 }
 
 /**
- * Flux personnel STOMP : un défi reçu, refusé ou accepté rafraîchit les défis et les salons (aucun polling), et une
- * reconnexion (retour au premier plan) rattrape ce qui a été reçu pendant la coupure. Monté une fois, dans le layout
- * des onglets (badge de l'onglet Défis).
+ * Présence dans mes salons, poussée sur le flux personnel (`ROOM_PRESENCE`) : appliquée au cache des salons pour la
+ * pastille de l'onglet Défis. Défis et salons sont relus par `RealtimeInvalidation` (événements et reconnexion). Monté
+ * une fois, dans le layout des onglets.
  */
 export function useChallengesRealtime() {
   const client = useQueryClient()
   const userId = useMe(true).data?.userId
-  usePersonalNotifications(
-    userId,
-    (notification) => {
-      if (notification.type !== 'CHALLENGE_RECEIVED' && notification.type !== 'CHALLENGE_DECLINED' && notification.type !== 'ROOM_ACCEPTED') return
-      refreshChallenges(client)
-    },
-    () => refreshChallenges(client),
-  )
+  // Présence portée par le message : appliquée sur place (la projection serveur peut être en retard), salon inconnu = relu.
+  useRoomPresenceEvents(userId, (presence) => {
+    const rooms = client.getQueryData<RoomView[]>(queryKeys.rooms())
+    const next = rooms && userId ? applyRoomPresence(rooms, presence, userId) : undefined
+    if (next) client.setQueryData(queryKeys.rooms(), next)
+    else void client.invalidateQueries({ queryKey: queryKeys.rooms() })
+  })
 }
 
 /** Apply each confirmed command separately: partial bulk failure keeps successful decisions. */
@@ -167,7 +166,7 @@ export function useCloseRoom() {
   return useMutation({
     mutationFn: (roomId: string) => challengesService.cancelRoom(roomId),
     onMutate: (roomId: string) =>
-      optimisticUpdate(client, [['rooms'], ['tracked-rooms'], queryKeys.challenges()], () => settleRoom(client, roomId, 'CANCELLED')),
+      optimisticUpdate(client, [queryKeys.rooms(), queryKeys.room(roomId), queryKeys.challenges()], () => settleRoom(client, roomId, 'CANCELLED')),
     onError: (_error, _id, context) => {
       context?.rollback()
       toast.error(t('play.closeError'), { description: t('home.errorText') })

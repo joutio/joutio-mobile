@@ -492,3 +492,26 @@ Décision utilisateur : supprimer l’ancien dépôt GitHub `joutio/joutio-mobil
   (`banner-motion.ts`) ; STOMP coupé **de force** en arrière-plan (perte de connexion après un upload ou le navigateur) ;
   avatar provisionnel sans désaturation. À valider sur appareil : décalage du pied d'une feuille au clavier et
   pictogramme Cinéma qui déborde (non reproduits). Internationalisation du mobile : lot à part.
+
+### Lot du 2026-11-16
+
+- **`Dialog` sur `TrueSheetOverlay`** (remplace `Modal`) : couche native au-dessus de toute feuille présentée (doc
+  TrueSheet, « Overlays on Sheets »). Une `Modal` se présentait depuis le contrôleur racine, qui présente déjà la feuille :
+  le dialogue ouvert depuis une feuille (vignette, pictogramme) n'était pas touchable. Retour Android par `BackHandler` ;
+  `onDismissed` signale la fin de la fermeture.
+- **Déclaration de droits** : la réponse n'est rendue qu'au retrait du dialogue (`onDismissed`), puis le sélecteur photo
+  s'ouvre ; un second toucher attend la même réponse ; un dialogue remplacé se ferme sans choix (sa promesse se résout).
+- **Envoi d'image avec progression** : `onUploadProgress` du client API (`XMLHttpRequest.upload.onprogress`, alimenté
+  nativement par le réseau RN), `uploadImage(asset, onProgress)`, `ImagePicker.progress` (atelier, question, bannière).
+- **Temps réel → cache** : la règle « Mutations et cohérence du cache » reste ; les événements **d'un autre acteur**
+  relisent les vues qu'ils touchent dans une table unique (`features/realtime/realtime-invalidation.tsx`, monté dans
+  `(app)`), déblocages `/topic/achievements/{userId}` et relecture à la reconnexion compris. Toutes les clés passent par
+  `lib/query-keys.ts` ; une seule requête des salons (`queryKeys.rooms()`, plus de `tracked-rooms`).
+- **Pastille Défis** : défis reçus + salons où l'adversaire attend (`roomsWaitingForViewer`, `ROOM_PRESENCE` appliqué au
+  cache). **Elo sans période « non classé »** : `provisional` retiré (avatar pointillé, pastille, clés i18n).
+- Revanche acceptée depuis le duel ou le résultat : la salle remplace l'écran ; déblocages sans défilement (héros
+  compressible) ; « Partager le lien » en action pleine au-dessus de « Fermer le salon » ; notifications sur deux lignes ;
+  `Notice`/`Banner` ton `warning` (nom de sujet déjà pris).
+- **Bande du haut sans saccade** (`TopBannerHost`) : une seule mise en page par entrée et par sortie (cale fixe), seule la
+  bande s'anime en `transform`/opacité. La cale animée image par image redimensionnait le navigateur d'onglets : re-rendu
+  de `BottomTabView` (react-navigation) et du `UITabBarController` iOS à chaque image.

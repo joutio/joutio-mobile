@@ -1,12 +1,12 @@
 import { View, type StyleProp, type ViewStyle } from 'react-native'
-import { CheckCircleIcon, InfoIcon, RobotIcon, SwordIcon, WifiSlashIcon, type Icon } from '../icons'
+import { CheckCircleIcon, InfoIcon, RobotIcon, SwordIcon, WarningIcon, WifiSlashIcon, type Icon } from '../icons'
 import { useTheme } from '../theme/theme-provider'
 import { tokens } from '../tokens.generated'
 import { Button } from './button'
 import { Text } from './text'
 import { hairlineRing } from '../theme/hairline'
 
-export type NoticeTone = 'error' | 'success' | 'info' | 'live' | 'training'
+export type NoticeTone = 'error' | 'warning' | 'success' | 'info' | 'live' | 'training'
 
 export interface NoticeProps {
   tone?: NoticeTone
@@ -23,6 +23,8 @@ export function Notice({ tone = 'error', title, message, icon, action, style }: 
   const { colors, radius } = useTheme()
   const tones = {
     error: { icon: WifiSlashIcon, iconColor: colors.wrong, background: colors.surface, ring: colors.border, filledAction: false, fill: false },
+    // Avertissement non bloquant (2026-11-16) : triangle ambre plein, filet ambre sur la surface.
+    warning: { icon: WarningIcon, iconColor: colors.accentInk, background: colors.surface, ring: colors.accent, filledAction: false, fill: true },
     success: { icon: CheckCircleIcon, iconColor: colors.correct, background: colors.surface, ring: colors.border, filledAction: false, fill: true },
     info: { icon: InfoIcon, iconColor: colors.muted, background: colors.surface, ring: colors.border, filledAction: false, fill: false },
     live: { icon: SwordIcon, iconColor: colors.accentInk, background: colors.warm, ring: colors.border, filledAction: true, fill: true },

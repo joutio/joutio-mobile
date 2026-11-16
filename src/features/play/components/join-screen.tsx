@@ -39,6 +39,7 @@ import { userAvatar } from '@/shared/utils/avatar'
 import { countdownOf, useServerNow } from '../lib/countdown'
 import { playService } from '../lib/play-service'
 import { currentLanguage, formatNumber, t, tierKey, useT } from '@/lib/i18n'
+import { queryKeys } from '@/lib/query-keys'
 
 /** Conditions du duel, en `ListRow` informatives (`lancer-partie.md` § 2). */
 const RULES = (): readonly { icon: Icon; label: string }[] => ([
@@ -51,12 +52,12 @@ const RULES = (): readonly { icon: Icon; label: string }[] => ([
 const COLUMN = { width: '100%', maxWidth: 370, alignSelf: 'center' } as const
 const SEAT = 88
 
-type SeatProps = { name: string; src?: string; rating?: number | null; provisional?: boolean | null; premium?: boolean; guest?: string }
+type SeatProps = { name: string; src?: string; rating?: number | null; premium?: boolean; guest?: string }
 
 /** Une place du face-à-face : avatar, nom, rang et Elo ; sans compte, une place à prendre (`guest` : son indication). */
-function Seat({ name, src, rating, provisional, premium, guest }: SeatProps) {
+function Seat({ name, src, rating, premium, guest }: SeatProps) {
   const { colors, radius } = useTheme()
-  const tier: TierCode | undefined = rating != null && !provisional ? tierOf(rating) : undefined
+  const tier: TierCode | undefined = rating != null ? tierOf(rating) : undefined
   return (
     <View style={{ flex: 1, minWidth: 0, alignItems: 'center', gap: tokens.space[3] }}>
       {guest ? (
@@ -111,7 +112,7 @@ export function JoinScreen() {
   const myAvatar = useMyAvatar()
   const now = useServerNow()
   const setPending = usePendingJoin((state) => state.set)
-  const room = useQuery({ queryKey: ['rooms', roomId], queryFn: () => playService.room(roomId), enabled: authenticated, retry: 1 })
+  const room = useQuery({ queryKey: queryKeys.room(roomId), queryFn: () => playService.room(roomId), enabled: authenticated, retry: 1 })
 
   const view = room.data
   const unavailable = room.isError || (view && (view.status !== 'WAITING_PLAYERS' || view.gameId !== null))
@@ -195,13 +196,13 @@ export function JoinScreen() {
             <Skeleton shape="circle" width={SEAT} />
           </View>
         ) : (
-          <Seat name={host.pseudonym} src={userAvatar(host)} rating={host.rating} provisional={host.provisional} premium={identity.premium(host)} />
+          <Seat name={host.pseudonym} src={userAvatar(host)} rating={host.rating} premium={identity.premium(host)} />
         )}
         <View style={{ marginTop: 30, width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accent }}>
           <LightningIcon size={14} weight="fill" color={colors.onAccent} />
         </View>
         {authenticated && me.data ? (
-          <Seat name={me.data.pseudonym} src={myAvatar} rating={progression?.rating} provisional={progression?.provisional} premium={identity.myPremium} />
+          <Seat name={me.data.pseudonym} src={myAvatar} rating={progression?.rating} premium={identity.myPremium} />
         ) : (
           <Seat name={t('join.guest')} guest={t('join.guestLogin')} />
         )}

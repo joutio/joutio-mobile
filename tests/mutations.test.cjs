@@ -28,7 +28,8 @@ function harness(extraMocks = {}) {
     '@/lib/i18n': require('./i18n-mock.cjs'),
     '@/features/me': { useMe: () => ({ data: me }) },
     '@/features/play/hooks/use-rematch': { roomOfChallenge: (id) => `room-${id}` },
-    '@/lib/realtime/personal-notifications': { usePersonalNotifications() {} },
+    '@/lib/realtime/personal-notifications': { usePersonalNotifications() {}, useRoomPresenceEvents() {} },
+    '@/shared/hooks/use-debounced': { useDebounced: (value) => value },
     '@/features/premium/premium-store': { usePremiumSheet: () => () => {} },
     ...extraMocks,
   }
@@ -40,6 +41,8 @@ function harness(extraMocks = {}) {
       const sub = file.slice('@joutio/client'.length) || '/'
       file = path.join(root, '..', 'node_modules/@joutio/client/dist', sub, 'index.js')
     }
+    // Paquet nu (react, react-native-…) non simulé : le vrai module, jamais un fichier de l'app.
+    if (!file.startsWith('@/') && !path.isAbsolute(file)) return require(file)
     let resolved = file.startsWith('@/') ? path.join(root, file.slice(2)) : file
     if (!path.extname(resolved)) resolved += fs.existsSync(resolved + '.ts') ? '.ts' : '.tsx'
     if (modules.has(resolved)) return modules.get(resolved).exports
@@ -86,21 +89,21 @@ test('cancel is immediate, rolls back only failed IDs in a partial batch, no con
   assert.equal(reads, 0)
 })
 
-test('closing a room updates detail, both lists and its challenge, then restores on error', async () => {
+test('closing a room updates detail, the shared list and its challenge, then restores on error', async () => {
   const h = harness()
   const room = { roomId: 'r', status: 'WAITING_PLAYERS' }
+  // Une seule liste de salons (Défis, pastille, reprise de partie) depuis le 2026-11-16.
   h.client.setQueryData(h.keys.rooms(), [room])
-  h.client.setQueryData(['tracked-rooms', 'me'], [room])
-  h.client.setQueryData(['rooms', 'r'], room)
+  h.client.setQueryData(h.keys.room('r'), room)
   h.client.setQueryData(h.keys.challenges(), [{ ...challenge('c'), roomId: 'r' }])
   const mutation = h.load('@/features/challenges/hooks/use-challenges').useCloseRoom()
   const context = await mutation.onMutate('r')
   assert.equal(h.client.getQueryData(h.keys.rooms())[0].status, 'CANCELLED')
-  assert.equal(h.client.getQueryData(['rooms', 'r']).status, 'CANCELLED')
-  assert.equal(h.client.getQueryData(['tracked-rooms', 'me'])[0].status, 'CANCELLED')
+  assert.equal(h.client.getQueryData(h.keys.room('r')).status, 'CANCELLED')
   assert.equal(h.client.getQueryData(h.keys.challenges())[0].status, 'CANCELLED')
   mutation.onError(Error(), 'r', context)
   assert.equal(h.client.getQueryData(h.keys.rooms())[0].status, 'WAITING_PLAYERS')
+  assert.equal(h.client.getQueryData(h.keys.room('r')).status, 'WAITING_PLAYERS')
 })
 
 test('older projections cannot resurrect accepted/cancelled challenges or closed rooms', () => {

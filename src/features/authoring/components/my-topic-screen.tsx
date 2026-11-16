@@ -102,7 +102,9 @@ export function MyTopicScreen() {
   const updateTitles = useUpdateTopicTitles(topicId)
   const publish = usePublishTopic(topicId)
   const [sheet, setSheet] = useState<TopicSheet>()
-  const [uploading, setUploading] = useState(false)
+  // Avancement de l'envoi d'image (0 à 100) ; `undefined` hors envoi.
+  const [progress, setProgress] = useState<number | undefined>(undefined)
+  const uploading = progress !== undefined
   const close = () => setSheet(undefined)
 
   const name = topic ? topicName(topic.names) : (params.name ?? '')
@@ -122,15 +124,15 @@ export function MyTopicScreen() {
   const pickThumbnail = async () => {
     const asset = await pickImage(THUMBNAIL_ASPECT)
     if (!asset) return
-    setUploading(true)
+    setProgress(0)
     try {
-      const media = await uploadImage(asset)
+      const media = await uploadImage(asset, setProgress)
       await image.mutateAsync(media.url)
       close()
     } catch {
       toast.error(t('mobile.authoring.thumbnailUploadFailed'), { description: t('mobile.authoring.imageFormat') })
     } finally {
-      setUploading(false)
+      setProgress(undefined)
     }
   }
 
@@ -142,15 +144,15 @@ export function MyTopicScreen() {
       toast.error(t('mobile.authoring.pictogramPng'), { description: t('mobile.authoring.pictogramSquare') })
       return
     }
-    setUploading(true)
+    setProgress(0)
     try {
-      const media = await uploadImage(asset)
+      const media = await uploadImage(asset, setProgress)
       await pictogram.mutateAsync(media.url)
       close()
     } catch {
       toast.error(t('mobile.authoring.pictogramUploadFailed'), { description: t('mobile.authoring.pictogramFormat') })
     } finally {
-      setUploading(false)
+      setProgress(undefined)
     }
   }
 
@@ -393,8 +395,9 @@ export function MyTopicScreen() {
       <MobileSheet open={sheet === 'image'} onClose={close} title={t('workshop.thumbnail')} subtitle={t('workshop.optional')}>
         <ImagePicker
           image={imageUrl}
-          hint={t('settings.bannerHint')}
-          busy={uploading || image.isPending}
+          hint={uploading ? t('media.uploadingPercent', { percent: progress }) : t('settings.bannerHint')}
+          progress={progress}
+          busy={image.isPending}
           onPick={() => void pickThumbnail()}
           onRemove={() => image.mutate(null, { onSuccess: close })}
         />
@@ -402,8 +405,9 @@ export function MyTopicScreen() {
       <MobileSheet open={sheet === 'pictogram'} onClose={close} title={t('workshop.pictogram')} subtitle={t('workshop.pictogramSub')}>
         <ImagePicker
           image={pictogramUrl}
-          hint={t('workshop.pictogramHint')}
-          busy={uploading || pictogram.isPending}
+          hint={uploading ? t('media.uploadingPercent', { percent: progress }) : t('workshop.pictogramHint')}
+          progress={progress}
+          busy={pictogram.isPending}
           onPick={() => void pickPictogram()}
           onRemove={() => pictogram.mutate(null, { onSuccess: close })}
         />

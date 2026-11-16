@@ -24,7 +24,7 @@ import { t, useT } from '@/lib/i18n'
 /** Rang à partir duquel la ligne du joueur passe en barre fixe (hors du top 10). */
 export const BOARD_TOP = 10
 
-export const boardSub = (entry: LeaderboardEntryView) => (entry.provisional ? t('topic.provisional') : tierLabel(tierOf(entry.rating)))
+export const boardSub = (entry: LeaderboardEntryView) => tierLabel(tierOf(entry.rating))
 
 /** Ligne du joueur connecté, en barre fixe au-dessus de la barre d'onglets. */
 export function MyBoardRow({
@@ -47,7 +47,7 @@ export function MyBoardRow({
       premium={identity.premium(entry)}
       onPress={identity.open(entry.userId)}
       src={userAvatar(entry)}
-      tier={entry.provisional ? undefined : tierOf(entry.rating)}
+      tier={tierOf(entry.rating)}
       sub={sub}
       trail={trail}
     />
@@ -119,7 +119,7 @@ export function BoardTab({
             players={podium.map((entry) => ({
               name: entry.pseudonym,
               src: userAvatar(entry),
-              tier: entry.provisional ? undefined : tierOf(entry.rating),
+              tier: tierOf(entry.rating),
               value: formatNumber(entry.totalXp),
               premium: identity.premium(entry),
               onPress: identity.open(entry.userId),
@@ -135,7 +135,7 @@ export function BoardTab({
                   premium={identity.premium(entry)}
                   onPress={identity.open(entry.userId)}
                   src={userAvatar(entry)}
-                  tier={entry.provisional ? undefined : tierOf(entry.rating)}
+                  tier={tierOf(entry.rating)}
                   sub={boardSub(entry)}
                   trail={formatNumber(entry.totalXp)}
                   highlight={entry.userId === board.data?.me?.userId}

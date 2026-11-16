@@ -72,7 +72,7 @@ export function NotificationRow({ title, sub, icon: IconComponent, player, unrea
             </View>
           )}
           <View style={{ flex: 1, minWidth: 0 }}>
-            <Text variant="headline" weight={unread ? undefined : '400'} numberOfLines={1}>
+            <Text variant="headline" weight={unread ? undefined : '400'} numberOfLines={2}>
               {title}
             </Text>
             {sub && (

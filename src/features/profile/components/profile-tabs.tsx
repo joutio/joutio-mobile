@@ -79,7 +79,6 @@ export interface StatsTabProps {
   streak: { count: number; hint: string; week: import('@/design-system').StreakDay[] } | undefined
   tier: TierCode | undefined
   rating: number
-  provisional: boolean
   wins: number
   draws: number
   losses: number
@@ -91,10 +90,10 @@ export interface StatsTabProps {
   onPlayed: () => void
 }
 
-export function StatsTab({ streak, tier, rating, provisional, wins, draws, losses, topics, active, onStreak, onRanks, onPlayed }: StatsTabProps) {
+export function StatsTab({ streak, tier, rating, wins, draws, losses, topics, active, onStreak, onRanks, onPlayed }: StatsTabProps) {
   const t = useT()
   const played = wins + draws + losses
-  const rank = tier && !provisional ? rankProgress(tier, rating) : undefined
+  const rank = tier ? rankProgress(tier, rating) : undefined
   const { categoryColor } = useTheme()
   // Référence stable : le donut est mémorisé et ne se redessine pas à chaque rendu de l'onglet.
   const donut = useMemo(
@@ -131,17 +130,13 @@ export function StatsTab({ streak, tier, rating, provisional, wins, draws, losse
               }
             />
             <Card>
-              {rank && tier ? (
+              {rank && tier && (
                 <View style={{ gap: tokens.space[3] }}>
                   <ProgressBar value={rank.progress} label={rank.label} tone={tier} />
                   <Text variant="caption" color="muted">
                     {rank.next}
                   </Text>
                 </View>
-              ) : (
-                <Text variant="callout" color="muted">
-                  {t('mobile.profile.rankAfter')}
-                </Text>
               )}
             </Card>
           </View>

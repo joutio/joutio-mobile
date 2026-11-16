@@ -5,6 +5,7 @@ import { useTheme } from '../theme/theme-provider'
 import { tokens } from '../tokens.generated'
 import { IconButton } from './icon-button'
 import { PressableScale } from './pressable-scale'
+import { ProgressBar } from './progress-bar'
 import { Text } from './text'
 import { t, useT } from '@/lib/i18n'
 
@@ -16,6 +17,11 @@ export interface ImagePickerProps {
   error?: string
   /** Envoi en cours : l'aperçu reste, estompé. */
   busy?: boolean
+  /**
+   * Avancement de l'envoi, de 0 à 100 (2026-11-16) : barre de progression sous la consigne (sur l'image, dans un
+   * bandeau `surface`), choix et retrait inactifs. La consigne dit alors l'avancement (« Envoi de l'image · 42 % »).
+   */
+  progress?: number
   onPick?: () => void
   onRemove?: () => void
   style?: StyleProp<ViewStyle>
@@ -26,18 +32,39 @@ export function ImagePicker({
   image,
   hint = t('mobile.ds.addImage'),
   error,
-  busy = false,
+  busy: busyProp = false,
+  progress,
   onPick,
   onRemove,
   style,
 }: ImagePickerProps) {
   const t = useT()
   const { colors, radius } = useTheme()
+  const uploading = progress !== undefined
+  const busy = busyProp || uploading
   return (
     <View style={[{ gap: tokens.space[2] }, style]}>
       {image ? (
-        <View style={{ height: 160, overflow: 'hidden', borderRadius: radius.md, opacity: busy ? 0.6 : 1 }}>
-          <Image source={{ uri: image }} contentFit="cover" style={{ width: '100%', height: '100%' }} accessibilityIgnoresInvertColors />
+        <View style={{ height: 160, overflow: 'hidden', borderRadius: radius.md }}>
+          <Image source={{ uri: image }} contentFit="cover" style={{ width: '100%', height: '100%', opacity: busy ? 0.6 : 1 }} accessibilityIgnoresInvertColors />
+          {uploading && (
+            <View
+              style={{
+                position: 'absolute',
+                left: tokens.space[3],
+                right: tokens.space[3],
+                bottom: tokens.space[3],
+                gap: tokens.space[2],
+                borderRadius: radius.sm,
+                paddingHorizontal: tokens.space[4],
+                paddingVertical: tokens.space[3],
+                backgroundColor: colors.surface,
+              }}
+            >
+              <Text variant="caption">{hint}</Text>
+              <ProgressBar value={progress} accessibilityLabel={hint} />
+            </View>
+          )}
           <View style={{ position: 'absolute', top: tokens.space[3], right: tokens.space[3], flexDirection: 'row', gap: tokens.space[3] }}>
             <IconButton icon={ImageIcon} label={t('mobile.ds.changeImage')} variant="gray" size="S" onPress={onPick} disabled={busy} />
             <IconButton icon={TrashIcon} label={t('mobile.ds.removeImage')} variant="gray" size="S" onPress={onRemove} disabled={busy} />
@@ -66,6 +93,7 @@ export function ImagePicker({
           <Text variant="caption" color="muted" align="center">
             {hint}
           </Text>
+          {uploading && <ProgressBar value={progress} accessibilityLabel={hint} style={{ width: 160 }} />}
         </PressableScale>
       )}
       {error && (

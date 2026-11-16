@@ -67,7 +67,7 @@ export function ProfileScreen() {
   const families = useMemo(() => (badges.data ? familiesOf(badges.data, t, language) : undefined), [badges.data, t, language])
   const progression = data?.progression
   const rating = progression?.rating ?? 0
-  const tier = progression && !progression.provisional ? tierOf(progression.rating) : undefined
+  const tier = progression ? tierOf(progression.rating) : undefined
   const worn = titles.data?.titles.find((title) => title.key === (titles.data?.equippedKey ?? data?.equippedTitle))
   const stats = data?.stats
   const name = data?.pseudonym ?? t('nav.profile')
@@ -106,7 +106,7 @@ export function ProfileScreen() {
         image={data?.bannerUrl ?? undefined}
         title={name}
         premium={data?.premium === true}
-        eyebrow={data ? <Avatar name={name} src={avatar} tier={tier} provisional={progression?.provisional} size="xxl" /> : undefined}
+        eyebrow={data ? <Avatar name={name} src={avatar} tier={tier} size="xxl" /> : undefined}
         right={
           <>
             <ProfileNotificationButton />
@@ -133,9 +133,7 @@ export function ProfileScreen() {
                   <Skeleton shape="row" style={{ width: 160 }} />
                 ) : tier ? (
                   <Badge variant="tier" tier={tier}>{t('common.dotPair', { a: tierLabel(tier), b: formatNumber(rating) })}</Badge>
-                ) : (
-                  <Pill>{t('profile.unranked')}</Pill>
-                )}
+                ) : null}
                 {data?.country && <Pill>{`${countryFlag(data.country)} ${countryName(data.country, currentLanguage())}`}</Pill>}
               </View>
             </View>
@@ -174,7 +172,6 @@ export function ProfileScreen() {
                 streak={activity.data ? { count: activity.data.currentStreak, hint: streakHint(activity.data), week: weekOf(activity.data) } : undefined}
                 tier={tier}
                 rating={rating}
-                provisional={progression?.provisional ?? true}
                 wins={stats?.wins ?? 0}
                 draws={stats?.draws ?? 0}
                 losses={stats?.losses ?? 0}
