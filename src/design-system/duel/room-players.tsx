@@ -54,7 +54,7 @@ function Seat({ player }: { player: RoomPlayer }) {
       </View>
       <PlayerName name={player.name} premium={player.premium} justify="center" />
       <Text variant="caption" weight="600" color={away ? 'muted' : 'correct'} accessibilityLiveRegion="polite">
-        {player.status ?? (away ? t('mobile.ds.notHereYet') : t('room.inRoom'))}
+        {player.status ?? (away ? t('ds.notHereYet') : t('room.inRoom'))}
       </Text>
     </View>
   )
@@ -103,10 +103,10 @@ export function RoomPlayers({ me, opponent, style }: RoomPlayersProps) {
             <UserPlusIcon size={30} color={colors.muted} />
           </View>
           <Text variant="headline" color="muted">
-            {t('mobile.ds.waiting')}
+            {t('ds.waiting')}
           </Text>
           <Text variant="caption" color="muted" align="center">
-            {t('mobile.ds.startsWithTwo')}
+            {t('ds.startsWithTwo')}
           </Text>
         </View>
       )}

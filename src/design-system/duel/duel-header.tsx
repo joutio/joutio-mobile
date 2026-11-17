@@ -73,7 +73,7 @@ export function DuelHeader({ me, opponent, seconds, timerState, lowAt, style }: 
           variant="numericTimer"
           color={isTimerUrgent(seconds, timerState, lowAt) ? 'wrong' : 'text'}
           accessibilityRole="timer"
-          accessibilityLabel={t('mobile.ds.secondsLeft', { seconds })}
+          accessibilityLabel={t('ds.secondsLeft', { seconds })}
           maxFontSizeMultiplier={1.2}
           style={{ position: 'absolute' }}
         >

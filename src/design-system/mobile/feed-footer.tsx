@@ -36,7 +36,7 @@ export interface FeedFooterProps {
  * pour le toucher et les lecteurs d'écran. Les éléments déjà chargés restent visibles quand la page suivante
  * échoue.
  */
-export function FeedFooter({ state, pages, onLoadMore, onRetry, endLabel = t('mobile.ds.allSeen'), remainingLabel, style }: FeedFooterProps) {
+export function FeedFooter({ state, pages, onLoadMore, onRetry, endLabel = t('ds.allSeen'), remainingLabel, style }: FeedFooterProps) {
   const t = useT()
   const { colors, radius } = useTheme()
   // Sous `DragToLoadMore`, le chargement se voit dans son loader, sous la liste : le pied garde sa place (l'annonce,
@@ -52,7 +52,7 @@ export function FeedFooter({ state, pages, onLoadMore, onRetry, endLabel = t('mo
     return (
       <View
         accessible
-        accessibilityLabel={t('mobile.ds.loadingMore')}
+        accessibilityLabel={t('ds.loadingMore')}
         accessibilityLiveRegion="polite"
         accessibilityState={{ busy: true }}
         style={[{ alignItems: 'center', justifyContent: 'center', minHeight: 44, paddingVertical: tokens.space[4] }, style]}
@@ -73,7 +73,7 @@ export function FeedFooter({ state, pages, onLoadMore, onRetry, endLabel = t('mo
       >
         <WarningCircleIcon size={20} color={colors.wrong} />
         <Text variant="caption" color="muted" align="center">
-          {t('mobile.ds.loadMoreFailed')}
+          {t('ds.loadMoreFailed')}
         </Text>
         <Button variant="plain" tone="accent" size="S" icon={ArrowClockwiseIcon} onPress={requestLoad ?? onRetry} style={{ alignSelf: 'center' }}>
           {t('callback.retry')}
@@ -120,7 +120,7 @@ function PullHint({ onLoadMore, remainingLabel, style }: { onLoadMore?: () => vo
     return (
       <View style={[{ alignItems: 'center', gap: tokens.space[2], paddingVertical: tokens.space[3] }, style]}>
         <Button variant="plain" tone="accent" size="S" icon={CaretDownIcon} onPress={onLoadMore} style={{ alignSelf: 'center' }}>
-          {t('mobile.ds.loadMore')}
+          {t('ds.loadMore')}
         </Button>
         {remainingLabel && (
           <Text variant="caption" color="muted">
@@ -153,8 +153,8 @@ function PullHintBody({
     <Animated.View style={[{ alignItems: 'center' }, fade, style]}>
       <PressableScale
         accessibilityRole="button"
-        accessibilityLabel={remainingLabel ? t('mobile.ds.loadMoreRemaining', { remaining: remainingLabel }) : t('mobile.ds.loadMore')}
-        accessibilityHint={t('mobile.ds.pullHint')}
+        accessibilityLabel={remainingLabel ? t('ds.loadMoreRemaining', { remaining: remainingLabel }) : t('ds.loadMore')}
+        accessibilityHint={t('ds.pullHint')}
         pressedScale={0.98}
         onPress={load ?? onLoadMore}
         style={{
@@ -168,7 +168,7 @@ function PullHintBody({
       >
         <CaretUpIcon size={16} color={colors.muted} />
         <Text variant="callout" weight="600" color="muted">
-          {t('mobile.ds.pullMore')}
+          {t('ds.pullMore')}
         </Text>
         {remainingLabel && (
           <Text variant="caption" color="muted">

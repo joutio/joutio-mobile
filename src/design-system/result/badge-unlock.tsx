@@ -33,7 +33,7 @@ export function BadgeUnlock({ tier, badge, family, icon: FamilyIcon, text, next,
       crumbFrom={family}
       hero={<TierMedal tier={tier} icon={FamilyIcon} size={160} />}
       heroMotion="drop"
-      eyebrow={t('mobile.ds.newBadge')}
+      eyebrow={t('ds.newBadge')}
       headline={badge}
       text={text}
       extra={

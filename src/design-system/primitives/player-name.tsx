@@ -45,7 +45,7 @@ export function PlayerLink({ onOpen, name, style, children }: PlayerLinkProps) {
   const t = useT()
   if (!onOpen) return <View style={style}>{children}</View>
   return (
-    <PressableScale accessibilityRole="button" accessibilityLabel={t('mobile.ds.seeProfile', { name })} onPress={onOpen} style={style}>
+    <PressableScale accessibilityRole="button" accessibilityLabel={t('ds.seeProfile', { name })} onPress={onOpen} style={style}>
       {children}
     </PressableScale>
   )

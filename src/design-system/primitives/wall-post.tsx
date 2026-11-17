@@ -56,7 +56,7 @@ export function WallPost({ name, tier, src, meta, text, likes, comments, liked =
             {meta}
           </Text>
         </View>
-        <IconButton icon={DotsThreeVerticalIcon} label={t('mobile.ds.postOptions', { name })} size="S" onPress={onMenu} style={{ marginRight: -tokens.space[3] }} />
+        <IconButton icon={DotsThreeVerticalIcon} label={t('ds.postOptions', { name })} size="S" onPress={onMenu} style={{ marginRight: -tokens.space[3] }} />
       </View>
       <Text variant="callout" weight="400">
         {text}
@@ -68,7 +68,7 @@ export function WallPost({ name, tier, src, meta, text, likes, comments, liked =
             {likes}
           </Text>
         </Action>
-        <Action label={t('mobile.ds.commentsCount', { count: comments })} onPress={onComment}>
+        <Action label={t('ds.commentsCount', { count: comments })} onPress={onComment}>
           <ChatCircleIcon size={16} color={colors.muted} />
           <Text variant="caption" color="muted" mono>
             {comments}

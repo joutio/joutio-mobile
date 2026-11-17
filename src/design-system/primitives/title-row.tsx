@@ -47,7 +47,7 @@ export function TitleRow({
       ripple
       disabled={inactive}
       accessibilityRole={locked || !onWear ? 'text' : 'button'}
-      accessibilityLabel={locked ? t('mobile.ds.titleLocked', { title }) : t(worn ? 'ds.unwear' : 'ds.wear', { title })}
+      accessibilityLabel={locked ? t('ds.titleLocked', { title }) : t(worn ? 'ds.unwear' : 'ds.wear', { title })}
       accessibilityState={{ disabled: inactive, selected: worn, busy: wearing }}
       onPress={onWear}
       style={({ pressed }) => [
@@ -85,7 +85,7 @@ export function TitleRow({
           }}
         >
           <Text variant="caption" weight="600" color={colors.bg} maxFontSizeMultiplier={1}>
-            {t('mobile.ds.worn')}
+            {t('ds.worn')}
           </Text>
         </View>
       ) : null}

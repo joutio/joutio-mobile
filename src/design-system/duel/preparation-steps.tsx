@@ -36,7 +36,7 @@ export function PreparationSteps({ steps, current, detail, complete = false, eng
   return (
     <View
       accessibilityRole="progressbar"
-      accessibilityLabel={t('mobile.ds.preparation')}
+      accessibilityLabel={t('ds.preparation')}
       accessibilityValue={{ min: 0, max: steps.length, now: Math.min(current, steps.length) }}
       style={[
         {

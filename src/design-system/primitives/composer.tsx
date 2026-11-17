@@ -67,7 +67,7 @@ export function Composer({ value, onChange, onSend, placeholder = t('mobile.chat
             },
           ]}
         />
-        <IconButton icon={PaperPlaneTiltIcon} label={t('mobile.ds.send')} variant="filled" tone="accent" disabled={empty} onPress={send} />
+        <IconButton icon={PaperPlaneTiltIcon} label={t('ds.send')} variant="filled" tone="accent" disabled={empty} onPress={send} />
       </View>
     </View>
   )

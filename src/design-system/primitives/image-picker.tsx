@@ -30,7 +30,7 @@ export interface ImagePickerProps {
 /** Choix d'une image, facultative. Le sélecteur de la photothèque appartient à l'écran. */
 export function ImagePicker({
   image,
-  hint = t('mobile.ds.addImage'),
+  hint = t('ds.addImage'),
   error,
   busy: busyProp = false,
   progress,
@@ -66,8 +66,8 @@ export function ImagePicker({
             </View>
           )}
           <View style={{ position: 'absolute', top: tokens.space[3], right: tokens.space[3], flexDirection: 'row', gap: tokens.space[3] }}>
-            <IconButton icon={ImageIcon} label={t('mobile.ds.changeImage')} variant="gray" size="S" onPress={onPick} disabled={busy} />
-            <IconButton icon={TrashIcon} label={t('mobile.ds.removeImage')} variant="gray" size="S" onPress={onRemove} disabled={busy} />
+            <IconButton icon={ImageIcon} label={t('ds.changeImage')} variant="gray" size="S" onPress={onPick} disabled={busy} />
+            <IconButton icon={TrashIcon} label={t('ds.removeImage')} variant="gray" size="S" onPress={onRemove} disabled={busy} />
           </View>
         </View>
       ) : (

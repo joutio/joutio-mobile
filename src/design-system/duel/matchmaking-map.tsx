@@ -162,7 +162,7 @@ export function MatchmakingMap({ state = 'search', pins = [], opponent, speed = 
     <View
       accessible
       accessibilityRole="image"
-      accessibilityLabel={found ? t('mobile.ds.opponentFound', { name: opponent.name }) : t('mobile.ds.playersMap')}
+      accessibilityLabel={found ? t('ds.opponentFound', { name: opponent.name }) : t('ds.playersMap')}
       style={[{ width, height, overflow: 'hidden', backgroundColor: colors.bg }, style]}
     >
       <Animated.View style={[{ position: 'absolute', top: 0, bottom: 0, left: 0, width: mapWidth * 2, flexDirection: 'row' }, strip]}>

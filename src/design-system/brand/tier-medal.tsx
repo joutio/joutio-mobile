@@ -28,7 +28,7 @@ export function TierMedal({ tier, icon: IconComponent = LightningIcon, size = 56
     <View
       accessible
       accessibilityRole="image"
-      accessibilityLabel={t('mobile.ds.medal', { tier: t(tierKey(tier)), locked: locked ? t('ds.lockedSuffixF') : '' })}
+      accessibilityLabel={t('ds.medal', { tier: t(tierKey(tier)), locked: locked ? t('ds.lockedSuffixF') : '' })}
       style={[{ width: size, height: size * 1.1 }, style]}
     >
       <View style={[{ flex: 1 }, locked && LOCKED_STYLE]}>

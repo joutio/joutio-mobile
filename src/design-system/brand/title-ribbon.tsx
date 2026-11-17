@@ -47,7 +47,7 @@ export function TitleRibbon({ tier, text, width = 220, state = 'earned', style }
     <View
       accessible
       accessibilityRole="image"
-      accessibilityLabel={[t('workshop.titleLabel', { tier: t(tierKey(tier)) }), text, locked && t('mobile.profile.locked')].filter(Boolean).join(', ')}
+      accessibilityLabel={[t('workshop.titleLabel', { tier: t(tierKey(tier)) }), text, locked && t('common.locked')].filter(Boolean).join(', ')}
       onLayout={(event) => setLayoutWidth(event.nativeEvent.layout.width)}
       style={[{ width: boxWidth, minWidth: auto ? naturalWidth : undefined, height, alignSelf: 'flex-start' }, style]}
     >

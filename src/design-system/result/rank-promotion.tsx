@@ -24,7 +24,7 @@ export function RankPromotion({ from, tier, next, name, src, text, nextRule }: R
       crumbFrom={t(tierKey(from))}
       hero={<Avatar name={name} src={src} tier={tier} size="hero" decorative />}
       heroMotion="celebrate"
-      eyebrow={t('mobile.ds.newRank')}
+      eyebrow={t('ds.newRank')}
       headline={t(tierKey(tier))}
       text={text}
       next={next && nextRule ? { tier: next, rule: nextRule, preview: <Avatar name={name} src={src} tier={next} size="row" locked decorative /> } : undefined}

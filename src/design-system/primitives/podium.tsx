@@ -83,7 +83,7 @@ export function Podium({ players, style }: PodiumProps) {
   const t = useT()
   const [first, second, third] = players
   return (
-    <View accessibilityLabel={t('mobile.ds.podium')} style={[{ flexDirection: 'row', alignItems: 'flex-end', gap: tokens.space[3] }, style]}>
+    <View accessibilityLabel={t('ds.podium')} style={[{ flexDirection: 'row', alignItems: 'flex-end', gap: tokens.space[3] }, style]}>
       {second ? <Step player={second} rank={2} /> : <View style={{ flex: 1 }} />}
       {first && <Step player={first} rank={1} />}
       {third ? <Step player={third} rank={3} /> : <View style={{ flex: 1 }} />}

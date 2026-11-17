@@ -18,7 +18,7 @@ export interface ScoreGaugeProps {
 const REVEAL_MS = 900
 
 /** Jauge verticale de score : prend toute la hauteur de son parent. */
-export function ScoreGauge({ value, max, state = 'rest', label = t('mobile.ds.score'), style }: ScoreGaugeProps) {
+export function ScoreGauge({ value, max, state = 'rest', label = t('ds.score'), style }: ScoreGaugeProps) {
   const t = useT()
   const { colors } = useTheme()
   const reduced = useReducedMotion()

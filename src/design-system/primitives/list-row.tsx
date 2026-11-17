@@ -69,7 +69,7 @@ export function ListRow({
   return (
     <PressableScale
       accessibilityRole={interactive ? (stateRole ?? (control === 'chevron' ? 'link' : 'button')) : 'text'}
-      accessibilityLabel={[label, sub, value, badge ? t('mobile.ds.toHandle', { count: badge }) : undefined].filter(Boolean).join(', ')}
+      accessibilityLabel={[label, sub, value, badge ? t('ds.toHandle', { count: badge }) : undefined].filter(Boolean).join(', ')}
       accessibilityState={stateRole ? { checked: on, disabled } : { disabled }}
       disabled={disabled || !interactive}
       pressedScale={1}

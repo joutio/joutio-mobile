@@ -12,9 +12,9 @@ import { t } from '@/lib/i18n'
 export type RewardState = 'unlocked' | 'active' | 'locked' | 'premium'
 
 const STATES = (): Record<RewardState, { variant: BadgeVariant; label: string }> => ({
-  unlocked: { variant: 'correct', label: t('mobile.ds.unlocked') },
-  active: { variant: 'accent', label: t('mobile.ds.used') },
-  locked: { variant: 'neutral', label: t('mobile.ds.locked') },
+  unlocked: { variant: 'correct', label: t('ds.unlocked') },
+  active: { variant: 'accent', label: t('ds.used') },
+  locked: { variant: 'neutral', label: t('ds.locked') },
   premium: { variant: 'accent', label: t('pending.premium') },
 })
 

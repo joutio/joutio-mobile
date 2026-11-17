@@ -18,9 +18,9 @@ export function AdSlot({ placeholder = 'régie · 320×50', style }: AdSlotProps
   const t = useT()
   const { colors, radius } = useTheme()
   return (
-    <View accessibilityRole="none" accessibilityLabel={t('mobile.ds.ad')} style={[{ width: '100%', gap: tokens.space[1] }, style]}>
+    <View accessibilityRole="none" accessibilityLabel={t('ds.ad')} style={[{ width: '100%', gap: tokens.space[1] }, style]}>
       <Text variant="caption" weight="600" color="muted">
-        {t('mobile.ds.ad')}
+        {t('ds.ad')}
       </Text>
       <View
         style={{

@@ -108,8 +108,8 @@ export function MasteryRing({ tier, next, gained, remaining, size: requested = 1
   const half = size / 2
 
   const label = pending
-    ? `Maîtrise ${tier}, points d'expérience en cours de calcul`
-    : `Maîtrise ${tier}, ${gained} points d'expérience gagnés, ${next ? `${remaining} avant ${next}` : 'palier max'}`
+    ? t('ds.masteryPendingA11y', { tier })
+    : t('ds.masteryA11y', { tier, gained, rest: next ? t('ds.remainingBefore', { remaining, next }) : t('ds.maxTierLower') })
   const ring = (
     <View style={{ width: size, height: size }}>
       <Svg width={size} height={size} viewBox="0 0 160 160" style={{ transform: [{ rotate: '-90deg' }] }}>
@@ -142,7 +142,7 @@ export function MasteryRing({ tier, next, gained, remaining, size: requested = 1
       <View style={{ gap: tokens.space[3], opacity }}>
         <View>
           <Text variant="caption" weight="600" color="accentInk" numberOfLines={1}>
-            {t('mobile.ds.xpGained')}
+            {t('ds.xpGained')}
           </Text>
           <Text variant="title2" mono weight="600" color="accentInk">
             +{shownGained}
@@ -150,7 +150,7 @@ export function MasteryRing({ tier, next, gained, remaining, size: requested = 1
         </View>
         <View>
           <Text variant="caption" weight="600" numberOfLines={1}>
-            {next ? t('mobile.ds.before', { next }) : t('mobile.ds.maxTier')}
+            {next ? t('ds.before', { next }) : t('ds.maxTier')}
           </Text>
           <Text variant="title2" mono weight="600">
             {total - shownGained}
@@ -188,7 +188,7 @@ export function MasteryRing({ tier, next, gained, remaining, size: requested = 1
     >
       <View onLayout={measureLabel('left')} style={{ position: 'absolute', alignItems: 'flex-end' }}>
         <Text variant="caption" weight="600" numberOfLines={1}>
-          {next ? t('mobile.ds.before', { next }) : t('mobile.ds.maxTier')}
+          {next ? t('ds.before', { next }) : t('ds.maxTier')}
         </Text>
         <Text variant="largeTitle" mono weight="600">
           {total}
@@ -196,7 +196,7 @@ export function MasteryRing({ tier, next, gained, remaining, size: requested = 1
       </View>
       <View onLayout={measureLabel('right')} style={{ position: 'absolute' }}>
         <Text variant="caption" weight="600" numberOfLines={1}>
-          {t('mobile.ds.xpGained')}
+          {t('ds.xpGained')}
         </Text>
         <Text variant="largeTitle" mono weight="600">
           +{gained}
@@ -248,7 +248,7 @@ export function MasteryRing({ tier, next, gained, remaining, size: requested = 1
       >
         <View style={{ marginRight: tokens.space[3], alignItems: 'flex-end' }}>
           <Text variant="caption" weight="600" numberOfLines={1}>
-            {next ? t('mobile.ds.before', { next }) : t('mobile.ds.maxTier')}
+            {next ? t('ds.before', { next }) : t('ds.maxTier')}
           </Text>
           <Text variant="largeTitle" mono weight="600">
             {total - shownGained}
@@ -273,7 +273,7 @@ export function MasteryRing({ tier, next, gained, remaining, size: requested = 1
         <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: colors.accent }} />
         <View style={{ marginLeft: tokens.space[3] }}>
           <Text variant="caption" weight="600" color="accentInk" numberOfLines={1}>
-            {t('mobile.ds.xpGained')}
+            {t('ds.xpGained')}
           </Text>
           <Text variant="largeTitle" mono weight="600" color="accentInk">
             +{shownGained}

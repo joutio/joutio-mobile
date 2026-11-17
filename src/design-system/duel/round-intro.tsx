@@ -130,7 +130,7 @@ function Body({ round, total, topic, category, results, bonus = false, animated 
           </Animated.View>
           <Animated.View style={word}>
             <Text variant="title2" weight="700" color="onAccent">
-              {tr('mobile.ds.round')}
+              {tr('ds.round')}
             </Text>
             <Text variant="callout" weight="600" color="onAccent" style={{ opacity: 0.7 }}>
               de {total}
@@ -158,7 +158,7 @@ function Body({ round, total, topic, category, results, bonus = false, animated 
             >
               <LightningIcon size={16} weight="fill" color={colors.accentInk} />
               <Text variant="callout" weight="700" color="accentInk">
-                {tr('mobile.ds.bonusQuestion')}
+                {tr('ds.bonusQuestion')}
               </Text>
             </View>
           )}

@@ -63,7 +63,7 @@ export function StreakCalendar({ month, legend, offset, days, today, active, sty
               <View
                 accessible
                 // La couleur ne suffit pas : l'état du jour est aussi dit en toutes lettres.
-                accessibilityLabel={[String(day), isPlayed && t('mobile.ds.played'), isToday && "aujourd'hui"].filter(Boolean).join(', ')}
+                accessibilityLabel={[String(day), isPlayed && t('ds.played'), isToday && "aujourd'hui"].filter(Boolean).join(', ')}
                 style={{
                   aspectRatio: 1,
                   alignItems: 'center',

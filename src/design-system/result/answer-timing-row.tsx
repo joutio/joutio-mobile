@@ -30,7 +30,7 @@ function Timing({ player, first, end }: { player: AnswerTiming; first: boolean; 
         {player.name}
       </Text>
       <Text variant="caption" mono color={color} numberOfLines={1}>
-        {player.seconds === undefined ? t('mobile.ds.noAnswer') : duration(player.seconds)} · {player.points > 0 ? `+${player.points}` : player.points}
+        {player.seconds === undefined ? t('ds.noAnswer') : duration(player.seconds)} · {player.points > 0 ? `+${player.points}` : player.points}
       </Text>
     </View>
   )

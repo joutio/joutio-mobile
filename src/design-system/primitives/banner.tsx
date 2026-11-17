@@ -14,11 +14,11 @@ export type BannerTone = 'error' | 'warning' | 'success' | 'info' | 'live' | 'tr
 export type BannerConnection = 'offline' | 'reconnecting' | 'retrying' | 'failed' | 'restored'
 
 const CONNECTION = (): Record<BannerConnection, { title: string; message: string; icon: Icon }> => ({
-  offline: { title: t('search.offline'), message: t('mobile.ds.offlineText'), icon: WifiSlashIcon },
-  reconnecting: { title: t('mobile.ds.reconnecting'), message: t('mobile.ds.reconnectingText'), icon: ArrowClockwiseIcon },
-  retrying: { title: t('mobile.ds.retrying'), message: t('mobile.ds.retryingText'), icon: WifiSlashIcon },
-  failed: { title: t('mobile.ds.stillOffline'), message: t('mobile.ds.stillOfflineText'), icon: WifiSlashIcon },
-  restored: { title: t('mobile.ds.restored'), message: t('mobile.ds.restoredText'), icon: CheckCircleIcon },
+  offline: { title: t('search.offline'), message: t('ds.offlineText'), icon: WifiSlashIcon },
+  reconnecting: { title: t('ds.reconnecting'), message: t('ds.reconnectingText'), icon: ArrowClockwiseIcon },
+  retrying: { title: t('ds.retrying'), message: t('ds.retryingText'), icon: WifiSlashIcon },
+  failed: { title: t('ds.stillOffline'), message: t('ds.stillOfflineText'), icon: WifiSlashIcon },
+  restored: { title: t('ds.restored'), message: t('ds.restoredText'), icon: CheckCircleIcon },
 })
 
 type BannerAction = { label: string; onPress?: () => void; loading?: boolean }

@@ -10,7 +10,7 @@ export type StreakDay = 'done' | 'today' | 'missed' | 'future'
 const DAY_LABELS = ['L', 'M', 'M', 'J', 'V', 'S', 'D']
 /** Lundi → dimanche dans la langue courante (2024-01-01 est un lundi). */
 const dayName = (index: number) => formatDate(new Date(2024, 0, 1 + index), currentLanguage(), { weekday: 'long' })
-const STATE_NAMES = (): Record<StreakDay, string> => ({ done: t('mobile.ds.played'), today: "aujourd'hui", missed: t('mobile.ds.missed'), future: t('mobile.ds.upcoming') })
+const STATE_NAMES = (): Record<StreakDay, string> => ({ done: t('ds.played'), today: t('ds.today'), missed: t('ds.missed'), future: t('ds.upcoming') })
 
 export interface StreakProps {
   count: number
@@ -26,12 +26,12 @@ export function Streak({ count, hint, week, compact = false, style }: StreakProp
   const t = useT()
   const { colors, radius } = useTheme()
   const active = count > 0
-  const label = count > 1 ? t('mobile.ds.daysMany', { count }) : t('mobile.ds.daysOne', { count })
+  const label = count > 1 ? t('ds.daysMany', { count }) : t('ds.daysOne', { count })
   return (
     <View style={[{ alignSelf: 'stretch', gap: tokens.space[5] }, style]}>
       <View
         accessible
-        accessibilityLabel={[t('mobile.ds.streakOf', { label }), hint].filter(Boolean).join(', ')}
+        accessibilityLabel={[t('ds.streakOf', { label }), hint].filter(Boolean).join(', ')}
         style={{ flexDirection: 'row', alignItems: 'center', gap: tokens.space[4] }}
       >
         <View

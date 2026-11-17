@@ -56,7 +56,7 @@ export function PageDots({ count, index, style }: PageDotsProps) {
     <View
       accessible
       accessibilityRole="image"
-      accessibilityLabel={t('mobile.ds.stepOf', { index: index + 1, count })}
+      accessibilityLabel={t('ds.stepOf', { index: index + 1, count })}
       style={[{ width: Math.max(0, count - 1) * (DOT + GAP) + LONG, height: DOT }, style]}
     >
       {Array.from({ length: count }, (_, dot) => (

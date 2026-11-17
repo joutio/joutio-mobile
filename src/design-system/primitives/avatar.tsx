@@ -18,7 +18,7 @@ const FRAME_MIN_SIZE = 40
 
 export type Presence = 'online' | 'ingame' | 'offline'
 
-const PRESENCE_LABEL = (): Record<Presence, string> => ({ online: t('presence.onlineLower'), ingame: t('mobile.ds.inGame'), offline: t('presence.offlineLower') })
+const PRESENCE_LABEL = (): Record<Presence, string> => ({ online: t('presence.onlineLower'), ingame: t('ds.inGame'), offline: t('presence.offlineLower') })
 
 export interface AvatarProps {
   name: string
@@ -50,8 +50,8 @@ export function Avatar({ name, src, size = 'md', tier, locked = false, presence,
   // Un seul nom accessible : l'état n'est jamais porté par la seule couleur (kit § 6).
   const label = [
     name,
-    tier ? t('mobile.ds.rankA11y', { tier: t(tierKey(tier)) }) : undefined,
-    locked ? t('mobile.profile.locked') : undefined,
+    tier ? t('ds.rankA11y', { tier: t(tierKey(tier)) }) : undefined,
+    locked ? t('common.locked') : undefined,
     presence ? PRESENCE_LABEL()[presence] : undefined,
   ]
     .filter(Boolean)

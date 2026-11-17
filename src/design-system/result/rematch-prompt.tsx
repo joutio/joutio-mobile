@@ -65,7 +65,7 @@ export function RematchPrompt({
     <View
       accessibilityRole="alert"
       accessibilityViewIsModal
-      accessibilityLabel={t('mobile.ds.rematchA11y', { name, topic })}
+      accessibilityLabel={t('ds.rematchA11y', { name, topic })}
       style={[
         {
           alignItems: 'center',
@@ -109,11 +109,11 @@ export function RematchPrompt({
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: tokens.space[2] }}>
         <PlayerName name={name} premium={premium} badgeSize={22} variant="title2" />
         <Text variant="title2" align="center">
-          {t('mobile.ds.wantsRematch')}
+          {t('ds.wantsRematch')}
         </Text>
       </View>
       <Text variant="callout" color="muted" align="center">
-        {t('mobile.ds.sameTopic')} {topic}
+        {t('ds.sameTopic')} {topic}
       </Text>
       <View style={{ alignSelf: 'stretch', flexDirection: 'row', gap: tokens.space[3], marginTop: tokens.space[2] }}>
         <View style={{ flex: 1 }}>

@@ -7,7 +7,7 @@ import { tokens } from '../tokens.generated'
 import { UnlockContent } from './unlock-content'
 import { t, useT } from '@/lib/i18n'
 
-const daysLabel = (days: number) => (days > 1 ? t('mobile.ds.daysMany', { count: days }) : t('mobile.ds.daysOne', { count: days }))
+const daysLabel = (days: number) => (days > 1 ? t('ds.daysMany', { count: days }) : t('ds.daysOne', { count: days }))
 
 export interface StreakUnlockProps {
   /** Jours de série atteints avec cette partie. */
@@ -49,14 +49,14 @@ export function StreakUnlock({ days, nextRule }: StreakUnlockProps) {
         </View>
       }
       heroMotion="ignite"
-      eyebrow={t('mobile.ds.newStreakDay')}
+      eyebrow={t('ds.newStreakDay')}
       headline={daysLabel(days)}
-      text={days > 1 ? t('mobile.ds.streakPlayed', { days, next: daysLabel(days + 1) }) : t('mobile.ds.streakStarts')}
+      text={days > 1 ? t('ds.streakPlayed', { days, next: daysLabel(days + 1) }) : t('ds.streakStarts')}
       next={
         next
           ? {
               label: daysLabel(next),
-              rule: nextRule ?? t('mobile.ds.stillDays', { count: daysLabel(next - days) }),
+              rule: nextRule ?? t('ds.stillDays', { count: daysLabel(next - days) }),
               preview: (
                 <View style={{ width: 48, height: 48, borderRadius: radius.full, backgroundColor: colors.raised, alignItems: 'center', justifyContent: 'center' }}>
                   <FireIcon size={28} weight="fill" color={colors.muted} />

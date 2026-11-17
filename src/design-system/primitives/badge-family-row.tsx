@@ -86,7 +86,7 @@ export function BadgeFamilyRow({ name, icon, earned, progress, remaining, feats,
           ? feats.map((feat, index) => <TierMedal key={index} tier={feat.tier} icon={icon} size={40} state={feat.earned ? 'earned' : 'locked'} />)
           : TIERS.map((tier, index) => <TierMedal key={tier} tier={tier} icon={icon} size={40} state={index < earned ? 'earned' : 'locked'} />)}
       </View>
-      {next && <ProgressBar value={progress} tone={next} label={remaining} accessibilityLabel={t('mobile.ds.towards', { name, tier: t(tierKey(next)) })} />}
+      {next && <ProgressBar value={progress} tone={next} label={remaining} accessibilityLabel={t('ds.towards', { name, tier: t(tierKey(next)) })} />}
     </PressableScale>
   )
 }

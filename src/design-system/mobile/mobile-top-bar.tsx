@@ -144,7 +144,7 @@ export function MobileTopBar(props: MobileTopBarProps) {
               regular
               icon={CaretLeftIcon}
               onPress={onBack}
-              accessibilityLabel={t('mobile.ds.backTo', { back })}
+              accessibilityLabel={t('ds.backTo', { back })}
               style={{ paddingHorizontal: 0, alignSelf: 'center' }}
             >
               {back}

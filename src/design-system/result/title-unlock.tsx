@@ -28,17 +28,17 @@ export function TitleUnlock({ tier, title, topic, text, next, nextRule, worn = f
       crumbFrom={topic}
       hero={<TitleRibbon tier={tier} text={title} width={300} />}
       heroMotion="unroll"
-      eyebrow={t('mobile.ds.newTitle')}
+      eyebrow={t('ds.newTitle')}
       headline={title}
       text={text}
       extra={
         worn ? (
           <Pill tone="correct" icon={CheckCircleIcon}>
-            {t('mobile.ds.titleWorn')}
+            {t('ds.titleWorn')}
           </Pill>
         ) : (
           <Button variant="gray" tone="neutral" size="S" icon={CheckCircleIcon} loading={wearing} onPress={onWear}>
-            {t('mobile.ds.wearTitle')}
+            {t('ds.wearTitle')}
           </Button>
         )
       }

@@ -46,7 +46,7 @@ function Body({ pages, step, onStepChange, onDone, onShare }: UnlockSequenceProp
         <View style={{ flex: 1, alignItems: 'flex-end' }}>
           {!last && (
             <Button variant="plain" tone="neutral" size="M" onPress={onDone}>
-              {t('mobile.ds.skipAll')}
+              {t('ds.skipAll')}
             </Button>
           )}
         </View>
@@ -79,7 +79,7 @@ function Body({ pages, step, onStepChange, onDone, onShare }: UnlockSequenceProp
         />
         <View style={{ flex: 1 }}>
           <Button full onPress={next}>
-            {last ? t('mobile.ds.seeResult') : t('onboarding.universes.continue')}
+            {last ? t('ds.seeResult') : t('onboarding.universes.continue')}
           </Button>
         </View>
       </View>

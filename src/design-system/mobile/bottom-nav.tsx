@@ -39,7 +39,7 @@ export function BottomNav<K extends string>({ items, active, onChange, style }: 
   return (
     <View
       accessibilityRole="tablist"
-      accessibilityLabel={t('mobile.ds.mainNav')}
+      accessibilityLabel={t('ds.mainNav')}
       style={[
         { flexDirection: 'row', paddingHorizontal: tokens.space[3], paddingBottom: insets.bottom, borderTopWidth: HAIRLINE, borderTopColor: colors.border },
         style,

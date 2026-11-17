@@ -30,7 +30,7 @@ export function RanksSheet({
             <View
               key={rank}
               accessible
-              accessibilityLabel={[t(tierKey(rank)), rankRule(rank), isCurrent && t('mobile.profile.yourRankLower'), index > current && t('mobile.profile.locked')]
+              accessibilityLabel={[t(tierKey(rank)), rankRule(rank), isCurrent && t('mobile.profile.yourRankLower'), index > current && t('common.locked')]
                 .filter(Boolean)
                 .join(', ')}
               style={{

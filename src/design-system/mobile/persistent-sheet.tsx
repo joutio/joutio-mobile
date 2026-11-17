@@ -77,10 +77,10 @@ export function PersistentSheet({ label, detent, onDetentChange, header, footer,
       grabberOptions={{ color: colors.border }}
       accessibilityOptions={{
         paneTitle: label,
-        grabberLabel: t('mobile.ds.detentHeight', { label }),
-        collapsedValue: t('mobile.ds.detentPeek'),
-        detentValue: t('mobile.ds.detentHalf'),
-        expandedValue: t('mobile.ds.detentFull'),
+        grabberLabel: t('ds.detentHeight', { label }),
+        collapsedValue: t('ds.detentPeek'),
+        detentValue: t('ds.detentHalf'),
+        expandedValue: t('ds.detentFull'),
       }}
       scrollableRef={scroller}
       insetAdjustment={FLOATING ? 'never' : 'automatic'}

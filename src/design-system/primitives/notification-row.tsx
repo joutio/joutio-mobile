@@ -44,7 +44,7 @@ export function NotificationRow({ title, sub, icon: IconComponent, player, unrea
       {/* Zone pressable sous le contenu : ripple d'un bord à l'autre, l'action reste au-dessus. */}
       <PressableScale
         accessibilityRole="button"
-        accessibilityLabel={[title, sub, unread ? t('mobile.ds.unread') : undefined].filter(Boolean).join(', ')}
+        accessibilityLabel={[title, sub, unread ? t('ds.unread') : undefined].filter(Boolean).join(', ')}
         accessibilityActions={onDelete ? [{ name: 'delete', label: t('workshop.delete') }] : undefined}
         onAccessibilityAction={(event) => event.nativeEvent.actionName === 'delete' && onDelete?.()}
         pressedScale={1}
@@ -98,7 +98,7 @@ export function NotificationRow({ title, sub, icon: IconComponent, player, unrea
       renderRightActions={() => (
         <PressableScale
           accessibilityRole="button"
-          accessibilityLabel={t('mobile.ds.deleteItem', { title })}
+          accessibilityLabel={t('ds.deleteItem', { title })}
           pressedScale={1}
           onPress={onDelete}
           style={({ pressed: down }) => ({

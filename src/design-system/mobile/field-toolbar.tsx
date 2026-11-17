@@ -22,7 +22,7 @@ export function FieldToolbar() {
     <KeyboardToolbar theme={{ light: tint, dark: tint }}>
       <KeyboardToolbar.Prev />
       <KeyboardToolbar.Next />
-      <KeyboardToolbar.Done text={t('mobile.ds.keyboardDone')} />
+      <KeyboardToolbar.Done text={t('ds.keyboardDone')} />
     </KeyboardToolbar>
   )
 }

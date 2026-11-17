@@ -11,10 +11,10 @@ import { t, useT } from '@/lib/i18n'
 export type MatchOutcome = 'win' | 'loss' | 'draw' | 'forfeit'
 
 const OUTCOMES = (): Record<MatchOutcome, { label: string; color: keyof ThemeColors }> => ({
-  win: { label: t('mobile.ds.win'), color: 'correct' },
-  loss: { label: t('mobile.ds.loss'), color: 'wrong' },
-  draw: { label: t('mobile.ds.draw'), color: 'muted' },
-  forfeit: { label: t('mobile.ds.forfeit'), color: 'muted' },
+  win: { label: t('ds.win'), color: 'correct' },
+  loss: { label: t('ds.loss'), color: 'wrong' },
+  draw: { label: t('ds.draw'), color: 'muted' },
+  forfeit: { label: t('ds.forfeit'), color: 'muted' },
 })
 
 export interface MatchRowProps {
@@ -43,7 +43,7 @@ export function MatchRow({ topic, category, pictogram, image, sub, outcome, scor
   return (
     <PressableScale
       accessibilityRole={onPress ? 'button' : 'text'}
-      accessibilityLabel={[topic, bot ? t('mobile.ds.againstBot') : undefined, sub, label, score].filter(Boolean).join(', ')}
+      accessibilityLabel={[topic, bot ? t('ds.againstBot') : undefined, sub, label, score].filter(Boolean).join(', ')}
       disabled={!onPress}
       pressedScale={1}
       ripple

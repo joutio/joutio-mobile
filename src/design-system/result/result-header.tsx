@@ -17,10 +17,10 @@ const SCORE_EM = 3.6
 
 type Tone = keyof ThemeColors
 const OUTCOMES = (): Record<MatchOutcome, { label: string; tone: Tone; me: Tone; opponent: Tone }> => ({
-  win: { label: t('mobile.ds.win'), tone: 'accentInk', me: 'correct', opponent: 'wrong' },
-  loss: { label: t('mobile.ds.loss'), tone: 'text', me: 'wrong', opponent: 'correct' },
-  draw: { label: t('mobile.ds.draw'), tone: 'text', me: 'text', opponent: 'text' },
-  forfeit: { label: t('mobile.ds.forfeit'), tone: 'muted', me: 'muted', opponent: 'muted' },
+  win: { label: t('ds.win'), tone: 'accentInk', me: 'correct', opponent: 'wrong' },
+  loss: { label: t('ds.loss'), tone: 'text', me: 'wrong', opponent: 'correct' },
+  draw: { label: t('ds.draw'), tone: 'text', me: 'text', opponent: 'text' },
+  forfeit: { label: t('ds.forfeit'), tone: 'muted', me: 'muted', opponent: 'muted' },
 })
 
 export interface ResultPlayer {
@@ -94,7 +94,7 @@ export function ResultHeader({ outcome, topic, me, opponent, style }: ResultHead
         <View
           accessible
           accessibilityRole="image"
-          accessibilityLabel={t('mobile.ds.scoreA11y', { mine: me.score, theirs: opponent.score })}
+          accessibilityLabel={t('ds.scoreA11y', { mine: me.score, theirs: opponent.score })}
           onLayout={(event) => setCenter(event.nativeEvent.layout.width)}
           style={{ flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: tokens.space[3] }}
         >

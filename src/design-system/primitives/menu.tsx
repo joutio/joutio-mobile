@@ -135,7 +135,7 @@ export function Menu({ items, title, width = 240, children }: MenuProps) {
         onRequestClose={() => close()}
         onDismiss={flush}
       >
-        <Pressable accessibilityLabel={t('mobile.ds.closeMenu')} accessibilityRole="button" onPress={() => close()} style={StyleSheet.absoluteFill} />
+        <Pressable accessibilityLabel={t('ds.closeMenu')} accessibilityRole="button" onPress={() => close()} style={StyleSheet.absoluteFill} />
         <Animated.View
           accessibilityViewIsModal
           accessibilityRole="menu"

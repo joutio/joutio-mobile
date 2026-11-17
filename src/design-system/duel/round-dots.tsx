@@ -8,14 +8,14 @@ export const ROUND_RESULTS = ['correct', 'wrong', 'current', 'upcoming', 'unplay
 export type RoundResult = (typeof ROUND_RESULTS)[number]
 
 const LABELS = (): Record<RoundResult, string> => ({
-  correct: t('mobile.ds.round.correct'),
-  wrong: t('mobile.ds.round.wrong'),
-  current: t('mobile.ds.round.current'),
-  upcoming: t('mobile.ds.upcoming'),
-  unplayed: t('mobile.ds.round.unplayed'),
-  bonus: t('mobile.ds.round.bonus'),
-  bonusCorrect: t('mobile.ds.round.bonusCorrect'),
-  bonusWrong: t('mobile.ds.round.bonusWrong'),
+  correct: t('ds.round.correct'),
+  wrong: t('ds.round.wrong'),
+  current: t('ds.round.current'),
+  upcoming: t('ds.upcoming'),
+  unplayed: t('ds.round.unplayed'),
+  bonus: t('ds.round.bonus'),
+  bonusCorrect: t('ds.round.bonusCorrect'),
+  bonusWrong: t('ds.round.bonusWrong'),
 })
 
 export interface RoundDotsProps {
@@ -52,12 +52,12 @@ export function RoundDots({ results, size = 24, style }: RoundDotsProps) {
   }
   const ink = (result: RoundResult) => (result === 'bonus' ? colors.accentInk : result === 'bonusCorrect' ? colors.onCorrect : colors.onWrong)
   return (
-    <View accessibilityLabel={t('mobile.ds.rounds')} style={[{ flexDirection: 'row', alignItems: 'center', gap: roomy ? tokens.space[3] : tokens.space[2] }, style]}>
+    <View accessibilityLabel={t('ds.rounds')} style={[{ flexDirection: 'row', alignItems: 'center', gap: roomy ? tokens.space[3] : tokens.space[2] }, style]}>
       {results.map((result, index) => (
         <View
           key={index}
           accessible
-          accessibilityLabel={t('mobile.ds.roundA11y', { n: index + 1, state: LABELS()[result] })}
+          accessibilityLabel={t('ds.roundA11y', { n: index + 1, state: LABELS()[result] })}
           style={[{ width: size, height: size, borderRadius: radius.full, alignItems: 'center', justifyContent: 'center' }, dot(result)]}
         >
           {result.startsWith('bonus') && roomy && (

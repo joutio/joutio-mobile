@@ -61,8 +61,8 @@ export function AnswerEditorRow({
       <TextInput
         value={value}
         maxLength={maxLength}
-        accessibilityLabel={t('mobile.ds.answerN', { index })}
-        placeholder={placeholder ?? t('mobile.ds.answerN', { index })}
+        accessibilityLabel={t('ds.answerN', { index })}
+        placeholder={placeholder ?? t('ds.answerN', { index })}
         placeholderTextColor={colors.muted}
         selectionColor={colors.accent}
         cursorColor={colors.accent}
@@ -80,7 +80,7 @@ export function AnswerEditorRow({
       <PressableScale
         accessibilityRole="radio"
         accessibilityState={{ checked: correct }}
-        accessibilityLabel={t('mobile.ds.answerCorrect', { index })}
+        accessibilityLabel={t('ds.answerCorrect', { index })}
         onPress={onMarkCorrect}
         style={{ minHeight: 44, justifyContent: 'center', paddingHorizontal: tokens.space[2] }}
       >
@@ -99,7 +99,7 @@ export function AnswerEditorRow({
         >
           {correct && <CheckIcon size={14} weight="bold" color={colors.onCorrect} />}
           <Text variant="caption" weight="600" color={correct ? 'onCorrect' : 'muted'}>
-            {t('mobile.ds.correct')}
+            {t('ds.correct')}
           </Text>
         </View>
       </PressableScale>

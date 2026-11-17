@@ -151,7 +151,7 @@ export function UnlockContent({ tier, accent, crumbLead, crumbFrom, hero, heroMo
         >
           <View style={{ width: 96, height: 56, alignItems: 'center', justifyContent: 'center' }}>{next.preview}</View>
           <Text variant="caption" color="muted" style={{ flex: 1 }}>
-            {t('mobile.ds.next')}{' '}
+            {t('ds.next')}{' '}
             <Text variant="caption" weight="600" color={next.tier ? mix(tokens.tier[next.tier].hex, colors.text, 0.6) : ink}>
               {next.tier ? t(tierKey(next.tier)) : next.label}
             </Text>{' '}

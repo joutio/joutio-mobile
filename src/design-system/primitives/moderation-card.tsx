@@ -37,7 +37,7 @@ export function ModerationCard({ author, question, answers, correct, busy, onApp
           <View
             key={`${index}-${answer}`}
             accessible
-            accessibilityLabel={index === correct ? t('mobile.ds.answerIsCorrect', { answer }) : answer}
+            accessibilityLabel={index === correct ? t('ds.answerIsCorrect', { answer }) : answer}
             style={{
               minHeight: 50,
               flexDirection: 'row',
@@ -65,12 +65,12 @@ export function ModerationCard({ author, question, answers, correct, busy, onApp
         </View>
         <View style={{ flex: 1 }}>
           <Button size="M" full loading={busy === 'approve'} disabled={busy !== undefined} onPress={onApprove}>
-            {t('mobile.ds.approve')}
+            {t('ds.approve')}
           </Button>
         </View>
       </View>
       <Button variant="plain" tone="neutral" size="M" full disabled={busy !== undefined} onPress={onEdit}>
-        {t('mobile.ds.editBeforeApprove')}
+        {t('ds.editBeforeApprove')}
       </Button>
     </View>
   )

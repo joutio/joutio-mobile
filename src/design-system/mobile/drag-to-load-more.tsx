@@ -122,7 +122,7 @@ export function DragToLoadMore({ enabled, loading = false, onLoadMore, style, ov
           onPull={(event) => {
             pull.value = event.nativeEvent.pull
           }}
-          accessibilityLabel={t('mobile.ds.loadingMore')}
+          accessibilityLabel={t('ds.loadingMore')}
           accessibilityState={{ busy }}
         />
       )}

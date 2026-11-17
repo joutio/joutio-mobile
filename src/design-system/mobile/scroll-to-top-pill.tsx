@@ -81,7 +81,7 @@ export function ScrollToTopPill({ scroll, onPress, top = tokens.space[3], showAf
       >
         <PressableScale
           accessibilityRole="button"
-          accessibilityLabel={t('mobile.ds.backToTop')}
+          accessibilityLabel={t('ds.backToTop')}
           onPress={() => {
             haptic('selection')
             onPress()
@@ -99,7 +99,7 @@ export function ScrollToTopPill({ scroll, onPress, top = tokens.space[3], showAf
         >
           <CaretUpIcon size={14} color={colors.text} weight="bold" />
           <Text variant="callout" weight="600">
-            {t('mobile.ds.top')}
+            {t('ds.top')}
           </Text>
         </PressableScale>
       </Animated.View>

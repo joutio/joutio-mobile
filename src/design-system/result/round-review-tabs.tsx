@@ -7,7 +7,7 @@ import { t, useT } from '@/lib/i18n'
 
 export type ReviewAnswer = 'correct' | 'wrong' | 'none'
 
-const LABELS = (): Record<ReviewAnswer, string> => ({ correct: t('mobile.ds.correctLower'), wrong: t('mobile.ds.wrongLower'), none: t('mobile.ds.noAnswer') })
+const LABELS = (): Record<ReviewAnswer, string> => ({ correct: t('ds.correctLower'), wrong: t('ds.wrongLower'), none: t('ds.noAnswer') })
 
 export interface ReviewRoundTab {
   me: ReviewAnswer
@@ -34,7 +34,7 @@ export function RoundReviewTabs({ rounds, value, onChange, me, opponent, compact
   const { colors, radius } = useTheme()
   const dot = (answer: ReviewAnswer) => (answer === 'correct' ? colors.correct : answer === 'wrong' ? colors.wrong : colors.raised)
   return (
-    <View accessibilityLabel={t('mobile.ds.rounds')} style={[{ flexDirection: 'row', gap: tokens.space[2] }, style]}>
+    <View accessibilityLabel={t('ds.rounds')} style={[{ flexDirection: 'row', gap: tokens.space[2] }, style]}>
       {rounds.map((round, index) => {
         const current = index === value
         return (

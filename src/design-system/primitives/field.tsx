@@ -119,7 +119,7 @@ export function Field({
         {onClear && value !== undefined && value !== '' && !multiline && !disabled && (
           <PressableScale
             accessibilityRole="button"
-            accessibilityLabel={label ? t('mobile.ds.clearField', { label }) : t('search.clear')}
+            accessibilityLabel={label ? t('ds.clearField', { label }) : t('search.clear')}
             pressedScale={1}
             hitSlop={12}
             onPress={() => {

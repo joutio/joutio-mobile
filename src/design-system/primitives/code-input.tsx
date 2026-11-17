@@ -44,7 +44,7 @@ export function CodeInput({
   onChange,
   length = 6,
   error = false,
-  label = t('mobile.ds.codeLabel'),
+  label = t('ds.codeLabel'),
   focused = false,
   autoFocus = false,
   disabled = false,
@@ -91,7 +91,7 @@ export function CodeInput({
         accessibilityLabel={label}
         accessibilityValue={{ text: value.split('').join(' ') }}
         accessibilityState={{ disabled }}
-        accessibilityHint={error ? t('mobile.ds.codeWrong') : t('mobile.ds.digits', { count: length })}
+        accessibilityHint={error ? t('ds.codeWrong') : t('ds.digits', { count: length })}
         keyboardType="number-pad"
         inputMode="numeric"
         textContentType="oneTimeCode"
