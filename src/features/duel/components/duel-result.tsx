@@ -324,7 +324,6 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
                         tier: myTier,
                         score: myScore,
                         streak: streakOf(game, userId),
-                        meta: bot ? t('result.trainingElo', { elo: formatNumber(rating) }) : undefined,
                         premium: identity.myPremium,
                         onOpen: identity.open(userId),
                       }}
