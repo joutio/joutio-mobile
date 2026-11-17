@@ -1,7 +1,10 @@
 import { MAX_DESCRIPTION } from '@joutio/client/authoring'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { createTopicSchema, topicDescriptionsSchema, topicNamesSchema } from '@joutio/client/forms'
 import { useEffect, useState } from 'react'
+import { Controller, useForm, useWatch } from 'react-hook-form'
 import { View } from 'react-native'
-import { Button, Field, ListGroup, ListRow, MobileSheet, Notice, RadioGroup, Segmented, Text, tokens, type CategoryCode } from '@/design-system'
+import { Button, Field, ListGroup, ListRow, MobileSheet, Notice, RadioGroup, Segmented, Text, toCategoryCode, tokens, type CategoryCode } from '@/design-system'
 import type { Language } from '@joutio/client/api-types'
 import { MAX_NAME } from '@joutio/client/authoring'
 import type { Localized } from '@joutio/client/authoring'
@@ -72,15 +75,15 @@ export function CreateTopicSheet({
   onCreate: (topic: { name: string; category: CategoryCode }) => void
 }) {
   const t = useT()
-  const [name, setName] = useState('')
-  const [category, setCategory] = useState<CategoryCode>('GENERAL')
+  const form = useForm({ resolver: zodResolver(createTopicSchema), mode: 'onChange', defaultValues: { name: '', category: 'GENERAL' } })
+  const [name, categoryValue] = useWatch({ control: form.control, name: ['name', 'category'] })
+  const category = toCategoryCode(categoryValue)
   const sameName = useSameNameTopic(name)
   const [universeOpen, setUniverseOpen] = useState(false)
+  const { reset } = form
   useEffect(() => {
-    if (!open) return
-    setName('')
-    setCategory('GENERAL')
-  }, [open])
+    if (open) reset()
+  }, [open, reset])
   return (
     <>
       <MobileSheet
@@ -88,19 +91,27 @@ export function CreateTopicSheet({
         onClose={onClose}
         title={t('workshop.newTopic')}
         footer={
-          <Button full size="L" loading={busy} disabled={name.trim() === ''} onPress={() => onCreate({ name: name.trim(), category })}>
+          <Button full size="L" loading={busy} disabled={!form.formState.isValid}
+            onPress={() => void form.handleSubmit((values) => onCreate({ name: values.name, category: toCategoryCode(values.category) }))()}
+          >
             {t('workshop.createDraft')}
           </Button>
         }
       >
         <View style={{ gap: tokens.space[4] }}>
-          <Field
-            label={t('workshop.name')}
-            placeholder={t('workshop.namePlaceholder')}
-            value={name}
-            maxLength={MAX_NAME}
-            counter={t('mobile.authoring.counter', { count: name.length, max: MAX_NAME })}
-            onChangeText={setName}
+          <Controller
+            control={form.control}
+            name="name"
+            render={({ field }) => (
+              <Field
+                label={t('workshop.name')}
+                placeholder={t('workshop.namePlaceholder')}
+                value={field.value}
+                maxLength={MAX_NAME}
+                counter={t('mobile.authoring.counter', { count: field.value.length, max: MAX_NAME })}
+                onChangeText={field.onChange}
+              />
+            )}
           />
           {sameName && (
             <Notice
@@ -124,7 +135,7 @@ export function CreateTopicSheet({
           </Text>
         </View>
       </MobileSheet>
-      <UniverseSheet open={open && universeOpen} value={category} onClose={() => setUniverseOpen(false)} onChange={setCategory} />
+      <UniverseSheet open={open && universeOpen} value={category} onClose={() => setUniverseOpen(false)} onChange={(code) => form.setValue('category', code, { shouldValidate: true })} />
     </>
   )
 }
@@ -139,7 +150,6 @@ export function LocalizedFieldSheet({
   title,
   label,
   initial,
-  max,
   placeholder,
   busy,
   onClose,
@@ -149,7 +159,6 @@ export function LocalizedFieldSheet({
   title: string
   label: string
   initial: Localized
-  max: number
   placeholder: Localized
   busy?: boolean
   onClose: () => void
@@ -157,36 +166,42 @@ export function LocalizedFieldSheet({
 }) {
   const t = useT()
   const [language, setLanguage] = useState<Language>('fr')
-  const [draft, setDraft] = useState<Localized>(initial)
+  const form = useForm({ resolver: zodResolver(topicNamesSchema), mode: 'onChange', defaultValues: initial })
+  const french = useWatch({ control: form.control, name: 'fr' })
   useEffect(() => {
     if (!open) return
     setLanguage('fr')
-    setDraft(initial)
+    form.reset(initial)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
-  const value = draft[language]
   return (
     <MobileSheet
       open={open}
       onClose={onClose}
       title={title}
       footer={
-        <Button full loading={busy} disabled={draft.fr.trim() === ''} onPress={() => onSave({ fr: draft.fr.trim(), en: draft.en.trim() })}>
+        <Button full loading={busy} disabled={!form.formState.isValid} onPress={() => void form.handleSubmit(onSave)()}>
           {t('settings.save')}
         </Button>
       }
     >
       <View style={{ gap: tokens.space[4] }}>
         <Segmented<Language> label={t('settings.language')} options={LANGUAGES} value={language} onChange={setLanguage} />
-        <Field
+        <Controller
           key={language}
-          label={language === 'fr' ? label : t('workshop.inEnglish', { label })}
-          placeholder={placeholder[language]}
-          hint={language === 'en' ? t('workshop.englishHint', { text: draft.fr.trim() || '—' }) : undefined}
-          value={value}
-          maxLength={max}
-          counter={t('mobile.authoring.counter', { count: value.length, max })}
-          onChangeText={(next) => setDraft({ ...draft, [language]: next })}
+          control={form.control}
+          name={language}
+          render={({ field }) => (
+            <Field
+              label={language === 'fr' ? label : t('workshop.inEnglish', { label })}
+              placeholder={placeholder[language]}
+              hint={language === 'en' ? t('workshop.englishHint', { text: french.trim() || '—' }) : undefined}
+              value={field.value}
+              maxLength={MAX_NAME}
+              counter={t('mobile.authoring.counter', { count: field.value.length, max: MAX_NAME })}
+              onChangeText={field.onChange}
+            />
+          )}
         />
       </View>
     </MobileSheet>
@@ -212,17 +227,19 @@ export function DescriptionSheet({
 }) {
   const t = useT()
   const [language, setLanguage] = useState<Language>('fr')
-  const [draft, setDraft] = useState<Localized>(initial)
+  const form = useForm({ resolver: zodResolver(topicDescriptionsSchema), mode: 'onChange', defaultValues: initial })
+  const [french, english] = useWatch({ control: form.control, name: ['fr', 'en'] })
   useEffect(() => {
     if (!open) return
     setLanguage('fr')
-    setDraft(initial)
+    form.reset(initial)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
-  const value = draft[language]
-  const changes = (['fr', 'en'] as const)
-    .filter((code) => draft[code].trim() !== initial[code].trim())
-    .map((code) => ({ language: code, description: draft[code].trim() === '' ? null : draft[code].trim() }))
+  const changesOf = (values: Localized) =>
+    (['fr', 'en'] as const)
+      .filter((code) => values[code].trim() !== initial[code].trim())
+      .map((code) => ({ language: code, description: values[code].trim() === '' ? null : values[code].trim() }))
+  const changed = changesOf({ fr: french, en: english }).length > 0
   return (
     <MobileSheet
       open={open}
@@ -230,23 +247,29 @@ export function DescriptionSheet({
       title={t('workshop.description')}
       subtitle={t('workshop.descriptionSub')}
       footer={
-        <Button full loading={busy} disabled={changes.length === 0} onPress={() => onSave(changes)}>
+        <Button full loading={busy} disabled={!changed || !form.formState.isValid} onPress={() => void form.handleSubmit((values) => onSave(changesOf(values)))()}>
           {t('settings.save')}
         </Button>
       }
     >
       <View style={{ gap: tokens.space[4] }}>
         <Segmented<Language> label={t('settings.language')} options={LANGUAGES} value={language} onChange={setLanguage} />
-        <Field
+        <Controller
           key={language}
-          label={language === 'fr' ? t('workshop.description') : t('mobile.authoring.descriptionEn')}
-          placeholder={language === 'fr' ? t('workshop.descriptionPlaceholder') : 'What players will find in this topic'}
-          hint={language === 'en' ? t('mobile.authoring.descriptionEnHint') : undefined}
-          multiline
-          value={value}
-          maxLength={MAX_DESCRIPTION}
-          counter={t('mobile.authoring.counter', { count: value.length, max: MAX_DESCRIPTION })}
-          onChangeText={(next) => setDraft({ ...draft, [language]: next })}
+          control={form.control}
+          name={language}
+          render={({ field }) => (
+            <Field
+              label={language === 'fr' ? t('workshop.description') : t('mobile.authoring.descriptionEn')}
+              placeholder={language === 'fr' ? t('workshop.descriptionPlaceholder') : 'What players will find in this topic'}
+              hint={language === 'en' ? t('mobile.authoring.descriptionEnHint') : undefined}
+              multiline
+              value={field.value}
+              maxLength={MAX_DESCRIPTION}
+              counter={t('mobile.authoring.counter', { count: field.value.length, max: MAX_DESCRIPTION })}
+              onChangeText={field.onChange}
+            />
+          )}
         />
       </View>
     </MobileSheet>

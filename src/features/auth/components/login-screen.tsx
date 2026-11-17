@@ -4,17 +4,17 @@ import { Controller, useForm } from 'react-hook-form'
 import { View } from 'react-native'
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { z } from 'zod'
+import { loginSchema } from '@joutio/client/forms'
+import type { z } from 'zod'
 import { Button, Field, HAIRLINE, Logo, SocialButton, Text, tokens, useTheme } from '@/design-system'
 import { useOnboardingStore } from '@/features/onboarding/onboarding-store'
 import { useLoginWithFacebook, useLoginWithGoogle, useRequestLoginCode } from '../hooks/use-login'
 import { isFacebookSignInAvailable } from '../lib/facebook'
 import { isGoogleSignInAvailable } from '../lib/google'
 import { LegalNotice } from './legal-notice'
-import { t, useT } from '@/lib/i18n'
+import { formError, t, useT } from '@/lib/i18n'
 
-const schema = z.object({ email: z.string().trim().pipe(z.email({ error: () => t('mobile.auth.invalidEmail') })) })
-type LoginForm = z.infer<typeof schema>
+type LoginForm = z.infer<typeof loginSchema>
 
 /** Connexion : fournisseurs sociaux, puis e-mail et code. Pas de mot de passe. */
 export function LoginScreen() {
@@ -32,7 +32,7 @@ export function LoginScreen() {
   const busy = google.isPending || facebook.isPending
   const socialError = google.error?.message ?? facebook.error?.message
 
-  const { control, handleSubmit, formState } = useForm<LoginForm>({ resolver: zodResolver(schema), mode: 'onChange', defaultValues: { email } })
+  const { control, handleSubmit, formState } = useForm<LoginForm>({ resolver: zodResolver(loginSchema), mode: 'onChange', defaultValues: { email } })
 
   const submit = () => {
     void handleSubmit(({ email: value }) => {
@@ -116,7 +116,7 @@ export function LoginScreen() {
               value={value}
               onChangeText={onChange}
               onBlur={onBlur}
-              error={(fieldState.isTouched && value !== '' ? fieldState.error?.message : undefined) ?? requestCode.error?.message}
+              error={(fieldState.isTouched && value !== '' && fieldState.error?.message ? formError(fieldState.error.message) : undefined) ?? requestCode.error?.message}
             />
           )}
         />

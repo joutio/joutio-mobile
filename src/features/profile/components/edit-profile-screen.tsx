@@ -1,10 +1,14 @@
+import { zodResolver } from '@hookform/resolvers/zod'
+import { MAX_BIO, profileSchema } from '@joutio/client/forms'
 import { countryFlag, countryName } from '@joutio/client/geo'
 import { MAX_PSEUDONYM } from '@joutio/client/profile'
 import type { ApiError } from '@joutio/client/api-types'
 import { useNavigation, usePreventRemove } from 'expo-router'
 import { router } from '@/shared/navigation/router'
 import { useEffect, useRef, useState } from 'react'
+import { Controller, useForm, useWatch } from 'react-hook-form'
 import { View } from 'react-native'
+import { z } from 'zod'
 import {
   Avatar,
   Field,
@@ -27,16 +31,11 @@ import { pseudonymError, pseudonymHint } from '@/features/settings/lib/pseudonym
 import { usePseudonymCheck, useUpdateMe } from '../hooks/use-profile'
 import { currentLanguage, useT } from '@/lib/i18n'
 
-const MAX_BIO = 160
 /** Ratio de la bannière du profil (lab : 320 de haut sur la largeur du téléphone). */
 const BANNER_ASPECT: [number, number] = [5, 4]
 
-interface Draft {
-  pseudonym: string
-  bio: string
-  country: string | null
-  bannerUrl: string | null
-}
+/** Profil et bannière : la bannière est une URL déjà envoyée, sans règle de saisie. */
+const schema = profileSchema.extend({ bannerUrl: z.string().nullable() })
 
 /**
  * Éditer le profil (`design/specs/screens/editer-profil.md`) : page ouverte par le bouton du Profil, Annuler /
@@ -49,8 +48,12 @@ export function EditProfileScreen() {
   const navigation = useNavigation()
   const me = useMe(true).data
   const avatar = useMyAvatar()
-  const initial: Draft = { pseudonym: me?.pseudonym ?? '', bio: me?.bio ?? '', country: me?.country ?? null, bannerUrl: me?.bannerUrl ?? null }
-  const [draft, setDraft] = useState<Draft>(initial)
+  const initial = { pseudonym: me?.pseudonym ?? '', bio: me?.bio ?? '', country: me?.country ?? null, bannerUrl: me?.bannerUrl ?? null }
+  const form = useForm({ resolver: zodResolver(schema), mode: 'onChange', defaultValues: initial })
+  const [pseudonym, bio, country, bannerUrl] = useWatch({ control: form.control, name: ['pseudonym', 'bio', 'country', 'bannerUrl'] })
+  const draft = { pseudonym, bio, country, bannerUrl }
+  const setCountry = (value: string | null) => form.setValue('country', value, { shouldValidate: true })
+  const setBanner = (value: string | null) => form.setValue('bannerUrl', value, { shouldValidate: true })
   const [countryOpen, setCountryOpen] = useState(false)
   // Avancement de l'envoi d'image (0 à 100) ; `undefined` hors envoi.
   const [progress, setProgress] = useState<number | undefined>(undefined)
@@ -99,7 +102,7 @@ export function EditProfileScreen() {
       if (!asset) return
       setProgress(0)
       const media = await uploadImage(asset, setProgress)
-      setDraft((current) => ({ ...current, bannerUrl: media.url }))
+      setBanner(media.url)
     } catch (error) {
       const problem = error as Partial<ApiError> | undefined
       toast.error(t('settings.imageError'), { description: problem?.detail || problem?.message || t('settings.imageRule') })
@@ -109,20 +112,20 @@ export function EditProfileScreen() {
     }
   }
 
-  const save = async () => {
+  const save = form.handleSubmit(async (values) => {
     setSaving(true)
     try {
-      if (changed.pseudonym) await savePseudonym.mutateAsync(draft.pseudonym.trim())
-      if (changed.bio) await saveBio.mutateAsync(draft.bio.trim() || null)
-      if (changed.country) await saveCountry.mutateAsync(draft.country)
-      if (changed.bannerUrl) await saveBanner.mutateAsync(draft.bannerUrl)
+      if (changed.pseudonym) await savePseudonym.mutateAsync(values.pseudonym)
+      if (changed.bio) await saveBio.mutateAsync(values.bio || null)
+      if (changed.country) await saveCountry.mutateAsync(values.country)
+      if (changed.bannerUrl) await saveBanner.mutateAsync(values.bannerUrl)
       toast.success(t('editProfile.saved'))
       router.back()
     } catch {
       // Chaque mutation affiche sa propre erreur ; la page reste ouverte avec le brouillon.
       setSaving(false)
     }
-  }
+  })
 
   return (
     <Screen
@@ -132,13 +135,13 @@ export function EditProfileScreen() {
           title={t('profile.edit')}
           cancel={t('topic.cancel')}
           confirm={t('settings.save')}
-          confirmDisabled={!dirty || !pseudonymOk || uploading || saving}
+          confirmDisabled={!dirty || !pseudonymOk || !form.formState.isValid || uploading || saving}
           onCancel={() => router.back()}
           onConfirm={() => void save()}
         />
       }
       overlay={
-        <CountryPicker open={countryOpen} onClose={() => setCountryOpen(false)} value={draft.country} onChange={(country) => setDraft({ ...draft, country })} />
+        <CountryPicker open={countryOpen} onClose={() => setCountryOpen(false)} value={draft.country} onChange={setCountry} />
       }
       contentStyle={{ gap: tokens.space[6], paddingHorizontal: tokens.space[5], paddingTop: tokens.space[3], paddingBottom: tokens.space[7] }}
     >
@@ -147,7 +150,7 @@ export function EditProfileScreen() {
         hint={uploading ? t('media.uploadingPercent', { percent: progress }) : t('mobile.profile.bannerHint')}
         progress={progress}
         onPick={() => void pickBanner()}
-        onRemove={() => setDraft({ ...draft, bannerUrl: null })}
+        onRemove={() => setBanner(null)}
       />
       <ListGroup surface="surface">
         <ListRow
@@ -159,25 +162,37 @@ export function EditProfileScreen() {
         />
       </ListGroup>
       <View style={{ gap: tokens.space[4] }}>
-        <Field
-          label={t('settings.pseudonym')}
-          value={draft.pseudonym}
-          maxLength={MAX_PSEUDONYM}
-          counter={t('mobile.authoring.counter', { count: draft.pseudonym.length, max: MAX_PSEUDONYM })}
-          hint={check.state === 'unchanged' ? t('settings.pseudonymHint') : pseudonymHint(check)}
-          error={pseudonymError(check)}
-          autoCapitalize="none"
-          autoCorrect={false}
-          onChangeText={(pseudonym) => setDraft({ ...draft, pseudonym })}
+        <Controller
+          control={form.control}
+          name="pseudonym"
+          render={({ field }) => (
+            <Field
+              label={t('settings.pseudonym')}
+              value={field.value}
+              maxLength={MAX_PSEUDONYM}
+              counter={t('mobile.authoring.counter', { count: field.value.length, max: MAX_PSEUDONYM })}
+              hint={check.state === 'unchanged' ? t('settings.pseudonymHint') : pseudonymHint(check)}
+              error={pseudonymError(check)}
+              autoCapitalize="none"
+              autoCorrect={false}
+              onChangeText={field.onChange}
+            />
+          )}
         />
-        <Field
-          label={t('settings.bio')}
-          placeholder={t('settings.bioPlaceholder')}
-          multiline
-          value={draft.bio}
-          maxLength={MAX_BIO}
-          counter={t('mobile.authoring.counter', { count: draft.bio.length, max: MAX_BIO })}
-          onChangeText={(bio) => setDraft({ ...draft, bio })}
+        <Controller
+          control={form.control}
+          name="bio"
+          render={({ field }) => (
+            <Field
+              label={t('settings.bio')}
+              placeholder={t('settings.bioPlaceholder')}
+              multiline
+              value={field.value}
+              maxLength={MAX_BIO}
+              counter={t('mobile.authoring.counter', { count: field.value.length, max: MAX_BIO })}
+              onChangeText={field.onChange}
+            />
+          )}
         />
       </View>
       <ListGroup surface="surface">

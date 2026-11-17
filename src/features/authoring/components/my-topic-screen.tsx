@@ -37,7 +37,7 @@ import { pickImage, uploadImage } from '@/features/media/media-service'
 import { toast } from '@/design-system'
 import { topicName } from '@/shared/utils/topic-name'
 import { questionStatus, workshopRole } from '@joutio/client/authoring'
-import { customizedTierCount, MASTERY_TIERS, MAX_NAME, MIN_QUESTIONS, playableCount } from '@joutio/client/authoring'
+import { customizedTierCount, MASTERY_TIERS, MIN_QUESTIONS, playableCount } from '@joutio/client/authoring'
 import { TopicTitlesSheet } from './topic-titles-sheet'
 
 import {
@@ -363,7 +363,6 @@ export function MyTopicScreen() {
         title={t('workshop.name')}
         label={t('workshop.name')}
         initial={{ fr: name, en: englishName }}
-        max={MAX_NAME}
         placeholder={{ fr: t('workshop.namePlaceholder'), en: 'For example, Loire Valley castles' }}
         busy={names.isPending}
         onClose={close}

@@ -1,3 +1,6 @@
+import { zodResolver } from '@hookform/resolvers/zod'
+import { topicTitlesSchema } from '@joutio/client/forms'
+import { Controller, useForm, useWatch } from 'react-hook-form'
 import { useEffect, useState } from 'react'
 import { View } from 'react-native'
 import { Badge, Button, Field, MobileSheet, Segmented, Text, tokens } from '@/design-system'
@@ -8,7 +11,6 @@ import {
   titleLabel,
   titlesChanged,
   titlesDraft,
-  tooLongTitle,
   type TitleLanguage,
   type TopicTitles,
 } from '@joutio/client/authoring'
@@ -37,15 +39,16 @@ export function TopicTitlesSheet({
 }) {
   const t = useT()
   const [language, setLanguage] = useState<TitleLanguage>('fr')
-  const [draft, setDraft] = useState(() => titlesDraft(titles))
+  const form = useForm({ resolver: zodResolver(topicTitlesSchema), mode: 'onChange', defaultValues: titlesDraft(titles) })
+  const [french, english] = useWatch({ control: form.control, name: ['fr', 'en'] })
+  const draft = { fr: french, en: english }
   useEffect(() => {
     if (!open) return
     setLanguage('fr')
-    setDraft(titlesDraft(titles))
+    form.reset(titlesDraft(titles))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
 
-  const invalid = tooLongTitle(draft) !== null
   return (
     <MobileSheet
       open={open}
@@ -54,7 +57,7 @@ export function TopicTitlesSheet({
       subtitle={topicName}
       tall
       footer={
-        <Button full loading={busy} disabled={invalid || !titlesChanged(titles, draft)} onPress={() => onSave(normalizeTitles(draft))}>
+        <Button full loading={busy} disabled={!form.formState.isValid || !titlesChanged(titles, draft)} onPress={() => void form.handleSubmit((values) => onSave(normalizeTitles(values)))()}>
           {t('settings.save')}
         </Button>
       }
@@ -65,7 +68,6 @@ export function TopicTitlesSheet({
         </Text>
         <Segmented<TitleLanguage> label={t('settings.language')} options={LANGUAGES} value={language} onChange={setLanguage} />
         {MASTERY_TIERS.map((tier) => {
-          const value = draft[language][tier]
           return (
             <View key={`${language}-${tier}`} style={{ gap: tokens.space[2] }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: tokens.space[2] }}>
@@ -76,13 +78,19 @@ export function TopicTitlesSheet({
                   {t('common.xp', { xp: formatNumber(MASTERY_XP[tier]) })}
                 </Text>
               </View>
-              <Field
-                label={t(language === 'en' ? 'workshop.titleLabelEn' : 'workshop.titleLabel', { tier: t(tierKey(tier)) })}
-                placeholder={language === 'en' ? titleLabel(normalizeTitles(draft), tier, topicName, 'fr') : t('workshop.tierTitle', { tier: t(tierKey(tier)), topic: topicName })}
-                value={value}
-                maxLength={TITLE_MAX_LENGTH}
-                counter={t('common.counter', { count: value.length, max: TITLE_MAX_LENGTH })}
-                onChangeText={(next) => setDraft({ ...draft, [language]: { ...draft[language], [tier]: next } })}
+              <Controller
+                control={form.control}
+                name={`${language}.${tier}`}
+                render={({ field }) => (
+                  <Field
+                    label={t(language === 'en' ? 'workshop.titleLabelEn' : 'workshop.titleLabel', { tier: t(tierKey(tier)) })}
+                    placeholder={language === 'en' ? titleLabel(normalizeTitles(draft), tier, topicName, 'fr') : t('workshop.tierTitle', { tier: t(tierKey(tier)), topic: topicName })}
+                    value={field.value}
+                    maxLength={TITLE_MAX_LENGTH}
+                    counter={t('common.counter', { count: field.value.length, max: TITLE_MAX_LENGTH })}
+                    onChangeText={field.onChange}
+                  />
+                )}
               />
             </View>
           )

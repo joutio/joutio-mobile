@@ -1,4 +1,7 @@
+import { zodResolver } from '@hookform/resolvers/zod'
+import { MAX_REPORT_COMMENT, questionReportSchema, userReportSchema } from '@joutio/client/forms'
 import { useMutation } from '@tanstack/react-query'
+import { Controller, useForm } from 'react-hook-form'
 import { useEffect, useRef, useState } from 'react'
 import { View } from 'react-native'
 import { Button, Field, ListGroup, ListRow, MobileSheet, Text, toast, tokens } from '@/design-system'
@@ -7,7 +10,6 @@ import { ENDPOINTS } from '@/lib/endpoints'
 import type { QuestionReportReason, UserReportReason } from '@joutio/client/api-types'
 import { currentLanguage, t, useT } from '@/lib/i18n'
 
-const MAX_COMMENT = 500
 
 const PLAYER_REASONS = (): { value: UserReportReason; label: string; sub: string }[] => ([
   { value: 'HARASSMENT', label: t('report.player.HARASSMENT'), sub: t('report.player.HARASSMENT.sub') },
@@ -84,21 +86,19 @@ export function ReportPlayerSheet({
   onBlock?: () => void
 }) {
   const t = useT()
-  const [reasons, setReasons] = useState<UserReportReason[]>([])
+  const form = useForm({ resolver: zodResolver(userReportSchema), mode: 'onChange', defaultValues: { reasons: [] as UserReportReason[], comment: '' } })
   // « Bloquer » : la confirmation (un `Modal`) s'ouvre une fois la feuille retirée, pas pendant sa fermeture.
   const blockAfterClose = useRef(false)
-  const [comment, setComment] = useState('')
   const [sent, setSent] = useState(false)
   useReset(open, () => {
-    setReasons([])
-    setComment('')
+    form.reset()
     setSent(false)
   })
   const report = useMutation({
-    mutationFn: () =>
+    mutationFn: ({ reasons, comment }: { reasons: UserReportReason[]; comment: string }) =>
       api.post<unknown>(ENDPOINTS.reports.player(userId), {
         reasons,
-        comment: comment.trim() || undefined,
+        comment: comment || undefined,
         gameId: gameId || undefined,
       }),
     onSuccess: () => setSent(true),
@@ -140,7 +140,7 @@ export function ReportPlayerSheet({
             </Button>
           )
         ) : (
-          <Button full disabled={reasons.length === 0} loading={report.isPending} onPress={() => report.mutate()}>
+          <Button full disabled={!form.formState.isValid} loading={report.isPending} onPress={() => void form.handleSubmit((values) => report.mutate(values))()}>
             {t('report.send')}
           </Button>
         )
@@ -152,15 +152,21 @@ export function ReportPlayerSheet({
         </Text>
       ) : (
         <View style={{ gap: tokens.space[4] }}>
-          <Reasons items={PLAYER_REASONS()} value={reasons} onChange={setReasons} />
-          <Field
-            label={t('report.details')}
-            placeholder={t('report.playerPlaceholder')}
-            multiline
-            value={comment}
-            maxLength={MAX_COMMENT}
-            counter={t('mobile.authoring.counter', { count: comment.length, max: MAX_COMMENT })}
-            onChangeText={setComment}
+          <Controller control={form.control} name="reasons" render={({ field }) => <Reasons items={PLAYER_REASONS()} value={field.value} onChange={field.onChange} />} />
+          <Controller
+            control={form.control}
+            name="comment"
+            render={({ field }) => (
+              <Field
+                label={t('report.details')}
+                placeholder={t('report.playerPlaceholder')}
+                multiline
+                value={field.value}
+                maxLength={MAX_REPORT_COMMENT}
+                counter={t('mobile.authoring.counter', { count: field.value.length, max: MAX_REPORT_COMMENT })}
+                onChangeText={field.onChange}
+              />
+            )}
           />
           <Text variant="caption" color="muted" align="center">
             {t('report.playerAnonymous', { name })}
@@ -193,17 +199,15 @@ export function ReportQuestionSheet({
   onSent: () => void
 }) {
   const t = useT()
-  const [reasons, setReasons] = useState<QuestionReportReason[]>([])
-  const [comment, setComment] = useState('')
+  const form = useForm({ resolver: zodResolver(questionReportSchema), mode: 'onChange', defaultValues: { reasons: [] as QuestionReportReason[], comment: '' } })
   const [sent, setSent] = useState(false)
   useReset(open, () => {
-    setReasons([])
-    setComment('')
+    form.reset()
     setSent(false)
   })
   const report = useMutation({
-    mutationFn: () =>
-      api.post<unknown>(ENDPOINTS.reports.question(questionId ?? ''), { gameId, reasons, comment: comment.trim() || undefined, language: currentLanguage() }),
+    mutationFn: ({ question, reasons, comment }: { question: string; reasons: QuestionReportReason[]; comment: string }) =>
+      api.post<unknown>(ENDPOINTS.reports.question(question), { gameId, reasons, comment: comment || undefined, language: currentLanguage() }),
     onSuccess: () => {
       setSent(true)
       onSent()
@@ -223,7 +227,12 @@ export function ReportQuestionSheet({
             {t('play.close')}
           </Button>
         ) : (
-          <Button full disabled={reasons.length === 0 || !questionId} loading={report.isPending} onPress={() => report.mutate()}>
+          <Button
+            full
+            disabled={!form.formState.isValid || !questionId}
+            loading={report.isPending}
+            onPress={() => void form.handleSubmit((values) => questionId && report.mutate({ question: questionId, ...values }))()}
+          >
             {t('report.send')}
           </Button>
         )
@@ -238,15 +247,21 @@ export function ReportQuestionSheet({
           <Text variant="callout" color="muted" align="center">
             {t('report.questionIntro')}
           </Text>
-          <Reasons items={items} value={reasons} onChange={setReasons} />
-          <Field
-            label={t('report.details')}
-            placeholder={t('mobile.common.optional')}
-            multiline
-            value={comment}
-            maxLength={MAX_COMMENT}
-            counter={t('mobile.authoring.counter', { count: comment.length, max: MAX_COMMENT })}
-            onChangeText={setComment}
+          <Controller control={form.control} name="reasons" render={({ field }) => <Reasons items={items} value={field.value} onChange={field.onChange} />} />
+          <Controller
+            control={form.control}
+            name="comment"
+            render={({ field }) => (
+              <Field
+                label={t('report.details')}
+                placeholder={t('mobile.common.optional')}
+                multiline
+                value={field.value}
+                maxLength={MAX_REPORT_COMMENT}
+                counter={t('mobile.authoring.counter', { count: field.value.length, max: MAX_REPORT_COMMENT })}
+                onChangeText={field.onChange}
+              />
+            )}
           />
         </View>
       )}

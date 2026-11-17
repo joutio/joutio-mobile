@@ -1,4 +1,7 @@
+import { zodResolver } from '@hookform/resolvers/zod'
+import { OTP_LENGTH, OTP_RESEND_SECONDS, otpSchema } from '@joutio/client/forms'
 import { useEffect, useState } from 'react'
+import { useForm, useWatch } from 'react-hook-form'
 import { View } from 'react-native'
 import { Button, CodeInput, haptic, Screen, Text, tokens } from '@/design-system'
 import { useOnboardingStore } from '@/features/onboarding/onboarding-store'
@@ -7,17 +10,15 @@ import { useSessionStore } from '../session-store'
 import { SessionEndedScreen } from './session-ended-screen'
 import { useT } from '@/lib/i18n'
 
-const CODE_LENGTH = 6
-const RESEND_SECONDS = 60
-
 const clock = (seconds: number) => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`
 
 /** Saisie du code : validé seul au 6e chiffre. */
 export function CodeScreen() {
   const t = useT()
   const email = useOnboardingStore((state) => state.email)
-  const [code, setCode] = useState('')
-  const [wait, setWait] = useState(RESEND_SECONDS)
+  const form = useForm({ resolver: zodResolver(otpSchema), defaultValues: { code: '' } })
+  const code = useWatch({ control: form.control, name: 'code' })
+  const [wait, setWait] = useState(OTP_RESEND_SECONDS)
   const login = useLoginWithCode()
   const resend = useRequestLoginCode()
   // Compte suspendu : identity refuse le code, l'écran dédié (fin et motif) remplace la saisie.
@@ -31,10 +32,11 @@ export function CodeScreen() {
     return () => clearTimeout(timer)
   }, [wait])
 
+  const submit = form.handleSubmit(({ code: value }) => login.mutate({ email, code: value }, { onError: () => haptic('error') }))
   const onChange = (value: string) => {
-    setCode(value)
+    form.setValue('code', value)
     if (login.isError) login.reset()
-    if (value.length === CODE_LENGTH) login.mutate({ email, code: value }, { onError: () => haptic('error') })
+    if (value.length === OTP_LENGTH) void submit()
   }
 
   const error = login.error?.message
@@ -56,7 +58,7 @@ export function CodeScreen() {
         </Text>
       </View>
       <View style={{ gap: tokens.space[3] }}>
-        <CodeInput autoFocus value={code} length={CODE_LENGTH} error={Boolean(error)} disabled={login.isPending} onChange={onChange} />
+        <CodeInput autoFocus value={code} length={OTP_LENGTH} error={Boolean(error)} disabled={login.isPending} onChange={onChange} />
         {error && (
           <Text variant="caption" color="wrong" accessibilityLiveRegion="assertive">
             {error}
@@ -77,9 +79,9 @@ export function CodeScreen() {
           onPress={() =>
             resend.mutate(email, {
               onSuccess: () => {
-                setCode('')
+                form.reset()
                 login.reset()
-                setWait(RESEND_SECONDS)
+                setWait(OTP_RESEND_SECONDS)
               },
             })
           }

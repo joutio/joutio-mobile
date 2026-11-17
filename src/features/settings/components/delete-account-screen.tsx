@@ -1,5 +1,8 @@
 import { router } from '@/shared/navigation/router'
-import { useEffect, useState } from 'react'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { OTP_LENGTH, otpSchema } from '@joutio/client/forms'
+import { useEffect } from 'react'
+import { Controller, useForm } from 'react-hook-form'
 import { View } from 'react-native'
 import { Notice, Button, CheckCircleIcon, CodeInput, EmptyState, MobileTopBar, Screen, Text, tokens, WarningIcon } from '@/design-system'
 import { useLogout } from '@/features/auth'
@@ -10,7 +13,6 @@ import { formatNumber, tierLabel } from '@/features/topic/lib/format'
 import { tierOf } from '@/shared/utils/tier'
 import { useT } from '@/lib/i18n'
 
-const CODE_LENGTH = 6
 
 /**
  * Supprimer mon compte (`reglages.md` § 3) : ce que le joueur perd, puis le code reçu par e-mail. La suppression est
@@ -24,7 +26,7 @@ export function DeleteAccountScreen() {
   const request = useRequestDeletionCode()
   const remove = useDeleteAccount()
   const logout = useLogout()
-  const [code, setCode] = useState('')
+  const form = useForm({ resolver: zodResolver(otpSchema), mode: 'onChange', defaultValues: { code: '' } })
   const data = me.data
 
   useEffect(() => {
@@ -74,7 +76,11 @@ export function DeleteAccountScreen() {
         <Text variant="callout" weight="600">
           {request.isError ? t('onboarding.login.sendError') : t('deletion.codeSent', { email: data?.email ?? t('settings.yourAddress') })}
         </Text>
-        <CodeInput autoFocus value={code} length={CODE_LENGTH} error={remove.isError} label={t('deletion.codeLabel')} onChange={setCode} />
+        <Controller
+          control={form.control}
+          name="code"
+          render={({ field }) => <CodeInput autoFocus value={field.value} length={OTP_LENGTH} error={remove.isError} label={t('deletion.codeLabel')} onChange={field.onChange} />}
+        />
         {remove.isError && (
           <Text variant="caption" color="wrong">
             {t('deletion.wrongCode')}
@@ -85,7 +91,7 @@ export function DeleteAccountScreen() {
         </Button>
       </View>
       <View style={{ marginTop: 'auto', gap: tokens.space[3] }}>
-        <Button full variant="filled" tone="destructive" disabled={code.length < CODE_LENGTH} loading={remove.isPending} onPress={() => remove.mutate(code)}>
+        <Button full variant="filled" tone="destructive" disabled={!form.formState.isValid} loading={remove.isPending} onPress={() => void form.handleSubmit(({ code }) => remove.mutate(code))()}>
           {t('deletion.confirm')}
         </Button>
         <Button full variant="plain" tone="neutral" onPress={() => router.back()}>

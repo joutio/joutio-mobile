@@ -1,6 +1,9 @@
 import { useLocalSearchParams } from 'expo-router'
 import { router } from '@/shared/navigation/router'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { rejectQuestionSchema } from '@joutio/client/forms'
 import { useEffect, useState } from 'react'
+import { Controller, useForm } from 'react-hook-form'
 import { View } from 'react-native'
 import {
   Button,
@@ -70,7 +73,7 @@ export function ModerationScreen() {
     if (params.tab === 'reports') setTab('reports')
   }, [params.tab])
   const [rejecting, setRejecting] = useState<QuestionEditorView>()
-  const [reason, setReason] = useState('')
+  const rejectForm = useForm({ resolver: zodResolver(rejectQuestionSchema), mode: 'onChange', defaultValues: { reason: '' } })
   const [pendingPages, setPendingPages] = useState(1)
   const [reportPages, setReportPages] = useState(1)
 
@@ -116,7 +119,7 @@ export function ModerationScreen() {
                 }
                 onApprove={() => moderate.mutate({ questionId: question.questionId, decision: 'approve' })}
                 onReject={() => {
-                  setReason('')
+                  rejectForm.reset()
                   setRejecting(question)
                 }}
                 onEdit={() => openQuestionEditor(topicId, numberOf(question), question.questionId)}
@@ -217,25 +220,32 @@ export function ModerationScreen() {
                 full
                 variant="tinted"
                 tone="destructive"
-                disabled={reason.trim() === ''}
+                disabled={!rejectForm.formState.isValid}
                 loading={moderate.isPending}
                 onPress={() =>
-                  rejecting &&
-                  moderate.mutate({ questionId: rejecting.questionId, decision: 'reject', reason: reason.trim() }, { onSuccess: () => setRejecting(undefined) })
+                  void rejectForm.handleSubmit(({ reason }) => {
+                    if (rejecting) moderate.mutate({ questionId: rejecting.questionId, decision: 'reject', reason }, { onSuccess: () => setRejecting(undefined) })
+                  })()
                 }
               >
                 {t('workshop.reject')}
               </Button>
             }
           >
-            <Field
-              label={t('workshop.rejectReason')}
-              placeholder={t('workshop.rejectPlaceholder')}
-              multiline
-              value={reason}
-              maxLength={MAX_REJECT}
-              counter={t('mobile.authoring.counter', { count: reason.length, max: MAX_REJECT })}
-              onChangeText={setReason}
+            <Controller
+              control={rejectForm.control}
+              name="reason"
+              render={({ field }) => (
+                <Field
+                  label={t('workshop.rejectReason')}
+                  placeholder={t('workshop.rejectPlaceholder')}
+                  multiline
+                  value={field.value}
+                  maxLength={MAX_REJECT}
+                  counter={t('mobile.authoring.counter', { count: field.value.length, max: MAX_REJECT })}
+                  onChangeText={field.onChange}
+                />
+              )}
             />
           </MobileSheet>
         </>

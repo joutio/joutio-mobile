@@ -1,7 +1,11 @@
 import { Redirect, useLocalSearchParams } from 'expo-router'
 import { router } from '@/shared/navigation/router'
 import * as WebBrowser from 'expo-web-browser'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { birthDateSchema } from '@joutio/client/forms'
+import { isoDay } from '@joutio/client/profile'
 import { useState } from 'react'
+import { Controller, useForm } from 'react-hook-form'
 import { Linking, View } from 'react-native'
 import {
   ArrowCounterClockwiseIcon,
@@ -45,7 +49,7 @@ import { usePremiumSheet } from '@/features/premium/premium-store'
 import { useNotificationPreferences, useSetNotificationPreference, useUpdateMe } from '@/features/profile/hooks/use-profile'
 import { config } from '@/lib/config'
 import { appVersion } from '@/shared/utils/app-info'
-import { BirthDatePicker, birthDateError, formatBirthDate } from '@/shared/components/birth-date-picker'
+import { BirthDatePicker, formatBirthDate } from '@/shared/components/birth-date-picker'
 import { APPEARANCE, LANGUAGES } from '../lib/settings-options'
 import { Group, SettingsFrame, useSettingsOrigin, type SettingsPage } from './settings-frame'
 import { useT } from '@/lib/i18n'
@@ -83,10 +87,9 @@ export function SettingsCategoryScreen() {
 function BirthDateSheet({ open, value, onClose }: { open: boolean; value: string | null | undefined; onClose: () => void }) {
   const t = useT()
   const save = useSetBirthDate()
-  const [edited, setEdited] = useState<string | null>(null)
-  const draft = edited ?? value ?? null
+  const form = useForm({ resolver: zodResolver(birthDateSchema(isoDay(new Date()))), mode: 'onChange', defaultValues: { birthDate: value ?? '' } })
   const dismiss = () => {
-    setEdited(null)
+    form.reset({ birthDate: value ?? '' })
     onClose()
   }
   return (
@@ -97,24 +100,29 @@ function BirthDateSheet({ open, value, onClose }: { open: boolean; value: string
       footer={
         <Button
           full
-          disabled={!draft || draft === value || birthDateError(draft) !== undefined}
+          disabled={!form.formState.isDirty || !form.formState.isValid}
           loading={save.isPending}
           onPress={() =>
-            draft &&
-            save.mutate(draft, {
-              onSuccess: () => {
-                toast.success(t('account.birthDateSaved'))
-                dismiss()
-              },
-              onError: () => toast.error(t('mobile.onboarding.birthFailed')),
-            })
+            void form.handleSubmit(({ birthDate }) =>
+              save.mutate(birthDate, {
+                onSuccess: () => {
+                  toast.success(t('account.birthDateSaved'))
+                  dismiss()
+                },
+                onError: () => toast.error(t('mobile.onboarding.birthFailed')),
+              }),
+            )()
           }
         >
           {t('account.validate')}
         </Button>
       }
     >
-      <BirthDatePicker value={draft} onChange={setEdited} />
+      <Controller
+        control={form.control}
+        name="birthDate"
+        render={({ field }) => <BirthDatePicker value={field.value || null} onChange={(next) => field.onChange(next ?? '')} />}
+      />
     </MobileSheet>
   )
 }

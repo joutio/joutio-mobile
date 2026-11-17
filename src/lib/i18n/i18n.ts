@@ -3,7 +3,7 @@ import { useCallback } from 'react'
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 import type { Language } from '@joutio/client/api-types'
-import { languageOf, translate, type MessageKey, type MessageValues } from '@joutio/client/i18n'
+import { isMessageKey, languageOf, translate, type MessageKey, type MessageValues } from '@joutio/client/i18n'
 import { safeStorage } from '@/design-system/theme/theme-store'
 
 /**
@@ -37,6 +37,9 @@ export const currentLanguage = () => useLanguageStore.getState().language
 
 /** `t('clé', { valeur })` hors React, dans la langue courante. */
 export const t = (key: MessageKey, values?: MessageValues) => translate(currentLanguage(), key, values)
+
+/** Message d'erreur d'un schéma de `@joutio/client/forms` (une clé i18n), traduit ; rien si absent. */
+export const formError = (message: string | undefined) => (message && isMessageKey(message) ? t(message) : undefined)
 
 /** Langue courante. */
 export const useLanguage = () => useLanguageStore((state) => state.language)

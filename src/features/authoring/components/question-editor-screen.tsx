@@ -1,7 +1,10 @@
 import { getUserId } from '@/lib/auth'
 import { useLocalSearchParams } from 'expo-router'
 import { router } from '@/shared/navigation/router'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { questionDraftSchema } from '@joutio/client/forms'
 import { useEffect, useState } from 'react'
+import { useForm, useWatch } from 'react-hook-form'
 import { View } from 'react-native'
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -38,7 +41,6 @@ import {
   draftFromQuestion,
   emptyDraft,
   frenchFilled,
-  isReady,
   missingAlt,
   translationStatus,
   type QuestionDraft,
@@ -85,10 +87,18 @@ export function QuestionEditorScreen() {
   const { limits } = useCreationLimits()
   const { published, locks } = useFrozen()
   const locked = locks(topic, workshopRole(permissions))
-  const [draft, setDraft] = useState<QuestionDraft>(() => (original ? draftFromQuestion(original) : emptyDraft()))
+  // Image enregistrée : une autre URL est une image choisie ici, dont la description devient obligatoire.
+  const form = useForm<QuestionDraft>({
+    resolver: zodResolver(questionDraftSchema(original?.imageUrl ?? undefined)),
+    mode: 'onChange',
+    defaultValues: original ? draftFromQuestion(original) : emptyDraft(),
+  })
+  const [texts, answersByLanguage, correct, imageUrl, alt] = useWatch({ control: form.control, name: ['texts', 'answers', 'correct', 'imageUrl', 'alt'] })
+  const draft: QuestionDraft = { texts, answers: answersByLanguage, correct, imageUrl, alt }
+  const validate = { shouldValidate: true }
   const [loaded, setLoaded] = useState(!questionId || original !== undefined)
   const [language, setLanguage] = useState<Language>('fr')
-  const [imageChanged, setImageChanged] = useState(false)
+  const imageChanged = imageUrl !== (original?.imageUrl ?? undefined)
   // Avancement de l'envoi d'image (0 à 100) ; `undefined` hors envoi.
   const [progress, setProgress] = useState<number | undefined>(undefined)
   const uploading = progress !== undefined
@@ -98,9 +108,9 @@ export function QuestionEditorScreen() {
   // Question ouverte avant la fin du chargement : le brouillon part de la question dès qu'elle arrive.
   useEffect(() => {
     if (loaded || !original) return
-    setDraft(draftFromQuestion(original))
+    form.reset(draftFromQuestion(original))
     setLoaded(true)
-  }, [loaded, original])
+  }, [form, loaded, original])
 
   const english = translationStatus(draft)
   const filled = frenchFilled(draft)
@@ -111,7 +121,7 @@ export function QuestionEditorScreen() {
       (permissions?.canManage && original?.status !== 'ARCHIVED') ||
       (original?.creatorId === getUserId() && (original?.status === 'PENDING' || original?.status === 'REJECTED')),
     )
-  const ready = loaded && isReady(draft, imageChanged) && !uploading && mayEdit && !locked
+  const ready = loaded && form.formState.isValid && !uploading && mayEdit && !locked
   const actions = original ? questionActions(workshopRole(permissions), original, getUserId() ?? undefined) : []
   const missingCorrect = filled && draft.correct === undefined
   const text = draft.texts[language]
@@ -123,8 +133,7 @@ export function QuestionEditorScreen() {
     setProgress(0)
     try {
       const media = await uploadImage(asset, setProgress)
-      setDraft((current) => ({ ...current, imageUrl: media.url }))
-      setImageChanged(true)
+      form.setValue('imageUrl', media.url, validate)
     } catch {
       toast.error(t('settings.imageError'), { description: t('mobile.authoring.imageFormat') })
     } finally {
@@ -132,13 +141,13 @@ export function QuestionEditorScreen() {
     }
   }
 
-  const onSave = () => {
-    const operations = buildQuestionPlan(original, draft)
+  const onSave = form.handleSubmit((values) => {
+    const operations = buildQuestionPlan(original, values)
     if (operations.length === 0) return router.back()
     // Optimiste : l'écran d'origine (Questions, Signalements) affiche déjà la question corrigée au retour.
     save.mutate({ questionId, operations, resolveReports: params.resolveReports === '1' })
     router.back()
-  }
+  })
 
   if (questionId && (questions.isError || (!questions.isPending && !original)))
     return (
@@ -162,7 +171,7 @@ export function QuestionEditorScreen() {
           confirmLoading={save.isPending}
           confirmDisabled={!ready || save.isPending}
           onCancel={() => router.back()}
-          onConfirm={onSave}
+          onConfirm={() => void onSave()}
         />
         <KeyboardAwareScrollView
           // Le champ actif reste au-dessus de la barre ‹ › OK.
@@ -181,8 +190,8 @@ export function QuestionEditorScreen() {
             progress={progress}
             onPick={() => void pick()}
             onRemove={() => {
-              setDraft({ ...draft, imageUrl: undefined, alt: { fr: '', en: '' } })
-              setImageChanged(true)
+              form.setValue('imageUrl', undefined, validate)
+              form.setValue('alt', { fr: '', en: '' }, validate)
             }}
           />
           <View style={{ gap: tokens.space[2] }}>
@@ -200,7 +209,7 @@ export function QuestionEditorScreen() {
             value={text}
             maxLength={MAX_QUESTION}
             counter={t('mobile.authoring.counter', { count: text.length, max: MAX_QUESTION })}
-            onChangeText={(next) => setDraft({ ...draft, texts: { ...draft.texts, [language]: next } })}
+            onChangeText={(next) => form.setValue(`texts.${language}`, next, validate)}
           />
           {draft.imageUrl && (
             <Field
@@ -215,7 +224,7 @@ export function QuestionEditorScreen() {
               returnKeyType="next"
               submitBehavior="submit"
               onSubmitEditing={focusNextField}
-              onChangeText={(next) => setDraft({ ...draft, alt: { ...draft.alt, [language]: next } })}
+              onChangeText={(next) => form.setValue(`alt.${language}`, next, validate)}
             />
           )}
           <View style={{ gap: tokens.space[3] }}>
@@ -230,10 +239,8 @@ export function QuestionEditorScreen() {
                     maxLength={MAX_ANSWER}
                     placeholder={language === 'en' ? draft.answers.fr[index]?.trim() || undefined : undefined}
                     correct={draft.correct === index}
-                    onChange={(next) =>
-                      setDraft({ ...draft, answers: { ...draft.answers, [language]: answers.map((item, position) => (position === index ? next : item)) } })
-                    }
-                    onMarkCorrect={() => setDraft({ ...draft, correct: index })}
+                    onChange={(next) => form.setValue(`answers.${language}.${index}`, next, validate)}
+                    onMarkCorrect={() => form.setValue('correct', index, validate)}
                     // Réponses 1 à 3 : « Suivant » passe à la réponse d'après ; la dernière ferme le clavier.
                     returnKeyType={index === answers.length - 1 ? 'done' : 'next'}
                     submitBehavior={index === answers.length - 1 ? 'blurAndSubmit' : 'submit'}

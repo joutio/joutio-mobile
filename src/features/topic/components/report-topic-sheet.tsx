@@ -1,20 +1,15 @@
-import {
-  CONTENT_NOTICE_CATEGORIES,
-  CONTENT_NOTICE_MIN_DESCRIPTION,
-  CONTENT_NOTICES_ENDPOINT,
-  type ContentNoticeCategory,
-  type ContentNoticeRequest,
-} from '@joutio/client/api-types'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { CONTENT_NOTICE_CATEGORIES, CONTENT_NOTICES_ENDPOINT, type ContentNoticeCategory, type ContentNoticeRequest } from '@joutio/client/api-types'
+import { contentNoticeSchema, MAX_NOTICE_DESCRIPTION } from '@joutio/client/forms'
 import { buildShareUrl } from '@joutio/client/share'
 import { useMutation } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
+import { Controller, useForm } from 'react-hook-form'
 import { View } from 'react-native'
 import { Button, Field, ListGroup, ListRow, MobileSheet, Text, toast, tokens } from '@/design-system'
 import { useMe } from '@/features/me'
 import { api } from '@/lib/api'
 import { useT, type MessageKey } from '@/lib/i18n'
-
-const MAX_DESCRIPTION = 4000
 
 /**
  * Signaler un sujet depuis sa fiche (2026-11-15) : notification de contenu illicite (LCEN/DSA), traitée par la
@@ -24,32 +19,29 @@ const MAX_DESCRIPTION = 4000
 export function ReportTopicSheet({ open, onClose, topicId, name }: { open: boolean; onClose: () => void; topicId: string; name: string }) {
   const t = useT()
   const me = useMe()
-  const [category, setCategory] = useState<ContentNoticeCategory>()
-  const [description, setDescription] = useState('')
-  const [goodFaith, setGoodFaith] = useState(false)
+  const form = useForm({ resolver: zodResolver(contentNoticeSchema), mode: 'onChange', defaultValues: { description: '', goodFaith: false } })
   const [sent, setSent] = useState(false)
+  const { reset } = form
   useEffect(() => {
     if (!open) return
-    setCategory(undefined)
-    setDescription('')
-    setGoodFaith(false)
+    reset()
     setSent(false)
-  }, [open])
+  }, [open, reset])
   const report = useMutation({
-    mutationFn: () =>
+    mutationFn: ({ category, description, goodFaith }: { category: ContentNoticeCategory; description: string; goodFaith: boolean }) =>
       api.post<unknown>(CONTENT_NOTICES_ENDPOINT, {
         name: me.data?.pseudonym ?? '',
         email: me.data?.email ?? '',
         quality: category === 'COPYRIGHT' || category === 'IMAGE_RIGHTS' ? 'RIGHTS_HOLDER' : 'THIRD_PARTY',
         contentUrl: buildShareUrl({ kind: 'topic', id: topicId }),
-        category: category ?? 'OTHER_ILLEGAL',
-        description: description.trim(),
+        category,
+        description,
         goodFaith,
       } satisfies ContentNoticeRequest),
     onSuccess: () => setSent(true),
     onError: () => toast.error(t('report.error'), { description: t('home.errorText') }),
   })
-  const ready = category !== undefined && description.trim().length >= CONTENT_NOTICE_MIN_DESCRIPTION && goodFaith && Boolean(me.data?.email)
+  const ready = form.formState.isValid && Boolean(me.data?.email)
   return (
     <MobileSheet
       open={open}
@@ -62,7 +54,7 @@ export function ReportTopicSheet({ open, onClose, topicId, name }: { open: boole
             {t('play.close')}
           </Button>
         ) : (
-          <Button full disabled={!ready} loading={report.isPending} onPress={() => report.mutate()}>
+          <Button full disabled={!ready} loading={report.isPending} onPress={() => void form.handleSubmit((values) => report.mutate(values))()}>
             {t('report.send')}
           </Button>
         )
@@ -74,30 +66,41 @@ export function ReportTopicSheet({ open, onClose, topicId, name }: { open: boole
         </Text>
       ) : (
         <View style={{ gap: tokens.space[4] }}>
-          <ListGroup surface="raised">
-            {CONTENT_NOTICE_CATEGORIES.map((item, index) => (
-              <ListRow
-                key={item}
-                label={t(`topicReport.reason.${item}` as MessageKey)}
-                sub={t(`topicReport.reason.${item}.sub` as MessageKey)}
-                control="radio"
-                on={category === item}
-                onToggle={() => setCategory(item)}
-                last={index === CONTENT_NOTICE_CATEGORIES.length - 1}
-              />
-            ))}
-          </ListGroup>
-          <Field
-            label={t('topicReport.description')}
-            placeholder={t('topicReport.placeholder')}
-            multiline
-            value={description}
-            maxLength={MAX_DESCRIPTION}
-            onChangeText={setDescription}
+          <Controller
+            control={form.control}
+            name="category"
+            render={({ field }) => (
+              <ListGroup surface="raised">
+                {CONTENT_NOTICE_CATEGORIES.map((item, index) => (
+                  <ListRow
+                    key={item}
+                    label={t(`topicReport.reason.${item}` as MessageKey)}
+                    sub={t(`topicReport.reason.${item}.sub` as MessageKey)}
+                    control="radio"
+                    on={field.value === item}
+                    onToggle={() => field.onChange(item)}
+                    last={index === CONTENT_NOTICE_CATEGORIES.length - 1}
+                  />
+                ))}
+              </ListGroup>
+            )}
           />
-          <ListGroup surface="raised">
-            <ListRow label={t('topicReport.goodFaith')} control="check" on={goodFaith} onToggle={setGoodFaith} last />
-          </ListGroup>
+          <Controller
+            control={form.control}
+            name="description"
+            render={({ field }) => (
+              <Field label={t('topicReport.description')} placeholder={t('topicReport.placeholder')} multiline value={field.value} maxLength={MAX_NOTICE_DESCRIPTION} onChangeText={field.onChange} />
+            )}
+          />
+          <Controller
+            control={form.control}
+            name="goodFaith"
+            render={({ field }) => (
+              <ListGroup surface="raised">
+                <ListRow label={t('topicReport.goodFaith')} control="check" on={field.value} onToggle={field.onChange} last />
+              </ListGroup>
+            )}
+          />
         </View>
       )}
     </MobileSheet>

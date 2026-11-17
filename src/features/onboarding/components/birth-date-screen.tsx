@@ -1,5 +1,7 @@
-import { BIRTH_DATE_PROBLEMS, birthDateIssue, isoDay } from '@joutio/client/profile'
-import { useState } from 'react'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { birthDateSchema } from '@joutio/client/forms'
+import { BIRTH_DATE_PROBLEMS, isoDay } from '@joutio/client/profile'
+import { Controller, useForm } from 'react-hook-form'
 import { ScrollView, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Button, CakeIcon, Notice, ProhibitIcon, Text, toast, tokens, useTheme } from '@/design-system'
@@ -17,21 +19,18 @@ export function BirthDateScreen() {
   const { colors } = useTheme()
   const insets = useSafeAreaInsets()
   const save = useSetBirthDate()
-  const [birthDate, setBirthDate] = useState<string | null>(null)
-  // Refus du serveur (`PUT /api/me/birth-date` sous 15 ans) : même carte que la saisie locale.
-  const [refused, setRefused] = useState(false)
-  const issue = birthDate ? birthDateIssue(birthDate, isoDay(new Date())) : 'missing'
-  const tooYoung = issue === 'underage' || refused
-  const submit = () => {
-    if (!birthDate || tooYoung) return
+  const form = useForm({ resolver: zodResolver(birthDateSchema(isoDay(new Date()))), mode: 'onChange', defaultValues: { birthDate: '' } })
+  // Moins de 15 ans, saisi ou refusé par le serveur (`PUT /api/me/birth-date`) : même carte.
+  const tooYoung = form.formState.errors.birthDate?.message === 'tooYoung.title'
+  const submit = form.handleSubmit(({ birthDate }) =>
     save.mutate(birthDate, {
       onError: (error) => {
         const type = (error as { type?: string } | null)?.type
-        if (type === BIRTH_DATE_PROBLEMS.underage) setRefused(true)
+        if (type === BIRTH_DATE_PROBLEMS.underage) form.setError('birthDate', { message: 'tooYoung.title' })
         else toast.error(t('mobile.onboarding.birthFailed'), { description: t('home.errorText') })
       },
-    })
-  }
+    }),
+  )
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top }}>
@@ -59,12 +58,10 @@ export function BirthDateScreen() {
           </Text>
           <Text color="muted">{t('birth.text')}</Text>
         </View>
-        <BirthDatePicker
-          value={birthDate}
-          onChange={(value) => {
-            setBirthDate(value)
-            setRefused(false)
-          }}
+        <Controller
+          control={form.control}
+          name="birthDate"
+          render={({ field }) => <BirthDatePicker value={field.value || null} onChange={(value) => field.onChange(value ?? '')} />}
         />
         {tooYoung && (
           <Notice
@@ -76,7 +73,7 @@ export function BirthDateScreen() {
         )}
       </ScrollView>
       <View style={{ paddingHorizontal: tokens.space[5], paddingTop: tokens.space[3], paddingBottom: insets.bottom + tokens.space[5] }}>
-        <Button full disabled={!birthDate || tooYoung || issue !== null} loading={save.isPending} onPress={submit}>
+        <Button full disabled={!form.formState.isValid} loading={save.isPending} onPress={() => void submit()}>
           {t('onboarding.universes.continue')}
         </Button>
       </View>
