@@ -1,6 +1,6 @@
 import type { MeView } from '@joutio/client/api-types'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { queryKeys } from '@/lib/query-keys'
+import { queryKeys } from '@joutio/client/query'
 import { accountService } from '../lib/account-service'
 
 /** Date de naissance privée (15 ans minimum) : `me` est mis à jour au succès, la date n'est plus exigée. */

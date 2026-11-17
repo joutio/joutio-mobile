@@ -1,6 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { queryKeys } from '@/lib/query-keys'
-import { optimisticUpdate, optimisticId } from '@/lib/optimistic-cache'
+import { optimisticId, optimisticUpdate, queryKeys } from '@joutio/client/query'
 import { settleChallenge } from '../lib/play-cache'
 import { router } from '@/shared/navigation/router'
 import { useEffect, useRef, useState } from 'react'

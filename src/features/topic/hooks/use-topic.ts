@@ -2,8 +2,7 @@ import { keepPreviousData, useInfiniteQuery, useMutation, useQuery, useQueryClie
 import type { TopicPage } from '@/features/topics/lib/topics-service'
 import { toast } from '@/design-system'
 import { useMe } from '@/features/me'
-import { optimisticUpdate } from '@/lib/optimistic-cache'
-import { queryKeys } from '@/lib/query-keys'
+import { optimisticUpdate, queryKeys } from '@joutio/client/query'
 import type { HomeView, TitlesView, TopicCardView, TopicOverviewView, MeView, PlayerProfileView } from '@joutio/client/api-types'
 import { topicService, type RankingFilters } from '../lib/topic-service'
 import { useT } from '@/lib/i18n'
@@ -21,7 +20,7 @@ export function useTopicLeaderboard(topicId: string, enabled = true) {
 /** Classement complet d'un sujet (période, portée, pagination). */
 export function useTopicLeaderboardPage(topicId: string, filters: RankingFilters, enabled = true) {
   return useInfiniteQuery({
-    queryKey: queryKeys.topic.leaderboardPage(topicId, filters),
+    queryKey: queryKeys.topic.board(topicId, filters),
     queryFn: ({ pageParam }) => topicService.leaderboardPage(topicId, filters, pageParam),
     initialPageParam: 0,
     getNextPageParam: (last, pages) => (last.entries.last ? undefined : pages.length),

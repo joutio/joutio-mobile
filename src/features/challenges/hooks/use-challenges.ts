@@ -4,8 +4,7 @@ import { toast } from '@/design-system'
 import { useMe } from '@/features/me'
 import { applyRoomPresence, type RoomView } from '@joutio/client/rooms'
 import { roomOfChallenge } from '@/features/play/hooks/use-rematch'
-import { optimisticUpdate } from '@/lib/optimistic-cache'
-import { queryKeys } from '@/lib/query-keys'
+import { optimisticUpdate, queryKeys } from '@joutio/client/query'
 import { useRoomPresenceEvents } from '@/lib/realtime/personal-notifications'
 import type { ChallengeView } from '@joutio/client/api-types'
 import { topicName } from '@/shared/utils/topic-name'
@@ -28,8 +27,8 @@ export function useMyChallenges(enabled = true) {
 export function useMyRooms(enabled = true) {
   const client = useQueryClient()
   return useQuery({
-    queryKey: queryKeys.rooms(),
-    queryFn: async () => reconcileRooms(client.getQueryData(queryKeys.rooms()), await challengesService.rooms()),
+    queryKey: queryKeys.myRooms(),
+    queryFn: async () => reconcileRooms(client.getQueryData(queryKeys.myRooms()), await challengesService.rooms()),
     enabled,
     staleTime: 15_000,
   })
@@ -50,7 +49,7 @@ export const resumableRooms = (rooms: readonly RoomView[] | undefined) =>
 /** Relit défis et salons : événements d'un autre joueur, jamais la confirmation d'une commande locale. */
 export function refreshChallenges(client: QueryClient) {
   void client.invalidateQueries({ queryKey: queryKeys.challenges() })
-  void client.invalidateQueries({ queryKey: queryKeys.rooms() })
+  void client.invalidateQueries({ queryKey: queryKeys.myRooms() })
 }
 
 /**
@@ -63,10 +62,10 @@ export function useChallengesRealtime() {
   const userId = useMe(true).data?.userId
   // Présence portée par le message : appliquée sur place (la projection serveur peut être en retard), salon inconnu = relu.
   useRoomPresenceEvents(userId, (presence) => {
-    const rooms = client.getQueryData<RoomView[]>(queryKeys.rooms())
+    const rooms = client.getQueryData<RoomView[]>(queryKeys.myRooms())
     const next = rooms && userId ? applyRoomPresence(rooms, presence, userId) : undefined
-    if (next) client.setQueryData(queryKeys.rooms(), next)
-    else void client.invalidateQueries({ queryKey: queryKeys.rooms() })
+    if (next) client.setQueryData(queryKeys.myRooms(), next)
+    else void client.invalidateQueries({ queryKey: queryKeys.myRooms() })
   })
 }
 
@@ -117,11 +116,11 @@ export function useAcceptChallenge() {
   const client = useQueryClient()
   return useMutation({
     onMutate: (challenge: ChallengeView) =>
-      optimisticUpdate(client, [queryKeys.challenges(), queryKeys.rooms()], () => settleChallenge(client, challenge.challengeId, 'ACCEPTED')),
+      optimisticUpdate(client, [queryKeys.challenges(), queryKeys.myRooms()], () => settleChallenge(client, challenge.challengeId, 'ACCEPTED')),
     mutationFn: (challenge: ChallengeView) => challengesService.accept(challenge.challengeId),
     onSuccess: (_result, challenge) => {
       const roomId = challenge.roomId ?? roomOfChallenge(challenge.challengeId)
-      client.setQueryData<RoomView[]>(queryKeys.rooms(), (items) =>
+      client.setQueryData<RoomView[]>(queryKeys.myRooms(), (items) =>
         items?.some((room) => room.roomId === roomId)
           ? items
           : [
@@ -166,7 +165,7 @@ export function useCloseRoom() {
   return useMutation({
     mutationFn: (roomId: string) => challengesService.cancelRoom(roomId),
     onMutate: (roomId: string) =>
-      optimisticUpdate(client, [queryKeys.rooms(), queryKeys.room(roomId), queryKeys.challenges()], () => settleRoom(client, roomId, 'CANCELLED')),
+      optimisticUpdate(client, [queryKeys.myRooms(), queryKeys.room(roomId), queryKeys.challenges()], () => settleRoom(client, roomId, 'CANCELLED')),
     onError: (_error, _id, context) => {
       context?.rollback()
       toast.error(t('play.closeError'), { description: t('home.errorText') })

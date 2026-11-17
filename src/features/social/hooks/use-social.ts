@@ -1,9 +1,8 @@
-import { useMutation, useQuery, useQueryClient, type InfiniteData } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from '@/design-system'
 import { useMe } from '@/features/me'
-import { optimisticUpdate } from '@/lib/optimistic-cache'
-import { queryKeys } from '@/lib/query-keys'
-import type { MeView, PageResponse, PlayerCardView, PlayerProfileView } from '@joutio/client/api-types'
+import { applyFollow, optimisticUpdate, queryKeys } from '@joutio/client/query'
+import type { MeView, PlayerProfileView } from '@joutio/client/api-types'
 import { socialService } from '../lib/social-service'
 import { useT } from '@/lib/i18n'
 
@@ -42,46 +41,9 @@ export function useFollowPlayer(userId: string) {
         client.setQueryData<PlayerProfileView>(queryKeys.profiles.profile(myId), (profile) =>
           profile ? { ...profile, followingCount: Math.max(0, profile.followingCount + delta) } : profile,
         )
-        for (const [key, data] of client.getQueriesData<InfiniteData<PageResponse<PlayerCardView>>>({ queryKey: queryKeys.contacts.all() })) {
-          const remove = !follow && key[1] === myId && key[2] === 'following'
-          const contained = data?.pages.some((page) => page.content.some((player) => player.userId === userId)) ?? false
-          const add =
-            follow &&
-            previous &&
-            key[1] === myId &&
-            key[2] === 'following' &&
-            !contained &&
-            (!key[3] || previous.pseudonym.toLowerCase().includes(String(key[3]).toLowerCase()))
-          const card: PlayerCardView | undefined = add
-            ? {
-                userId,
-                pseudonym: previous.pseudonym,
-                avatarOptions: previous.avatarOptions,
-                rating: previous.progression?.rating ?? 0,
-                following: true,
-                presence: previous.presence,
-                suspended: previous.suspended,
-              }
-            : undefined
-          client.setQueryData(
-            key,
-            data
-              ? {
-                  ...data,
-                  pages: data.pages.map((page, index) => ({
-                    ...page,
-                    totalElements: remove && contained ? Math.max(0, page.totalElements - 1) : add ? page.totalElements + 1 : page.totalElements,
-                    content: [
-                      ...(card && index === 0 ? [card] : []),
-                      ...page.content
-                        .filter((player) => !(remove && player.userId === userId))
-                        .map((player) => (player.userId === userId ? { ...player, following: follow } : player)),
-                    ],
-                  })),
-                }
-              : data,
-          )
-        }
+        // Listes de contacts : drapeau `following` partout, carte ajoutée à sa place de tri dans mes abonnements (ou retirée).
+        const profile = client.getQueryData<PlayerProfileView>(queryKeys.profiles.profile(userId))
+        if (myId && profile) applyFollow(client, myId, profile, follow)
       }),
     onError: (_error, follow, context) => {
       context?.rollback()

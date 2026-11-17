@@ -32,7 +32,7 @@ import {
 import { useMe, usePlayerIdentity } from '@/features/me'
 import { useCreatePrivateRoom } from '@/features/play/hooks/use-play'
 import { readServerNow } from '@/lib/realtime/server-clock'
-import { queryKeys } from '@/lib/query-keys'
+import { queryKeys } from '@joutio/client/query'
 import { TopicPickerSheet } from '@/features/topics/components/topic-picker-sheet'
 import type { ChallengeView } from '@joutio/client/api-types'
 import { avatarSvg } from '@/shared/utils/avatar'
@@ -114,7 +114,7 @@ export function ChallengesScreen() {
 
   // Relecture des défis et des salons. Les onglets la passent telle quelle à `TabsScrollView`, qui la garde lui-même
   // (`usePageRefresh`) : lui passer `refresh`, déjà gardé et sans promesse, arrêtait l'indicateur aussitôt.
-  const reload = () => Promise.all([client.refetchQueries({ queryKey: queryKeys.challenges() }), client.refetchQueries({ queryKey: queryKeys.rooms() })])
+  const reload = () => Promise.all([client.refetchQueries({ queryKey: queryKeys.challenges() }), client.refetchQueries({ queryKey: queryKeys.myRooms() })])
   const { refreshing, refresh } = useGuardedRefresh(reload)
 
   const refuseAll = () =>

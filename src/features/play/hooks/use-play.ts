@@ -7,8 +7,7 @@ import { showQuotaDialog } from '@/features/challenges/lib/quota'
 import { quotaProblemOf } from '@joutio/client/premium'
 import { useMe } from '@/features/me'
 import { ENDPOINTS } from '@/lib/endpoints'
-import { optimisticUpdate, optimisticId } from '@/lib/optimistic-cache'
-import { queryKeys } from '@/lib/query-keys'
+import { optimisticId, optimisticUpdate, queryKeys } from '@joutio/client/query'
 import { readServerNow } from '@/lib/realtime/server-clock'
 import { subscribeStomp } from '@/lib/ws'
 import { useNotificationStream } from '@/lib/realtime/use-notification-stream'
@@ -125,7 +124,7 @@ export function useCreatePrivateRoom() {
     mutationFn: (topic: PlayTopic) => playService.createRoom(topic.topicId),
     onMutate: async (topic) => {
       const tempId = optimisticId()
-      const transaction = await optimisticUpdate(client, [queryKeys.rooms()], () => {
+      const transaction = await optimisticUpdate(client, [queryKeys.myRooms()], () => {
         const room: RoomView = {
           roomId: tempId,
           topic: { topicId: topic.topicId, names: { fr: topic.name }, category: topic.category ?? null, imageUrl: null, pictogramUrl: null },
@@ -140,12 +139,12 @@ export function useCreatePrivateRoom() {
           updatedAt: new Date().toISOString(),
           expiresAt: '',
         }
-        client.setQueryData<RoomView[]>(queryKeys.rooms(), (rooms) => [...(rooms ?? []), room])
+        client.setQueryData<RoomView[]>(queryKeys.myRooms(), (rooms) => [...(rooms ?? []), room])
       })
       return { ...transaction, tempId }
     },
     onSuccess: ({ id }, topic, context) => {
-      client.setQueryData<RoomView[]>(queryKeys.rooms(), (rooms) => rooms?.map((room) => (room.roomId === context.tempId ? { ...room, roomId: id } : room)))
+      client.setQueryData<RoomView[]>(queryKeys.myRooms(), (rooms) => rooms?.map((room) => (room.roomId === context.tempId ? { ...room, roomId: id } : room)))
       router.push({ pathname: '/room/[roomId]', params: { roomId: id, ...topicParams(topic) } })
     },
     onError: (error, _topic, context) => {

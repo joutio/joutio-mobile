@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { logout, persistSession } from '@/lib/auth'
-import { queryKeys } from '@/lib/query-keys'
+import { queryKeys } from '@joutio/client/query'
 import { IdentityAuthError, loginWithCode, loginWithFacebook, loginWithGoogle, requestLoginCode, type MobileLoginResponse } from '../lib/auth-service'
 import { signInWithFacebook, signOutFacebook } from '../lib/facebook'
 import { signInWithGoogle, signOutGoogle } from '../lib/google'

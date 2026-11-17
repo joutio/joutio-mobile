@@ -26,7 +26,7 @@ import {
 } from '@/design-system'
 import { useMyChallenges } from '@/features/challenges/hooks/use-challenges'
 import { useMe } from '@/features/me'
-import { queryKeys } from '@/lib/query-keys'
+import { queryKeys } from '@joutio/client/query'
 import type { NotificationView } from '@/lib/realtime/personal-notifications'
 import type { PageResponse } from '@joutio/client/api-types'
 import { dayGroupLabel, dayOf, isExpired, type NotificationDay } from '../lib/notifications-service'

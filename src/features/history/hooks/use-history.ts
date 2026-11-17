@@ -1,5 +1,5 @@
 import { keepPreviousData, useInfiniteQuery } from '@tanstack/react-query'
-import { queryKeys } from '@/lib/query-keys'
+import { queryKeys } from '@joutio/client/query'
 import { HISTORY_PAGE_SIZE, historyService, type HistoryFilters } from '../lib/history-service'
 
 /** Historique paginé ; changer un filtre repart de la première page et garde l'ancienne liste jusqu'au résultat. */

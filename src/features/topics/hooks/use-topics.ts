@@ -1,5 +1,5 @@
 import { keepPreviousData, useInfiniteQuery, useQuery } from '@tanstack/react-query'
-import { queryKeys } from '@/lib/query-keys'
+import { queryKeys } from '@joutio/client/query'
 import { topicsService, type TopicFilters, type TopicScope } from '../lib/topics-service'
 
 /** Catalogue paginé : une recherche ou un filtre repart de la première page. */

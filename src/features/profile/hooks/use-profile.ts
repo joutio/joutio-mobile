@@ -3,8 +3,7 @@ import { useMutation, useQuery, useQueryClient, type InfiniteData } from '@tanst
 import { useEffect, useState } from 'react'
 import { toast } from '@/design-system'
 import { useMe } from '@/features/me'
-import { optimisticUpdate } from '@/lib/optimistic-cache'
-import { queryKeys } from '@/lib/query-keys'
+import { optimisticUpdate, queryKeys } from '@joutio/client/query'
 import type {
   ApiError,
   HomeView,

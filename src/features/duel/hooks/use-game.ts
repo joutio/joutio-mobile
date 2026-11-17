@@ -1,6 +1,6 @@
 import { activityDate, streakDayUnlocked } from '@joutio/client/profile'
 import { profileService } from '@/features/profile/lib/profile-service'
-import { queryKeys } from '@/lib/query-keys'
+import { queryKeys } from '@joutio/client/query'
 import type { MeView, PlayerProfileView, TopicOverviewView } from '@joutio/client/api-types'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Image } from 'expo-image'
@@ -87,7 +87,7 @@ export function useGameResult(gameId: string, enabled: boolean, waitForReward = 
     void client.invalidateQueries({ queryKey: queryKeys.topic.all(data.topic.topicId) })
     void client.invalidateQueries({ queryKey: queryKeys.home() })
     void client.invalidateQueries({ queryKey: queryKeys.games.activeAll() })
-    void client.invalidateQueries({ queryKey: queryKeys.rooms() })
+    void client.invalidateQueries({ queryKey: queryKeys.myRooms() })
   }, [client, gameId, result.data, waitForReward])
   return result
 }

@@ -33,7 +33,7 @@ import {
   WarningCircleIcon,
 } from '@/design-system'
 import { useMe } from '@/features/me'
-import { queryKeys } from '@/lib/query-keys'
+import { queryKeys } from '@joutio/client/query'
 import { topicName } from '@/shared/utils/topic-name'
 import { useFollowTopic, useTopicLeaderboard, useTopicOverview } from '../hooks/use-topic'
 import { formatNumber, tierLabel } from '../lib/format'

@@ -34,7 +34,7 @@ import { useAutoTrain, useBotDifficulty, useTicket, useTicketPresence, type Play
 import { playService } from '../lib/play-service'
 import { userAvatar } from '@/shared/utils/avatar'
 import { currentLanguage, t, tierKey, useT } from '@/lib/i18n'
-import { queryKeys } from '@/lib/query-keys'
+import { queryKeys } from '@joutio/client/query'
 
 /** Joueurs décoratifs qui apparaissent sur la carte pendant la recherche (le BFF n'expose pas la file d'attente). */
 const PINS: MapPlayer[] = [

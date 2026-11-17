@@ -1,7 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { optimisticUpdate } from '@/lib/optimistic-cache'
+import { optimisticUpdate, queryKeys } from '@joutio/client/query'
 import type { MeView } from '@joutio/client/api-types'
-import { queryKeys } from '@/lib/query-keys'
 import { onboardingService } from '../lib/onboarding-service'
 
 export function useSaveInterests() {

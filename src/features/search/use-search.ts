@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { getItem, setItem } from '@/lib/storage'
 import { useDebounced } from '@/shared/hooks/use-debounced'
 import { searchService } from './search-service'
-import { queryKeys } from '@/lib/query-keys'
+import { queryKeys } from '@joutio/client/query'
 
 /** Recherche lancée à partir de 2 caractères, 250 ms après la dernière frappe. */
 export const MIN_QUERY = 2
@@ -12,7 +12,7 @@ export function useSuggestions(query: string) {
   const term = useDebounced(query.trim(), 250)
   const enabled = term.length >= MIN_QUERY
   const result = useQuery({
-    queryKey: queryKeys.suggestions(term),
+    queryKey: queryKeys.suggestions.term(term),
     queryFn: () => searchService.suggestions(term),
     enabled,
     staleTime: 60_000,

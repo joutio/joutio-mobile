@@ -28,7 +28,7 @@ src/
   design-system/  traduction native du lab (sans import de app/ ni dev/) : tokens.generated.*, theme/, primitives/,
                   mobile/ (Screen, MobileTopBar, JoTabBar, MobileSheet, ToastHost…), brand/, result/, duel/, vendor/ (Reacticx)
   features/<f>/   components/ hooks/ lib/ index.ts
-  lib/            config, endpoints, auth (jetons, refresh), api-client, query-client, query-keys, i18n, realtime, ws, optimistic-cache
+  lib/            config, endpoints, auth (jetons, refresh), api-client, query-client, i18n, realtime, ws
   shared/         navigation (router protégé), stores, hooks, avatar, utils
   dev/            démos du catalogue (admin seulement)
 modules/          modules Expo locaux (bottom-load)   patches/  patch-package (réappliqués au postinstall)
@@ -109,7 +109,8 @@ modules/          modules Expo locaux (bottom-load)   patches/  patch-package (r
   - formulaires à plusieurs champs : `FieldToolbar` et `returnKeyType="next"` ;
   - le champ entier remonte au-dessus du clavier (`field-reveal`).
 - **Mutations** : optimistes, sans relecture ([règle](../../docs/frontend/donnees-et-etat.md#mutations--optimistes-sans-relecture)).
-  `lib/optimistic-cache.ts` ; les clés viennent de `lib/query-keys.ts`. Les événements d'un autre
+  `optimisticUpdate`, `queryKeys` et les mises à jour de cache partagées (`applyFollow`) viennent de
+  `@joutio/client/query`. Les événements d'un autre
   joueur relisent les vues concernées par une table unique
   (`features/realtime/realtime-invalidation.tsx`).
 - **Temps réel** : STOMP unique (`lib/ws.ts`), coupé de force en arrière-plan. Pour le reste :

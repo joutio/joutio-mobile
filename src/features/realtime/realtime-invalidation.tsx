@@ -1,7 +1,7 @@
 import { useQueryClient, type QueryKey } from '@tanstack/react-query'
 import { useEffect } from 'react'
 import { useMe } from '@/features/me'
-import { queryKeys } from '@/lib/query-keys'
+import { queryKeys } from '@joutio/client/query'
 import type { NotificationView } from '@/lib/realtime/personal-notifications'
 import { subscribeStomp } from '@/lib/ws'
 
@@ -15,15 +15,15 @@ const PERSONAL: Record<NotificationView['type'], (notification: NotificationView
   // Compteur d'abonnés, listes Abonnés, fiche de l'abonné.
   FOLLOW: (notification) => [queryKeys.me(), queryKeys.contacts.all(), ...(notification.actorId ? [queryKeys.profiles.all(notification.actorId)] : [])],
   CHALLENGE_RECEIVED: () => [queryKeys.challenges()],
-  CHALLENGE_DECLINED: () => [queryKeys.challenges(), queryKeys.rooms()],
+  CHALLENGE_DECLINED: () => [queryKeys.challenges(), queryKeys.myRooms()],
   // Défi accepté : sa salle apparaît, la partie suivra.
   ROOM_ACCEPTED: (notification) => [
     queryKeys.challenges(),
-    queryKeys.rooms(),
+    queryKeys.myRooms(),
     queryKeys.games.activeAll(),
     ...(notification.sourceId ? [queryKeys.room(notification.sourceId)] : []),
   ],
-  WIZZ: () => [queryKeys.rooms()],
+  WIZZ: () => [queryKeys.myRooms()],
   // Signalement d'une question d'un de mes sujets : À traiter, file des signalements, compteurs des questions.
   QUESTION_REPORTED: (notification) => [
     queryKeys.authoring.todo(),
@@ -49,7 +49,7 @@ interface Achievement {
 }
 
 /** Vues relues après une **re**connexion (retour au premier plan) : le flux personnel n'a pas d'historique. */
-const RESYNC = (): QueryKey[] => [queryKeys.me(), queryKeys.notifications.all(), queryKeys.challenges(), queryKeys.rooms(), queryKeys.authoring.todo()]
+const RESYNC = (): QueryKey[] => [queryKeys.me(), queryKeys.notifications.all(), queryKeys.challenges(), queryKeys.myRooms(), queryKeys.authoring.todo()]
 
 interface Envelope {
   eventType?: string

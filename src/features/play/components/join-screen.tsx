@@ -39,7 +39,7 @@ import { userAvatar } from '@/shared/utils/avatar'
 import { countdownOf, useServerNow } from '../lib/countdown'
 import { playService } from '../lib/play-service'
 import { currentLanguage, formatNumber, t, tierKey, useT } from '@/lib/i18n'
-import { queryKeys } from '@/lib/query-keys'
+import { queryKeys } from '@joutio/client/query'
 
 /** Conditions du duel, en `ListRow` informatives (`lancer-partie.md` § 2). */
 const RULES = (): readonly { icon: Icon; label: string }[] => ([

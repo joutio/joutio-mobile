@@ -8,7 +8,7 @@ import { reconcileRooms } from '../lib/play-cache'
 import { topicName } from '@/shared/utils/topic-name'
 import { RoomWatch } from '../components/room-watch'
 import { GameWatch } from '../components/game-watch'
-import { queryKeys } from '@/lib/query-keys'
+import { queryKeys } from '@joutio/client/query'
 
 export interface OngoingGame {
   gameId: string
@@ -42,8 +42,8 @@ export function PlaySessionProvider({ userId, children }: { userId: string; chil
   const connection = useConnectionStore((state) => state.status)
   const active = useQuery({ queryKey: queryKeys.games.active(userId ?? ''), queryFn: gameService.active, enabled: Boolean(userId) })
   const rooms = useQuery({
-    queryKey: queryKeys.rooms(),
-    queryFn: async () => reconcileRooms(client.getQueryData(queryKeys.rooms()), await challengesService.rooms()),
+    queryKey: queryKeys.myRooms(),
+    queryFn: async () => reconcileRooms(client.getQueryData(queryKeys.myRooms()), await challengesService.rooms()),
     enabled: Boolean(userId),
   })
   const refresh = useCallback(() => {

@@ -58,7 +58,7 @@ function harness(extraMocks = {}) {
     )
     return module.exports
   }
-  return { client, me, failures, load, keys: load('@/lib/query-keys').queryKeys }
+  return { client, me, failures, load, keys: require('@joutio/client/query').queryKeys }
 }
 const challenge = (id) => ({ challengeId: id, status: 'PENDING', roomId: null })
 const topic = (id, followed = false) => ({ topicId: id, names: { fr: id }, followed, followersCount: 10, status: 'PUBLISHED' })
@@ -93,16 +93,16 @@ test('closing a room updates detail, the shared list and its challenge, then res
   const h = harness()
   const room = { roomId: 'r', status: 'WAITING_PLAYERS' }
   // Une seule liste de salons (Défis, pastille, reprise de partie) depuis le 2026-11-16.
-  h.client.setQueryData(h.keys.rooms(), [room])
+  h.client.setQueryData(h.keys.myRooms(), [room])
   h.client.setQueryData(h.keys.room('r'), room)
   h.client.setQueryData(h.keys.challenges(), [{ ...challenge('c'), roomId: 'r' }])
   const mutation = h.load('@/features/challenges/hooks/use-challenges').useCloseRoom()
   const context = await mutation.onMutate('r')
-  assert.equal(h.client.getQueryData(h.keys.rooms())[0].status, 'CANCELLED')
+  assert.equal(h.client.getQueryData(h.keys.myRooms())[0].status, 'CANCELLED')
   assert.equal(h.client.getQueryData(h.keys.room('r')).status, 'CANCELLED')
   assert.equal(h.client.getQueryData(h.keys.challenges())[0].status, 'CANCELLED')
   mutation.onError(Error(), 'r', context)
-  assert.equal(h.client.getQueryData(h.keys.rooms())[0].status, 'WAITING_PLAYERS')
+  assert.equal(h.client.getQueryData(h.keys.myRooms())[0].status, 'WAITING_PLAYERS')
   assert.equal(h.client.getQueryData(h.keys.room('r')).status, 'WAITING_PLAYERS')
 })
 
@@ -115,7 +115,7 @@ test('older projections cannot resurrect accepted/cancelled challenges or closed
 
 test('rollback preserves concurrent fields, entities and counter increments', async () => {
   const h = harness()
-  const { optimisticUpdate } = h.load('@/lib/optimistic-cache')
+  const { optimisticUpdate } = require('@joutio/client/query')
   h.client.setQueryData(['profiles'], {
     followingCount: 1,
     bio: 'old',

@@ -1,5 +1,4 @@
-import { optimisticUpdate } from '@/lib/optimistic-cache'
-import { queryKeys } from '@/lib/query-keys'
+import { optimisticUpdate, queryKeys } from '@joutio/client/query'
 import { settleChallenge } from '../lib/play-cache'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { usePathname } from 'expo-router'

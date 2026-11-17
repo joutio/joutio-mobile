@@ -1,6 +1,6 @@
 import type { QueryClient } from '@tanstack/react-query'
 import type { ChallengeStatus, ChallengeView } from '@joutio/client/api-types'
-import { queryKeys } from '@/lib/query-keys'
+import { queryKeys } from '@joutio/client/query'
 import { nameUuid } from '@/shared/utils/name-uuid'
 import type { RoomStatus, RoomView } from '@joutio/client/rooms'
 
@@ -27,7 +27,7 @@ export function settleChallenge(client: QueryClient, id: string, status: Challen
 
 /** Met à jour la liste des salons (une seule requête partagée) et le détail relu au retour dans le salon. */
 export function settleRoom(client: QueryClient, id: string, status: RoomStatus) {
-  client.setQueryData<RoomView[]>(queryKeys.rooms(), (items) => items?.map((item) => (item.roomId === id ? { ...item, status } : item)))
+  client.setQueryData<RoomView[]>(queryKeys.myRooms(), (items) => items?.map((item) => (item.roomId === id ? { ...item, status } : item)))
   client.setQueryData<RoomView>(queryKeys.room(id), (item) => (item ? { ...item, status } : item))
   if (status !== 'WAITING_PLAYERS')
     client.setQueryData<ChallengeView[]>(queryKeys.challenges(), (items) =>

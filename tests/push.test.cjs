@@ -335,7 +335,7 @@ function pushRuntime() {
     '@/features/challenges/hooks/use-challenges': {
       refreshChallenges: (target) => ['challenges/mine', 'rooms/mine'].forEach((key) => target.invalidateQueries({ queryKey: key.split('/') })),
     },
-    '@/lib/query-keys': { queryKeys: { notifications: { all: () => ['notifications'] } } },
+    '@joutio/client/query': { queryKeys: { notifications: { all: () => ['notifications'] } } },
     'react-native': { AppState: { addEventListener: () => ({ remove() {} }) } },
     '@/features/auth/session-store': { useSessionStore: (select) => select(state) },
     '@/features/me': { useMe: () => ({ data: me }) },
