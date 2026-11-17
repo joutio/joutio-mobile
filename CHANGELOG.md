@@ -1,3 +1,9 @@
+## [1.50.0](https://github.com/joutio/joutio-mobile/compare/v1.49.1...v1.50.0) (2026-11-17)
+
+### Features
+
+* **i18n:** avatar editor in French and English ([7e43138](https://github.com/joutio/joutio-mobile/commit/7e4313855d15bd3398c369476aff76b20ac2a187))
+
 ## [1.49.1](https://github.com/joutio/joutio-mobile/compare/v1.49.0...v1.49.1) (2026-11-16)
 
 ### Bug Fixes
