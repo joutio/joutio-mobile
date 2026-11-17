@@ -1,3 +1,9 @@
+## [1.50.2](https://github.com/joutio/joutio-mobile/compare/v1.50.1...v1.50.2) (2026-11-17)
+
+### Bug Fixes
+
+* **result:** drop redundant training meta under the player ([f9b3625](https://github.com/joutio/joutio-mobile/commit/f9b3625410aacdcf9e656f9f7b048b19a8678103))
+
 ## [1.50.1](https://github.com/joutio/joutio-mobile/compare/v1.50.0...v1.50.1) (2026-11-17)
 
 ### Bug Fixes
