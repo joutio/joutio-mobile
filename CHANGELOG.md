@@ -1,3 +1,9 @@
+## [1.50.1](https://github.com/joutio/joutio-mobile/compare/v1.50.0...v1.50.1) (2026-11-17)
+
+### Bug Fixes
+
+* **ios:** collapsible tabs no longer subtract slack React Native already dropped ([5c3f257](https://github.com/joutio/joutio-mobile/commit/5c3f257f204014eb19402c3b9f68f394228c7e05))
+
 ## [1.50.0](https://github.com/joutio/joutio-mobile/compare/v1.49.1...v1.50.0) (2026-11-17)
 
 ### Features
