@@ -9,7 +9,7 @@ export function useSetBirthDate() {
   return useMutation({
     mutationFn: (birthDate: string) => accountService.setBirthDate(birthDate),
     onSuccess: (_result, birthDate) => {
-      // Mise à jour sur place, sans relecture (règle des mutations, AGENTS.md § 5).
+      // Mise à jour sur place, sans relecture (règle des mutations, docs/frontend/donnees-et-etat.md).
       client.setQueryData<MeView>(queryKeys.me(), (me) => (me ? { ...me, birthDate, birthDateRequired: false } : me))
     },
   })

@@ -21,7 +21,7 @@ Refresh.
 | JDK (Android) | Un JDK complet, 17 à 25 : `brew install --cask temurin`                                     |
 | Android SDK   | Android Studio (`brew install --cask android-studio`), voir § 3.1                           |
 
-Le `.npmrc` du projet déclare déjà le scope `@joutio` ; il reste à poser le jeton dans `~/.npmrc` (ou `make init` à
+Le `.npmrc` du projet déclare déjà le scope `@joutio` ; il reste à poser le jeton dans `~/.npmrc` (ou `make bootstrap` à
 la racine du workspace) :
 
 ```ini

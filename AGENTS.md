@@ -1,528 +1,175 @@
 # AGENTS.md — joutio-mobile
 
-> Réécriture de l'app mobile Joutio **à partir d'une feuille blanche**, cibles **iOS et Android**.
-> La seule référence de design est le lab **`design/`** (workspace) ; l'ancienne app (retirée le 2026-11-08),
-> n'en est pas une. Le démarrage et la traduction lab → natif suivent **`design/specs/mobile-kit.md`**.
-> Conventions de code : `best-practices/.frontend/`.
+App mobile de Joutio, **iOS et Android** (`com.joutio.app`), écrite à partir du lab
+[`design/`](../../design/README.md) selon [`design/specs/mobile-kit.md`](../../design/specs/mobile-kit.md).
+Le lab est la seule référence de rendu.
 
----
+Lire : `../../AGENTS.md`, [`docs/frontend/`](../../docs/frontend/architecture.md), le contrat
+[`docs/api/`](../../docs/api/README.md), la spec de l'écran (`design/specs/screens/`) et les écarts
+de plateforme ([`design/specs/platforms/README.md`](../../design/specs/platforms/README.md)).
 
-## 1. État
+## Pile
 
-| Étape du kit                                                                                           | État                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-|--------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| 0. Fondations : tokens, thème, polices, icônes, actifs, mouvement réduit                               | fait                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| 1. Socle de composants (rangées 1 à 5)                                                                 | fait, à valider sur appareil                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| 2.1 Onboarding : lancement, connexion OTP, code, univers, notifications, premier thème, session coupée | fait                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| 2.2 Accueil                                                                                            | fait, à valider sur appareil : shell à 5 onglets (`(app)/(tabs)`, `JoTabBar`), `Rail`, `TopTen`, données `/api/home` ; série (`/activity`) et badge Défis (défis reçus) réels ; Social, Défis et Profil faits ; **la loupe ouvre la Recherche globale** (2.13)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| 2.3 Sujets                                                                                             | fait, à valider sur appareil : recherche, Filtres (feuille), puces, tri, grille adaptative de `TopicTile` (2026-11-12 : colonnes d'au moins 96 pt, 3 sur téléphone et 5 sur pliable ouvert ; pictogramme, sinon vignette, sinon univers ; pages en rangées pleines, `size` = multiple du nombre de colonnes) paginée sur `/api/topics` ; pictogramme PNG modifiable dans l'atelier (`PUT /api/topics/{id}/pictogram-url`, choisi sans recadrage pour garder la transparence) ; couleurs d'univers selon le thème (`categoryColor`, palettes claire/sombre du 2026-11-11) ; multi-univers **simulé** (« Mes thèmes » remplace « Masquer les sujets suivis » le 2026-11-13) (`features/topics/lib/topics-service.ts`, manques BFF dans `sujets.md` § 5)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| 2.4 Fiche sujet                                                                                        | fait, à valider sur appareil : `CollapsibleTabsScreen` (actions qui passent dans la barre, titre à gauche, ligne du joueur en barre fixe), poussée dans les piles Accueil et Sujets (`(tabs)/home/topic/[id]`, `(tabs)/topics/[id]`) ; overview, Top 10 depuis toujours (2026-11-06), mes 10 dernières parties et titres branchés sur le BFF ; **Mur mocké conservé, désactivé pour le MVP** (`WALL_ENABLED=false`, `features/topic/lib/wall-mocks.ts`) ; feuille de duel **sans action** (lot 5) ; manques BFF dans `fiche-sujet.md` § 5                                                                                                                                                                                                                                             |
-| 2.5 Lancer une partie, Matchmaking                                                                     | fait, à valider sur appareil : feuille des 4 modes (difficulté du robot mémorisée sur l'appareil, « Qui veux-tu défier ? » sur abonnements/abonnés), matchmaking plein écran (`MatchmakingMap`, décompte serveur, entraînement automatique selon `me.autoTrainOnTimeout`, préférence **profil**), salle (`(app)/room/[roomId]`, **un seul salon pour toute salle** depuis le 2026-11-07, à l'image de joutio-web : présence par joueur dans `RoomPlayers`, `PreparationSteps`, décompte, partage du lien seul pour un salon partagé, relance « wizz » d'un défi nominatif, annulation par type, page classique avec top bar Joutio et retour toujours disponible, thème de l’app, préparation suivie globalement et bandeau « Partie en cours » hors de l’arène ; **présence observée par le serveur** (2026-11-11) : l’écran s’abonne au canal `/topic/rooms/{id}/presence` (et `/topic/matchmaking/tickets/{id}/presence` pour la recherche), le BFF en déduit entrée, sortie et déconnexion — l’app n’appelle plus `join`/`leave` ni l’annulation au démontage ; « Annuler la recherche » reste une commande explicite ; `RoomWatch` ne s’abonne jamais au canal de présence), « Rejoindre un salon » (`join/[roomId]`, repris après connexion)                                                                                                                                                                                                                                                                                |
-| 2.6 Duel                                                                                               | fait, à valider sur appareil : arène (`(app)/duel/[gameId]`) pilotée par les instants serveur (`sceneAt`, domaine porté de `joutio-web`), face-à-face, intros de manche, réponses à place réservée puis révélées comme le lab, scores et verdicts individuels dès la confirmation serveur (2026-11-07, comme le web ; choix adverse caché jusqu’à la révélation finale), images préchargées dès `GAME_CREATED`, abandon par le retour (`usePreventRemove`), reconnexion (bannière de connexion en haut de l’arène), révélation finale gardée `RESULT_DELAY_MS` avant le résultat                                                                                                                                                                                                                                                                                                                 |
-| 2.7 Résultat                                                                                           | fait, à valider sur appareil (2026-11-05) : composants `design-system/result/` (séquence de déblocages balayable dans le pager natif, promotion de rang, titre, badge — `BadgeUnlock`, au catalogue seulement tant que le badge n'est pas rattaché à la partie —, en-tête, Elo, anneau de maîtrise, revue, temps de réponse, revanche) ; écran `duel-result.tsx` (déblocages rang + titres déduits du bilan, résultat classé ou d'entraînement, Détails du duel, signalements joueur et question, chat **mocké**, Détails du duel en seconde page verticale `pagingEnabled`) ; revanche envoi (défi + `gameId`, réponse en STOMP) et réception (`RematchHost`, flux `/topic/notifications/{userId}`, salle calculée avec `nameUuid`). Résultat d'une partie passée : route `(app)/result/[gameId]` (bilan + historique REST, sans STOMP ni polling), ouverte depuis les `MatchRow` de la fiche sujet, **sans rejouer les déblocages** ; Elo et palier pris à l'instant de la partie. Reste : badges (le flux `/topic/achievements/{userId}` ne porte pas de `gameId`), validation de la séquence rang/titres sur un vrai duel humain, chat mocké (le BFF n'a pas de messagerie) |
-| 2.8 Profil, Fiche joueur, Tous les titres, Toutes les parties, Tous les classements | fait, à valider sur appareil (2026-11-05) : **Profil** (`(tabs)/profile/`, `CollapsibleTabsScreen` sans retour, onglets Statistiques / Badges / Titres / Historique, feuilles Rangs et Badge, page **Sujets joués** par « Tout voir » — `(tabs)/profile/played`, parties et maîtrise par sujet, fiche sujet dans la pile Profil), **Série** (`/activity`, calendrier et carte Micah, page Récompenses supprimée le 2026-11-08), **Réglages** complets (champs du profil, bannière par `expo-image-picker` + `POST /api/media`, langue, apparence, duel, notifications, compte) et **Supprimer mon compte**, **Tous les titres**, **éditeur d'avatar** (DiceBear, `(app)/avatar`) et feuille **Premium** (état Bientôt) ; Toutes les parties, Tous les classements, Fiche joueur et Social déjà faits. Écarts consignés dans `profil.md` § 7, `reglages.md` § 6, `titres.md` § 9 : titres sans date de déblocage (BFF), Revanches / Rangs et badges locaux, liste d'attente Premium locale |
-| 2.9 Défis | fait, à valider sur appareil (2026-11-05) : onglet `(tabs)/challenges` (onglets balayables Reçus / Envoyés / Salons avec compteur, ouverts par `?tab=` depuis les notifications, 2026-11-14 ; Reçus paginés, Tout refuser, Envoyés, Salons privés, états vide et erreur, tiré pour rafraîchir), `ChallengeListRow`, `TopicPickerSheet`, `Dialog` Limite (quota BFF) ; temps réel par le flux personnel ; Relancer inactif (pas d'endpoint) — `defis.md` § 6 |
-| 2.10 Notifications | fait, à valider sur appareil (2026-11-05) : `(tabs)/home/notifications` ouvert par les cloches, sections par jour, pagination 10, **sans CTA** (2026-11-07 : le toucher ouvre l’écran de l’action), balayer pour supprimer (`NotificationRow`, `ReanimatedSwipeable`), Tout marquer comme lu, Tout supprimer, temps réel par le flux personnel — `notifications.md` § 6 |
-| 2.11 Création et modération | fait, à valider sur appareil (2026-11-06) : **Mes sujets** dans l'onglet **Création** de l'Accueil depuis le 2026-11-13 (`MyTopicsList`, auparavant Réglages › `(tabs)/profile/topics`, supprimé ; `GET /api/topics/contributed`, À traiter le 2026-11-10 ; atelier hors onglets sous `(app)/workshop/[id]`), feuille Nouveau sujet, **Mon sujet** (`ParallaxScreen`, nom FR/EN, univers, vignette par `POST /api/media`, Publier à 7 questions approuvées), **Questions** (recherche et filtres Statut/Traduction côté client, 10 par page), **éditeur de question** en modale (`(app)/question-editor`, `AnswerEditorRow`, FR/EN), **Modération** (À valider / Signalements balayables, `ModerationCard`, rejet motivé, clôture des signalements) ; **Équipe réelle** (rôles et Premium individuels vérifiés par le BFF) ; plafonds et quotas **appliqués par le BFF**, lus dans `MeView.limits` (`planLimits`) ; **sujets gelés** (P21, `useFrozen` sur `mine=true`, `FrozenNotice`, édition grisée) ; erreurs de limite → feuille Premium (`quotaProblemOf`, 2026-11-12) ; description d'image saisie mais **non envoyée** ; statut Rejetée affiché et filtre Statut aussi en brouillon (toute question naît en attente) — `creation.md` § 5 |
-| 2.12 États système | fait, à valider sur appareil (2026-11-06) : **Hors connexion et reconnexion** (`expo-network`, `useNetworkBridge` → `onlineManager` de React Query, état relu au premier plan ; **`ConnectionBanner` globale** (2026-11-07) dans le layout `(app)`, au-dessus de la barre du haut — bande `Banner` pleine largeur depuis le 2026-11-12 (`feedback.md` : ni rayon ni marge, filet bas, safe area portée par la bande, une seule bande à la fois, la connexion l'emporte sur « Partie en cours ») ; l'ancienne carte s'appelle `Notice` et reste dans le flux des écrans — la safe area haute est retirée aux écrans dessous —, réseau + STOMP, grâce 2,5 s, Réessayer avec tentative, échec et « Connexion rétablie », absente des parcours de jeu ; squelettes fixes) — module natif chargé sans planter : **nouveau dev build requis** pour l'activer ; **Adversaire absent / Partie expirée** (`DuelCancelled` sur `GAME_CANCELLED` `GAME_EXPIRED`, selon `firstRoundAt`) ; `AdSlot` au catalogue seulement (pas de régie ni d'alerte de suivi en V1) ; Compte suspendu, Session expirée et Reconnexion déjà faits — `etats-systeme.md` |
-| 2.13 Recherche globale | fait, à valider sur appareil (2026-11-07) : `(tabs)/home/search` et `(tabs)/social/search`, ouvertes par la loupe de l'Accueil et de l'en-tête Social, même écran dans chaque pile (`features/search`, `SearchScreen` `stack`) — `SearchField` autofocus « Sujets et joueurs » et « Annuler », **récentes** sur l'appareil (5 au plus, `joutio.search.recents` en SecureStore, « Effacer »), sections Sujets (`TopicRow`) et Joueurs (`PlayerRow`, « Compte suspendu ») sur `GET /api/suggestions?q&limit=10` (attente 250 ms, 2 caractères, `staleTime` 60 s), squelettes, « Aucun résultat pour « … » » et hors connexion ; un résultat entre dans les récentes et ouvre sa fiche dans la pile de l'onglet — piles Social complétées (`social/topic/[id]`, `social/rankings`, `social/history`) — `recherche.md` |
+Expo SDK 58, React Native 0.88 (New Architecture), expo-router, Reanimated 4, Gesture Handler 3,
+TrueSheet, expo-image, Phosphor, Geist, Zustand, React Query, React Hook Form + Zod,
+expo-secure-store, expo-notifications, `@joutio/client`. **Dev build** (`expo-dev-client`), jamais
+Expo Go, pas de cible web.
 
-**Profil, Réglages et partage (2026-11-13, `design/specs/screens/{profil,editer-profil,reglages,partage}.md`)** :
-boutons Éditer le profil / Partager (65 / 35, avant les compteurs) ; **Éditer le profil** en tâche ciblée
-`(app)/edit-profile` (bannière, avatar, pseudonyme, bio, pays ISO avec `CountryPicker`, un seul Enregistrer, garde
-`usePreventRemove`) ; **Réglages** = racine de catégories + une page par catégorie (`settings/[page]`), dans les piles
-Profil **et** Accueil (roue dentée de l'Accueil), retour selon la pile ; date de naissance (privée, 15 ans) seulement
-dans Compte, sélecteur natif `@expo/ui/community/datetime-picker` ; **étape Date de naissance** avant tout le reste si
-`MeView.birthDateRequired` (layout racine). **Partage** : `useShare` (feuille du système, lien
-`go.joutio.com/{p|t|j}/…`), routes `p|t|j/[id]` (liens universels, `associatedDomains` et `intentFilters`
-dans `app.config.ts` — **nouveau build natif requis**). Le parrainage et le badge Recruteur ont été supprimés (2026-11-14). Pays : `@joutio/client/geo` (noms FR/EN embarqués, Hermes). Résultat et chat
-d'après-duel suivent le thème de l'app (`AppTheme`), la séquence de déblocages reste sombre.
+**Expo change à chaque SDK** : avant de toucher une API Expo, EAS ou React Native, lire la version
+d'`expo` dans `package.json`, puis la doc versionnée (`https://docs.expo.dev/versions/v58.0.0/`,
+`https://docs.expo.dev/llms.txt`). Installer par `npx expo install`. Une bibliothèque native exige
+un nouveau dev build.
 
-**Identité d'un joueur** (2026-11-12, `design/specs/components/primitives.md` § Identité d'un joueur) : avatar de base =
-initiales du Profil, sans réglage (style `base` et ancien fond ignorés par `avatarSvg`, éditeur réduit à l'onglet Style) ;
-avatar stylé sur tous les écrans ; `PremiumBadge` après chaque pseudonyme (`PlayerName`, `premium` lu par
-`usePlayerIdentity` / `usePlayerPremium` : `me.premium`, puis le champ `premium` des vues dès que le BFF l'expose) ;
-avatar et pseudonyme ouvrent la fiche dans la pile de l'onglet courant (Fiche joueur ajoutée aux piles Sujets et Profil),
-le Profil pour soi, sauf duel, salon et matchmaking. Écarts : lignes de parties (`MatchRow`) et invitation `join` sans
-badge ; une ligne de rédacteur dans Équipe garde la gestion de son rôle.
-
-Le **catalogue** est accessible depuis **Réglages › Dev**, uniquement après connexion et onboarding d’un administrateur (`roles` du JWT, `ROLE_ADMIN`). Disponible dans les APK CI si `EXPO_PUBLIC_CATALOG` n’est pas `false` ; routes `(dev)` protégées, aucune ouverture au lancement ni entrée dans le menu Expo.
-
-Onboarding, écarts assumés :
-
-- **Google et Facebook** (2026-11-04) : SDK natifs `@react-native-google-signin/google-signin` et
-  `react-native-fbsdk-next`, portés de l’ancienne app (`docs/legacy-mobile.md` § 4 : clients Google Cloud, App Meta,
-  SHA-1 et key hash de la clé `joutio-preview`). Identifiants **publics** par défaut dans `src/lib/config.ts` et
-  `app.config.ts` (plugins ajoutés seulement si la connexion est active) ; `EXPO_PUBLIC_*_SIGN_IN_ENABLED=false` les
-  masque. Google → `login-with-google` (ID token, audience = client Web) ; Facebook → `login-with-facebook` (iOS :
-  Limited Login, ID token + nonce ; Android : access token). Les secrets restent côté identity. Modules natifs : un
-  nouveau dev build est nécessaire.
-- « Découvrir le duel » termine l'onboarding comme « Explorer l'accueil » : le duel contre un bot arrive avec
-  l'écran Duel.
-- `GET /api/me/onboarding/recommendations` renvoie 3 sujets au plus (le lab en attend 3 par univers) : correction BFF
-  relevée dans `design/specs/screens/onboarding.md` § 4.
-
-Décisions :
-
-- **Domaine partagé (2026-11-11, D17)** : la logique pure (fold du duel, chronologie de l'arène, salles, matchmaking,
-  atelier) et les DTOs du BFF viennent de `@joutio/client` (`libraries/joutio-client`, GitHub Packages),
-  importés par sous-chemin (`/game`, `/rooms`, `/authoring`, `/api-types`). Aucune copie locale : un changement se fait
-  dans le paquet, puis on monte sa version ici. Installation : `.npmrc` du projet (scope `@joutio`) et un jeton
-  `read:packages` dans `~/.npmrc` (`make init` du workspace) ; la CI lit avec l'action partagée `setup-node-npm` et le
-  secret `JOUTIO_GITHUB_TOKEN`.
-- **Refresh / scroll iOS / médias / salon (2026-11-08)** : contrôles de refresh système, sans indicateur React superposé (détails en fin de fichier). Le patch Swift `collapseSlackBase` réconcilie l’inset après une remise à zéro RN pour éviter de couper Sujets joués après chargement. Nouveau dev build requis : Android compilé et installé ; iOS à valider sur macOS. Le client API utilise `whatwg-fetch` uniquement pour les FormData de fichiers locaux ; expo/fetch reste utilisé pour le JSON. Cela corrige `Unsupported FormDataPart implementation`. Salon : MobileTopBar Joutio, retour conservé, en-tête natif masqué.
-
-
-- **Réglages et avatars (2026-11-08)** : carte d’identité redondante supprimée de Réglages ; Langue et Apparence deviennent des ListRow avec valeur actuelle et feuilles radio. Section Dev avec accès au catalogue en ListRow (administrateur connecté, `config.catalogEnabled`). Avatars Profil et Fiche joueur à 88 pt ; bannière augmentée de 16 pt pour conserver la distance sous la barre du haut. Upload de bannière : transport multipart corrigé et détail réel du refus affiché.
-
-
-- **Calendrier et Micah (2026-11-08)** : page Récompenses supprimée (route, écran et ligne dans Profil). Série / Calendrier remplace la progression Assiduité par la seule carte Micah (aperçu, condition, état et avancement réels via les récompenses et les badges). Les droits et le choix des styles restent dans l’éditeur d’avatar.
-
-
-- **MVP, fiche sujet et titres (2026-11-07)** : Mur conservé derrière `WALL_ENABLED=false`, onglets Parties (défaut) / Classement / Progression. Progression sans carte de maîtrise au-dessus des titres. `TitleRow` entière bascule Porter / Enlever (`titleKey: null`), état optimiste et rollback ; ruban borné à la largeur disponible dans TitleRow, avec ellipse et sans défilement (2026-11-08), extrémités fixes + motif central répété, sept paliers dérivés des SVG du lab (`npm run ribbons` dans design, puis `npm run assets:sync`). Ruban porté en largeur automatique, sans ellipse, centré sur Profil et Fiche joueur, défilable horizontalement s’il dépasse ; ruban diagonal Porté dans le coin supérieur droit, sans chevron. Démo native `joutio://catalog/title-row`, validation utilisateur en cours.
-- **Fiche joueur et avatar (2026-11-07)** : après envoi, Défier reste disponible pour un nouveau défi (confirmation par toast). Éditeur d’avatar sans boutons Aléatoire / Réinitialiser.
-
-
-- **Hybride natif** (2026-11-03, `design/PARITY.md` § 3) : chrome et contrôles standards natifs, teintés par les
-  tokens ; composants de marque faits main d'après le lab.
-    - En-têtes : `native-stack` via `nativeHeaderOptions(theme)` (+ `largeTitleOptions` sur une racine) ; `Screen`
-      en mode `nativeHeader`. `MobileTopBar` ne sert plus qu'aux cas sans en-tête natif. Sa hauteur `TOP_BAR_HEIGHT`
-      suit la plateforme (2026-11-06) : 52 pt sur iOS (lab), 64 dp sur Android (barre Material) ; toute barre faite main la
-      reprend.
-    - `Switch` système ; `Segmented` natif (SwiftUI / Material 3) sauf `scrollable` ou lié à un pager (`position` :
-      l'indicateur suit le doigt, la barre défile avec et s'aimante) — barre d'onglets maison, à
-      indicateur glissant) ; `Menu` Joutio identique sur iOS et Android (le `DropdownMenu` Compose de `@expo/ui` ne
-      s'ouvrait pas sur Android), ancré, en ressort, placé dessus ou dessous ; `Dialog` **Joutio**
-      (2026-11-04, remplace l'alerte système) : centré ou en feuille, tuile d'icône, `showDialog()` rendu par
-      `DialogHost` (layout racine) ou `<Dialog open>` ; **même mouvement que `Menu`** (ressort 520/34, opacité ×1,6,
-      échelle 0,86 → 1 depuis le centre ou le bord bas ; fermeture 140 ms) — les cascades de contenu et le flou ont été
-      refusés le 2026-11-04 ;
-      poignée native des feuilles.
-    - Précision : filets `HAIRLINE`, `inputStyle` (pas d'interlignage sur un `TextInput`), Dynamic Type plafonné à
-      ×1,6, ressort au relâchement, ripple Android sur les lignes.
-    - Un `Button` non `full` dans une rangée prend `style={{ alignSelf: 'center' }}`.
-- **Écrans à onglets** (Fiche sujet, Profil) : `CollapsibleTabsScreen`, sur
-  `react-native-collapsible-tabs-native` (2026-11-04, remplace `react-native-collapsible-tab` qui saccadait sur
-  Android en release) : le repli est **natif** (UIKit / ViewPager2), en-tête et liste bougent dans la même frame.
-  Une liste virtualisée par onglet : `TabList`, `TabSectionList`, `TabScrollView` (obligatoires : elles décalent le
-  contenu sous l'en-tête). Reanimated ne lit que les événements natifs (`onScrollOffsetChange`, `onPageScroll`, via
-  `useEvent`) pour la parallaxe, le fondu du titre et l'indicateur ; la barre compacte est posée **par-dessus** le
-  conteneur (`headerMinHeight` = sa hauteur) et ne fait que s'opacifier — ne jamais lui faire compenser une
-  translation. Mouvement repris du Parallax Header de Reacticx (zoom ×2,5 au tiré, parallaxe à mi-vitesse) :
-  `heroImageTransform`, `heroTitleOpacity`, `compactBarProgress` (`parallax-screen.tsx`), spec `fiche-sujet.md`
-  § 1. Android (2026-11-07) : zoom au tiré via événement natif `onHeaderOffsetChange.pull` (patch de la lib, avant interception par le refresh) ; page simple via gestes simultanés. Nouveau dev build requis. Le correctif de typage RN 0.88 de la lib vit dans `patches/` (`patch-package`, en `postinstall`).
-  `ParallaxScreen` reste pour les écrans à image sans onglets. **`TabsScrollView`** : même moteur sans image (Accueil :
-  en-tête qui se replie, `Segmented` collé, pages balayables en `TabScrollView`/`TabList`).
-- **Reanimated** : `ANDROID_SYNCHRONOUSLY_UPDATE_UI_PROPS` et `IOS_SYNCHRONOUSLY_UPDATE_UI_PROPS` activés
-  (`package.json` → `reanimated.staticFeatureFlags`, effet au rebuild natif) ; animer `transform`/`opacity`, jamais
-  `width`/`height` à chaque frame (l'indicateur de `Segmented` étire son centre en `scaleX`).
-- `@react-native-menu/menu` est incompatible avec RN 0.88 (`RCTBridge.h`) : ne pas y revenir.
-- **Reacticx** (`npx reacticx add <nom> -d src/design-system/vendor/reacticx`) : composants copiés tels quels dans
-  `src/design-system/vendor/` (hors Prettier, pour `reacticx diff`), enveloppés par un composant du design system
-  aux tokens. `PremiumBadge` (`verified-shine`) à droite du pseudonyme des joueurs Premium ; typage de
-  `@react-native-masked-view/masked-view` corrigé dans `patches/`.
-- Identifiant **`com.joutio.app`** (iOS et Android), celui des stores.
-- Feuilles : **TrueSheet** (`@lodev09/react-native-true-sheet`), natives sur les deux OS.
-- **Dev build** (`expo-dev-client`) dès le départ, pas d'Expo Go.
-- Pas de cible web (D14).
-
----
-
-## 2. Stack et structure
-
-Expo SDK 58, React Native 0.88 (New Architecture), expo-router, Reanimated 4, Gesture Handler 3, TrueSheet,
-expo-image, expo-blur, Phosphor, Geist (`@expo-google-fonts`), Zustand, React Query, React Hook Form + Zod,
-expo-secure-store, expo-notifications.
+## Structure
 
 ```
 src/
-  app/                      # routes expo-router (couche mince)
-    _layout.tsx             # polices, thème, React Query, session, navigation protégée, ToastHost
-    (auth)/                 # login (ou session coupée), code
-    (onboarding)/           # universes, notifications, first-topic
-    (app)/                  # écrans du joueur connecté et onboardé
-    (dev)/catalog/          # catalogue des composants (administrateur)
-    (dev)/tabs/             # aperçu Tabs + JoTabBar (administrateur)
-  design-system/            # traduction native du lab, sans import de app/ ni dev/
-    tokens.generated.ts     # copie de design/tokens/tokens.native.ts — ne pas modifier
-    tokens.generated.json   # même contenu, pour app.config.ts
-    theme/                  # ThemeProvider, ThemeScope/ForceDark, store du réglage, polices, color-mix
-    primitives/             # Button, IconButton, Pill, Badge, Avatar, Skeleton, ListRow, Field…
-    mobile/                 # Screen, MobileTopBar, BottomNav/JoTabBar, StickyBar, MobileSheet, ToastHost…
-    brand/                  # RankFrame (+ actifs PNG)
-    motion.ts haptics.ts icons.ts a11y.ts
-  features/                 # auth (OTP, session), me, onboarding : composants, hooks, services, stores
-  lib/                      # infra : config, endpoints, auth (tokens, refresh), api-client, query-client
-  shared/                   # utilitaires partagés (types BFF : @joutio/client/api-types)
-  dev/                      # démos du catalogue
-assets/brand, assets/topics # repris du lab par npm run assets:sync
+  app/            routes expo-router (couche mince) : (auth), (onboarding), (app) [(tabs) + tâches ciblées], (dev), j|p|t/[id], join/[roomId]
+  design-system/  traduction native du lab (sans import de app/ ni dev/) : tokens.generated.*, theme/, primitives/,
+                  mobile/ (Screen, MobileTopBar, JoTabBar, MobileSheet, ToastHost…), brand/, result/, duel/, vendor/ (Reacticx)
+  features/<f>/   components/ hooks/ lib/ index.ts
+  lib/            config, endpoints, auth (jetons, refresh), api-client, query-client, query-keys, i18n, realtime, ws, optimistic-cache
+  shared/         navigation (router protégé), stores, hooks, avatar, utils
+  dev/            démos du catalogue (admin seulement)
+modules/          modules Expo locaux (bottom-load)   patches/  patch-package (réappliqués au postinstall)
 ```
 
-Tout s'importe depuis `@/design-system`. Chaîne de données : **écran → hook React Query → service → `api`**
-(`best-practices/.frontend/`). Navigation : `Stack.Protected` dans le layout racine bascule entre `(auth)`,
-`(onboarding)` et `(app)` selon la session et `me.onboardingCompleted` ; aucun écran ne redirige lui-même.
+- Tout s'importe depuis `@/design-system`.
+- La navigation est protégée dans le layout racine : `Stack.Protected` bascule entre `(auth)`,
+  `(onboarding)` et `(app)` selon la session et `me.onboardingCompleted`. Aucun écran ne
+  redirige lui-même.
+- L'étape « date de naissance » passe en premier si `MeView.birthDateRequired`.
 
-Auth : surface native de `joutio-identity` (`/api/auth/mobile/request-login-code`, `login-with-code`, `logout`),
-tokens dans SecureStore, refresh OIDC `/oauth2/token` partagé entre appels concurrents ; un échec transitoire ne
-purge jamais la session, un refus définitif ou `403 accountSuspended` l'affiche en plein écran.
+## Règles
 
----
+- **Textes** : aucun texte en dur. `useT()` / `t()` de `src/lib/i18n` (dictionnaire
+  `@joutio/client/i18n`), appelés au moment de l'affichage (une liste de module devient une
+  fonction).
+  - Clés propres au mobile : `mobile.*` ; primitives : `ds.*`.
+  - Langue de l'appareil avant connexion, puis `MeView.language`. Nombres et dates :
+    `formatNumber`, `formatDate`.
+  - Les tests node simulent `@/lib/i18n` (`tests/i18n-mock.cjs`).
+- **Design** : aucune valeur en dur (`useTheme()`, `tokens`). `mix()` et `alpha()` remplacent
+  `color-mix` et les opacités du lab.
+  - Toujours `Text` avec une `variant`. Une face Geist par graisse : Android ignore `fontWeight`
+    sur une police personnalisée.
+  - Icônes importées une à une dans `design-system/icons.ts` : le paquet entier charge 3 000
+    modules.
+- **Hybride natif** : chrome et contrôles standards natifs, teintés par les jetons :
+  - en-têtes `native-stack` (`nativeHeaderOptions`), `Switch`, `Segmented` (sauf `scrollable` ou
+    lié à un pager) ;
+  - feuilles TrueSheet natives ;
+  - `Menu` et `Dialog` restent ceux du lab, identiques sur les deux OS. `Dialog` est rendu sur
+    `TrueSheetOverlay`, donc utilisable depuis une feuille ;
+  - `MobileTopBar` seulement sans en-tête natif : 52 pt sur iOS, 64 dp sur Android.
+- **Mouvement** : `animateTo()` (jetons `micro`, `base`, `exit`, `sheet`). Sous mouvement réduit,
+  la valeur saute à sa cible et `onComplete` est toujours appelé.
+  - Animer `transform` et `opacity` par Reanimated, jamais un `setState` par frame, jamais
+    `width`/`height` image par image.
+  - Séquences du lab : `useTimeline` + `keyframe()`.
+- **Accessibilité** : cible 44 pt (`slopFor`), focus géré par `useModalFocus`, action nommée
+  avec son contexte, état jamais porté par la seule couleur.
+- Écrans toujours sombres (duel, intros, déblocages) : `ForceDark`. Toasts suspendus pendant le
+  duel (`useToastSuppression`).
+- **Navigation** :
+  - **Barre d'onglets** : `NativeTabs` sur iOS (`UITabBarController`), `JoTabBar` sur Android.
+    `JoTabBar` ne se démonte jamais.
+  - La barre reste sur toute la consultation (piles `(tabs)/*`) ; les **tâches ciblées** et le plein
+    écran vivent dans `(app)` et la recouvrent : duel, matchmaking, salon, résultat, éditeurs,
+    atelier, suppression de compte.
+  - Tout contenu défilant finit par `useTabBarInset()` (déjà compté par `Screen`, `ParallaxScreen`,
+    `CollapsibleTabsScreen`).
+  - Toujours `router` de `@/shared/navigation/router`, jamais d'`expo-router` : il ignore un
+    double appui vers la même destination en moins de 700 ms.
+- **Écran poussé** :
+  - il s'ouvre immédiatement ;
+  - ce qui est déjà connu passe en paramètre ;
+  - le contenu lourd attend la fin de l'entrée (`useTransitionDone`) ;
+  - des squelettes tiennent la place.
+- **Bande du haut** : choisie par le layout `(app)` (`TopBannerProvider`), rendue par chaque écran
+  (`TopBannerFrame`). Zone sûre par `useScreenTopInset()`, jamais `insets.top` dans `(app)`.
+- **Feuilles** (`MobileSheet`) :
+  - hauteur au contenu jusqu'à 80 % (`tall` : 92 %) ;
+  - actions dans le `footer`, collé en bas et au-dessus du clavier ;
+  - une étape suivante ouvre une nouvelle feuille ;
+  - une liste paginée en feuille garde le défilement comme **enfant direct**. Pas de liste
+    virtualisée en feuille : FlashList y est mesurée à 0 de haut.
+- **Listes** :
+  - toute liste non bornée finit par `FeedFooter` ;
+  - le chargement de la suite passe par `DragToLoadMore` (module natif `modules/bottom-load`) ;
+  - un rail horizontal possède le geste dès le toucher ; ne jamais désactiver le pager par un état
+    React en cours de geste ;
+  - pager horizontal : `@expo/ui/community/pager-view`.
+- **Pull-to-refresh** : `haptic('light')` **une seule fois**, après le verrou anti-doublon, par
+  `useGuardedRefresh` (déjà intégré à `Screen`, `ParallaxScreen`, `CollapsibleTabsScreen`,
+  `useRefreshActive`). Interdits : un verrou ou un `setRefreshing` maison. `DragToLoadMore` vibre
+  aussi une fois par chargement accepté.
+- **Clavier** :
+  - `Screen` défile dans un `KeyboardAwareScrollView` ;
+  - formulaires à plusieurs champs : `FieldToolbar` et `returnKeyType="next"` ;
+  - le champ entier remonte au-dessus du clavier (`field-reveal`).
+- **Mutations** : optimistes, sans relecture ([règle](../../docs/frontend/donnees-et-etat.md#mutations--optimistes-sans-relecture)).
+  `lib/optimistic-cache.ts` ; les clés viennent de `lib/query-keys.ts`. Les événements d'un autre
+  joueur relisent les vues concernées par une table unique
+  (`features/realtime/realtime-invalidation.tsx`).
+- **Temps réel** : STOMP unique (`lib/ws.ts`), coupé de force en arrière-plan. Pour le reste :
+  [architecture](../../docs/frontend/architecture.md#temps-réel).
+- **Avatars** : DiceBear, avec les options **du joueur affiché** (`userAvatar(user)`,
+  `usePlayerAvatar(userId)`, `useMyAvatar()`). Badge Premium après chaque pseudonyme
+  (`PlayerName`).
+- Réglages de l'appareil (vibrations, sons, détails du duel) : `useDeviceSettings`. Une seule
+  feuille Premium : `usePremiumSheet().show()`.
+- Le catalogue des composants est accessible depuis Réglages › Dev, pour un **admin** connecté
+  seulement (`EXPO_PUBLIC_CATALOG`).
 
-## 3. Commandes
+## Configuration
 
-Guide pas à pas (prérequis macOS, simulateur iOS, émulateur Android, builds locaux, dépannage) : [`README.md`](README.md).
+- Sans `.env.local`, l'app cible la **production** (`api.joutio.com`, `identity.joutio.com`). Les
+  `EXPO_PUBLIC_*` sont figées dans le bundle : `npx expo start -c` après un changement.
+- `ios/` et `android/` sont générés (CNG) : configurer `app.config.ts` et les plugins.
+- **Connexion sociale** : [`docs/social-login.md`](docs/social-login.md). **Push Expo** :
+  [`docs/push-notifications.md`](docs/push-notifications.md).
+- Liens universels `go.joutio.com` : `associatedDomains` et `intentFilters` dans `app.config.ts`.
+- `@joutio/client` : `.npmrc` du projet et un jeton `read:packages` dans `~/.npmrc`
+  (`make bootstrap`).
+
+## Commandes
 
 ```bash
 npm install
-npm run ios             # expo run:ios (dev build, simulateur ou appareil)
-npm run android         # expo run:android
-npm start               # Metro pour un dev build déjà installé
-npm run typecheck       # tsc --noEmit
-npm run doctor          # expo-doctor
-npm run tokens:sync     # recopie design/tokens/tokens.native.ts (après « npm run tokens » dans design/)
-npm run tokens:check    # échoue si la copie diffère du lab
-npm run assets:sync     # reprend design/public : logo et carte en SVG, cadres/médailles/rubans en PNG
-npm run format          # prettier (src, scripts)
+npm run ios | npm run android      # dev build (simulateur, émulateur ou appareil)
+npm run android:dev                # Android signé joutio-preview (Google et Facebook actifs), voir README
+npm start                          # Metro pour un dev build déjà installé
+npm run typecheck && npm run doctor
+npm run test:mutations test:refresh test:refresh-haptic test:push test:search-header test:api-client test:headers
+npm run tokens:sync | tokens:check | assets:sync   # après « npm run tokens » dans design/
+npm run format
 ```
 
-Sans `.env.local`, l'app cible la **production** (`api.joutio.com`, `identity.joutio.com`) ; modèle commenté dans
-`.env`. Les `EXPO_PUBLIC_*` sont figées dans le bundle : relancer `npx expo start -c` après un changement.
+Guide d'installation (macOS, Linux, émulateurs, appareil USB ou Wi-Fi) : [`README.md`](README.md).
 
-`ios/` et `android/` sont générés (CNG) et ignorés par git : configurer dans `app.config.ts` et les plugins.
+## Release
 
-### Android en local (Linux)
+- `.github/workflows/release.yml` à chaque push sur `main` (hors `*.md`) :
+  1. typecheck et tests push ;
+  2. semantic-release (action partagée, profil `npm`) ;
+  3. `expo prebuild` ;
+  4. APK release arm64 signé `joutio-preview` (secrets `ANDROID_KEYSTORE_*`), attaché à `vX.Y.Z`.
+- `versionCode = 10 000 000 + major·10⁶ + minor·10³ + patch`. Ne jamais changer la version à la
+  main.
+- **Commits sans ligne de co-auteur** dans ce dépôt.
 
-Pour itérer sans passer par l'APK de la CI : un dev build installé une fois, puis Metro en Fast Refresh.
+## Pièges
 
-- **Prérequis** : SDK dans `~/Android/Sdk` (command-line tools, `platform-tools`, `emulator`, `platforms;android-37.0`,
-  `build-tools;37.0.0`, `ndk;27.1.12297006`, `cmake;3.22.1` — versions de
-  `node_modules/react-native/gradle/libs.versions.toml`), un **JDK complet** avec `javac` (17, 21 ou 25 — vérifié
-  avec le 25 ; un paquet `*-jre-headless` échoue sur les toolchains Gradle ; la CI prend Temurin 17). Dans le shell :
-  `ANDROID_HOME=$HOME/Android/Sdk`, `JAVA_HOME` sur ce JDK, `PATH` +=
-  `platform-tools`, `emulator`, `cmdline-tools/latest/bin` (le script les pose s'ils manquent).
-- **Émulateur** : AVD `joutio-pixel` (Pixel 8, `system-images;android-36;google_apis_playstore;x86_64` — Play
-  Services pour Google Sign-In, KVM) : `emulator -avd joutio-pixel`.
-- **Téléphone** : débogage USB activé ; règles udev via `sudo apt install android-sdk-platform-tools-common` (groupe
-  `plugdev`). En Wi-Fi : « Débogage sans fil » → `adb pair IP:PORT` puis `adb connect IP:PORT`. Metro passe par
-  `adb reverse` : aucune IP LAN à configurer.
-- **`npm run android:dev`** (`scripts/android-dev.sh`, arguments transmis à `expo run:android`, ex. `--device`) :
-  charge `~/Homeware/joutio-secrets/android-keystore.env` (surchargeable par `JOUTIO_ANDROID_KEYSTORE_ENV`) et signe
-  le build **debug** avec la clé **joutio-preview** (`plugins/withAndroidReleaseSigning.js`) : mêmes SHA-1 / key hash
-  que la release, donc Google et Facebook fonctionnent, et le dev build remplace l'APK de la CI sans désinstaller.
-  Sans le fichier, signature debug standard (OTP seulement). Un `android/` généré sans la clé est regénéré.
-- Ensuite `npm start` suffit tant qu'aucun module natif, plugin ou `app.config.ts` ne change ; sinon relancer
-  `npm run android:dev` (après `npx expo prebuild --platform android --clean` si un plugin a changé).
-
-**Release (GitHub Actions)** : dépôt public `joutio/joutio-mobile`, workflow `.github/workflows/release.yml`,
-calqué sur les services : chaque push sur `main` (hors `*.md`) passe le typecheck puis **semantic-release**
-(action partagée `joutio-reusable-workflows/actions/semantic-release`, profil `npm`). Les **commits conventionnels**
-fixent la version : `feat` → mineure, `fix`/`perf` → correctif, `!` ou `BREAKING CHANGE` → majeure ; `docs`, `chore`,
-`style`, `ci`, `test` ne publient rien. Une version publiée met à jour `package.json`, `package-lock.json` et
-`CHANGELOG.md` (commit `chore(release): X.Y.Z [skip ci]`), crée le tag `vX.Y.Z` et la release GitHub, puis y joint
-l'APK release arm64 (API de production, clé `joutio-preview` : secrets `ANDROID_KEYSTORE_*`, plugin
-`plugins/withAndroidReleaseSigning.js`), nommée `joutio-X.Y.Z.apk`. **Ne jamais changer la version à la main.**
-Jeton : `JOUTIO_GITHUB_TOKEN` s'il existe, sinon le `GITHUB_TOKEN` du workflow (`main` non protégée). Le `versionCode`
-vaut 10 000 000 + `major * 1e6 + minor * 1e3 + patch` (`app.config.ts`), au-dessus de l’ancienne app (1.1.2) : l'APK
-s'installe par-dessus. Le catalogue est réservé aux admins dans Réglages › Dev si `EXPO_PUBLIC_CATALOG` n'est pas `false`. Commits
-sans ligne de co-auteur.
-
----
-
-## 4. Règles
-
-- **Langue (2026-11-15, ADR [`0002`](../../design/specs/decisions/0002-client-i18n.md))** : aucun texte visible en
-  dur. Les textes viennent de `@joutio/client/i18n` (dictionnaire FR/EN partagé avec le web) via `src/lib/i18n` :
-  `useT()` dans un composant ou un hook, `t()` hors React, appelé **au moment de l'affichage** (une liste de module
-  devient une fonction : `TABS()`). Clés propres au mobile en `mobile.*`, primitives en `ds.*`, rangs et univers par
-  `tierKey()` / `categoryKey()` (jamais `tokens.*.label`). Langue de l'appareil avant connexion
-  (`expo-localization`), puis `MeView.language` (`useLanguageSync`). Nombres et dates : `formatNumber`, `formatDate`
-  et `currentLanguage()`, jamais `'fr-FR'`. Les tests node simulent `@/lib/i18n` avec `tests/i18n-mock.cjs`.
-- **Aucune valeur de design en dur** : couleurs, typographie, espace, rayons et motion viennent des tokens
-  générés (`useTheme()`, `tokens`). Les mesures propres à un composant (hauteur 48 du Button L, 52 de la barre)
-  reprennent celles du lab.
-- `color-mix(in oklab, …)` et les opacités Tailwind du lab passent par `mix()` et `alpha()` (`theme/color.ts`).
-- **Typographie** : toujours `Text` (`variant` = token). Une face Geist par graisse (`fontFace`) : Android ne
-  choisit pas la graisse d'une police personnalisée avec `fontWeight`.
-- **Icônes** : importées une à une dans `design-system/icons.ts` (le paquet entier charge 3 000 modules).
-  `regular` au repos, `fill` à l'actif. Une icône nouvelle s'ajoute à ce fichier.
-- **Mouvement** : `animateTo()` (tokens `micro`, `base`, `exit`, `sheet` en ressort…) ; sous mouvement réduit la
-  valeur saute à sa cible et `onComplete` est **toujours** appelé. Boucles : `loop()`, rien sous mouvement réduit.
-- **Accessibilité** (kit § 6) : cible 44 pt (`hitSlop` via `slopFor`), focus pris et rendu par `useModalFocus`
-  (Dialog, MobileSheet ; `returnFocusTo`), action nommée avec son contexte, état jamais porté par la seule
-  couleur (Avatar annonce rang, présence, verrouillage).
-- **Écrans toujours sombres** (duel, intros, déblocages, reconnexion) : `ForceDark`. Toasts suspendus avec
-  `useToastSuppression()`.
-- **Feuilles** : `MobileSheet` (TrueSheet), ajustée au contenu jusqu'à 80 % ou `tall` à 92 %. Les actions (`footer`)
-  sont **collées en bas** dans leur propre zone (pied `absolute` depuis le 2026-11-06 : il remonte au-dessus du clavier,
-  le défilement réserve sa hauteur), comme l'en-tête : le contenu défile entre les deux,
-  jamais sous le bouton ; le conteneur natif du pied porte le fond `surface` (`footerStyle`), safe area basse Android comprise (2026-11-07). Android : `dismissThreshold="short"`. Une étape
-  suivante s'empile dans une nouvelle feuille. Recherche d'une liste en feuille : `stickyHeader` (collée en haut).
-  **Liste paginée en feuille** (`loadMore`) : le défilement reste l'**enfant direct** de la feuille (`DragToLoadMore`
-  `overlay`, loader en surimpression, traction portée par le défilement). Dans une enveloppe, le `ScrollView` est
-  mesuré à **0 de haut** et la feuille paraît vide (2026-11-07 : « Choisis un sujet », « Qui veux-tu défier ? »).
-  **Pages verticales fixes** (2026-11-05, résultat → Détails du duel) : `ResultPages` (Gesture Handler + Reanimated,
-  2026-11-12 — le `ScrollView` aimanté d'Android basculait presque instantanément), hauteur de page mesurée par
-  `onLayout`, pas de feuille persistante ; bascule décidée au relâcher **sans résistance** (2026-11-10 : tout glissement
-  non nul bascule, seuil 0, sans condition de vitesse), animée 450 ms amortie comme un carrousel ; affordance miroir en
-  haut de la page 2. Pager **horizontal** : `@expo/ui/community/pager-view`
-  (natif, SwiftUI / Compose), jamais un `ScrollView` piloté par `contentOffset` ; onglets et points suivent la page
-  **pendant** le glissé (`onPageScroll`, arrondi de `position + offset`), pas seulement à l'arrêt.
-- **Clavier** (2026-11-07) : `Screen` défile dans un `KeyboardAwareScrollView` (keyboard-controller, `bottomOffset` 24,
-  `keyboardShouldPersistTaps="handled"`) sauf en-tête natif ou liste paginée ; formulaire à plusieurs champs :
-  `FieldToolbar` (‹ › OK de keyboard-controller, `bottomOffset` + `FIELD_TOOLBAR_HEIGHT`) et « Suivant » du clavier
-  (`returnKeyType="next"`, `focusNextField`) sur les champs d'une ligne, éditeur de question (2026-11-16) ; feuilles : `keyboardScrollOffset` et pied
-  qui remonte avec `keyboardOffset` ; chat : `KeyboardAvoidingView` de keyboard-controller ; Android
-  `softwareKeyboardLayoutMode: 'resize'` (**nouveau dev build**).
-- **Défilement collé** : `StickyBar` + `stickyHeaderIndices` et `useStickyBar()` ; sous une barre compacte
-  (`ParallaxScreen`), collage par Reanimated.
-- **Rails horizontaux** (2026-11-05) : sur un écran à onglets, un rail (`Rail`, puces) **possède le geste horizontal
-  dès le toucher** — le pager natif et le refresh lui cèdent la main, y compris sur un swipe incliné ou en bout de
-  liste (patch `react-native-collapsible-tabs-native` : direction opposée essayée avant le pager). `DragToLoadMore`
-  lit le même contexte (`useHorizontalGesture`) et échoue immédiatement s'il voit un rail propriétaire. Ne pas
-  revenir à un `swipeEnabled` piloté par un état React : un changement de prop en cours de geste peut figer le
-  pager à mi-page. **Touches perdues après une inertie** (2026-11-07, rail Top 10 de l'Accueil) :
-  `patches/react-native+0.88.1.patch` borne à 1 s l'inertie retenue par `ScrollView._isAnimating()`. Sans lui, une
-  inertie commencée sans `onMomentumScrollEnd` (un défilement arrêté au toucher, iOS) laissait le `ScrollView`
-  « animé » pour de bon : `_handleStartShouldSetResponderCapture` capturait alors **chaque** toucher et les cartes
-  ne recevaient plus le clic. Le chiffre du rang porte `pointerEvents="none"`. Le patch est réappliqué au
-  `postinstall` : le revérifier (contexte du hunk et `MOMENTUM_SCROLL_MAX_DURATION_MS`) à chaque montée de version
-  de React Native.
-- **Listes** : toute liste non bornée finit par `FeedFooter`. `DragToLoadMore` coordonne le module Expo local `modules/bottom-load` : geste et indicateur natifs, aucun ressort ni loader dessiné en React, aucune avance automatique après chargement (2026-11-07). Même API pour `Screen`, `MobileSheet`, `LoadMoreScrollView` (aussi `renderScrollComponent` de FlashList), `TabLoadMoreScrollView` et pagination locale. Le scroll reste directement sous TrueSheet. Les adaptateurs renvoient la promesse de chargement ; `resetKey` invalide un ancien cycle au changement de source. Une seule requête à la fois ; fermeture visuelle à 12 s ; pied touchable accessible, erreurs conservant les données. Android observe le toucher à la fenêtre avant interception RN/TrueSheet, puis ne prend la main qu’au bas vers le haut. iOS utilise le pan et le rebond UIScrollView sans remplacer son delegate. Nouveau dev build requis ; démo `native-load-more`. `RefreshControl` s’importe de React Native avec ce scroll. `FeedFooter` exige `pages` et n’annonce la fin qu’après une page tirée en plus.
-  Revenir en haut : onglet actif (`useScrollToTop`, émis par `JoTabBar`), barre d'état iOS (`scrollsToTop={false}`
-  sur tout défilement horizontal ; pages cachées via `withActivePageScrollsToTop`) et `ScrollToTopPill` (intégrée à
-  `TabsScrollView`, posée à la main sur une liste longue).
-- **Temps réel** (2026-11-05) : une connexion STOMP unique (`lib/ws.ts`, heartbeat 10 s, jeton renouvelé avant
-  chaque `CONNECT`, fermée en arrière-plan). Chaque agrégat (salle, ticket, partie) est un `NotificationStream`
-  (`lib/realtime/`) : **historique REST à l'ouverture, puis uniquement STOMP** ; l'historique n'est rejoué qu'à la
-  reconnexion ou sur un trou de séquence, jamais en polling. Heartbeat manqué ou socket fermé →
-  `useConnectionStore().status === 'reconnecting'` → la bannière de connexion (plus de plein écran de reconnexion, 2026-11-14), reprise seule. L'horloge serveur
-  (`useServerClock`) est mesurée à l'ouverture et au premier plan, puis ré-ancrée sur chaque trame. Seule exception :
-  la récompense d'une partie terminée (`GET /api/games/{id}/result`) est relue toutes les 1,5 s tant qu'elle est
-  absente (aucun canal STOMP ne la porte).
-  **Flux personnel** (`/topic/notifications/{userId}`, 2026-11-12) : sans historique rejouable, il perd ce qui arrive
-  pendant une coupure (arrière-plan, réseau). `usePersonalNotifications(userId, handler, onResync)` rappelle `onResync`
-  à chaque **re**connexion : la boîte, les défis et les salons sont alors relus. Un clic sur un push relit aussi ces
-  vues avant d'ouvrir l'écran (le push est arrivé flux fermé) ; ce sont des événements d'un autre joueur, pas la
-  confirmation d'une mutation.
-- **Séquences d'animation** du lab (`@keyframes`) : `useTimeline` + `keyframe()` (`design-system/timeline.ts`), une
-  progression linéaire démarrable en plein milieu (`elapsedMs`, le serveur peut être en avance).
-- **Ouverture d'un écran** (2026-11-05) : un écran poussé s'ouvre **tout de suite**, sans jamais attendre une requête
-  ni conditionner la navigation à une réponse. Ce qui est connu passe par les paramètres de navigation (titre, image) ;
-  le contenu lourd attend la fin de l'animation d'entrée (`useTransitionDone`, déjà intégré à `CollapsibleTabsScreen`
-  et `ParallaxScreen`) ; les données arrivent dans la page, des squelettes à leur place. Une mutation met à jour le
-  cache sur place plutôt que d'invalider des listes entières (sinon le retour sur l'écran précédent attend un
-  rechargement).
-- **Avatars** (2026-11-05, généralisés le 2026-11-06) : DiceBear (`shared/utils/avatar.ts`, options compactes partagées
-  avec le web, graine = `userId`) rendu en SVG ; `Avatar` accepte un SVG en ligne dans `src`. **Toujours les options du
-  joueur affiché** : `userAvatar(user)` sur toute vue qui porte `avatarOptions` (`UserRefView`, `LeaderboardEntryView`,
-  `PlayerCardView`…), `usePlayerAvatar(userId)` quand seul l'identifiant est connu (duel, revanche : profil lu une
-  fois, en cache), `useMyAvatar()` pour le joueur connecté. Initiales seulement pour un bot ou une donnée mockée.
-- **Réglages de l'appareil** : `useDeviceSettings` (design system, AsyncStorage) — vibrations (lues par `haptic()`),
-  sons, détails des réponses du duel, catégories de notification sans équivalent BFF.
-- **Premium** : une seule feuille (`PremiumHost`), ouverte par `usePremiumSheet().show()`.
-- **Glass** : flou natif sur iOS ; teinte seule sur Android (le flou y exige `BlurTargetView`).
-- 1 composant = 1 fichier, export nommé, props en `interface`, jamais `any`. Jamais « Toi » comme nom de joueur.
-
----
-
-## 5. Expo — ne pas se fier à sa mémoire
-
-Expo change à chaque SDK. Avant de toucher une API Expo, EAS ou React Native : lire la version d'`expo` dans
-`package.json`, puis la doc versionnée (`https://docs.expo.dev/versions/v58.0.0/`) ou
-`https://docs.expo.dev/llms.txt`.
-
-- `npx expo install <paquet>` plutôt que `npm install` (versions compatibles avec le SDK).
-- Lancer `npm run typecheck` et `npm run doctor` avant de déclarer une tâche terminée.
-- Une bibliothèque native ajoutée exige un nouveau dev build (`npm run ios|android`).
-
-### Recherche Social / Sujets (2026-11-07)
-
-- `SearchHeader` compose les composants du lab déjà portés dans le design system : `MobileTopBar`, `SearchField` (TextInput natif React Native), `Button` Annuler, `IconButton` et icônes Joutio. Aucun module Swift/Kotlin dédié.
-- Au focus : repli du titre et de ses actions, remontée du même champ, disparition du filtre et apparition d’Annuler à droite. Les onglets restent accessibles ; les filtres appliqués sont conservés.
-- Annuler vide le texte, ferme le clavier et restaure le titre et le filtre ; masquer le clavier ou valider garde la recherche. Android : premier Retour ferme le clavier, suivant annule. Quitter la page désactive la recherche et conserve son texte.
-- Reanimated : transitions de layout synchronisées (250 ms), fondus/déplacements via transform/opacity ; mouvement réduit respecté. Pas de hauteur/largeur pilotée manuellement par frame. Safe area portée par `Screen`.
-- **Correction de focus (2026-11-08)** : `keyboardDidHide` ne ferme la recherche que si le clavier a été montré pour le focus courant ; un événement tardif du focus précédent est ignoré. Le `blur` restaure l’en-tête après vérification du focus natif à la frame suivante, sans annuler une reprise de focus. `npm run test:search-header` couvre ces courses, Annuler, sortie de page et Retour Android. Validation visuelle iOS à reprendre sur Sujets et Social.
-- `SearchField` expose `onFocus`, `onBlur`, `inputRef` et `cancelVisible` pour cet usage ; comportement par défaut préservé ailleurs. Catalogue : `search-header`.
-
-### Mutations et cohérence du cache (2026-11-07, règle produit)
-
-- Toute mutation de données visibles est **optimiste** : appliquer le changement dans `onMutate` à toutes les vues concernées (détail, listes, rails, compteurs et badges), annuler les lectures déjà en vol, puis envoyer la commande.
-- Le bouton porte `loading={mutation.isPending}` jusqu’à la réponse, et ne permet pas de soumission répétée. Si une ligne disparaît optimistement, son action disparaît avec elle ; les actions globales restent en chargement. Les contrôles sans bouton (switch/segmented) restent désactivés pendant leur commande.
-- Succès HTTP = commande validée par Axon : conserver le cache optimiste. **Aucun `invalidateQueries`, `refetch` ni GET de confirmation après succès ou settlement d’une mutation**. La projection suit ; ne pas la relire pour confirmer une écriture. Un ID ou DTO renvoyé par la commande peut remplacer la valeur provisoire sur place.
-- Échec : restaurer les changements de cette mutation, préserver les autres modifications en cours et afficher une erreur. En lot, restaurer seulement les commandes refusées. `lib/optimistic-cache.ts` fournit une transaction et une restauration ciblée.
-- Les lectures initiales d’un nouvel écran, le rafraîchissement explicitement demandé et les événements d’un autre joueur restent autorisés. Authentification, envoi OTP, upload et identifiants serveur nécessitent leur réponse avant navigation/utilisation : ne jamais inventer de jeton ou d’URL serveur. Les données calculées (récompense d’un duel) restent autoritaires et suivent leurs flux existants.
-- Régressions à vérifier : changement immédiat avant la réponse, loading pendant une réponse retardée, absence de GET post-commande, rollback en erreur et en lot partiel, cohérence des compteurs/listes, retour de navigation et relecture d’une projection ancienne.
-
-- Cloches : utiliser `features/notifications/components/NotificationButton` dans les en-têtes (primitif `NotificationBell` du design system). Afficher le **nombre** non lu, jamais une simple pastille ; le cache du compteur est partagé entre tous les écrans et mis à jour optimistement avec l’inbox.
-- Social : pas de loupe globale en en-tête. Recherche de contacts vide → bouton « Rechercher globalement », avec `q` repris dans la recherche globale. Onglets sans chiffres ; total de la liste active et puce du tri courant dans une rangée sous les onglets, comme Sujets.
-- Pager / refresh Android : le patch `react-native-collapsible-tabs-native` arbitre la direction dès `dispatchTouchEvent`, avant `SwipeRefreshLayout`. Le refresh attend une direction verticale ; un geste horizontal reste horizontal jusqu’au relâchement, y compris sur une page vide. Ce correctif partagé couvre Social, Accueil, Profil, fiche sujet, modération et avatar. Ne pas désactiver le pager par un état React en cours de geste.
-
-- **Tab bar par plateforme (2026-11-12)** : **iOS** = tab bar **native** (`NativeTabs` d'`expo-router/native-tabs`,
-  `UITabBarController`, Liquid Glass, SF Symbols, badge Défis natif) ; chaque onglet a son `SafeAreaProvider` dont la
-  marge basse compte la barre, et la première liste de l'écran s'y ajuste seule (le contenu passe sous la barre).
-  **Android** = `JoTabBar` de Joutio (`Tabs` d'`expo-router/js-tabs`). Le réglage d'apparence de l'app est propagé au
-  natif (`Appearance.setColorScheme` dans `ThemeProvider`) : sinon la barre native suit le système.
-  **Fin de liste** : la barre native flotte sur le contenu et les listes de l'app (FlashList, `TabList`, défilement
-  à chargement natif) ne reçoivent pas l'ajustement automatique d'iOS ; tout contenu défilant finit par
-  `useTabBarInset()` (zone sûre de l'onglet sur iOS, 0 sur Android). Déjà compté par `Screen`, `ParallaxScreen`,
-  `CollapsibleTabsScreen` et les listes de page d'onglets (`withActivePageScrollsToTop`) ; à ajouter à la main sur
-  une liste posée directement : `{...tabBarScrollInsets(tabInset)}` (`contentInset` iOS, connu du natif : le loader
-  de `DragToLoadMore` et l'indicateur restent au-dessus de la barre). Les pages d'onglets repliables gardent un padding
-  (la bibliothèque gère leur inset bas) ; le loader natif s'y place au-dessus de la zone sûre (`modules/bottom-load`,
-  **nouveau dev build requis**).
-- **Bottom bar (règle, 2026-11-10, standard iOS HIG — remplace « barre sur les racines seules »)** : la barre reste
-  visible sur toute la navigation de consultation, poussée dans la pile de l'onglet (`(tabs)/*` : fiches sujet et
-  joueur, recherche, notifications, classements, historique, sujets joués, série, titres, Réglages).
-  Les tâches ciblées et le plein écran vivent dans la Stack `(app)` et glissent par-dessus : duel, matchmaking,
-  salon, résultat, chat, éditeurs, atelier, suppression de compte. **`JoTabBar` ne se démonte jamais** : la masquer
-  en renvoyant `null` agrandit la zone des scènes pendant la transition native (flash sur les bords, racine
-  re-mesurée, flou remonté). Pour masquer la barre, on place l'écran dans `(app)`. Les fonds react-navigation
-  suivent `colors.bg` (`ThemeProvider` d'expo-router dans `app/_layout.tsx`, `sceneStyle` des `Tabs`).
-- **Animations sans rendu React par frame** : une animation de plus de quelques frames passe par une valeur
-  Reanimated (`useAnimatedProps` / `useAnimatedStyle`, SVG compris), jamais par un `setState` dans
-  `requestAnimationFrame`. Exemple : `TopicsDonut` anime `strokeDashoffset` de chaque part et ne joue qu'une fois.
-  Le pager résultat ne change aucun état React pendant son `scrollTo`.
-
-- **Pull-to-refresh (règle, 2026-11-10)** : tout rafraîchissement par tiré déclenche `haptic('light')` **une seule fois**, après le verrou anti-doublon. Une seule implémentation : `useGuardedRefresh` (`design-system/mobile/guarded-refresh.ts`, verrou + haptic + `refreshing`), déjà intégrée à `Screen`, `ParallaxScreen`, `CollapsibleTabsScreen` (`usePageRefresh`) et `useRefreshActive`. Un écran qui pose un `RefreshControl` (listes) le nourrit avec ce hook ; interdit : verrou ou `setRefreshing` maison. Garde-fou : `npm run test:refresh-haptic` (à lancer avec `test:refresh`).
-
-- Charger la suite : `DragToLoadMore` déclenche `haptic('light')` **une seule fois** quand il accepte le chargement (traction ou pied touché), après le verrou anti-doublon. Le réglage appareil des vibrations est respecté ; aucun retour répété pendant le tiré ou une requête en cours.
-
-### Ajustements mobile et lab — 2026-11-08
-
-- Titres : ruban diagonal « Porté » en surimpression, largeur du titre préservée pendant les mutations ; jointures des bandeaux recouvertes d’un pixel physique. UnlockSequence : marge basse safe area + 24 pt.
-- JoutioTabs distinct de Segmented : rail 44 pt, cellules 36 pt, marges identiques ; deux libellés qui tiennent occupent chacun la moitié du rail, les listes plus longues gardent des largeurs adaptées et défilent en débordement.
-- Séparateurs : absents au repos et au refresh, apparition sur les 8 premiers points de scroll ; transfert sous les tabs dans les 8 derniers points de collage. Décors absolus sans changement de hauteur, hairline Android et iOS, comme la bordure de BottomNav. Exception parallaxe : aucun trait tant que le titre compact n’a pas terminé son fondu ; masquage immédiat au retour sous ce seuil.
-- Refresh système : SwipeRefreshLayout Android et UIRefreshControl iOS. Android doit recevoir ACTION_DOWN avant la décision de direction ; les gestes horizontaux restent réservés au pager. Les listes externes publient leur scroll via LoadMoreScrollView ; les conteneurs à onglets utilisent leurs événements natifs.
-- Lab aligné pour ces composants, les Toasts (icône/spinner 32 px, deux lignes au plus, pas d’action séparée) et l’en-tête fixe de Sujets. Cet alignement ne vaut pas audit complet de toutes les maquettes.
-- Vérifications : build Android installé sur joutio-pixel ; typage, tests de refresh/en-têtes/mutations/recherche/API et Expo Doctor validés. Lab construit et vérifié sous Chromium, Firefox et WebKit. iOS reste à compiler et valider sur macOS ; nouveau dev build natif requis.
-
-### Push Expo — 2026-11-08
-
-- Canal natif ajouté pour `CHALLENGE_RECEIVED` (dont revanches) et `WIZZ`, Android puis iOS.
-  Runtime racine : synchronisation du token à la connexion, au premier plan et à son renouvellement ;
-  demande de permission uniquement sur action explicite ; aucune bannière/son système au premier plan.
-- `EXPO_PUBLIC_EAS_PROJECT_ID` (ou `extra.eas.projectId`) et `GOOGLE_SERVICES_JSON` configurent le build.
-  Sans projet, aucune inscription distante. En CI : variable `EXPO_PUBLIC_EAS_PROJECT_ID`, secret
-  `GOOGLE_SERVICES_JSON_BASE64`. Nouveau build natif après configuration Firebase.
-- Réglages : état de permission système et accès aux réglages OS ; Revanches est persisté par installation
-  dans le BFF avec rollback en erreur. Rangs/badges reste local et sans livraison push.
-- Déconnexion : révocation bornée avant purge de session, sérialisation des inscriptions ; hors ligne,
-  révocation best-effort. Une réinscription réaffecte le token au nouveau compte.
-- Toucher un push attend l'auth/onboarding, vérifie le destinataire puis ouvre Défis ou Salon.
-  Une invitation expirée ou un salon indisponible renvoie vers Défis. Pas d'URL arbitraire dans le payload.
-- Tests : `npm run test:push`. Activation, identifiants, matrice appareil, limites et iOS :
-  [`docs/push-notifications.md`](docs/push-notifications.md). Livraison réelle non validée sans comptes configurés.
-
-## Remplacement du dépôt (2026-11-08)
-
-Décision utilisateur : supprimer l’ancien dépôt GitHub `joutio/joutio-mobile` et renommer `joutio/joutio-mobile-expo` en `joutio/joutio-mobile`. Le checkout devient `mobile-applications/joutio-mobile`. Le package npm et le slug Expo suivent ce nom ; `com.joutio.app`, le schéma `joutio`, la version et la clé de signature sont conservés. L’historique de la nouvelle app et les changements push en cours sont conservés. Les anciennes notes de configuration sont dans `docs/legacy-mobile.md`. Une sauvegarde locale de l’ancien dépôt est conservée dans `.run/mobile-replacement-2026-11-08/` à la racine du workspace.
-
-
-### Catalogue admin, toasts et navigation — 2026-11-08
-
-- Lancement normal vers connexion, onboarding ou Accueil. Accès au catalogue uniquement depuis Réglages › Dev,
-  conditionné au rôle admin, y compris en release. Le rôle est relu au login, à la restauration, au refresh et au logout.
-- Runtime des notifications monté dans `(app)` : inbox actualisée sur tous les écrans ; toast cliquable au premier
-  plan hors duel, sans doublon Expo/STOMP ni toast supplémentaire pour la modale de revanche. Pas de rattrapage
-  des toasts reçus pendant un duel ou en arrière-plan ; ils restent dans l’inbox.
-- Résolution commune inbox/toast/push : abonné ou défi refusé → joueur ; défi reçu → Défis ; acceptation ou wizz →
-  salle (jamais directement l’arène) ; signalement → modération, onglet Signalements ; sujet brouillon → édition.
-  Cible expirée/absente : explication et repli vers Défis ou inbox. Ouverture = marquage lu optimiste, sans lecture
-  de confirmation. La salle reste l’arbitre de son état et de la redirection vers le duel.
-- Le clic push attend le montage réel du parcours connecté après auth/onboarding, vérifie le compte et est
-  consommé une fois. Les champs optionnels `sourceId`/`gameId` absents sont normalisés à `null`. Un clic plus
-  récent remplace la réponse native initiale ; le logout invalide les réponses en attente.
-- Tests `npm run test:push` : contrat, destinations, expiration, comptes, démarrage, doublons, toasts et rôles.
-  Les tests JS simulent le bridge natif ; les ouvertures sur un APK CI doivent être validées sur appareil.
-
-### Atelier : tâches ciblées, file des signalements, rôles — 2026-11-10
-
-- **Sans barre d'onglets** (`navigation.md`, Tâches ciblées) : tout l'atelier vit sous `(app)/workshop/[id]/*`
-  (Mon sujet, Questions, Équipe, Modération, Signalements) ; les doublons `(tabs)/profile/topics/[id]/*` et
-  `useWorkshopNavigation` sont supprimés. Mes sujets vit dans l'onglet Création de l'Accueil (2026-11-13). Supprimer mon
-  compte passe en `(app)/delete-account`. Retour natif partout, sans `dismissTo` ni `usePreventRemove`.
-- **Signalements** : `(app)/workshop/[id]/reports/[questionId]` (`highlight`, `from=notifications`), file de tri sur
-  `GET /api/question-reports/topics/{id}` : question en plein écran (`QuestionBlock` du duel, Actuelle / Signalée),
-  pager natif entre les questions, signalements anonymes dans la `PersistentSheet` (2026-11-16 : feuille **native**
-  TrueSheet persistante, crans `peek`/58 %/94 %, sans voile ni fermeture ; TrueSheet s'efface quand l'écran est recouvert
-  ou quitté et revient avec lui, retour Android rendu à la navigation — remplace la `DetentSheet` maison),
-  historique en une ligne, Clore (confirmé) / Modifier. Une notification `QUESTION_REPORTED` résout la question
-  (`GET /api/question-reports/{id}`) et pousse cet écran par-dessus la boîte ; ligne anonyme « Question signalée ».
-- **Mes sujets › À traiter** (`GET /api/topics/contributed/todo`) : pastille `TopicRow.badge`, ouverture sur Mon sujet.
-- **Questions** : total et tri courant (puce) toujours visibles, feuille « Trier et filtrer », archivées hors « Tous ».
-- **Rôles** (`questionActions`, `workshopRole`) : section « Gérer » de l'éditeur (archiver et supprimer toujours
-  confirmés) ; Mon sujet : Publier / Supprimer le brouillon (créateur, `DELETE /api/topics/{id}`) / Repasser en
-  brouillon, chacun confirmé ; un rédacteur ne voit ni Sujet, ni Équipe, ni Modération.
-- Tests : matrice des rôles, tris et contenu signalé dans `@joutio/client` (`authoring.test.ts`) ; `test:push` (cible des signalements).
-
-### Atelier et reprise des défis — 2026-11-08
-
-- L'équipe n'est plus maquettée : service BFF, hooks React Query, ajout immédiat, rôles et Premium
-  individuels vérifiés serveur. Une vue unitaire d'atelier remplace la dépendance à « Mes sujets ».
-- La fiche sujet expose Modération près du partage pour toute l'équipe ; les rédacteurs voient
-  leurs propositions et motifs de rejet, les gestionnaires les validations et signalements.
-- Statuts de questions : `PENDING|APPROVED|REJECTED|SUSPENDED|ARCHIVED`. Archiver/restaurer est distinct
-  de supprimer ; restauration en attente, suspension maintenue après correction jusqu'à approbation.
-- Les notifications de signalement ouvrent leur détail ; retour explicite vers Modération › Signalements,
-  puis gestion du sujet. Les erreurs et retraits d'accès ont une sortie et un réessai.
-- Défis › Salons expose aussi les salons issus de défis acceptés et ceux en préparation pour les deux
-  joueurs. Les salons terminaux disparaissent ; une acceptation ajoute son salon local sans GET de confirmation.
-- Toute mutation est optimiste avec restauration ciblée ; aucun GET de confirmation après succès.
-
-### Retours d'usage — 2026-11-13
-
-- **Navigation protégée contre le double appui** : toujours importer `router` depuis `@/shared/navigation/router`,
-  jamais depuis `expo-router`. `push` et `navigate` y ignorent la même destination répétée en moins de 700 ms (un
-  double appui ouvrait l'écran deux fois). Les tests qui chargent un module avec un mock `expo-router` le relaient.
-- **Lancement** : `LaunchScreen` reste au moins 1,2 s (`LAUNCH_MIN_MS`, `app/_layout.tsx`), puis le temps réel.
-- **Piles d'onglets** : `unstable_settings = { anchor: 'index' }` sur `home` et `profile` ; les Réglages redirigent
-  vers la racine de leur pile d'origine. Mes sujets n'est plus dans les Réglages (bug de retour vers le Profil).
-- **Accueil** : onglets Pour toi / Suivis / **Création** ; rail « Selon tes centres d'intérêt »
-  (`recommendedTopics`) ou carte d'invitation sans intérêt. Retirer un intérêt retire ses sujets du rail sur place.
-- **Sujets** : « Mes thèmes » (Tous / Suivis / Mes sujets, `followed` ou `mine`) remplace « Masquer les suivis ».
-- **Atelier** : ligne et feuille **Titres** (`TopicTitlesSheet`, `useUpdateTopicTitles`, `PUT /api/topics/{id}/titles`),
-  helpers partagés `@joutio/client/authoring` (`titleLabel`, `normalizeTitles`…).
-- **Pas de liste virtualisée en feuille** (2026-11-14) : `MobileSheet.renderList` est retiré — FlashList 2.x enveloppe
-  son défilement dans une vue `flex:1` mesurée à 0 de haut sous TrueSheet, la feuille Pays paraissait vide. Feuille
-  Pays : lignes en `children` + `loadMore`, pages de 30.
-- **Avatar de base** : fond `raised` relevé vers le texte + filet `border`, lisible dans les lignes des feuilles.
-- **Lot du 2026-11-13 (soir)** : résultat non immersif (`useToastSuppression(!finished)` dans le duel : toasts et
-  `RematchHost` y réapparaissent) ; chat d'après-duel masqué (`RESULT_CHAT_ENABLED`) ; **champ entier au-dessus du clavier** (`field-reveal.ts` : `Screen` fournit
-  `reveal`, `Field` s'en sert au focus et quand il grandit) ; Éditer le profil : `ListRow` « Modifier l'avatar » ;
-  Réglages : « Affichage et langue » sans valeur ; Accueil : « Fraîchement mis à jour », rails sans « Tout voir » ;
-  `TopicRow` au visuel de `TopicTile` (pictogramme, couleur d'univers) ; description **localisée** du sujet (atelier,
-  fiche) ; `StreakUnlock` en tête de la séquence (`useStreakUnlock`, `streakDayUnlocked`) ; bandes du haut animées
-  (`banner-motion.ts`) ; STOMP coupé **de force** en arrière-plan (perte de connexion après un upload ou le navigateur) ;
-  avatar provisionnel sans désaturation. À valider sur appareil : décalage du pied d'une feuille au clavier et
-  pictogramme Cinéma qui déborde (non reproduits). Internationalisation du mobile : lot à part.
-
-### Lot du 2026-11-16
-
-- **`Dialog` sur `TrueSheetOverlay`** (remplace `Modal`) : couche native au-dessus de toute feuille présentée (doc
-  TrueSheet, « Overlays on Sheets »). Une `Modal` se présentait depuis le contrôleur racine, qui présente déjà la feuille :
-  le dialogue ouvert depuis une feuille (vignette, pictogramme) n'était pas touchable. Retour Android par `BackHandler` ;
-  `onDismissed` signale la fin de la fermeture.
-- **Déclaration de droits** : la réponse n'est rendue qu'au retrait du dialogue (`onDismissed`), puis le sélecteur photo
-  s'ouvre ; un second toucher attend la même réponse ; un dialogue remplacé se ferme sans choix (sa promesse se résout).
-- **Envoi d'image avec progression** : `onUploadProgress` du client API (`XMLHttpRequest.upload.onprogress`, alimenté
-  nativement par le réseau RN), `uploadImage(asset, onProgress)`, `ImagePicker.progress` (atelier, question, bannière).
-- **Temps réel → cache** : la règle « Mutations et cohérence du cache » reste ; les événements **d'un autre acteur**
-  relisent les vues qu'ils touchent dans une table unique (`features/realtime/realtime-invalidation.tsx`, monté dans
-  `(app)`), déblocages `/topic/achievements/{userId}` et relecture à la reconnexion compris. Toutes les clés passent par
-  `lib/query-keys.ts` ; une seule requête des salons (`queryKeys.rooms()`, plus de `tracked-rooms`).
-- **Pastille Défis** : défis reçus + salons où l'adversaire attend (`roomsWaitingForViewer`, `ROOM_PRESENCE` appliqué au
-  cache). **Elo sans période « non classé »** : `provisional` retiré (avatar pointillé, pastille, clés i18n).
-- Revanche acceptée depuis le duel ou le résultat : la salle remplace l'écran ; déblocages sans défilement (héros
-  compressible) ; « Partager le lien » en action pleine au-dessus de « Fermer le salon » ; notifications sur deux lignes ;
-  `Notice`/`Banner` ton `warning` (nom de sujet déjà pris).
-- **Surfaces basses d'actions** (2026-11-16) : barre d'actions de `Screen`, `ParallaxScreen`, `CollapsibleTabsScreen`
-  et saisie du chat ont **la couleur de la barre d'onglets Android** (`BottomBarBackground` : teinte `glass` sur `bg`,
-  opaque). Les pieds de feuille gardent la couleur de leur feuille (`surface`).
-- **Bande du haut portée par l'écran** (remplace `TopBannerHost`) : le layout `(app)` choisit la bande
-  (`TopBannerProvider`), chaque écran la rend en tête de sa mise en page (`TopBannerFrame`, intégré à `Screen`,
-  `ParallaxScreen`, `CollapsibleTabsScreen` ; posé à la main sur les écrans plein écran : duel, matchmaking, résultat,
-  chat, recherche, éditeurs en modale). Zone sûre haute par `useScreenTopInset()` (0 sous la bande), jamais
-  `insets.top` directement dans `(app)` ; plus de surcharge de `SafeAreaInsetsContext` (les modales plein écran iOS
-  passaient sous la barre d'état). Une seule mise en page par entrée et par sortie (cale fixe), seule la
-  bande s'anime en `transform`/opacité. La cale animée image par image redimensionnait le navigateur d'onglets : re-rendu
-  de `BottomTabView` (react-navigation) et du `UITabBarController` iOS à chaque image.
+- `patches/react-native+0.88.1.patch` borne à 1 s l'inertie retenue par
+  `ScrollView._isAnimating()` : sans lui, les touchers sont perdus après une inertie (iOS).
+  Revérifier le hunk à chaque montée de React Native.
+- Le patch de `react-native-collapsible-tabs-native` arbitre la direction du geste avant le
+  refresh Android et le pager.
+- `@react-native-menu/menu` est incompatible avec RN 0.88 : ne pas y revenir.
+- Reanimated : `IOS/ANDROID_SYNCHRONOUSLY_UPDATE_UI_PROPS` activés
+  (`package.json > reanimated.staticFeatureFlags`, pris en compte au rebuild natif).
+- `whatwg-fetch` sert seulement aux `FormData` de fichiers locaux (envoi d'images, avec
+  progression) ; `expo/fetch` sert pour le JSON.
+- Un module natif ajouté, un plugin ou `app.config.ts` modifiés : nouveau dev build
+  (`npx expo prebuild --clean` si un plugin change). iOS se compile et se valide sur macOS.
