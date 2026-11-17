@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useCallback, useEffect, useSyncExternalStore } from 'react'
 import { AppState } from 'react-native'
 import { api } from '../api'
-import { queryKeys } from '@joutio/client/query'
+import { serverTimeQuery } from '@joutio/client/query'
 
 /**
  * Horloge serveur (port de `joutio-web/src/shared/clock`) : décalage local → serveur mesuré par `GET /api/clock` à
@@ -33,14 +33,9 @@ const subscribe = (listener: () => void) => {
   }
 }
 
-interface ServerTimeView {
-  epochMillis: number
-}
-
 export function useServerClock() {
   const { data, dataUpdatedAt, refetch } = useQuery({
-    queryKey: queryKeys.serverTime(),
-    queryFn: () => api.get<ServerTimeView>('/api/clock'),
+    ...serverTimeQuery(api),
     refetchOnMount: 'always',
     staleTime: Infinity,
     retry: 3,

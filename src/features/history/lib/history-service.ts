@@ -28,7 +28,7 @@ export const DEFAULT_HISTORY_FILTERS: HistoryFilterState = {
 export const historyService = {
   page: (userId: string, filters: HistoryFilters, page: number) =>
     api.get<PageResponse<GameHistoryItemView>>(ENDPOINTS.profiles.games(userId), {
-      params: {
+      query: {
         topicId: filters.topicId,
         opponentId: filters.opponentId,
         opponentType: filters.opponentType,

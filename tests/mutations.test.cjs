@@ -31,6 +31,8 @@ function harness(extraMocks = {}) {
     '@/lib/realtime/personal-notifications': { usePersonalNotifications() {}, useRoomPresenceEvents() {} },
     '@/shared/hooks/use-debounced': { useDebounced: (value) => value },
     '@/features/premium/premium-store': { usePremiumSheet: () => () => {} },
+    // Client HTTP : les lectures partagées (`@joutio/client/query`) le reçoivent en paramètre ; aucune n'est jouée ici.
+    '@/lib/api': { api: service },
     ...extraMocks,
   }
   function load(file) {

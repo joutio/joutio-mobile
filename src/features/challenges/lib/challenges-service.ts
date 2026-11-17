@@ -1,13 +1,9 @@
-import type { RoomView } from '@joutio/client/rooms'
 import { api } from '@/lib/api'
 import { ENDPOINTS } from '@/lib/endpoints'
-import type { ChallengeView } from '@joutio/client/api-types'
 import { t } from '@/lib/i18n'
 
 /** Défis nominatifs et salons du joueur (`/api/challenges`, `/api/rooms`). */
 export const challengesService = {
-  mine: () => api.get<ChallengeView[]>(ENDPOINTS.challenges.mine),
-  rooms: () => api.get<RoomView[]>(ENDPOINTS.rooms.mine),
   accept: (challengeId: string) => api.post<void>(ENDPOINTS.challenges.accept(challengeId)),
   decline: (challengeId: string) => api.post<void>(ENDPOINTS.challenges.decline(challengeId)),
   cancel: (challengeId: string) => api.post<void>(ENDPOINTS.challenges.cancel(challengeId)),

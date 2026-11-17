@@ -1,7 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { optimisticUpdate, queryKeys } from '@joutio/client/query'
+import { optimisticUpdate, queryKeys, recommendationsQuery } from '@joutio/client/query'
 import type { MeView } from '@joutio/client/api-types'
 import { onboardingService } from '../lib/onboarding-service'
+import { api } from '@/lib/api'
 
 export function useSaveInterests() {
   const client = useQueryClient()
@@ -15,8 +16,7 @@ export function useSaveInterests() {
 
 export function useRecommendations(interests: readonly string[]) {
   return useQuery({
-    queryKey: queryKeys.onboarding.recommendations(interests),
-    queryFn: () => onboardingService.recommendations(interests),
+    ...recommendationsQuery(api, interests),
     enabled: interests.length > 0,
   })
 }

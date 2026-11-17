@@ -1,13 +1,13 @@
 import { useQuery } from '@tanstack/react-query'
-import { queryKeys } from '@joutio/client/query'
-import { homeService } from '../lib/home-service'
+import { homeQuery, unreadCountQuery } from '@joutio/client/query'
+import { api } from '@/lib/api'
 
 /** Rails de l'Accueil. */
 export function useHome() {
-  return useQuery({ queryKey: queryKeys.home(), queryFn: homeService.get, staleTime: 60_000 })
+  return useQuery({ ...homeQuery(api), staleTime: 60_000 })
 }
 
 /** Notifications non lues, pour le badge de la cloche. */
 export function useUnreadCount() {
-  return useQuery({ queryKey: queryKeys.notifications.unreadCount(), queryFn: homeService.unreadCount, staleTime: 30_000 })
+  return useQuery({ ...unreadCountQuery(api), staleTime: 30_000 })
 }

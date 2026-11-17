@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tansta
 import { toast, type CategoryCode } from '@/design-system'
 import { useMe } from '@/features/me'
 import { usePremiumSheet } from '@/features/premium/premium-store'
-import { optimisticId, optimisticUpdate, queryKeys } from '@joutio/client/query'
+import { optimisticId, optimisticUpdate, queryKeys, reportQueueQuery, teamQuery, workshopQuery, workshopTodoQuery } from '@joutio/client/query'
 import { applyQuestionOperations } from '@joutio/client/authoring'
 import type { Language, PageResponse, TopicCardView, TopicOverviewView, HomeView } from '@joutio/client/api-types'
 import type { InfiniteData } from '@tanstack/react-query'
@@ -24,6 +24,7 @@ import { isFrozen, planLimits, premiumReasonOf, quotaProblemOf, type PremiumReas
 import type { QuestionOperation } from '@joutio/client/authoring'
 import { authoringService } from '../lib/authoring-service'
 import { t, useT } from '@/lib/i18n'
+import { api } from '@/lib/api'
 
 function closeCachedReports(client: QueryClient, topicId: string, questionId: string, status: 'RESOLVED' | 'DISMISSED') {
   client.setQueriesData<ReportDetail>({ queryKey: queryKeys.authoring.reportDetails(topicId) }, (detail) =>
@@ -54,14 +55,13 @@ function dropFromQueue(client: QueryClient, topicId: string, questionId: string)
 
 /** Mes sujets › À traiter : actions en attente par sujet géré. */
 export function useTopicTodo() {
-  return useQuery({ queryKey: queryKeys.authoring.todo(), queryFn: authoringService.todo, staleTime: 30_000 })
+  return useQuery({ ...workshopTodoQuery(api), staleTime: 30_000 })
 }
 
 /** File des signalements ouverts d'un sujet (écran Signalements et Modération › Signalements). */
 export function useReportQueue(topicId: string, enabled = true) {
   return useQuery({
-    queryKey: queryKeys.authoring.reports(topicId),
-    queryFn: () => authoringService.reportQueue(topicId),
+    ...reportQueueQuery(api, topicId),
     enabled: enabled && Boolean(topicId),
     staleTime: 15_000,
   })
@@ -96,7 +96,7 @@ export function useMyTopics(enabled = true) {
 
 /** Un de mes sujets, lu dans la liste Mes sujets (le BFF n'a pas de vue auteur d'un sujet seul). */
 export function useMyTopic(topicId: string) {
-  const workshop = useQuery({ queryKey: queryKeys.authoring.workshop(topicId), queryFn: () => authoringService.workshop(topicId), enabled: Boolean(topicId) })
+  const workshop = useQuery({ ...workshopQuery(api, topicId), enabled: Boolean(topicId) })
   return { ...workshop, topic: workshop.data?.topic, permissions: workshop.data?.permissions, titles: workshop.data?.titles ?? null, closedReason: workshop.data?.closedReason ?? null }
 }
 
@@ -520,7 +520,7 @@ export function useDismissReports(topicId: string) {
 }
 
 export function useTeam(topicId: string) {
-  return useQuery({ queryKey: queryKeys.authoring.team(topicId), queryFn: () => authoringService.team(topicId), enabled: Boolean(topicId) })
+  return useQuery({ ...teamQuery(api, topicId), enabled: Boolean(topicId) })
 }
 export function useTeamChange(topicId: string) {
   const t = useT()

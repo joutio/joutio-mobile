@@ -16,7 +16,8 @@ interface ApiClientConfig {
 }
 
 interface RequestOptions extends Omit<RequestInit, 'body'> {
-  params?: Record<string, string | number | boolean | undefined>
+  /** Paramètres d'URL ; une valeur absente (`undefined`, `null`) n'est pas envoyée. */
+  query?: Record<string, string | number | boolean | undefined | null>
   body?: unknown
   absolute?: boolean
   /**
@@ -46,12 +47,12 @@ function sendWithProgress(url: string, method: string, headers: Record<string, s
   })
 }
 
-function buildUrl(baseUrl: string, path: string, params?: RequestOptions['params']): string {
+function buildUrl(baseUrl: string, path: string, query?: RequestOptions['query']): string {
   const root = baseUrl.replace(/\/$/, '')
   let url = path.startsWith('http') ? path : `${root}${path}`
-  if (params) {
-    const search = Object.entries(params)
-      .filter(([, value]) => value !== undefined)
+  if (query) {
+    const search = Object.entries(query)
+      .filter(([, value]) => value !== undefined && value !== null)
       .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`)
       .join('&')
     if (search) url += `${url.includes('?') ? '&' : '?'}${search}`
@@ -67,8 +68,8 @@ export function createApiClient(clientConfig: ApiClientConfig) {
   const { baseUrl, defaultHeaders = {}, onError, getAuthToken, onUnauthorized, onRejectedAfterRefresh } = clientConfig
 
   async function request<T>(method: string, path: string, options: RequestOptions = {}, retried = false): Promise<T> {
-    const { params, body, headers: reqHeaders, absolute, onUploadProgress, ...fetchOptions } = options
-    const url = buildUrl(baseUrl, path, params)
+    const { query, body, headers: reqHeaders, absolute, onUploadProgress, ...fetchOptions } = options
+    const url = buildUrl(baseUrl, path, query)
     void absolute
 
     const multipart = body instanceof FormData

@@ -9,7 +9,7 @@ export const NOTIFICATIONS_PAGE_SIZE = 10
 
 /** Boîte de réception (`/api/notifications`). */
 export const notificationsService = {
-  page: (page: number) => api.get<PageResponse<NotificationView>>(ENDPOINTS.notifications.list, { params: { page, size: NOTIFICATIONS_PAGE_SIZE } }),
+  page: (page: number) => api.get<PageResponse<NotificationView>>(ENDPOINTS.notifications.list, { query: { page, size: NOTIFICATIONS_PAGE_SIZE } }),
   /**
    * Lecture initiale de la cible ; les salles gèrent leur expiration dans RoomScreen. Un signalement renvoie la
    * question visée, l'écran des Signalements étant centré sur la question.

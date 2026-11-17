@@ -6,5 +6,5 @@ export const SEARCH_LIMIT = 10
 
 /** Recherche globale (`recherche.md` § 3) : sujets et joueurs d'une même requête. */
 export const searchService = {
-  suggestions: (query: string) => api.get<SuggestionView[]>(ENDPOINTS.suggestions, { params: { q: query, limit: SEARCH_LIMIT } }),
+  suggestions: (query: string) => api.get<SuggestionView[]>(ENDPOINTS.suggestions, { query: { q: query, limit: SEARCH_LIMIT } }),
 }

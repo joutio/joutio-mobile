@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient, type InfiniteData } from '@tanst
 import { useEffect, useState } from 'react'
 import { toast } from '@/design-system'
 import { useMe } from '@/features/me'
-import { optimisticUpdate, queryKeys } from '@joutio/client/query'
+import { activityQuery, badgesQuery, notificationPreferencesQuery, optimisticUpdate, playedTopicsQuery, pseudonymAvailabilityQuery, queryKeys, rewardsQuery } from '@joutio/client/query'
 import type {
   ApiError,
   HomeView,
@@ -17,6 +17,7 @@ import type {
 } from '@joutio/client/api-types'
 import { profileService } from '../lib/profile-service'
 import { t, useT } from '@/lib/i18n'
+import { api } from '@/lib/api'
 
 const useUserId = () => useMe(true).data?.userId ?? ''
 
@@ -24,8 +25,7 @@ const useUserId = () => useMe(true).data?.userId ?? ''
 export function useMyBadges(enabled = true) {
   const userId = useUserId()
   return useQuery({
-    queryKey: queryKeys.profiles.badges(userId),
-    queryFn: () => profileService.badges(userId),
+    ...badgesQuery(api, userId),
     enabled: enabled && Boolean(userId),
     staleTime: 60_000,
   })
@@ -35,8 +35,7 @@ export function useMyBadges(enabled = true) {
 export function useMyActivity(enabled = true) {
   const userId = useUserId()
   return useQuery({
-    queryKey: queryKeys.profiles.activity(userId),
-    queryFn: () => profileService.activity(userId),
+    ...activityQuery(api, userId),
     enabled: enabled && Boolean(userId),
     staleTime: 60_000,
   })
@@ -46,8 +45,7 @@ export function useMyActivity(enabled = true) {
 export function useMyTopics(enabled = true) {
   const userId = useUserId()
   return useQuery({
-    queryKey: queryKeys.profiles.topics(userId),
-    queryFn: () => profileService.topics(userId),
+    ...playedTopicsQuery(api, userId),
     enabled: enabled && Boolean(userId),
     staleTime: 60_000,
   })
@@ -55,7 +53,7 @@ export function useMyTopics(enabled = true) {
 
 /** Catalogue des récompenses (styles d'avatar). */
 export function useMyRewards(enabled = true) {
-  return useQuery({ queryKey: queryKeys.rewards(), queryFn: profileService.rewards, enabled, staleTime: 60_000 })
+  return useQuery({ ...rewardsQuery(api), enabled, staleTime: 60_000 })
 }
 
 type MeField = 'pseudonym' | 'bio' | 'country' | 'bannerUrl' | 'language' | 'avatarOptions' | 'interests'
@@ -134,7 +132,7 @@ export function useUpdateMe<K extends MeField>(field: K) {
 
 /** Préférences de notification persistées (`FOLLOW|ROOM|QUESTION`). */
 export function useNotificationPreferences() {
-  return useQuery({ queryKey: queryKeys.notificationPreferences(), queryFn: profileService.notificationPreferences, staleTime: 60_000 })
+  return useQuery({ ...notificationPreferencesQuery(api), staleTime: 60_000 })
 }
 
 export function useSetNotificationPreference() {
@@ -186,8 +184,7 @@ export function usePseudonymCheck(value: string, current: string | undefined): P
   }, [trimmed])
   const settled = debounced === trimmed
   const query = useQuery({
-    queryKey: queryKeys.pseudonymAvailability(pseudonymKey(debounced)),
-    queryFn: () => profileService.pseudonymAvailability(debounced),
+    ...pseudonymAvailabilityQuery(api, debounced, pseudonymKey(debounced)),
     enabled: !unchanged && issue === null && settled,
     staleTime: 10_000,
   })

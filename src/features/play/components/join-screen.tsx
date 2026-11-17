@@ -37,9 +37,9 @@ import { tierOf } from '@/shared/utils/tier'
 import { topicName } from '@/shared/utils/topic-name'
 import { userAvatar } from '@/shared/utils/avatar'
 import { countdownOf, useServerNow } from '../lib/countdown'
-import { playService } from '../lib/play-service'
 import { currentLanguage, formatNumber, t, tierKey, useT } from '@/lib/i18n'
-import { queryKeys } from '@joutio/client/query'
+import { roomQuery } from '@joutio/client/query'
+import { api } from '@/lib/api'
 
 /** Conditions du duel, en `ListRow` informatives (`lancer-partie.md` § 2). */
 const RULES = (): readonly { icon: Icon; label: string }[] => ([
@@ -112,7 +112,7 @@ export function JoinScreen() {
   const myAvatar = useMyAvatar()
   const now = useServerNow()
   const setPending = usePendingJoin((state) => state.set)
-  const room = useQuery({ queryKey: queryKeys.room(roomId), queryFn: () => playService.room(roomId), enabled: authenticated, retry: 1 })
+  const room = useQuery({ ...roomQuery(api, roomId), enabled: authenticated, retry: 1 })
 
   const view = room.data
   const unavailable = room.isError || (view && (view.status !== 'WAITING_PLAYERS' || view.gameId !== null))

@@ -4,20 +4,21 @@ import { toast } from '@/design-system'
 import { useMe } from '@/features/me'
 import { applyRoomPresence, type RoomView } from '@joutio/client/rooms'
 import { roomOfChallenge } from '@/features/play/hooks/use-rematch'
-import { optimisticUpdate, queryKeys } from '@joutio/client/query'
+import { challengesQuery, myRoomsQuery, optimisticUpdate, queryKeys } from '@joutio/client/query'
 import { useRoomPresenceEvents } from '@/lib/realtime/personal-notifications'
 import type { ChallengeView } from '@joutio/client/api-types'
 import { topicName } from '@/shared/utils/topic-name'
 import { reconcileChallenges, reconcileRooms, settleChallenge, settleRoom } from '@/features/play/lib/play-cache'
 import { challengesService } from '../lib/challenges-service'
 import { useT } from '@/lib/i18n'
+import { api } from '@/lib/api'
 
 /** Défis du joueur (reçus et envoyés). */
 export function useMyChallenges(enabled = true) {
   const client = useQueryClient()
   return useQuery({
     queryKey: queryKeys.challenges(),
-    queryFn: async () => reconcileChallenges(client.getQueryData(queryKeys.challenges()), await challengesService.mine()),
+    queryFn: async () => reconcileChallenges(client.getQueryData(queryKeys.challenges()), await challengesQuery(api).queryFn()),
     enabled,
     staleTime: 15_000,
   })
@@ -28,7 +29,7 @@ export function useMyRooms(enabled = true) {
   const client = useQueryClient()
   return useQuery({
     queryKey: queryKeys.myRooms(),
-    queryFn: async () => reconcileRooms(client.getQueryData(queryKeys.myRooms()), await challengesService.rooms()),
+    queryFn: async () => reconcileRooms(client.getQueryData(queryKeys.myRooms()), await myRoomsQuery(api).queryFn()),
     enabled,
     staleTime: 15_000,
   })

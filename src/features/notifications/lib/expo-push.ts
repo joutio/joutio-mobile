@@ -68,7 +68,7 @@ export function syncExpoPush(): Promise<void> {
         const controller = new AbortController()
         const timeout = setTimeout(() => controller.abort(), 8000)
         try {
-          await api.delete(PATH, { params: { installationId: installation }, signal: controller.signal })
+          await api.delete(PATH, { query: { installationId: installation }, signal: controller.signal })
         } finally {
           clearTimeout(timeout)
         }

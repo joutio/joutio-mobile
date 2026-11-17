@@ -30,7 +30,7 @@ export interface TopicFilters {
 
 const page = (filters: TopicFilters, category: CategoryCode | undefined, index: number) =>
   api.get<PageResponse<TopicCardView>>(ENDPOINTS.topics.list, {
-    params: {
+    query: {
       q: filters.query || undefined,
       category,
       followed: filters.followed || undefined,
@@ -69,6 +69,6 @@ export const topicsService = {
 
   facets: (query: string, scope: TopicScope = 'ALL'): Promise<TopicFacetsView> =>
     api.get<TopicFacetsView>(ENDPOINTS.topics.facets, {
-      params: { q: query || undefined, followed: scope === 'FOLLOWED' || undefined, mine: scope === 'MINE' || undefined },
+      query: { q: query || undefined, followed: scope === 'FOLLOWED' || undefined, mine: scope === 'MINE' || undefined },
     }),
 }

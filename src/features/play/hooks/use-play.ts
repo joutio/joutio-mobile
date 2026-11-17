@@ -7,7 +7,7 @@ import { showQuotaDialog } from '@/features/challenges/lib/quota'
 import { quotaProblemOf } from '@joutio/client/premium'
 import { useMe } from '@/features/me'
 import { ENDPOINTS } from '@/lib/endpoints'
-import { optimisticId, optimisticUpdate, queryKeys } from '@joutio/client/query'
+import { optimisticId, optimisticUpdate, queryKeys, roomQuery } from '@joutio/client/query'
 import { readServerNow } from '@/lib/realtime/server-clock'
 import { subscribeStomp } from '@/lib/ws'
 import { useNotificationStream } from '@/lib/realtime/use-notification-stream'
@@ -21,6 +21,7 @@ import type { RoomView } from '@joutio/client/rooms'
 import type { RoomNotification } from '@joutio/client/rooms'
 import { CONTACTS_PAGE_SIZE, playService } from '../lib/play-service'
 import { t, useT } from '@/lib/i18n'
+import { api } from '@/lib/api'
 
 /** Contexte du sujet passé d'écran en écran : l'en-tête s'affiche sans attendre le serveur. */
 export interface PlayTopic {
@@ -213,7 +214,7 @@ export function useContacts(direction: 'following' | 'followers', query: string,
 
 /** Salle : vue REST (sujet, adversaire) et état replié des notifications (REST à l'ouverture, puis STOMP). */
 export function useRoom(roomId: string) {
-  const view = useQuery({ queryKey: queryKeys.room(roomId), queryFn: () => playService.room(roomId), staleTime: Infinity, retry: 2 })
+  const view = useQuery({ ...roomQuery(api, roomId), staleTime: Infinity, retry: 2 })
   const stream = useNotificationStream<RoomNotification, Room>(
     roomId
       ? {

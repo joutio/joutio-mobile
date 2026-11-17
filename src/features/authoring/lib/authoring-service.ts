@@ -4,14 +4,11 @@ import type { IdResponse, Language, PageResponse, TopicCardView } from '@joutio/
 import type { CategoryCode } from '@/design-system'
 import type {
   TopicTitles,
-  TopicWorkshop,
   TeamMember,
   TeamRole,
   ReportDetail,
   OwnerQuestionReport,
   QuestionEditorView,
-  ReportedQuestion,
-  TopicTodo,
 } from '@joutio/client/authoring'
 import type { QuestionOperation } from '@joutio/client/authoring'
 
@@ -20,27 +17,21 @@ const QUESTIONS_PAGE = 100
 
 /** Écritures d'auteur (`creation.md` § 5) : sujets champ par champ, questions et modération. */
 export const authoringService = {
-  workshop: (id: string) => api.get<TopicWorkshop>(`/api/topics/${id}/workshop`),
-  team: (id: string) => api.get<TeamMember[]>(`/api/topics/${id}/team`),
   setMember: (id: string, userId: string, role: TeamRole) => api.put<TeamMember>(`/api/topics/${id}/team/${userId}`, { role }),
   removeMember: (id: string, userId: string) => api.delete<void>(`/api/topics/${id}/team/${userId}`),
   draft: (id: string) => api.post<void>(`/api/topics/${id}/draft`),
   /** Supprime un brouillon (créateur seul) ; ses questions partent avec lui. */
   deleteTopic: (id: string) => api.delete<void>(`/api/topics/${id}`),
-  /** File des signalements ouverts du sujet, une entrée par question. */
-  reportQueue: (topicId: string) => api.get<ReportedQuestion[]>(`/api/question-reports/topics/${topicId}`),
-  /** Mes sujets › À traiter. */
-  todo: () => api.get<TopicTodo[]>('/api/topics/contributed/todo'),
   deleteQuestion: (id: string) => api.delete<void>(`/api/questions/${id}`),
   archive: (id: string) => api.post<void>(`/api/questions/${id}/archive`),
   restore: (id: string) => api.post<void>(`/api/questions/${id}/restore`),
   reportDetail: (id: string) => api.get<ReportDetail>(`/api/question-reports/${id}`),
   /** Mes sujets, brouillons et publiés, dont ceux où je suis dans l'équipe. */
-  myTopics: () => api.get<PageResponse<TopicCardView>>('/api/topics/contributed', { params: { page: 0, size: 100 } }),
+  myTopics: () => api.get<PageResponse<TopicCardView>>('/api/topics/contributed', { query: { page: 0, size: 100 } }),
   /** Sujets dont je suis le créateur (`mine=true`, exclusif des autres filtres) : seuls comptent dans le plafond. */
-  createdTopics: () => api.get<PageResponse<TopicCardView>>(ENDPOINTS.topics.list, { params: { mine: true, page: 0, size: 100 } }),
+  createdTopics: () => api.get<PageResponse<TopicCardView>>(ENDPOINTS.topics.list, { query: { mine: true, page: 0, size: 100 } }),
   /** Sujets publiés dont le nom contient `query` (catalogue) : l'atelier y cherche un nom identique. */
-  topicsNamed: (query: string) => api.get<PageResponse<TopicCardView>>(ENDPOINTS.topics.list, { params: { q: query, page: 0, size: 20 } }),
+  topicsNamed: (query: string) => api.get<PageResponse<TopicCardView>>(ENDPOINTS.topics.list, { query: { q: query, page: 0, size: 20 } }),
 
   createTopic: (name: string, category: CategoryCode) => api.post<IdResponse>(ENDPOINTS.topics.list, { names: { fr: name }, category }),
 
@@ -64,7 +55,7 @@ export const authoringService = {
   async questions(topicId: string): Promise<QuestionEditorView[]> {
     const all: QuestionEditorView[] = []
     for (let page = 0; ; page += 1) {
-      const result = await api.get<PageResponse<QuestionEditorView>>(ENDPOINTS.topics.questions(topicId), { params: { page, size: QUESTIONS_PAGE } })
+      const result = await api.get<PageResponse<QuestionEditorView>>(ENDPOINTS.topics.questions(topicId), { query: { page, size: QUESTIONS_PAGE } })
       all.push(...result.content)
       if (result.last || result.content.length === 0) return all
     }

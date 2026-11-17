@@ -1,8 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
-import { queryKeys } from '@joutio/client/query'
-import { meService } from '../lib/me-service'
+import { meQuery } from '@joutio/client/query'
+import { api } from '@/lib/api'
 
 /** Joueur courant. `enabled` : seulement une fois la session authentifiée. */
 export function useMe(enabled = true) {
-  return useQuery({ queryKey: queryKeys.me(), queryFn: meService.get, staleTime: 30_000, enabled })
+  return useQuery({ ...meQuery(api), staleTime: 30_000, enabled })
 }

@@ -5,7 +5,6 @@ import type { IdResponse, PageResponse, PeopleSort, PlayerCardView } from '@jout
 import type { BotDifficulty } from '@joutio/client/game'
 import type { MatchmakingTicket } from '@joutio/client/rooms'
 import type { MatchmakingNotification } from '@joutio/client/rooms'
-import type { RoomView } from '@joutio/client/rooms'
 import type { RoomNotification } from '@joutio/client/rooms'
 
 export const CONTACTS_PAGE_SIZE = 20
@@ -17,7 +16,6 @@ export const CONTACTS_PAGE_SIZE = 20
 export const playService = {
   createRoom: (topicId: string) => api.post<IdResponse>(ENDPOINTS.rooms.create, { topicId }),
   createBotRoom: (topicId: string, difficulty: BotDifficulty) => api.post<IdResponse>(ENDPOINTS.rooms.bot, { topicId, difficulty }),
-  room: (roomId: string) => api.get<RoomView>(ENDPOINTS.rooms.get(roomId)),
   /** Apparition dans la salle (idempotent) : présence, et participant pour le second humain. */
   cancelRoom: (roomId: string) => api.post<void>(ENDPOINTS.rooms.cancel(roomId)),
   /** Relance (« wizz ») de l'adversaire nommé absent : pur temps réel, cadence 10 s par joueur côté serveur. */
@@ -33,7 +31,7 @@ export const playService = {
 
   contacts: (userId: string, direction: 'following' | 'followers', query: string, sort: PeopleSort, page: number) =>
     api.get<PageResponse<PlayerCardView>>(ENDPOINTS.profiles[direction](userId), {
-      params: { q: query || undefined, sort, page, size: CONTACTS_PAGE_SIZE },
+      query: { q: query || undefined, sort, page, size: CONTACTS_PAGE_SIZE },
     }),
 
   setAutoTrain: (userId: string, enabled: boolean) => api.put<void>(ENDPOINTS.profiles.autoTrain(userId), { enabled }),

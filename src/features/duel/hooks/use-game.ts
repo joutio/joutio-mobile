@@ -1,6 +1,6 @@
 import { activityDate, streakDayUnlocked } from '@joutio/client/profile'
 import { profileService } from '@/features/profile/lib/profile-service'
-import { queryKeys } from '@joutio/client/query'
+import { gameResultQuery, queryKeys } from '@joutio/client/query'
 import type { MeView, PlayerProfileView, TopicOverviewView } from '@joutio/client/api-types'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Image } from 'expo-image'
@@ -12,6 +12,7 @@ import { emptyGame, applyGameNotification } from '@joutio/client/game'
 import type { GameState } from '@joutio/client/game'
 import type { GameNotification } from '@joutio/client/game'
 import { gameService } from '../lib/game-service'
+import { api } from '@/lib/api'
 
 /** Partie repliée de ses notifications : historique REST à l'ouverture (et à chaque reconnexion), puis STOMP. */
 export function useGameStream(gameId: string) {
@@ -48,8 +49,7 @@ export function useGameResult(gameId: string, enabled: boolean, waitForReward = 
   const client = useQueryClient()
   const applied = useRef<string | null>(null)
   const result = useQuery({
-    queryKey: queryKeys.games.result(gameId),
-    queryFn: () => gameService.result(gameId),
+    ...gameResultQuery(api, gameId),
     enabled,
     retry: 3,
     // La récompense est calculée après la fin : on relit tant qu'elle n'est pas là, puis plus jamais. Une partie

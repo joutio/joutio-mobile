@@ -2,19 +2,20 @@ import { keepPreviousData, useInfiniteQuery, useMutation, useQuery, useQueryClie
 import type { TopicPage } from '@/features/topics/lib/topics-service'
 import { toast } from '@/design-system'
 import { useMe } from '@/features/me'
-import { optimisticUpdate, queryKeys } from '@joutio/client/query'
+import { optimisticUpdate, queryKeys, titlesQuery, topicLeaderboardQuery, topicOverviewQuery } from '@joutio/client/query'
 import type { HomeView, TitlesView, TopicCardView, TopicOverviewView, MeView, PlayerProfileView } from '@joutio/client/api-types'
 import { topicService, type RankingFilters } from '../lib/topic-service'
 import { useT } from '@/lib/i18n'
+import { api } from '@/lib/api'
 
 /** En-tête, statistiques et progression du sujet. */
 export function useTopicOverview(topicId: string, enabled = Boolean(topicId)) {
-  return useQuery({ queryKey: queryKeys.topic.overview(topicId), queryFn: () => topicService.overview(topicId), enabled, staleTime: 30_000 })
+  return useQuery({ ...topicOverviewQuery(api, topicId), enabled, staleTime: 30_000 })
 }
 
 /** Top 10 depuis toujours et ma ligne. */
 export function useTopicLeaderboard(topicId: string, enabled = true) {
-  return useQuery({ queryKey: queryKeys.topic.leaderboard(topicId), queryFn: () => topicService.leaderboard(topicId), enabled, staleTime: 60_000 })
+  return useQuery({ ...topicLeaderboardQuery(api, topicId), enabled, staleTime: 60_000 })
 }
 
 /** Classement complet d'un sujet (période, portée, pagination). */
@@ -47,8 +48,7 @@ export function useMyTitles(enabled = true) {
   const me = useMe(true)
   const userId = me.data?.userId
   return useQuery({
-    queryKey: queryKeys.profiles.titles(userId ?? ''),
-    queryFn: () => topicService.titles(userId ?? ''),
+    ...titlesQuery(api, userId ?? ''),
     enabled: enabled && Boolean(userId),
     staleTime: 60_000,
   })

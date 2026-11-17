@@ -34,7 +34,8 @@ import { useAutoTrain, useBotDifficulty, useTicket, useTicketPresence, type Play
 import { playService } from '../lib/play-service'
 import { userAvatar } from '@/shared/utils/avatar'
 import { currentLanguage, t, tierKey, useT } from '@/lib/i18n'
-import { queryKeys } from '@joutio/client/query'
+import { roomQuery } from '@joutio/client/query'
+import { api } from '@/lib/api'
 
 /** Joueurs décoratifs qui apparaissent sur la carte pendant la recherche (le BFF n'expose pas la file d'attente). */
 const PINS: MapPlayer[] = [
@@ -110,7 +111,7 @@ function MatchmakingScreenContent() {
   const [pickerOpen, setPickerOpen] = useState(false)
 
   const roomId = ticket.state?.roomId ?? null
-  const room = useQuery({ queryKey: queryKeys.room(roomId ?? ''), queryFn: () => playService.room(roomId ?? ''), enabled: Boolean(roomId) })
+  const room = useQuery({ ...roomQuery(api, roomId ?? ''), enabled: Boolean(roomId) })
   // La notification MATCHED porte déjà l'adversaire enrichi ; la salle reste le repli (ancien BFF, reprise REST).
   const opponent = ticket.state?.opponent ?? room.data?.opponent
   const opponentRating = opponent?.rating ?? null
