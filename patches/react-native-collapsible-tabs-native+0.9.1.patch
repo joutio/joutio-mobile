@@ -163,7 +163,7 @@ index 84f3869..b69e215 100644
      }
  
 diff --git a/node_modules/react-native-collapsible-tabs-native/ios/NativeCollapsibleTabsContent.swift b/node_modules/react-native-collapsible-tabs-native/ios/NativeCollapsibleTabsContent.swift
-index b94fd9c..93ce67d 100644
+index b94fd9c..6c2c8e4 100644
 --- a/node_modules/react-native-collapsible-tabs-native/ios/NativeCollapsibleTabsContent.swift
 +++ b/node_modules/react-native-collapsible-tabs-native/ios/NativeCollapsibleTabsContent.swift
 @@ -64,10 +64,10 @@ public final class NativeCollapsibleTabsContent: UIView, UIScrollViewDelegate, U
@@ -181,7 +181,39 @@ index b94fd9c..93ce67d 100644
    private var pageSlots: [UIView] = []
  
    // MARK: - RN children
-@@ -179,7 +179,6 @@ public final class NativeCollapsibleTabsContent: UIView, UIScrollViewDelegate, U
+@@ -150,16 +150,30 @@ public final class NativeCollapsibleTabsContent: UIView, UIScrollViewDelegate, U
+   /// view, the record follows the inset wherever the view goes (this is what
+   /// Android does with its WeakHashMap).
+   private let collapseSlack = NSMapTable<UIScrollView, NSNumber>.weakToStrongObjects()
++  /// Bottom inset the view had right after our last write. React Native
++  /// reapplies its own `contentInset` prop on re-render, which silently drops
++  /// our slack: when the inset no longer matches, the slack is gone and must
++  /// not be subtracted again (that left a negative inset and cut the page's
++  /// range short).
++  private let collapseSlackBase = NSMapTable<UIScrollView, NSNumber>.weakToStrongObjects()
+ 
+   private func appliedSlack(_ sv: UIScrollView) -> CGFloat {
+-    CGFloat(collapseSlack.object(forKey: sv)?.doubleValue ?? 0)
++    guard let applied = collapseSlack.object(forKey: sv)?.doubleValue, applied != 0 else { return 0 }
++    if let written = collapseSlackBase.object(forKey: sv)?.doubleValue, abs(Double(sv.contentInset.bottom) - written) > 0.5 {
++      collapseSlack.removeObject(forKey: sv)
++      collapseSlackBase.removeObject(forKey: sv)
++      return 0
++    }
++    return CGFloat(applied)
+   }
+ 
+   private func setAppliedSlack(_ sv: UIScrollView, _ value: CGFloat) {
+     if value == 0 {
+       collapseSlack.removeObject(forKey: sv)
++      collapseSlackBase.removeObject(forKey: sv)
+     } else {
+       collapseSlack.setObject(NSNumber(value: Double(value)), forKey: sv)
++      collapseSlackBase.setObject(NSNumber(value: Double(sv.contentInset.bottom)), forKey: sv)
+     }
+   }
+   /// True while this view is mutating a page's contentInset. UIKit fires
+@@ -179,7 +193,6 @@ public final class NativeCollapsibleTabsContent: UIView, UIScrollViewDelegate, U
    private var refreshEnabled = true
    private var refreshing = false
    private weak var refreshHost: UIScrollView?
@@ -189,7 +221,7 @@ index b94fd9c..93ce67d 100644
  
    // Header drag
    private var dragStartOffset: CGFloat = 0
-@@ -227,13 +226,6 @@ public final class NativeCollapsibleTabsContent: UIView, UIScrollViewDelegate, U
+@@ -227,13 +240,6 @@ public final class NativeCollapsibleTabsContent: UIView, UIScrollViewDelegate, U
      pager.delaysContentTouches = false
      addSubview(pager)
  
@@ -203,7 +235,7 @@ index b94fd9c..93ce67d 100644
      bandsSlot.clipsToBounds = true
      addSubview(bandsSlot)
  
-@@ -367,6 +359,9 @@ public final class NativeCollapsibleTabsContent: UIView, UIScrollViewDelegate, U
+@@ -367,6 +373,9 @@ public final class NativeCollapsibleTabsContent: UIView, UIScrollViewDelegate, U
    @objc public func setRefreshEnabled(_ value: Bool) {
      refreshEnabled = value
      if !value { endRefresh() }
@@ -213,7 +245,7 @@ index b94fd9c..93ce67d 100644
    }
  
    @objc public func setRefreshing(_ value: Bool) {
-@@ -478,6 +473,12 @@ public final class NativeCollapsibleTabsContent: UIView, UIScrollViewDelegate, U
+@@ -478,11 +487,18 @@ public final class NativeCollapsibleTabsContent: UIView, UIScrollViewDelegate, U
      bandsChild = nil
      bandsScrollView = nil
      pageChildren.removeAll()
@@ -226,7 +258,13 @@ index b94fd9c..93ce67d 100644
      pageScrollViews.removeAll()
      contentSizeObservers.removeAll()
      pendingSync.removeAll()
-@@ -609,43 +610,44 @@ public final class NativeCollapsibleTabsContent: UIView, UIScrollViewDelegate, U
+     revealedPages.removeAll()
+     collapseSlack.removeAllObjects()
++    collapseSlackBase.removeAllObjects()
+     pageSlots.forEach { $0.alpha = 1 }
+     // Recycled mid-gesture: the pan's end never arrives, so nothing else
+     // would ever re-enable a strip we suspended.
+@@ -609,43 +625,44 @@ public final class NativeCollapsibleTabsContent: UIView, UIScrollViewDelegate, U
      if h > 0 { applyCollapseSlackToAll() }
    }
  
@@ -303,7 +341,7 @@ index b94fd9c..93ce67d 100644
    }
  
    /// Puts the bands where the offset says. The RN scroll view is scrolled by
-@@ -671,13 +673,6 @@ public final class NativeCollapsibleTabsContent: UIView, UIScrollViewDelegate, U
+@@ -671,13 +688,6 @@ public final class NativeCollapsibleTabsContent: UIView, UIScrollViewDelegate, U
        let target = CGPoint(x: 0, y: headerOffset - pull)
        if sv.contentOffset != target { sv.contentOffset = target }
      }
@@ -317,7 +355,7 @@ index b94fd9c..93ce67d 100644
      emitHeaderOffset()
    }
  
-@@ -800,14 +795,15 @@ public final class NativeCollapsibleTabsContent: UIView, UIScrollViewDelegate, U
+@@ -800,14 +810,15 @@ public final class NativeCollapsibleTabsContent: UIView, UIScrollViewDelegate, U
    /// screen's touches from here.
    @objc public func handleScrollViewWillBeginDragging(_ scrollView: UIScrollView) {
      guard scrollView.isDescendant(of: self) else { return }
@@ -336,7 +374,7 @@ index b94fd9c..93ce67d 100644
    }
  
    private func setHeaderOffsetNow(_ offset: CGFloat) {
-@@ -845,6 +841,7 @@ public final class NativeCollapsibleTabsContent: UIView, UIScrollViewDelegate, U
+@@ -845,6 +856,7 @@ public final class NativeCollapsibleTabsContent: UIView, UIScrollViewDelegate, U
      contentSizeObservers[page] = nil
      guard let root = pageChildren[page], let found = scrollViewResolver?(root) else { return nil }
      pageScrollViews[page] = WeakBox(found)
@@ -344,7 +382,7 @@ index b94fd9c..93ce67d 100644
      // Lock a page's list to one axis per drag. A page lives inside a
      // horizontal pager, and every real horizontal swipe carries some vertical
      // drift; without this the list scrolls along with the page turn. It
-@@ -1191,49 +1188,28 @@ public final class NativeCollapsibleTabsContent: UIView, UIScrollViewDelegate, U
+@@ -1191,49 +1203,28 @@ public final class NativeCollapsibleTabsContent: UIView, UIScrollViewDelegate, U
    // MARK: - Pull to refresh
  
    private func refreshInsetApplied(to scrollView: UIScrollView) -> CGFloat {
