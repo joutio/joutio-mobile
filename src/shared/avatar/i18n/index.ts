@@ -1,10 +1,5 @@
-import { avatar } from './avatar'
+import { avatarLabel } from '@joutio/client/i18n'
+import { currentLanguage } from '@/lib/i18n'
 
-/** Libellé français d'une clé `avatar.…` du web (`{{number}}` interpolé) ; la clé brute à défaut. */
-export function t(key: string, vars: Record<string, string | number> = {}): string {
-  const path = key.replace(/^avatar\./, '').split('.')
-  let node: unknown = avatar
-  for (const part of path) node = node && typeof node === 'object' ? (node as Record<string, unknown>)[part] : undefined
-  if (typeof node !== 'string') return key
-  return node.replace(/\{\{(\w+)\}\}/g, (_, name: string) => String(vars[name] ?? ''))
-}
+/** Libellé d'une clé `avatar.…` dans la langue de l'app (`{{number}}` interpolé) : dictionnaire de `@joutio/client`. */
+export const t = (key: string, vars: Record<string, string | number> = {}): string => avatarLabel(currentLanguage(), key, vars)
