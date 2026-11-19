@@ -1,3 +1,9 @@
+## [1.50.4](https://github.com/joutio/joutio-mobile/compare/v1.50.3...v1.50.4) (2026-11-19)
+
+### Bug Fixes
+
+* **screen:** permanent top hairline on bottom action bars ([088c925](https://github.com/joutio/joutio-mobile/commit/088c925b0d91f51bb2a2f0589ffefbdbe5674006))
+
 ## [1.50.3](https://github.com/joutio/joutio-mobile/compare/v1.50.2...v1.50.3) (2026-11-19)
 
 ### Bug Fixes
