@@ -1,3 +1,9 @@
+## [1.50.3](https://github.com/joutio/joutio-mobile/compare/v1.50.2...v1.50.3) (2026-11-19)
+
+### Bug Fixes
+
+* **duel:** resilient answers, sheet keyboard on Android, edit-profile save ([1c88552](https://github.com/joutio/joutio-mobile/commit/1c885523434fc67df42d4f65d848b011696b5e63))
+
 ## [1.50.2](https://github.com/joutio/joutio-mobile/compare/v1.50.1...v1.50.2) (2026-11-17)
 
 ### Bug Fixes
