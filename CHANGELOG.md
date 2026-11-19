@@ -1,3 +1,9 @@
+## [1.53.0](https://github.com/joutio/joutio-mobile/compare/v1.52.0...v1.53.0) (2026-11-19)
+
+### Features
+
+* **settings:** server notification preferences for rematches, followers and reports ([0ff0a50](https://github.com/joutio/joutio-mobile/commit/0ff0a50f5c6147dcf92e75a0b486062a802b0d1b))
+
 ## [1.52.0](https://github.com/joutio/joutio-mobile/compare/v1.51.1...v1.52.0) (2026-11-19)
 
 ### Features
