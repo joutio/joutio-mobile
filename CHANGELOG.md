@@ -1,3 +1,9 @@
+## [1.51.1](https://github.com/joutio/joutio-mobile/compare/v1.51.0...v1.51.1) (2026-11-19)
+
+### Bug Fixes
+
+* **duel:** NTP-like server clock, 4 s heartbeat, reconnect on network change ([a60807c](https://github.com/joutio/joutio-mobile/commit/a60807c6572c6431e2dc04a02b7d9ddcdaf0c18f))
+
 ## [1.51.0](https://github.com/joutio/joutio-mobile/compare/v1.50.4...v1.51.0) (2026-11-19)
 
 ### Features
