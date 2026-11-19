@@ -1,3 +1,9 @@
+## [1.52.0](https://github.com/joutio/joutio-mobile/compare/v1.51.1...v1.52.0) (2026-11-19)
+
+### Features
+
+* **duel:** send the answer time measured from the answers display ([5a2b183](https://github.com/joutio/joutio-mobile/commit/5a2b18364abcc9878461f9b6cda33b5dfbe1bab0))
+
 ## [1.51.1](https://github.com/joutio/joutio-mobile/compare/v1.51.0...v1.51.1) (2026-11-19)
 
 ### Bug Fixes
