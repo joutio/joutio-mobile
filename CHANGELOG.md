@@ -1,3 +1,9 @@
+## [1.51.0](https://github.com/joutio/joutio-mobile/compare/v1.50.4...v1.51.0) (2026-11-19)
+
+### Features
+
+* **result:** badge unlocks in the result sequence and image descriptions ([9c3fae1](https://github.com/joutio/joutio-mobile/commit/9c3fae1bb60c0d21385b29ca24ec0999d9a2a1ba))
+
 ## [1.50.4](https://github.com/joutio/joutio-mobile/compare/v1.50.3...v1.50.4) (2026-11-19)
 
 ### Bug Fixes
