@@ -5,6 +5,7 @@ import { View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import {
+  BadgeUnlock,
   Notice,
   Button,
   ChatCircleIcon,
@@ -36,7 +37,8 @@ import { useSendRematch } from '@/features/play/hooks/use-rematch'
 import { useMyTitles, useWearTitle } from '@/features/topic/hooks/use-topic'
 import { customTitle } from '@joutio/client/authoring'
 import { formatNumber, MASTERY_TIERS, MASTERY_XP, tierLabel } from '@/features/topic/lib/format'
-import type { MasteryTier } from '@joutio/client/api-types'
+import type { BadgeView, MasteryTier } from '@joutio/client/api-types'
+import { badgeUnlockOf } from '@/features/profile/lib/badges'
 import { tierOf } from '@/shared/utils/tier'
 import { sortedRounds } from '@joutio/client/game'
 import { isBonusRound, ROUNDS } from '@joutio/client/game'
@@ -61,13 +63,16 @@ const RESULT_CHAT_ENABLED = false
 const ORDER = Object.keys(tokens.tier) as TierCode[]
 const masteryOf = (xp: number): MasteryTier => MASTERY_TIERS.reduce<MasteryTier>((best, tier) => (xp >= MASTERY_XP[tier] ? tier : best), 'FER')
 
-type Unlock = { kind: 'streak'; days: number } | { kind: 'rank'; from: TierCode; tier: TierCode } | { kind: 'title'; tier: MasteryTier }
+type Unlock =
+  | { kind: 'streak'; days: number }
+  | { kind: 'rank'; from: TierCode; tier: TierCode }
+  | { kind: 'title'; tier: MasteryTier }
+  | { kind: 'badge'; badge: BadgeView }
 
 /**
- * Déblocages de la partie, dans l'ordre de la spec (série, rang, puis titres) : déduits du bilan, faute d'événements
- * rattachés à la partie. Série : première partie classée du jour (2026-11-13). Rang : palier d'Elo avant / après.
- * Titres : chaque palier de maîtrise franchi. Les badges attendent que le BFF les rattache à la partie
- * (`resultat.md` § 8).
+ * Déblocages de la partie, dans l'ordre de la spec (série, rang, titres, puis badges). Série : première partie classée
+ * du jour (2026-11-13). Rang : palier d'Elo avant / après. Titres : chaque palier de maîtrise franchi. Badges : ceux
+ * que le BFF rattache à la partie (`GameResultView.badges`).
  */
 function unlocksOf(result: GameResultView, streakDays: number | null): Unlock[] {
   if (result.botGame) return []
@@ -88,6 +93,7 @@ function unlocksOf(result: GameResultView, streakDays: number | null): Unlock[] 
       if (tier) unlocks.push({ kind: 'title', tier })
     }
   }
+  for (const badge of result.badges ?? []) unlocks.push({ kind: 'badge', badge })
   return unlocks
 }
 
@@ -105,7 +111,7 @@ function streakOf(game: GameState, playerId: string | null): RoundResult[] {
 const BOT_LEVEL = (): Record<string, string> => ({ EASY: t('result.botEasy'), NORMAL: t('result.botNormal'), HARD: t('result.botHard') })
 
 /**
- * Résultat d'un duel (`resultat.md`) : la séquence de déblocages d'abord (rang, titres), puis le résultat classé
+ * Résultat d'un duel (`resultat.md`) : la séquence de déblocages d'abord (série, rang, titres, badges), puis le résultat classé
  * (issue, Elo, maîtrise, revanche, nouvel adversaire, détails) ou d'entraînement.
  */
 interface DuelResultProps {
@@ -197,7 +203,9 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
             ? t('result.shareStreak', { days: current.days })
             : current.kind === 'rank'
               ? t('result.shareRank', { tier: tierLabel(current.tier) })
-              : t('result.shareTitle', { topic }),
+              : current.kind === 'badge'
+                ? t('result.shareBadge', { badge: badgeUnlockOf(current.badge, t).name })
+                : t('result.shareTitle', { topic }),
       })
     const pages = unlocks.map((unlock) => {
       if (unlock.kind === 'streak')
@@ -215,6 +223,12 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
             text={t('result.rankText')}
             nextRule={nextTier ? t('result.rankNext', { elo: formatNumber(tokens.tier[nextTier].minElo) }) : undefined}
           />
+        )
+      }
+      if (unlock.kind === 'badge') {
+        const shown = badgeUnlockOf(unlock.badge, t)
+        return (
+          <BadgeUnlock key={`badge-${unlock.badge.code}`} tier={unlock.badge.tier} badge={shown.name} family={shown.family} icon={shown.icon} text={shown.text} />
         )
       }
       const key = `${resolvedTopicId}:${unlock.tier}`

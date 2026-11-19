@@ -306,6 +306,7 @@ function DuelScreenContent() {
                     text={arena.questionText}
                     meta={t('duel.meta', { topic, round: roundNumber, total: ROUNDS })}
                     image={arena.imageUrl ?? undefined}
+                    imageAlt={arena.imageAlt}
                     answers={answers}
                     answersShown={answersShown}
                     animated={animateQuestion}

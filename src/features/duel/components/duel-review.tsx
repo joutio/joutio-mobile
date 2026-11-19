@@ -43,7 +43,7 @@ interface ReviewPageProps {
 /** Une manche rejouée. Mémoïsée : changer de question ou de detent ne la re-rend pas. */
 const ReviewPage = memo(function ReviewPage({ round, me, opponent, myName, opponentName }: ReviewPageProps) {
   const { colors } = useTheme()
-  const { questionText, answers } = localizedQuestion(round, currentLanguage())
+  const { questionText, answers, imageAlt } = localizedQuestion(round, currentLanguage())
   const mine = round.playerAnswers[me]
   const theirs = opponent ? round.playerAnswers[opponent] : undefined
   const first = mine && (!theirs || mine.timeMs <= theirs.timeMs) ? 'me' : theirs ? 'opponent' : undefined
@@ -71,7 +71,7 @@ const ReviewPage = memo(function ReviewPage({ round, me, opponent, myName, oppon
         opponent={{ name: opponentName, seconds: theirs ? theirs.timeMs / 1000 : undefined, points: theirs?.points ?? 0 }}
       />
       <View style={{ flex: 1, minHeight: 0 }}>
-        <QuestionBlock text={questionText} image={round.imageUrl ?? undefined} layout="2x2" answers={cards} notchColor={colors.bg} />
+        <QuestionBlock text={questionText} image={round.imageUrl ?? undefined} imageAlt={imageAlt} layout="2x2" answers={cards} notchColor={colors.bg} />
       </View>
     </View>
   )

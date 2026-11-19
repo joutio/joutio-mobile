@@ -64,6 +64,7 @@ export function useDuelArena({ gameId, game, now, serverNow, userId, language, r
   const answers = useMemo(() => toAnswerList(localized.answers), [localized])
   const questionText = localized.questionText
   const imageUrl = currentRound?.imageUrl ?? null
+  const imageAlt = localized.imageAlt
   // Client arrivé après le début de la question (reprise/rechargement) : on saute le délai de
   // lecture et les animations d'entrée pour rendre la question immédiatement. **Décidé une fois par manche, au premier
   // regard** (intro ou question) : recalculé à chaque rendu, `elapsedMs` dépassait `LATE_JOIN_MS` en pleine question
@@ -145,6 +146,7 @@ export function useDuelArena({ gameId, game, now, serverNow, userId, language, r
     answers,
     questionText,
     imageUrl,
+    imageAlt,
     joinedLate,
     correctAnswer,
     yourPick,

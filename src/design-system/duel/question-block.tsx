@@ -58,6 +58,8 @@ export interface QuestionBlockProps {
   /** Sujet et avancement, par exemple « Rois de France · question 4 sur 7 ». */
   meta?: string
   image?: string
+  /** Description de l'image pour les lecteurs d'écran ; vide : image décorative, ignorée. */
+  imageAlt?: string
   /** Réponses : leur place est réservée dès l'énoncé, même avant leur apparition. */
   answers?: readonly (AnswerCardProps & { key: string })[]
   /**
@@ -86,6 +88,7 @@ export function QuestionBlock({
   text,
   meta,
   image,
+  imageAlt = '',
   answers,
   answersShown = true,
   layout = 'auto',
@@ -182,6 +185,9 @@ export function QuestionBlock({
                   cachePolicy="memory-disk"
                   transition={0}
                   accessibilityIgnoresInvertColors
+                  accessible={imageAlt !== ''}
+                  accessibilityRole={imageAlt !== '' ? 'image' : undefined}
+                  accessibilityLabel={imageAlt !== '' ? imageAlt : undefined}
                   style={[StyleSheet.absoluteFill, { borderRadius: radius.xl, borderWidth: HAIRLINE, borderColor: colors.border }]}
                 />
               </Animated.View>

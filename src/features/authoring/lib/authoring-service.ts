@@ -72,7 +72,7 @@ export const authoringService = {
             id = (await api.post<IdResponse>(ENDPOINTS.topics.questions(topicId), operation.payload)).id
             break
           case 'translation':
-            await api.post<void>(ENDPOINTS.questions.translations(id ?? ''), { language: operation.language, text: operation.text, answers: operation.answers })
+            await api.post<void>(ENDPOINTS.questions.translations(id ?? ''), { language: operation.language, text: operation.text, answers: operation.answers, imageAlt: operation.imageAlt })
             break
           case 'text':
             await api.put<void>(ENDPOINTS.questions.text(id ?? ''), { language: operation.language, text: operation.text })
@@ -85,6 +85,9 @@ export const authoringService = {
             break
           case 'imageUrl':
             await api.put<void>(ENDPOINTS.questions.imageUrl(id ?? ''), { imageUrl: operation.imageUrl })
+            break
+          case 'imageAlt':
+            await api.put<void>(ENDPOINTS.questions.imageAlt(id ?? ''), { language: operation.language, imageAlt: operation.imageAlt })
             break
         }
         completed.push(operation)

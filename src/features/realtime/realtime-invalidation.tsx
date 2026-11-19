@@ -1,3 +1,4 @@
+import type { AchievementView } from '@joutio/client/api-types'
 import { useQueryClient, type QueryKey } from '@tanstack/react-query'
 import { useEffect } from 'react'
 import { useMe } from '@/features/me'
@@ -42,12 +43,6 @@ const PERSONAL: Record<NotificationView['type'], (notification: NotificationView
   ACCOUNT_SUSPENDED: () => [queryKeys.me()],
 }
 
-/** Déblocage poussé sur `/topic/achievements/{userId}` (`AchievementView` du BFF). */
-interface Achievement {
-  kind?: 'BADGE' | 'TITLE'
-  topicId?: string | null
-}
-
 /** Vues relues après une **re**connexion (retour au premier plan) : le flux personnel n'a pas d'historique. */
 const RESYNC = (): QueryKey[] => [queryKeys.me(), queryKeys.notifications.all(), queryKeys.challenges(), queryKeys.myRooms(), queryKeys.authoring.todo()]
 
@@ -86,9 +81,9 @@ export function RealtimeInvalidation() {
     )
 
     const offAchievements = subscribeStomp(`/topic/achievements/${userId}`, (message) => {
-      let achievement: Achievement
+      let achievement: AchievementView
       try {
-        achievement = JSON.parse(message.body) as Achievement
+        achievement = JSON.parse(message.body) as AchievementView
       } catch {
         return
       }
@@ -98,6 +93,8 @@ export function RealtimeInvalidation() {
         queryKeys.rewards(),
         queryKeys.profiles.all(userId),
         ...(achievement.kind === 'TITLE' && achievement.topicId ? [queryKeys.topic.all(achievement.topicId)] : []),
+        // Badge de duel : le résultat de la partie relit sa séquence (projection parfois en retard sur le résultat).
+        ...(achievement.kind === 'BADGE' && achievement.gameId ? [queryKeys.games.result(achievement.gameId)] : []),
       ])
     })
 

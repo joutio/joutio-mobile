@@ -42,6 +42,7 @@ export const ENDPOINTS = {
     answers: (questionId: string) => `/api/questions/${questionId}/answers`,
     correctAnswer: (questionId: string) => `/api/questions/${questionId}/correct-answer`,
     imageUrl: (questionId: string) => `/api/questions/${questionId}/image-url`,
+    imageAlt: (questionId: string) => `/api/questions/${questionId}/image-alt`,
     approve: (questionId: string) => `/api/questions/${questionId}/approve`,
     reject: (questionId: string) => `/api/questions/${questionId}/reject`,
     reports: (questionId: string) => `/api/questions/${questionId}/reports`,
