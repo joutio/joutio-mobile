@@ -17,13 +17,13 @@ import {
   DatabaseIcon,
   EnvelopeSimpleIcon,
   FileTextIcon,
+  FlagIcon,
   GlobeHemisphereWestIcon,
   InfoIcon,
   LifebuoyIcon,
   LightningIcon,
   ListGroup,
   ListRow,
-  MedalIcon,
   MobileSheet,
   PaletteIcon,
   ProhibitIcon,
@@ -36,14 +36,15 @@ import {
   toast,
   tokens,
   TrashIcon,
+  UserPlusIcon,
   useDeviceSettings,
   useThemeStore,
   VibrateIcon,
   type CategoryCode,
 } from '@/design-system'
+import type { NotificationCategory } from '@joutio/client/api-types'
 import { useMe, useSetBirthDate } from '@/features/me'
 import { PushPermissionRow } from '@/features/notifications/components/push-permission-row'
-import { usePushRematches } from '@/features/notifications/hooks/use-push-preferences'
 import { useAutoTrain } from '@/features/play/hooks/use-play'
 import { usePremiumSheet } from '@/features/premium/premium-store'
 import { useNotificationPreferences, useSetNotificationPreference, useUpdateMe } from '@/features/profile/hooks/use-profile'
@@ -175,44 +176,26 @@ function PrivacyPage() {
 
 function NotificationsPage() {
   const t = useT()
-  const device = useDeviceSettings()
-  const rematches = usePushRematches()
   const preferences = useNotificationPreferences()
   const setPreference = useSetNotificationPreference()
-  const rooms = preferences.data?.find((item) => item.category === 'ROOM')?.enabled ?? true
+  // Préférences serveur, activées par défaut (`reglages.md` § 5), communes à tous les appareils.
+  const enabled = (category: NotificationCategory) => preferences.data?.find((item) => item.category === category)?.enabled ?? true
+  const row = (category: NotificationCategory) => ({
+    control: 'toggle' as const,
+    on: enabled(category),
+    disabled: setPreference.isPending,
+    onToggle: (on: boolean) => setPreference.mutate({ category, enabled: on }),
+  })
   return (
     <SettingsFrame title={t('home.notifications')}>
       <ListGroup surface="surface">
         <PushPermissionRow />
       </ListGroup>
       <Group title={t('notifications.when')}>
-        <ListRow
-          icon={LightningIcon}
-          label={t('settings.notifyChallenges')}
-          sub={t('onboarding.notifications.challenge')}
-          control="toggle"
-          on={rooms}
-          disabled={setPreference.isPending}
-          onToggle={(enabled) => setPreference.mutate({ category: 'ROOM', enabled })}
-        />
-        <ListRow
-          icon={ArrowCounterClockwiseIcon}
-          label={t('settings.notifyRematches')}
-          sub={t('onboarding.notifications.rematch')}
-          control="toggle"
-          on={device.notifyRematches}
-          disabled={rematches.isPending}
-          onToggle={(enabled) => rematches.mutate(enabled)}
-        />
-        <ListRow
-          icon={MedalIcon}
-          label={t('settings.notifyRanks')}
-          sub={t('onboarding.notifications.rank')}
-          control="toggle"
-          on={device.notifyRanks}
-          onToggle={(notifyRanks) => device.set({ notifyRanks })}
-          last
-        />
+        <ListRow icon={LightningIcon} label={t('settings.notifyChallenges')} sub={t('onboarding.notifications.challenge')} {...row('ROOM')} />
+        <ListRow icon={ArrowCounterClockwiseIcon} label={t('settings.notifyRematches')} sub={t('onboarding.notifications.rematch')} {...row('REMATCH')} />
+        <ListRow icon={UserPlusIcon} label={t('settings.notifyFollowers')} sub={t('notifications.followersSub')} {...row('FOLLOW')} />
+        <ListRow icon={FlagIcon} label={t('settings.notifyReports')} sub={t('notifications.reportsSub')} {...row('QUESTION')} last />
       </Group>
     </SettingsFrame>
   )

@@ -2,7 +2,6 @@ import Constants from 'expo-constants'
 import * as Notifications from 'expo-notifications'
 import { Platform } from 'react-native'
 import { create } from 'zustand'
-import { useDeviceSettings } from '@/design-system/device-settings'
 import { api } from '@/lib/api'
 import { getAccessToken, getUserId } from '@/lib/auth'
 import { config } from '@/lib/config'
@@ -96,7 +95,6 @@ export function syncExpoPush(): Promise<void> {
             installationId: installation,
             token,
             platform: Platform.OS === 'ios' ? 'IOS' : 'ANDROID',
-            rematches: useDeviceSettings.getState().notifyRematches,
           },
           { signal: controller.signal },
         )

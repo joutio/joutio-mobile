@@ -2,7 +2,7 @@ import { requestPushPermission } from '@/features/notifications/lib/expo-push'
 import { router } from '@/shared/navigation/router'
 import { useState } from 'react'
 import { View } from 'react-native'
-import { ArrowCounterClockwiseIcon, BellRingingIcon, Button, LightningIcon, ListRow, MedalIcon, Text, tokens, useTheme } from '@/design-system'
+import { ArrowCounterClockwiseIcon, BellRingingIcon, Button, LightningIcon, ListRow, Text, tokens, UserPlusIcon, useTheme } from '@/design-system'
 import { useCompleteOnboarding } from '../hooks/use-onboarding'
 import { useOnboardingStore } from '../onboarding-store'
 import { Steps } from './steps'
@@ -75,7 +75,7 @@ export function NotificationsStep() {
       <View style={{ borderRadius: radius.lg, backgroundColor: colors.surface, overflow: 'hidden' }}>
         <ListRow icon={LightningIcon} label={t('onboarding.notifications.challenge')} control="none" />
         <ListRow icon={ArrowCounterClockwiseIcon} label={t('onboarding.notifications.rematch')} control="none" />
-        <ListRow icon={MedalIcon} label={t('onboarding.notifications.rank')} control="none" last />
+        <ListRow icon={UserPlusIcon} label={t('onboarding.notifications.follower')} control="none" last />
       </View>
     </Steps>
   )

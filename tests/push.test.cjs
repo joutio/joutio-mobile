@@ -87,7 +87,6 @@ function runtime({ granted = true, configured = true } = {}) {
           }
         },
       },
-      '@/design-system/device-settings': { useDeviceSettings: { getState: () => ({ notifyRematches: false }) } },
       '@/lib/api': { api },
       '@/lib/auth': { getUserId: () => user, getAccessToken: () => 'jwt' },
       '@/lib/config': { config: { apiUrl: 'https://api.example' } },
@@ -115,11 +114,11 @@ function runtime({ granted = true, configured = true } = {}) {
     },
   }
 }
-test('registers platform and per-installation rematch preference', async () => {
+test('registers the platform without any per-installation preference', async () => {
   const r = runtime()
   await r.module.syncExpoPush()
   assert.equal(r.requests.length, 1)
-  assert.equal(r.requests[0].body.rematches, false)
+  assert.equal('rematches' in r.requests[0].body, false)
   assert.equal(r.requests[0].body.platform, 'ANDROID')
   assert.equal(r.requests[0].body.token, 'ExpoPushToken[abc]')
 })

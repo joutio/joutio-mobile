@@ -2,7 +2,7 @@
 
 Le lot envoie les invitations (`CHALLENGE_RECEIVED`, dont les revanches) et les relances
 (`WIZZ`). Au premier plan, Joutio affiche des toasts cliquables depuis STOMP (secours Expo), sans bannière ni son système. Les toasts sont dédupliqués et exclus pendant le duel ; les revanches conservent leur modale.
-Les préférences serveur `ROOM` et la préférence Revanches de chaque installation sont respectées.
+Les préférences serveur `ROOM` et `REMATCH` sont respectées, relues à l'envoi.
 Rangs/badges restent hors de ce lot ; leur réglage actuel ne déclenche aucun push.
 
 ## 1. Expo et Firebase Android
@@ -44,7 +44,7 @@ Les abonnements peuvent déjà être enregistrés, mais aucun envoi n'est prépa
 - Aucun changement n'est nécessaire dans `joutio-notification` ni dans le SDK.
 
 Une installation est enregistrée par `PUT /api/push/expo/subscriptions` avec
-`{ installationId, token, platform: "ANDROID"|"IOS", rematches }`. Réponse `204`.
+`{ installationId, token, platform: "ANDROID"|"IOS" }`. Réponse `204`.
 La suppression utilise `DELETE /api/push/expo/subscriptions?installationId=...` (`204`).
 Le joueur provient exclusivement du JWT. Un joueur ne peut supprimer l'installation d'un autre.
 La réinscription d'un token le réaffecte atomiquement au compte courant, sans dupliquer l'appareil.
@@ -59,7 +59,7 @@ Sur un appareil Android (ou un émulateur avec Play Services), avec deux comptes
   les réglages peut empêcher toute livraison jusqu'à la prochaine ouverture.
 - Toucher une invitation : ouvrir Défis ; toucher un wizz valide : ouvrir le salon.
   Tester aussi l'ouverture à froid, après connexion et après expiration/suppression de la salle.
-- Désactiver `ROOM`, puis Revanches ; vérifier le filtrage. Retirer l'autorisation système,
+- Désactiver `ROOM`, puis Revanches (`REMATCH`) ; vérifier le filtrage. Retirer l'autorisation système,
   rouvrir Joutio et vérifier le désenregistrement.
 - Tester deux appareils sur le même compte, puis une déconnexion et une connexion avec un autre
   compte sur un appareil. Aucun nouvel envoi ne doit viser l'ancien compte après réaffectation.
