@@ -10,7 +10,6 @@ import {
   RefreshControl,
   ScrollView,
   View,
-  type LayoutChangeEvent,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
   type ScrollViewInstance,
@@ -111,14 +110,6 @@ export function Screen({
   const headerOffset = scrollOffset ?? ownOffset
   const headerContext = useMemo(() => ({ docking: stickyTabs, offset: headerOffset }), [stickyTabs, headerOffset])
   const separator = useDerivedValue(() => scrollEdgeProgress(headerOffset.value) * (1 - stickyTabs.value))
-  // Filet du haut de la barre basse (2026-11-14) : visible tant que du contenu reste sous elle, effacé en bas de page
-  // ou quand tout tient. Recalculé au défilement, au changement de contenu et de cadre.
-  const footerEdge = useSharedValue(0)
-  const metrics = useRef({ offset: 0, content: 0, frame: 0 })
-  const updateFooterEdge = () => {
-    const { offset, content, frame } = metrics.current
-    footerEdge.value = Math.max(0, Math.min(1, (content - frame - offset) / 8))
-  }
   const { refreshing, refresh } = useGuardedRefresh(onRefresh)
   const refreshControl = onRefresh ? (
     <RefreshControl refreshing={refreshing} tintColor={colors.muted} colors={[colors.accentInk]} progressBackgroundColor={colors.surface} onRefresh={refresh} />
@@ -133,26 +124,10 @@ export function Screen({
   const scrollHandlers = {
     onScroll: (event: NativeSyntheticEvent<NativeScrollEvent>) => {
       headerOffset.value = event.nativeEvent.contentOffset.y + event.nativeEvent.contentInset.top
-      if (bottomBar) {
-        metrics.current = {
-          offset: event.nativeEvent.contentOffset.y,
-          content: event.nativeEvent.contentSize.height,
-          frame: event.nativeEvent.layoutMeasurement.height,
-        }
-        updateFooterEdge()
-      }
       scrollProps?.onScroll?.(event)
     },
-    onContentSizeChange: (width: number, height: number) => {
-      metrics.current.content = height
-      updateFooterEdge()
-      scrollProps?.onContentSizeChange?.(width, height)
-    },
-    onLayout: (event: LayoutChangeEvent) => {
-      metrics.current.frame = event.nativeEvent.layout.height
-      updateFooterEdge()
-      scrollProps?.onLayout?.(event)
-    },
+    onContentSizeChange: scrollProps?.onContentSizeChange,
+    onLayout: scrollProps?.onLayout,
     onScrollBeginDrag: scrollProps?.onScrollBeginDrag,
     onScrollEndDrag: scrollProps?.onScrollEndDrag,
     onMomentumScrollEnd: scrollProps?.onMomentumScrollEnd,
@@ -211,8 +186,8 @@ export function Screen({
         <View style={{ paddingBottom: tabBarOwnsBottom ? 0 : insets.bottom }}>
           <BottomBarBackground />
           {bottomBar}
-          {/* Après la barre : son fond ne couvre pas le filet. */}
-          <HeaderSeparator progress={footerEdge} edge="top" />
+          {/* Filet haut permanent (2026-11-19), défilement ou non. Après la barre : son fond ne couvre pas le filet. */}
+          <HeaderSeparator edge="top" />
         </View>
       )}
       {overlay}
