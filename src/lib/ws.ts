@@ -9,8 +9,9 @@ import { config } from './config'
  * Plusieurs abonnements partagent le client ; à chaque (re)connexion, toutes les destinations sont ré-abonnées et
  * leurs `onConnect` rappelés (les flux rejouent alors leur historique REST pour combler la coupure).
  *
- * Heartbeat 10 s dans les deux sens : un battement manqué ferme le socket, la connexion passe en `reconnecting` et
- * l'écran de jeu affiche la reconnexion. Fermée en arrière-plan, rouverte au premier plan.
+ * Heartbeat 4 s dans les deux sens (`duel-horloge-ntp`) : un battement manqué ferme le socket avant la fin d'une manche,
+ * la connexion passe en `reconnecting` et l'écran de jeu affiche la reconnexion. Fermée en arrière-plan, rouverte au
+ * premier plan ; un changement de réseau (retour, ou Wi-Fi ↔ cellulaire) relance tout de suite la connexion.
  */
 export type ConnectionStatus = 'idle' | 'connecting' | 'online' | 'reconnecting'
 
@@ -46,8 +47,8 @@ const client = new Client({
   reconnectTimeMode: ReconnectionTimeMode.EXPONENTIAL,
   // Un duel ne peut pas attendre : au plus 5 s entre deux tentatives.
   maxReconnectDelay: 5_000,
-  heartbeatIncoming: 10_000,
-  heartbeatOutgoing: 10_000,
+  heartbeatIncoming: 4_000,
+  heartbeatOutgoing: 4_000,
   // React Native : le WebSocket ne transmet pas l'octet NUL des trames texte.
   forceBinaryWSFrames: true,
   appendMissingNULLonIncoming: true,
@@ -154,12 +155,40 @@ AppState.addEventListener('change', (state) => {
  * Reconnexion demandée par le joueur (« Réessayer ») : coupe la tentative en cours et repart tout de suite, sans attendre
  * le délai exponentiel. Sans abonnement actif, il n'y a rien à reconnecter.
  */
-export async function reconnectStomp(): Promise<void> {
+export async function reconnectStomp({ evenIfConnected = false }: { evenIfConnected?: boolean } = {}): Promise<void> {
   if (!active || suspended) return
-  if (client.connected) return
+  if (client.connected && !evenIfConnected) return
   await (deactivating ?? client.deactivate({ force: true }))
   if (active && !suspended && !client.active) client.activate()
 }
+
+/**
+ * Changement de réseau : retour du réseau, ou passage Wi-Fi ↔ cellulaire. Le socket lié à l'ancienne interface est mort
+ * sans le savoir (il paraît connecté jusqu'au battement manqué) : on repart tout de suite. `expo-network` est chargé
+ * sans planter (dev build antérieur, voir `use-online.ts`).
+ */
+function watchNetwork() {
+  let network: typeof import('expo-network') | undefined
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    network = require('expo-network') as typeof import('expo-network')
+  } catch {
+    return
+  }
+  let last: { connected: boolean; type?: string } | null = null
+  try {
+    network.addNetworkStateListener((state) => {
+      const next = { connected: state.isConnected !== false && state.isInternetReachable !== false, type: state.type }
+      const changed = last !== null && next.connected && (!last.connected || last.type !== next.type)
+      last = next
+      if (changed) void reconnectStomp({ evenIfConnected: true })
+    })
+  } catch {
+    // Module natif absent malgré l'import : le heartbeat et le délai exponentiel suffisent.
+  }
+}
+
+watchNetwork()
 
 /**
  * Abonne `handler` à une destination ; `onConnect` est rappelé à chaque (re)connexion, et tout de suite si la connexion
