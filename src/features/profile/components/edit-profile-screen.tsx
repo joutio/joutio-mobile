@@ -6,7 +6,7 @@ import type { ApiError } from '@joutio/client/api-types'
 import { useNavigation, usePreventRemove } from 'expo-router'
 import { router } from '@/shared/navigation/router'
 import { useEffect, useRef, useState } from 'react'
-import { Controller, useForm, useWatch } from 'react-hook-form'
+import { Controller, useForm, useFormState, useWatch } from 'react-hook-form'
 import { View } from 'react-native'
 import { z } from 'zod'
 import {
@@ -34,8 +34,12 @@ import { currentLanguage, useT } from '@/lib/i18n'
 /** Ratio de la bannière du profil (lab : 320 de haut sur la largeur du téléphone). */
 const BANNER_ASPECT: [number, number] = [5, 4]
 
-/** Profil et bannière : la bannière est une URL déjà envoyée, sans règle de saisie. */
-const schema = profileSchema.extend({ bannerUrl: z.string().nullable() })
+/**
+ * Profil et bannière : la bannière est une URL déjà envoyée, sans règle de saisie. Les règles du pseudonyme sont
+ * appliquées par `usePseudonymCheck`, seulement s'il a changé : un pseudonyme antérieur aux règles reste enregistrable
+ * avec le reste du profil.
+ */
+const schema = profileSchema.extend({ pseudonym: z.string().trim(), bannerUrl: z.string().nullable() })
 
 /**
  * Éditer le profil (`design/specs/screens/editer-profil.md`) : page ouverte par le bouton du Profil, Annuler /
@@ -50,6 +54,13 @@ export function EditProfileScreen() {
   const avatar = useMyAvatar()
   const initial = { pseudonym: me?.pseudonym ?? '', bio: me?.bio ?? '', country: me?.country ?? null, bannerUrl: me?.bannerUrl ?? null }
   const form = useForm({ resolver: zodResolver(schema), mode: 'onChange', defaultValues: initial })
+  // Lu à chaque rendu, avant tout court-circuit : react-hook-form ne suit `isValid` qu'une fois lu.
+  const { isValid } = useFormState({ control: form.control })
+  // Profil arrivé après l'ouverture : le brouillon part des valeurs enregistrées.
+  const loaded = me !== undefined
+  useEffect(() => {
+    if (loaded) form.reset(initial)
+  }, [loaded]) // une seule fois, à l'arrivée du profil
   const [pseudonym, bio, country, bannerUrl] = useWatch({ control: form.control, name: ['pseudonym', 'bio', 'country', 'bannerUrl'] })
   const draft = { pseudonym, bio, country, bannerUrl }
   const setCountry = (value: string | null) => form.setValue('country', value, { shouldValidate: true })
@@ -135,7 +146,7 @@ export function EditProfileScreen() {
           title={t('profile.edit')}
           cancel={t('topic.cancel')}
           confirm={t('settings.save')}
-          confirmDisabled={!dirty || !pseudonymOk || !form.formState.isValid || uploading || saving}
+          confirmDisabled={!dirty || !pseudonymOk || !isValid || uploading || saving}
           onCancel={() => router.back()}
           onConfirm={() => void save()}
         />

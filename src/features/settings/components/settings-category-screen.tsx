@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { birthDateSchema } from '@joutio/client/forms'
 import { isoDay } from '@joutio/client/profile'
 import { useState } from 'react'
-import { Controller, useForm } from 'react-hook-form'
+import { Controller, useForm, useFormState } from 'react-hook-form'
 import { Linking, View } from 'react-native'
 import {
   ArrowCounterClockwiseIcon,
@@ -88,6 +88,7 @@ function BirthDateSheet({ open, value, onClose }: { open: boolean; value: string
   const t = useT()
   const save = useSetBirthDate()
   const form = useForm({ resolver: zodResolver(birthDateSchema(isoDay(new Date()))), mode: 'onChange', defaultValues: { birthDate: value ?? '' } })
+  const { isValid } = useFormState({ control: form.control })
   const dismiss = () => {
     form.reset({ birthDate: value ?? '' })
     onClose()
@@ -100,7 +101,7 @@ function BirthDateSheet({ open, value, onClose }: { open: boolean; value: string
       footer={
         <Button
           full
-          disabled={!form.formState.isDirty || !form.formState.isValid}
+          disabled={!form.formState.isDirty || !isValid}
           loading={save.isPending}
           onPress={() =>
             void form.handleSubmit(({ birthDate }) =>

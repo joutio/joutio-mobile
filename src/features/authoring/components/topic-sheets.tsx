@@ -2,7 +2,7 @@ import { MAX_DESCRIPTION } from '@joutio/client/authoring'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { createTopicSchema, topicDescriptionsSchema, topicNamesSchema } from '@joutio/client/forms'
 import { useEffect, useState } from 'react'
-import { Controller, useForm, useWatch } from 'react-hook-form'
+import { Controller, useForm, useFormState, useWatch } from 'react-hook-form'
 import { View } from 'react-native'
 import { Button, Field, ListGroup, ListRow, MobileSheet, Notice, RadioGroup, Segmented, Text, toCategoryCode, tokens, type CategoryCode } from '@/design-system'
 import type { Language } from '@joutio/client/api-types'
@@ -228,6 +228,7 @@ export function DescriptionSheet({
   const t = useT()
   const [language, setLanguage] = useState<Language>('fr')
   const form = useForm({ resolver: zodResolver(topicDescriptionsSchema), mode: 'onChange', defaultValues: initial })
+  const { isValid } = useFormState({ control: form.control })
   const [french, english] = useWatch({ control: form.control, name: ['fr', 'en'] })
   useEffect(() => {
     if (!open) return
@@ -247,7 +248,7 @@ export function DescriptionSheet({
       title={t('workshop.description')}
       subtitle={t('workshop.descriptionSub')}
       footer={
-        <Button full loading={busy} disabled={!changed || !form.formState.isValid} onPress={() => void form.handleSubmit((values) => onSave(changesOf(values)))()}>
+        <Button full loading={busy} disabled={!changed || !isValid} onPress={() => void form.handleSubmit((values) => onSave(changesOf(values)))()}>
           {t('settings.save')}
         </Button>
       }

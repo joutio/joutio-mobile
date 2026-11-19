@@ -4,7 +4,7 @@ import { router } from '@/shared/navigation/router'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { questionDraftSchema } from '@joutio/client/forms'
 import { useEffect, useState } from 'react'
-import { useForm, useWatch } from 'react-hook-form'
+import { useForm, useFormState, useWatch } from 'react-hook-form'
 import { View } from 'react-native'
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -93,6 +93,7 @@ export function QuestionEditorScreen() {
     mode: 'onChange',
     defaultValues: original ? draftFromQuestion(original) : emptyDraft(),
   })
+  const { isValid } = useFormState({ control: form.control })
   const [texts, answersByLanguage, correct, imageUrl, alt] = useWatch({ control: form.control, name: ['texts', 'answers', 'correct', 'imageUrl', 'alt'] })
   const draft: QuestionDraft = { texts, answers: answersByLanguage, correct, imageUrl, alt }
   const validate = { shouldValidate: true }
@@ -121,7 +122,7 @@ export function QuestionEditorScreen() {
       (permissions?.canManage && original?.status !== 'ARCHIVED') ||
       (original?.creatorId === getUserId() && (original?.status === 'PENDING' || original?.status === 'REJECTED')),
     )
-  const ready = loaded && form.formState.isValid && !uploading && mayEdit && !locked
+  const ready = loaded && isValid && !uploading && mayEdit && !locked
   const actions = original ? questionActions(workshopRole(permissions), original, getUserId() ?? undefined) : []
   const missingCorrect = filled && draft.correct === undefined
   const text = draft.texts[language]
