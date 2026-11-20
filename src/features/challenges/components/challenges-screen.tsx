@@ -9,6 +9,7 @@ import {
   Button,
   ChallengeListRow,
   DoorOpenIcon,
+  SwordIcon,
   DragToLoadMore,
   EmptyState,
   FeedFooter,
@@ -35,7 +36,7 @@ import { readServerNow } from '@/lib/realtime/server-clock'
 import { queryKeys } from '@joutio/client/query'
 import { TopicPickerSheet } from '@/features/topics/components/topic-picker-sheet'
 import type { ChallengeView } from '@joutio/client/api-types'
-import { remindDelay } from '@joutio/client/rooms'
+import { remindDelay, splitRoomsByOrigin } from '@joutio/client/rooms'
 import { avatarSvg } from '@/shared/utils/avatar'
 import { topicName } from '@/shared/utils/topic-name'
 import {
@@ -107,6 +108,7 @@ export function ChallengesScreen() {
 
   const { received, sent } = splitChallenges(challenges.data, userId)
   const salons = resumableRooms(rooms.data)
+  const roomSections = splitRoomsByOrigin(salons)
   const now = readServerNow()
   // Décompte des relances (10 min) : l'écran se re-rend toutes les 15 s tant qu'un défi envoyé attend sa relance.
   const remindPending = sent.some((challenge) => remindDelay(challenge, now) > 0)
@@ -316,35 +318,47 @@ export function ChallengesScreen() {
           }
         />
       ) : (
-        <View style={{ gap: tokens.space[4] }}>
-          <SectionHeader title={t('mobile.challenges.openRooms')} />
-          <ListGroup surface="surface">
-            {salons.map((room, index) => (
-              <ListRow
-                key={room.roomId}
-                icon={DoorOpenIcon}
-                label={topicName(room.topic.names)}
-                sub={(() => {
-                  const who = room.opponent ? t('challenges.roomWith', { name: room.opponent.pseudonym }) : t('challenges.roomWaiting')
-                  return room.expiresAt ? t('challenges.roomSub', { who, duration: duration(Date.parse(room.expiresAt) - now) }) : who
-                })()}
-                control="chevron"
-                disabled={room.roomId.startsWith('pending-')}
-                onPress={() =>
-                  router.push({
-                    pathname: '/room/[roomId]',
-                    params: {
-                      roomId: room.roomId,
-                      topicId: room.topic.topicId,
-                      topicName: topicName(room.topic.names),
-                      category: room.topic.category ?? '',
-                    },
-                  })
-                }
-                last={index === salons.length - 1}
-              />
-            ))}
-          </ListGroup>
+        <View style={{ gap: tokens.space[6] }}>
+          {(
+            [
+              ['challenges.acceptedChallenges', roomSections.challenges],
+              ['challenges.privateRooms', roomSections.shared],
+            ] as const
+          ).map(([title, list]) =>
+            list.length === 0 ? null : (
+              <View key={title} style={{ gap: tokens.space[4] }}>
+                <SectionHeader title={t(title)} />
+                <ListGroup surface="surface">
+                  {list.map((room, index) => (
+                    <ListRow
+                      key={room.roomId}
+                      icon={room.origin === 'SHARED' ? DoorOpenIcon : SwordIcon}
+                      label={topicName(room.topic.names)}
+                      sub={(() => {
+                        const opponent = room.opponent ? t('challenges.roomWith', { name: room.opponent.pseudonym }) : t('challenges.roomWaiting')
+                        const who = room.origin === 'REMATCH' ? `${t('result.rematch')} · ${opponent}` : opponent
+                        return room.expiresAt ? t('challenges.roomSub', { who, duration: duration(Date.parse(room.expiresAt) - now) }) : who
+                      })()}
+                      control="chevron"
+                      disabled={room.roomId.startsWith('pending-')}
+                      onPress={() =>
+                        router.push({
+                          pathname: '/room/[roomId]',
+                          params: {
+                            roomId: room.roomId,
+                            topicId: room.topic.topicId,
+                            topicName: topicName(room.topic.names),
+                            category: room.topic.category ?? '',
+                          },
+                        })
+                      }
+                      last={index === list.length - 1}
+                    />
+                  ))}
+                </ListGroup>
+              </View>
+            ),
+          )}
         </View>
       )}
     </TabScrollView>

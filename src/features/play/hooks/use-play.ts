@@ -132,6 +132,7 @@ export function useCreatePrivateRoom() {
           topic: { topicId: topic.topicId, names: { fr: topic.name }, category: topic.category ?? null, imageUrl: null, pictogramUrl: null },
           status: 'WAITING_PLAYERS',
           vsBot: false,
+          origin: 'SHARED',
           canCancel: true,
           opponent: null,
           initiatorPresent: false,

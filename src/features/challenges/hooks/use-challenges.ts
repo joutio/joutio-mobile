@@ -159,6 +159,7 @@ export function useAcceptChallenge() {
                 topic: challenge.topic,
                 status: 'WAITING_PLAYERS',
                 vsBot: false,
+                origin: challenge.gameId ? 'REMATCH' : 'CHALLENGE',
                 canCancel: false,
                 opponent: null,
                 initiatorPresent: false,
