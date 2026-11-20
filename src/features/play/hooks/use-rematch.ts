@@ -102,8 +102,8 @@ export function useSendRematch({
       const pending: ChallengeView = {
         challengeId: tempId,
         topic: { topicId: topic.topicId, names: { fr: topic.name }, category: topic.category ?? null, imageUrl: null, pictogramUrl: null },
-        challenger: { userId: userId ?? '', pseudonym: me?.pseudonym ?? '', avatarOptions: me?.avatarOptions ?? null, suspended: false },
-        opponent: { userId: opponentId, pseudonym: opponent?.pseudonym ?? t('topic.opponent'), avatarOptions: opponent?.avatarOptions ?? null, suspended: false },
+        challenger: { userId: userId ?? '', pseudonym: me?.pseudonym ?? '', avatarOptions: me?.avatarOptions ?? null, suspended: false, premium: me?.premium === true },
+        opponent: { userId: opponentId, pseudonym: opponent?.pseudonym ?? t('topic.opponent'), avatarOptions: opponent?.avatarOptions ?? null, suspended: false, premium: opponent?.premium === true },
         status: 'PENDING',
         roomId: null,
         gameId,

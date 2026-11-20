@@ -118,6 +118,7 @@ export function PlayerProfileScreen() {
         following: data.following,
         presence: data.presence,
         suspended: data.suspended,
+        premium: data.premium,
       }
     : null
   const openHistory = () =>

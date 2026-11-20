@@ -169,8 +169,8 @@ export function useChallengePlayer() {
         const challenge: ChallengeView = {
           challengeId: tempId,
           topic: { topicId: topic.topicId, names: { fr: topic.name }, category: topic.category ?? null, imageUrl: null, pictogramUrl: null },
-          challenger: { userId: me.data?.userId ?? '', pseudonym: me.data?.pseudonym ?? '', avatarOptions: me.data?.avatarOptions ?? null, suspended: false },
-          opponent: { ...opponent, avatarOptions: null, suspended: false },
+          challenger: { userId: me.data?.userId ?? '', pseudonym: me.data?.pseudonym ?? '', avatarOptions: me.data?.avatarOptions ?? null, suspended: false, premium: me.data?.premium === true },
+          opponent: { ...opponent, avatarOptions: null, suspended: false, premium: false },
           status: 'PENDING',
           roomId: null,
           gameId: null,
