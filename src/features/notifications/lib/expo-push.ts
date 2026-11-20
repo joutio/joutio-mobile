@@ -17,6 +17,21 @@ export const usePushState = create<{ permission: Permission; error: boolean }>((
 let installationPromise: Promise<string> | undefined
 let operations: Promise<unknown> = Promise.resolve()
 let generation = 0
+/** Dernière inscription acceptée par le serveur : un même jeton n'est renvoyé qu'après ce délai. */
+const REGISTRATION_REFRESH_MS = 12 * 60 * 60 * 1000
+let registered: { key: string; at: number } | undefined
+let lastDeviceToken: string | undefined
+
+/**
+ * Vrai si le jeton de l'appareil a changé. `getExpoPushTokenAsync` ré-émet le jeton courant vers
+ * `addPushTokenListener` : sans ce filtre, le listener relance une inscription qui le ré-émet, en boucle.
+ */
+export function devicePushTokenChanged(token: { data: unknown }): boolean {
+  const value = JSON.stringify(token.data)
+  if (value === lastDeviceToken) return false
+  lastDeviceToken = value
+  return true
+}
 
 function installationId(): Promise<string> {
   installationPromise ??= (async () => {
@@ -68,6 +83,7 @@ export function syncExpoPush(): Promise<void> {
         const timeout = setTimeout(() => controller.abort(), 8000)
         try {
           await api.delete(PATH, { query: { installationId: installation }, signal: controller.signal })
+          registered = undefined
         } finally {
           clearTimeout(timeout)
         }
@@ -86,6 +102,11 @@ export function syncExpoPush(): Promise<void> {
           .finally(() => clearTimeout(timeout))
       })
       if (userId !== getUserId() || started !== generation) return
+      const key = `${userId}|${installation}|${token}`
+      if (registered?.key === key && Date.now() - registered.at < REGISTRATION_REFRESH_MS) {
+        usePushState.setState({ error: false })
+        return
+      }
       const controller = new AbortController()
       const timeout = setTimeout(() => controller.abort(), 8000)
       try {
@@ -101,6 +122,7 @@ export function syncExpoPush(): Promise<void> {
       } finally {
         clearTimeout(timeout)
       }
+      registered = { key, at: Date.now() }
       usePushState.setState({ error: false })
     })
   operations = task
@@ -113,6 +135,7 @@ export function syncExpoPush(): Promise<void> {
 /** Appel direct borné, sans refresh ni récursion si la session est déjà refusée. */
 export async function unregisterExpoPush(waitForWrites = true): Promise<void> {
   generation++
+  registered = undefined
   const accessToken = getAccessToken()
   if (!pushConfigured || !accessToken) return
   const installation = await installationId()

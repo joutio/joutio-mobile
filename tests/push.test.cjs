@@ -122,6 +122,34 @@ test('registers the platform without any per-installation preference', async () 
   assert.equal(r.requests[0].body.platform, 'ANDROID')
   assert.equal(r.requests[0].body.token, 'ExpoPushToken[abc]')
 })
+test('an unchanged token is registered once, a new token or account registers again', async () => {
+  const r = runtime()
+  await r.module.syncExpoPush()
+  await r.module.syncExpoPush()
+  assert.equal(r.requests.length, 1)
+  r.setToken(async () => ({ data: 'ExpoPushToken[new]' }))
+  await r.module.syncExpoPush()
+  assert.equal(r.requests.length, 2)
+  r.setUser('other')
+  await r.module.syncExpoPush()
+  assert.equal(r.requests.length, 3)
+})
+test('logout forgets the registration so the next login registers again', async () => {
+  const r = runtime()
+  await r.module.syncExpoPush()
+  await r.module.unregisterExpoPush(false)
+  await r.module.syncExpoPush()
+  assert.deepEqual(
+    r.requests.map((request) => request.method),
+    ['PUT', 'RAW_DELETE', 'PUT'],
+  )
+})
+test('only a renewed device token passes the token listener filter', () => {
+  const r = runtime()
+  assert.equal(r.module.devicePushTokenChanged({ type: 'ios', data: 'a' }), true)
+  assert.equal(r.module.devicePushTokenChanged({ type: 'ios', data: 'a' }), false)
+  assert.equal(r.module.devicePushTokenChanged({ type: 'ios', data: 'b' }), true)
+})
 test('unconfigured projects do not register', async () => {
   const r = runtime({ configured: false })
   await r.module.syncExpoPush()
@@ -346,7 +374,7 @@ function pushRuntime() {
       },
     },
     '../hooks/use-open-notification': { useOpenNotification: () => open },
-    '../lib/expo-push': { syncExpoPush: async () => {}, unregisterExpoPush: async () => {} },
+    '../lib/expo-push': { syncExpoPush: async () => {}, unregisterExpoPush: async () => {}, devicePushTokenChanged: () => true },
     '../lib/notification-target': policy,
     '../lib/push-target': targets,
   })

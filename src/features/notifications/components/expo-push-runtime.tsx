@@ -10,7 +10,7 @@ import { useMe } from '@/features/me'
 import { queryKeys } from '@joutio/client/query'
 import { getUserId, onBeforeSessionClear } from '@/lib/auth'
 import { useOpenNotification } from '../hooks/use-open-notification'
-import { syncExpoPush, unregisterExpoPush } from '../lib/expo-push'
+import { devicePushTokenChanged, syncExpoPush, unregisterExpoPush } from '../lib/expo-push'
 import { createNotificationDeduplicator } from '../lib/notification-target'
 import { parsePushNotice, type PushNotice } from '../lib/push-target'
 
@@ -77,7 +77,10 @@ export function ExpoPushRuntime() {
     const state = AppState.addEventListener('change', (next) => {
       if (next === 'active') sync()
     })
-    const token = Notifications.addPushTokenListener(sync)
+    // Seul un jeton réellement renouvelé relance l'inscription (le listener reçoit aussi nos propres lectures).
+    const token = Notifications.addPushTokenListener((next) => {
+      if (devicePushTokenChanged(next)) sync()
+    })
     return () => {
       state.remove()
       token.remove()

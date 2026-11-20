@@ -49,6 +49,11 @@ La suppression utilise `DELETE /api/push/expo/subscriptions?installationId=...` 
 Le joueur provient exclusivement du JWT. Un joueur ne peut supprimer l'installation d'un autre.
 La réinscription d'un token le réaffecte atomiquement au compte courant, sans dupliquer l'appareil.
 
+Côté app, l'inscription est relancée à l'ouverture de session, au retour au premier plan et quand
+le jeton de l'appareil change. Le `PUT` n'est renvoyé que si le couple compte, installation, jeton
+change, ou après 12 h. `getExpoPushTokenAsync` ré-émet le jeton vers `addPushTokenListener` : le
+listener ignore un jeton identique, sinon l'inscription boucle (plus d'un `PUT` par seconde observé).
+
 ## 3. Validation Android
 
 Sur un appareil Android (ou un émulateur avec Play Services), avec deux comptes Joutio :
