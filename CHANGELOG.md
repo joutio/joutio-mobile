@@ -1,3 +1,9 @@
+## [1.54.0](https://github.com/joutio/joutio-mobile/compare/v1.53.1...v1.54.0) (2026-11-20)
+
+### Features
+
+* **duel:** answers clickable as they enter, timer after the appearance ([fc9ffff](https://github.com/joutio/joutio-mobile/commit/fc9ffff20b8c67cc13cde453c3e0d9468e333725))
+
 ## [1.53.1](https://github.com/joutio/joutio-mobile/compare/v1.53.0...v1.53.1) (2026-11-20)
 
 ### Bug Fixes
