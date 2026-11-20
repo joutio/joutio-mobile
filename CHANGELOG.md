@@ -1,3 +1,9 @@
+## [1.53.1](https://github.com/joutio/joutio-mobile/compare/v1.53.0...v1.53.1) (2026-11-20)
+
+### Bug Fixes
+
+* **push:** stop the expo push token registration loop ([d368cda](https://github.com/joutio/joutio-mobile/commit/d368cda968fed62d3aa36481ba98e237907d6b07))
+
 ## [1.53.0](https://github.com/joutio/joutio-mobile/compare/v1.52.0...v1.53.0) (2026-11-19)
 
 ### Features
