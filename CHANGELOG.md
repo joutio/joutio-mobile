@@ -1,3 +1,9 @@
+## [1.57.0](https://github.com/joutio/joutio-mobile/compare/v1.56.0...v1.57.0) (2026-11-20)
+
+### Features
+
+* **challenges:** accepted challenges and private rooms sections ([1626577](https://github.com/joutio/joutio-mobile/commit/162657797e41cc8ab24d8e8765e51102fbd51e9a))
+
 ## [1.56.0](https://github.com/joutio/joutio-mobile/compare/v1.55.0...v1.56.0) (2026-11-20)
 
 ### Features
