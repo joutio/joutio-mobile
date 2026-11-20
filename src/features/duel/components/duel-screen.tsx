@@ -250,7 +250,8 @@ function DuelScreenContent() {
   const seconds = Math.max(0, Math.ceil(arena.timeLeftDisplay))
   // Scores et verdicts sont autoritaires dès PLAYER_ANSWERED, comme sur le web.
   // Le choix adverse et le verdict des autres cartes attendent la révélation finale.
-  const timerState = revealed || (scene.kind === 'question' && scene.locked) ? 'frozen' : 'running'
+  // Le chrono part à la fin de l'apparition des réponses (`timerRunning`), plein et figé avant.
+  const timerState = scene.kind === 'question' && scene.timerRunning ? 'running' : 'frozen'
 
   return (
     <ForceDark>

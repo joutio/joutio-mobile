@@ -1,4 +1,5 @@
 import { Image } from 'expo-image'
+import { ANSWER_REVEAL_STAGGER_MS } from '@joutio/client/game'
 import { useEffect, useState, type ReactNode } from 'react'
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native'
 import Animated, { Easing, Keyframe, ReduceMotion, useAnimatedStyle, useSharedValue, withDelay, withTiming } from 'react-native-reanimated'
@@ -9,8 +10,6 @@ import { useTheme } from '../theme/theme-provider'
 import { tokens } from '../tokens.generated'
 import { AnswerCard, type AnswerCardProps } from './answer-card'
 
-/** Écart entre deux réponses qui apparaissent (`--jo-answer-stagger`). */
-const STAGGER_MS = 120
 const BASE_MS = tokens.motion.base.duration
 const [X1, Y1, X2, Y2] = tokens.motion.base.easing.type === 'bezier' ? tokens.motion.base.easing.points : [0.32, 0.72, 0, 1]
 const EASE = Easing.bezier(X1, Y1, X2, Y2)
@@ -29,21 +28,31 @@ const RISE = new Keyframe({
 /**
  * Place d'une réponse, réservée dès l'énoncé (comme le lab, où les cartes sont là mais invisibles pendant le temps de
  * lecture) : l'image ne bouge pas quand les réponses arrivent. `jo-answer-in` : montée de 32 et fondu, décalés de
- * 120 ms par carte.
+ * `ANSWER_REVEAL_STAGGER_MS` par carte. Une carte se clique dès qu'elle est à l'écran (à mi-entrée, comme le lab), sans
+ * attendre les suivantes : le chrono ne part qu'à la fin de l'apparition (`timerRunning`).
  */
 function AnswerSlot({ index, shown, play, flex, children }: { index: number; shown: boolean; play: boolean; flex: boolean; children: ReactNode }) {
   const progress = useSharedValue(shown ? 1 : 0)
+  const [active, setActive] = useState(shown)
   useEffect(() => {
     if (!shown) {
       progress.value = 0
+      setActive(false)
       return
     }
-    progress.value = play ? withDelay(index * STAGGER_MS, withTiming(1, { duration: BASE_MS, easing: EASE, reduceMotion: ReduceMotion.Never })) : 1
+    if (!play) {
+      progress.value = 1
+      setActive(true)
+      return
+    }
+    progress.value = withDelay(index * ANSWER_REVEAL_STAGGER_MS, withTiming(1, { duration: BASE_MS, easing: EASE, reduceMotion: ReduceMotion.Never }))
+    const timer = setTimeout(() => setActive(true), index * ANSWER_REVEAL_STAGGER_MS + BASE_MS / 2)
+    return () => clearTimeout(timer)
   }, [shown, play, index, progress])
   const style = useAnimatedStyle(() => ({ opacity: progress.value, transform: [{ translateY: (1 - progress.value) * 32 }] }))
   return (
     <Animated.View
-      pointerEvents={shown ? 'auto' : 'none'}
+      pointerEvents={active ? 'auto' : 'none'}
       importantForAccessibility={shown ? 'auto' : 'no-hide-descendants'}
       accessibilityElementsHidden={!shown}
       style={[flex && { flex: 1 }, style]}
@@ -115,21 +124,6 @@ export function QuestionBlock({
   const imageWidth = Math.max(0, Math.min(zone.width, IMAGE_MAX_WIDTH, zone.height * ratio))
   const imageBox = { width: imageWidth, height: imageWidth / ratio }
 
-  // `jo-question-lock` : réponses inactives jusqu'à la fin de leur apparition (toujours actives en mouvement réduit).
-  const [locked, setLocked] = useState(true)
-  useEffect(() => {
-    if (count === 0 || !answersShown) {
-      setLocked(true)
-      return
-    }
-    if (!play) {
-      setLocked(false)
-      return
-    }
-    const timer = setTimeout(() => setLocked(false), (count - 1) * STAGGER_MS + BASE_MS)
-    return () => clearTimeout(timer)
-  }, [count, play, answersShown])
-
   const card = ({ key, ...answer }: AnswerCardProps & { key: string }, index: number, inRow: boolean) => (
     <AnswerSlot key={key} index={index} shown={answersShown} play={play} flex={inRow}>
       <AnswerCard details={details} notchColor={notchColor} {...answer} style={[{ minHeight: cardMin }, inRow && { flex: 1 }, answer.style]} />
@@ -196,7 +190,7 @@ export function QuestionBlock({
         )}
       </View>
       {count > 0 && answers && (
-        <View pointerEvents={locked ? 'none' : 'auto'} style={{ gap: grid ? tokens.space[3] : tokens.space[4] }}>
+        <View style={{ gap: grid ? tokens.space[3] : tokens.space[4] }}>
           {grid
             ? rows.map((row, rowIndex) => (
                 // `auto-rows-fr` : les deux cartes d'une rangée ont la même hauteur.

@@ -94,7 +94,8 @@ export function useDuelArena({ gameId, game, now, serverNow, userId, language, r
   // Affichage réel des réponses de chaque manche (montre locale, une durée seulement) : le temps de réflexion envoyé
   // part de là, pas de l'horodatage serveur que la latence décale.
   const answersShownAt = useRef<Record<number, number>>({})
-  const showing = scene.kind === 'question'
+  // La lecture verrouillée n'en fait pas partie : le temps part de l'arrivée des réponses.
+  const showing = scene.kind === 'question' && !scene.locked
   useEffect(() => {
     if (showing && !(roundIndex in answersShownAt.current)) answersShownAt.current[roundIndex] = Date.now()
   }, [showing, roundIndex])
