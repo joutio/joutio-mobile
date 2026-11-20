@@ -35,6 +35,7 @@ import { readServerNow } from '@/lib/realtime/server-clock'
 import { queryKeys } from '@joutio/client/query'
 import { TopicPickerSheet } from '@/features/topics/components/topic-picker-sheet'
 import type { ChallengeView } from '@joutio/client/api-types'
+import { remindDelay } from '@joutio/client/rooms'
 import { avatarSvg } from '@/shared/utils/avatar'
 import { topicName } from '@/shared/utils/topic-name'
 import {
@@ -45,6 +46,7 @@ import {
   useDeclineChallenges,
   useMyChallenges,
   useMyRooms,
+  useRemindChallenge,
 } from '../hooks/use-challenges'
 import { duration } from '../lib/challenges-service'
 import { clientSource, feedFooterProps } from '@/shared/utils/paging'
@@ -89,6 +91,7 @@ export function ChallengesScreen() {
   const accept = useAcceptChallenge()
   const decline = useDeclineChallenges()
   const cancel = useCancelChallenge()
+  const remind = useRemindChallenge()
   const createRoom = useCreatePrivateRoom()
   const [tab, setTab] = useState<ChallengesTab>('received')
   // Onglet demandé par une notification : appliqué puis effacé, pour qu'une même demande rejoue plus tard.
@@ -105,6 +108,14 @@ export function ChallengesScreen() {
   const { received, sent } = splitChallenges(challenges.data, userId)
   const salons = resumableRooms(rooms.data)
   const now = readServerNow()
+  // Décompte des relances (10 min) : l'écran se re-rend toutes les 15 s tant qu'un défi envoyé attend sa relance.
+  const remindPending = sent.some((challenge) => remindDelay(challenge, now) > 0)
+  const [, setTick] = useState(0)
+  useEffect(() => {
+    if (!remindPending) return
+    const timer = setInterval(() => setTick((tick) => tick + 1), 15_000)
+    return () => clearInterval(timer)
+  }, [remindPending])
   const loading = challenges.isPending || rooms.isPending
   const failed = challenges.isError || rooms.isError
   const empty = !loading && !failed && received.length + sent.length + salons.length === 0
@@ -165,8 +176,13 @@ export function ChallengesScreen() {
             }
           : {
               primaryVariant: 'tinted' as const,
-              // Relancer n'existe pas côté BFF (`defis.md` § 5) : visible, inactif.
-              primary: { label: t('mm.retry'), disabled: true },
+              // Relance au plus toutes les 10 min (`defis.md` § 5) : le décompte s'affiche dans le bouton.
+              primary: {
+                label: remindDelay(challenge, now) > 0 ? t('challenges.remindIn', { duration: duration(remindDelay(challenge, now)) }) : t('challenges.remind'),
+                loading: remind.isPending && remind.variables === challenge.challengeId,
+                disabled: remindDelay(challenge, now) > 0 || remind.isPending || challenge.challengeId.startsWith('pending-'),
+                onPress: () => remind.mutate(challenge.challengeId),
+              },
               secondary: {
                 label: t('topic.cancel'),
                 disabled: cancel.isPending || challenge.challengeId.startsWith('pending-'),

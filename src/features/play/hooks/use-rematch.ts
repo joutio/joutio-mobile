@@ -1,3 +1,4 @@
+import { CHALLENGE_REMINDER_COOLDOWN_MS } from '@joutio/client/rooms'
 import { useQueryClient } from '@tanstack/react-query'
 import { optimisticId, optimisticUpdate, queryKeys } from '@joutio/client/query'
 import { settleChallenge } from '../lib/play-cache'
@@ -109,6 +110,7 @@ export function useSendRematch({
         gameId,
         createdAt: new Date().toISOString(),
         expiresAt: '',
+        remindableAt: new Date(Date.now() + CHALLENGE_REMINDER_COOLDOWN_MS).toISOString(),
       }
       client.setQueryData<ChallengeView[]>(queryKeys.challenges(), (items) => [pending, ...(items ?? [])])
     })

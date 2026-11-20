@@ -7,6 +7,7 @@ export const challengesService = {
   accept: (challengeId: string) => api.post<void>(ENDPOINTS.challenges.accept(challengeId)),
   decline: (challengeId: string) => api.post<void>(ENDPOINTS.challenges.decline(challengeId)),
   cancel: (challengeId: string) => api.post<void>(ENDPOINTS.challenges.cancel(challengeId)),
+  remind: (challengeId: string) => api.post<void>(ENDPOINTS.challenges.remind(challengeId)),
   cancelRoom: (roomId: string) => api.post<void>(ENDPOINTS.rooms.cancel(roomId)),
 }
 

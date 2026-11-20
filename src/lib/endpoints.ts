@@ -74,6 +74,7 @@ export const ENDPOINTS = {
     accept: (challengeId: string) => `/api/challenges/${challengeId}/accept`,
     decline: (challengeId: string) => `/api/challenges/${challengeId}/decline`,
     cancel: (challengeId: string) => `/api/challenges/${challengeId}/cancel`,
+    remind: (challengeId: string) => `/api/challenges/${challengeId}/remind`,
   },
   reports: {
     player: (userId: string) => `/api/profiles/${userId}/reports`,

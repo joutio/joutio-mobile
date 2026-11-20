@@ -1,3 +1,4 @@
+import { CHALLENGE_REMINDER_COOLDOWN_MS } from '@joutio/client/rooms'
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { router } from '@/shared/navigation/router'
 import { useEffect, useState } from 'react'
@@ -176,6 +177,7 @@ export function useChallengePlayer() {
           gameId: null,
           createdAt: new Date().toISOString(),
           expiresAt: '',
+          remindableAt: new Date(Date.now() + CHALLENGE_REMINDER_COOLDOWN_MS).toISOString(),
         }
         client.setQueryData<ChallengeView[]>(queryKeys.challenges(), (items) => [challenge, ...(items ?? [])])
       })

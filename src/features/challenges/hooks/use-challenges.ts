@@ -2,7 +2,8 @@ import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tansta
 import { router } from '@/shared/navigation/router'
 import { toast } from '@/design-system'
 import { useMe } from '@/features/me'
-import { applyRoomPresence, type RoomView } from '@joutio/client/rooms'
+import { afterReminder, applyRoomPresence, type RoomView } from '@joutio/client/rooms'
+import { readServerNow } from '@/lib/realtime/server-clock'
 import { roomOfChallenge } from '@/features/play/hooks/use-rematch'
 import { challengesQuery, myRoomsQuery, optimisticUpdate, queryKeys } from '@joutio/client/query'
 import { useRoomPresenceEvents } from '@/lib/realtime/personal-notifications'
@@ -109,6 +110,34 @@ export const useDeclineChallenges = () => {
 export const useCancelChallenge = () => {
   const t = useT()
   return useChallengeMutation(challengesService.cancel, 'CANCELLED', t('challenges.cancelError'))
+}
+
+/**
+ * Relance d'un défi envoyé, **optimiste** : la prochaine relance est repoussée de 10 min sur place, restaurée si le
+ * serveur refuse (`defis.md` § 5).
+ */
+export function useRemindChallenge() {
+  const t = useT()
+  const client = useQueryClient()
+  return useMutation({
+    onMutate: async (challengeId: string) => {
+      const previous = client.getQueryData<ChallengeView[]>(queryKeys.challenges())
+      const transaction = await optimisticUpdate(client, [queryKeys.challenges()], () =>
+        client.setQueryData<ChallengeView[]>(queryKeys.challenges(), (items) =>
+          items?.map((item) => (item.challengeId === challengeId ? afterReminder(item, readServerNow()) : item)),
+        ),
+      )
+      return { ...transaction, previous }
+    },
+    mutationFn: (challengeId: string) => challengesService.remind(challengeId),
+    onSuccess: () => toast.success(t('challenges.reminded')),
+    onError: (_cause, challengeId, context) => {
+      const before = context?.previous?.find((item) => item.challengeId === challengeId)
+      if (before) client.setQueryData<ChallengeView[]>(queryKeys.challenges(), (items) => items?.map((item) => (item.challengeId === challengeId ? before : item)))
+      void client.invalidateQueries({ queryKey: queryKeys.challenges() })
+      toast.error(t('challenges.remindError'), { description: t('challenges.retryText') })
+    },
+  })
 }
 
 /** Accepter : la salle du défi est calculée comme le serveur, puis ouverte. */
