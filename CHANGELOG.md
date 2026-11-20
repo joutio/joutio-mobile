@@ -1,3 +1,9 @@
+## [1.55.0](https://github.com/joutio/joutio-mobile/compare/v1.54.0...v1.55.0) (2026-11-20)
+
+### Features
+
+* **players:** premium badge from player views ([60a20e6](https://github.com/joutio/joutio-mobile/commit/60a20e6d34d79f9516511f53ba9168a87c4e131f))
+
 ## [1.54.0](https://github.com/joutio/joutio-mobile/compare/v1.53.1...v1.54.0) (2026-11-20)
 
 ### Features
