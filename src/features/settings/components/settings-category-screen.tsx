@@ -52,7 +52,8 @@ import { config } from '@/lib/config'
 import { appVersion } from '@/shared/utils/app-info'
 import { BirthDatePicker, formatBirthDate } from '@/shared/components/birth-date-picker'
 import { APPEARANCE, LANGUAGES } from '../lib/settings-options'
-import { Group, SettingsFrame, useSettingsOrigin, type SettingsPage } from './settings-frame'
+import { useBlockedPlayers } from '@/features/social/hooks/use-social'
+import { Group, openBlockedPlayers, SettingsFrame, useSettingsOrigin, type SettingsPage } from './settings-frame'
 import { useT } from '@/lib/i18n'
 
 const PAGES: readonly SettingsPage[] = ['account', 'privacy', 'notifications', 'game', 'display', 'help']
@@ -154,10 +155,19 @@ function AccountPage() {
 
 function PrivacyPage() {
   const t = useT()
+  const origin = useSettingsOrigin()
+  const blocked = useBlockedPlayers()
   return (
     <SettingsFrame title={t('settings.privacyCategory')}>
-      <Group title={t('board.scope')}>
-        <ListRow icon={ProhibitIcon} label={t('privacy.blocked')} value={t('settings.premiumSoon')} control="value" disabled last />
+      <Group title={t('privacy.players')}>
+        <ListRow
+          icon={ProhibitIcon}
+          label={t('privacy.blocked')}
+          value={blocked.data?.length ? String(blocked.data.length) : undefined}
+          control="chevron"
+          onPress={() => openBlockedPlayers(origin)}
+          last
+        />
       </Group>
       <Group title={t('privacy.data')}>
         <ListRow icon={ShieldCheckIcon} label={t('privacy.policy')} control="chevron" onPress={openPage('/privacy')} />

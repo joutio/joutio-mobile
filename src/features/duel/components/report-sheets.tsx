@@ -62,9 +62,9 @@ function useReset(open: boolean, reset: () => void) {
 }
 
 /**
- * Signaler un joueur depuis le résultat d'un duel (`POST /api/profiles/{id}/reports`, motifs `UserReportReason`, le duel
- * en contexte). Bloquer n'existe pas encore côté BFF (V1.1) : depuis la fiche joueur, l'offre de blocage passe par le mock
- * `features/social/lib/block-mocks.ts` ; ailleurs, seulement « Fermer ».
+ * Signaler un joueur depuis le résultat d'un duel ou sa fiche (`POST /api/profiles/{id}/reports`, motifs
+ * `UserReportReason`, le duel en contexte). Après l'envoi : « Bloquer {pseudo} » ou « Fermer » (`resultat.md`
+ * § Signalements) ; seulement « Fermer » si le joueur est déjà bloqué.
  */
 export function ReportPlayerSheet({
   open,
@@ -82,7 +82,7 @@ export function ReportPlayerSheet({
   /** Duel de contexte, absent depuis une fiche joueur. */
   gameId?: string
   subtitle?: string
-  /** Proposé après l'envoi (fiche joueur) : ferme la feuille puis ouvre la confirmation de blocage. */
+  /** Proposé après l'envoi : ferme la feuille puis ouvre la confirmation de blocage. Absent si déjà bloqué. */
   onBlock?: () => void
 }) {
   const t = useT()
@@ -128,7 +128,7 @@ export function ReportPlayerSheet({
                   onClose()
                 }}
               >
-                {t('mobile.report.block', { name })}
+                {t('report.block', { name })}
               </Button>
               <Button full variant="plain" tone="neutral" onPress={onClose}>
                 {t('play.close')}
@@ -148,7 +148,7 @@ export function ReportPlayerSheet({
     >
       {sent ? (
         <Text variant="callout" color="muted" align="center">
-          {onBlock ? t('mobile.report.thanksBlock') : t('report.playerThanks')}
+          {onBlock ? t('report.thanksBlock') : t('report.playerThanks')}
         </Text>
       ) : (
         <View style={{ gap: tokens.space[4] }}>

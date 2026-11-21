@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from '@/design-system'
 import { useMe } from '@/features/me'
-import { applyFollow, headToHeadQuery, optimisticUpdate, profileQuery, queryKeys } from '@joutio/client/query'
+import { applyBlock, applyFollow, blockedPlayersQuery, blockKeys, headToHeadQuery, optimisticUpdate, profileQuery, queryKeys } from '@joutio/client/query'
 import type { MeView, PlayerProfileView } from '@joutio/client/api-types'
 import { socialService } from '../lib/social-service'
 import { useT } from '@/lib/i18n'
@@ -50,6 +50,31 @@ export function useFollowPlayer(userId: string) {
       toast.error(follow ? t('mobile.social.followFailed') : t('mobile.social.unfollowFailed'), {
         description: t('home.errorText'),
       })
+    },
+  })
+}
+
+/** Mes joueurs bloqués (`GET /api/me/blocked`), Réglages › Confidentialité. */
+export function useBlockedPlayers() {
+  return useQuery(blockedPlayersQuery(api))
+}
+
+/**
+ * Bloquer / débloquer un joueur, **optimiste et sans relecture** (`donnees-et-etat.md` § Mutations) : `applyBlock`
+ * applique l'effet symétrique du serveur à toutes les vues en cache (fiche, compteurs, listes Social, défis en attente,
+ * bloqués), restaurées si refus.
+ */
+export function useBlockPlayer(player: { userId: string; pseudonym: string }) {
+  const t = useT()
+  const client = useQueryClient()
+  const meId = useMe(true).data?.userId ?? ''
+  return useMutation({
+    mutationFn: (block: boolean) => socialService.block(player.userId, block),
+    onMutate: (block: boolean) => optimisticUpdate(client, blockKeys(meId, player.userId), () => applyBlock(client, meId, player.userId, block)),
+    onSuccess: (_data, block) => toast.success(t(block ? 'player.blockedToast' : 'player.unblockedToast', { name: player.pseudonym })),
+    onError: (_error, block, context) => {
+      context?.rollback()
+      toast.error(t(block ? 'player.blockError' : 'player.unblockError'), { description: t('home.errorText') })
     },
   })
 }

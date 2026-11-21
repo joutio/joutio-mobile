@@ -89,6 +89,7 @@ export const ENDPOINTS = {
   profiles: {
     profile: (userId: string) => `/api/profiles/${userId}`,
     follow: (userId: string) => `/api/profiles/${userId}/follow`,
+    block: (userId: string) => `/api/profiles/${userId}/block`,
     following: (userId: string) => `/api/profiles/${userId}/following`,
     followers: (userId: string) => `/api/profiles/${userId}/followers`,
     autoTrain: (userId: string) => `/api/profiles/${userId}/auto-train`,

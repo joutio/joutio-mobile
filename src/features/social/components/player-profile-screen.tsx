@@ -10,7 +10,6 @@ import {
   Badge,
   Button,
   CheckIcon,
-  Dialog,
   DotsThreeVerticalIcon,
   EmptyState,
   FlagIcon,
@@ -30,7 +29,6 @@ import {
   SwordIcon,
   Text,
   TitleRibbon,
-  toast,
   toCategoryCode,
   tokens,
   useTheme,
@@ -46,9 +44,9 @@ import type { GameOutcome, PlayerCardView } from '@joutio/client/api-types'
 import { tierOf } from '@/shared/utils/tier'
 import { topicName } from '@/shared/utils/topic-name'
 import type { TierCode } from '@/design-system'
-import { useFollowPlayer, useHeadToHead, usePlayerProfile } from '../hooks/use-social'
-import { useBlockMocks, useIsBlocked } from '../lib/block-mocks'
+import { useBlockPlayer, useFollowPlayer, useHeadToHead, usePlayerProfile } from '../hooks/use-social'
 import { presenceLine } from '../lib/presence'
+import { BlockPlayerDialog } from './block-player-dialog'
 import { ChallengePlayerSheet } from './challenge-player-sheet'
 import { userAvatar } from '@/shared/utils/avatar'
 import { confirmUnfollow } from '../lib/confirm-unfollow'
@@ -88,9 +86,9 @@ export function PlayerProfileScreen() {
   const [challengeOpen, setChallengeOpen] = useState(false)
   const [reportOpen, setReportOpen] = useState(false)
   const [blockOpen, setBlockOpen] = useState(false)
-  const blocked = useIsBlocked(id)
-  const setBlocked = useBlockMocks((state) => state.setBlocked)
   const data = profile.data
+  const blocked = Boolean(data?.blocked)
+  const blockMutation = useBlockPlayer({ userId: id, pseudonym: data?.pseudonym ?? '' })
   const games = useHistoryGames(id, { opponentId: me.data?.userId ?? '', outcome: 'ALL', sort: 'RECENT' }, Boolean(id && me.data?.userId))
 
   // Le titre porté n'a que topicId:TIER : le nom du titre vient du sujet, comme dans le lab.
@@ -154,18 +152,8 @@ export function PlayerProfileScreen() {
     confirmUnfollow(data.pseudonym, () => follow.mutate(false))
   }
 
-  // Mock (pas d'endpoint BFF) : le blocage retire aussi l'abonnement, qui, lui, est réel.
-  const block = () => {
-    if (!data) return
-    setBlocked(data.userId, true)
-    if (data.following) follow.mutate(false)
-    toast.success(t('mobile.social.blocked', { name: data.pseudonym }))
-  }
-  const unblock = () => {
-    if (!data) return
-    setBlocked(data.userId, false)
-    toast.success(t('mobile.social.unblocked', { name: data.pseudonym }))
-  }
+  const block = () => blockMutation.mutate(true)
+  const unblock = () => blockMutation.mutate(false)
 
   return (
     <>
@@ -185,7 +173,7 @@ export function PlayerProfileScreen() {
               <Menu
                 items={[
                   { label: t('player.report'), icon: FlagIcon, onPress: () => setReportOpen(true) },
-                  ...(blocked ? [] : [{ label: t('mobile.social.block'), icon: ProhibitIcon, destructive: true, onPress: () => setBlockOpen(true) }]),
+                  ...(blocked ? [] : [{ label: t('player.block'), icon: ProhibitIcon, destructive: true, onPress: () => setBlockOpen(true) }]),
                 ]}
               >
                 {(open) => <ParallaxIconButton icon={DotsThreeVerticalIcon} label={t('player.more')} onPress={open} />}
@@ -213,7 +201,7 @@ export function PlayerProfileScreen() {
                   {tier && <Badge variant="tier" tier={tier}>{t('common.dotPair', { a: tierLabel(tier), b: formatNumber(rating ?? 0) })}</Badge>}
                   {data.country && <Pill>{`${countryFlag(data.country)} ${countryName(data.country, currentLanguage())}`}</Pill>}
                   {data.suspended && <Pill tone="suspended">{t('onboarding.ended.suspendedTitle')}</Pill>}
-                  {blocked && <Pill tone="wrong">{t('mobile.social.blockedBadge')}</Pill>}
+                  {blocked && <Pill tone="wrong">{t('player.blockedBadge')}</Pill>}
                 </View>
                 {!data.suspended && !blocked && (
                   <Text variant="caption" color="muted">
@@ -222,8 +210,8 @@ export function PlayerProfileScreen() {
                 )}
               </View>
               {blocked && !data.isMe && (
-                <Button full variant="gray" tone="neutral" onPress={unblock}>
-                  {t('mobile.social.unblock')}
+                <Button full variant="gray" tone="neutral" loading={blockMutation.isPending} onPress={unblock}>
+                  {t('player.unblock')}
                 </Button>
               )}
               {canAct && (
@@ -343,21 +331,7 @@ export function PlayerProfileScreen() {
           onBlock={blocked ? undefined : () => setBlockOpen(true)}
         />
       )}
-      {data && (
-        <Dialog
-          open={blockOpen}
-          onClose={() => setBlockOpen(false)}
-          sheet
-          tone="danger"
-          icon={ProhibitIcon}
-          title={t('mobile.social.blockTitle', { name: data.pseudonym })}
-          message={t('mobile.social.blockText')}
-          actions={[
-            { label: t('mobile.social.block'), variant: 'tinted', tone: 'destructive', onPress: block },
-            { label: t('topic.cancel'), variant: 'plain', tone: 'neutral' },
-          ]}
-        />
-      )}
+      {data && <BlockPlayerDialog open={blockOpen} name={data.pseudonym} onClose={() => setBlockOpen(false)} onConfirm={block} />}
     </>
   )
 }

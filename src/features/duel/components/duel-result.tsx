@@ -50,7 +50,9 @@ import { ResultPages } from './result-pages'
 import { DuelReview, reviewRoundsOf } from './duel-review'
 import { ReportPlayerSheet } from './report-sheets'
 import { useMyAvatar } from '@/features/avatar/lib/avatar-preview'
+import { BlockPlayerDialog } from '@/features/social/components/block-player-dialog'
 import { usePlayerAvatar, usePlayerPremium } from '@/features/social/hooks/use-player-avatar'
+import { useBlockPlayer, usePlayerProfile } from '@/features/social/hooks/use-social'
 import { usePlayerIdentity } from '@/features/me'
 import { t, useLanguage, useT } from '@/lib/i18n'
 
@@ -156,6 +158,7 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
   const [step, setStep] = useState(0)
   const [sequenceDone, setSequenceDone] = useState(!celebrate)
   const [reportOpen, setReportOpen] = useState(false)
+  const [blockOpen, setBlockOpen] = useState(false)
   // Deux pages verticales fixes (résultat, Détails du duel), hauteur mesurée sous la barre.
   const [pageHeight, setPageHeight] = useState(0)
   // Zone des pages trop courte (iPhone Duo plié) : résultat compact (`resultat.md` § 4 bis).
@@ -178,6 +181,9 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
   const shareLink = useShare()
   const opponentAvatar = usePlayerAvatar(opponentId, !bot)
   const opponentPremium = usePlayerPremium(opponentId, !bot)
+  // Offre de blocage après un signalement (`resultat.md` § Signalements), sauf joueur déjà bloqué.
+  const opponentBlocked = usePlayerProfile(opponentId ?? '', !bot).data?.blocked === true
+  const block = useBlockPlayer({ userId: opponentId ?? '', pseudonym: opponentName })
   const identity = usePlayerIdentity()
   // Elo à l'instant de la partie (snapshot du bilan) : une partie consultée plus tard ne doit pas afficher l'Elo
   // courant du profil. Le repli sur `/api/me` ne sert qu'avant l'arrivée du bilan.
@@ -448,8 +454,10 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
           name={opponentName}
           gameId={gameId}
           subtitle={t('result.reportContext', { topic })}
+          onBlock={opponentBlocked ? undefined : () => setBlockOpen(true)}
         />
       )}
+      <BlockPlayerDialog open={blockOpen} name={opponentName} onClose={() => setBlockOpen(false)} onConfirm={() => block.mutate(true)} />
     </>
   )
 }

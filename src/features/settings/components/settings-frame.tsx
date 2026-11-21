@@ -19,11 +19,32 @@ export function openSettingsPage(origin: SettingsOrigin, page: SettingsPage) {
   router.push(origin === 'home' ? { pathname: '/home/settings/[page]', params: { page } } : { pathname: '/profile/settings/[page]', params: { page } })
 }
 
-/** Cadre d'une page des Réglages : retour « Profil » ou « Accueil » à la racine, « Réglages » dans une catégorie. */
-export function SettingsFrame({ title, root = false, overlay, children }: { title: string; root?: boolean; overlay?: ReactNode; children: ReactNode }) {
+/** Joueurs bloqués, poussé depuis Confidentialité dans la pile d'origine. */
+export function openBlockedPlayers(origin: SettingsOrigin) {
+  router.push(origin === 'home' ? '/home/settings/blocked' : '/profile/settings/blocked')
+}
+
+/**
+ * Cadre d'une page des Réglages : retour « Profil » ou « Accueil » à la racine, « Réglages » dans une catégorie, `back`
+ * dans une page poussée depuis une catégorie.
+ */
+export function SettingsFrame({
+  title,
+  root = false,
+  back: backLabel,
+  overlay,
+  children,
+}: {
+  title: string
+  root?: boolean
+  /** Libellé du retour d'une page poussée depuis une catégorie (« Confidentialité et sécurité »). */
+  back?: string
+  overlay?: ReactNode
+  children: ReactNode
+}) {
   const t = useT()
   const origin = useSettingsOrigin()
-  const back = root ? (origin === 'home' ? t('nav.home') : t('nav.profile')) : t('profile.settings')
+  const back = backLabel ?? (root ? (origin === 'home' ? t('nav.home') : t('nav.profile')) : t('profile.settings'))
   return (
     <Screen
       inTabs
