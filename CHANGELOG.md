@@ -1,3 +1,9 @@
+## [1.58.0](https://github.com/joutio/joutio-mobile/compare/v1.57.0...v1.58.0) (2026-11-21)
+
+### Features
+
+* **block:** block players through the API, blocked players screen ([85bd756](https://github.com/joutio/joutio-mobile/commit/85bd756c684d33fcdfca922f845d556ecc9abb1b))
+
 ## [1.57.0](https://github.com/joutio/joutio-mobile/compare/v1.56.0...v1.57.0) (2026-11-20)
 
 ### Features
