@@ -1,6 +1,6 @@
-import { TrueSheet } from '@lodev09/react-native-true-sheet'
-import { Fragment, useEffect, useRef, type ReactNode, type RefObject } from 'react'
-import { Platform, useWindowDimensions, View, type ScrollViewInstance } from 'react-native'
+import { TrueSheet, type SheetDetent } from '@lodev09/react-native-true-sheet'
+import { Fragment, useEffect, useMemo, useRef, type ReactNode, type RefObject } from 'react'
+import { Dimensions, Platform, useWindowDimensions, View, type ScrollViewInstance } from 'react-native'
 import Animated, { useAnimatedScrollHandler, useSharedValue } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useModalFocus, type ViewRef } from '../a11y'
@@ -14,6 +14,12 @@ import { SheetHeader } from './sheet-header'
 /** Hauteur maximale d'une feuille ajustée à son contenu, et hauteur fixe d'une grande feuille. */
 const MAX_HEIGHT = 0.8
 const TALL_HEIGHT = 0.92
+// Objets stables : une nouvelle identité à chaque rendu faisait rejouer les options natives de TrueSheet (pied qui
+// saute pendant une transition, clavier ou changement de contenu), 2026-11-21.
+const ABSOLUTE_FOOTER = { position: 'absolute' as const }
+const KEYBOARD_SCROLL = { keyboardScrollOffset: tokens.space[5] }
+const AUTO_DETENTS: SheetDetent[] = ['auto']
+const TALL_DETENTS: SheetDetent[] = [TALL_HEIGHT]
 
 export interface MobileSheetProps {
   open: boolean
@@ -76,8 +82,11 @@ export function MobileSheet({
   children,
 }: MobileSheetProps) {
   const { colors, radius } = useTheme()
-  const { height } = useWindowDimensions()
+  const { height: windowHeight } = useWindowDimensions()
   const insets = useSafeAreaInsets()
+  // Plafond sur la hauteur de l'écran, pas de la fenêtre : sur Android, le clavier redimensionne la fenêtre et faisait
+  // recalculer la détente `auto` sous les doigts. `useWindowDimensions` ne sert qu'à rafraîchir à la rotation.
+  const maxHeight = Math.max(windowHeight, Dimensions.get('screen').height) * MAX_HEIGHT
   const sheet = useRef<TrueSheet>(null)
   const scroller = useRef<ScrollViewInstance>(null)
   const offset = useSharedValue(0)
@@ -125,22 +134,27 @@ export function MobileSheet({
   ]
 
   const sheetHeader = <SheetHeader title={title} subtitle={subtitle} onBack={onBack} action={action} onClose={onClose} titleRef={titleRef} handle={false} />
+  const hasFooter = Boolean(footer)
+  const footerOptions = useMemo(() => (hasFooter ? ABSOLUTE_FOOTER : undefined), [hasFooter])
+  const footerStyle = useMemo(() => (hasFooter ? { backgroundColor: colors.surface } : undefined), [hasFooter, colors.surface])
+  const grabberOptions = useMemo(() => ({ color: colors.border }), [colors.border])
+  const accessibilityOptions = useMemo(() => ({ paneTitle: title }), [title])
 
   return (
     <TrueSheet
       ref={sheet}
-      detents={tall ? [TALL_HEIGHT] : ['auto']}
-      maxContentHeight={tall ? undefined : height * MAX_HEIGHT}
+      detents={tall ? TALL_DETENTS : AUTO_DETENTS}
+      maxContentHeight={tall ? undefined : maxHeight}
       cornerRadius={radius.xl}
       backgroundColor={colors.surface}
       dimColor={scrim.color}
       dimOpacity={scrim.opacity}
       grabber
-      grabberOptions={{ color: colors.border }}
-      accessibilityOptions={{ paneTitle: title }}
+      grabberOptions={grabberOptions}
+      accessibilityOptions={accessibilityOptions}
       scrollableRef={scroller}
       // Champ actif : un peu d'air au-dessus du clavier (et du pied qui remonte avec lui), 2026-11-07.
-      scrollableOptions={{ keyboardScrollOffset: tokens.space[5] }}
+      scrollableOptions={KEYBOARD_SCROLL}
       // Contenu plus haut que la feuille (grand texte, petit écran) : la vue de contenu et le défilement rétrécissent à
       // la hauteur plafonnée, sinon ils gardent leur hauteur naturelle, ne défilent pas et poussent le pied hors écran.
       style={{ flexShrink: 1, minHeight: 0 }}
@@ -151,10 +165,10 @@ export function MobileSheet({
       // automatique) : le contenu ne passe jamais sous le bouton.
       // Android : TrueSheet 4 glisse déjà la safe area basse du pied derrière le clavier (`footerView.bottomInset`) ;
       // un `keyboardOffset: -insets.bottom` la retirait une seconde fois et le bas des boutons passait sous le clavier.
-      footerOptions={footer ? { position: 'absolute' } : undefined}
+      footerOptions={footerOptions}
       // Le conteneur natif du pied porte la safe area basse en padding (Android) : il prend le fond `surface`, sinon le
       // contenu défile en transparence entre le bouton et le bas de l'écran (2026-11-07).
-      footerStyle={footer ? { backgroundColor: colors.surface } : undefined}
+      footerStyle={footerStyle}
       // Android : fermeture au balayage court, comme la feuille Material 3 (sur iOS, le geste reste celui du système).
       dismissThreshold="short"
       // iOS 26 : la feuille flotte au-dessus du bas de l'écran (coins arrondis, marges), la zone de l'indicateur
