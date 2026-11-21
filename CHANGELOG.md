@@ -1,3 +1,9 @@
+## [1.58.1](https://github.com/joutio/joutio-mobile/compare/v1.58.0...v1.58.1) (2026-11-21)
+
+### Bug Fixes
+
+* **sheet:** stable footer and TrueSheet 4.1.2 ([03b7e29](https://github.com/joutio/joutio-mobile/commit/03b7e2937cb5861dc69f3e574ae782a7025a54e8))
+
 ## [1.58.0](https://github.com/joutio/joutio-mobile/compare/v1.57.0...v1.58.0) (2026-11-21)
 
 ### Features
