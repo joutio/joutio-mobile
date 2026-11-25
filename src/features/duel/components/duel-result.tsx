@@ -42,6 +42,7 @@ import { badgeUnlockOf } from '@/features/profile/lib/badges'
 import { tierOf } from '@/shared/utils/tier'
 import { Arena, isBonusRound, ROUNDS, type GameState, type GameResultView } from '@joutio/client/game'
 import { useGameResult } from '@joutio/client/game'
+import { useSessionUserId } from '@/features/auth'
 import { useStreakUnlock } from '../hooks/use-game'
 import { ResultPages } from './result-pages'
 import { DuelReview, reviewRoundsOf } from './duel-review'
@@ -145,7 +146,7 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
   const language = useLanguage()
   const myName = me.data?.pseudonym ?? t('common.me')
   const cancelled = game.status === 'CANCELED'
-  const result = useGameResult(cancelled ? undefined : gameId)
+  const result = useGameResult(cancelled ? undefined : gameId, useSessionUserId())
   const data = result.data
   const titles = useMyTitles()
   const wear = useWearTitle()

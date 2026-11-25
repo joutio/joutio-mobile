@@ -6,6 +6,7 @@ import { topicName } from '@/shared/utils/topic-name'
 import { useGameResult, useGameStream } from '@joutio/client/game'
 import { DuelResult } from './duel-result'
 import { useT } from '@/lib/i18n'
+import { useSessionUserId } from '@/features/auth'
 
 export interface ResultRouteParams {
   gameId: string
@@ -26,7 +27,7 @@ export function ResultScreen() {
   const { colors } = useTheme()
   // Partie passée repliée de son historique (le flux reste muet : la partie est terminée).
   const stream = useGameStream(gameId)
-  const result = useGameResult(gameId || undefined)
+  const result = useGameResult(gameId || undefined, useSessionUserId())
   const loaded = stream.status?.loaded === true
 
   if (!gameId || (!loaded && !stream.status?.notFound) || result.isPending) {
