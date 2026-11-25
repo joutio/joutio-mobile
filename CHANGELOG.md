@@ -1,3 +1,9 @@
+## [1.59.0](https://github.com/joutio/joutio-mobile/compare/v1.58.1...v1.59.0) (2026-11-25)
+
+### Features
+
+* migrate to @joutio/client 11.1, challenges as invited rooms ([3d9c54e](https://github.com/joutio/joutio-mobile/commit/3d9c54ebdcece7f83b7be7c3b671434c0e257831))
+
 ## [1.58.1](https://github.com/joutio/joutio-mobile/compare/v1.58.0...v1.58.1) (2026-11-21)
 
 ### Bug Fixes
