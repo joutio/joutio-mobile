@@ -1,3 +1,9 @@
+## [1.60.0](https://github.com/joutio/joutio-mobile/compare/v1.59.0...v1.60.0) (2026-11-25)
+
+### Features
+
+* migrate to @joutio/client 12, live duel reward ([6b4a19c](https://github.com/joutio/joutio-mobile/commit/6b4a19c6c31be0788f73d52bc17143e10d646f05))
+
 ## [1.59.0](https://github.com/joutio/joutio-mobile/compare/v1.58.1...v1.59.0) (2026-11-25)
 
 ### Features
