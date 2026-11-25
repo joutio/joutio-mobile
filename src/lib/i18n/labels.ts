@@ -1,6 +1,5 @@
-import type { QuestionReportReason } from '@joutio/client/api-types'
-import type { QuestionStatus, TranslationStatus } from '@joutio/client/authoring'
-import type { MessageKey } from '@joutio/client/i18n'
+import type { QuestionReportReason, QuestionStatus, TranslationStatus } from '@joutio/client/authoring'
+import type { MessageKey } from '@joutio/client/core/i18n'
 
 /**
  * Codes du domaine → clés de texte. Les libellés français de `@joutio/client/authoring` (`REPORT_REASON_LABEL`,

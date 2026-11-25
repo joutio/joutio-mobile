@@ -1,7 +1,7 @@
 import { Avatar } from '../primitives/avatar'
-import { tokens, type TierCode } from '../tokens.generated'
+import type { TierCode } from '../tokens.generated'
 import { UnlockContent } from './unlock-content'
-import { t, tierKey, useT } from '@/lib/i18n'
+import { tierKey, useT } from '@/lib/i18n'
 
 export interface RankPromotionProps {
   from: TierCode

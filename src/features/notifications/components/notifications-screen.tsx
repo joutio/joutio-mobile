@@ -1,5 +1,6 @@
 import { useGuardedRefresh } from '@/design-system/mobile/guarded-refresh'
-import { useQueryClient, type InfiniteData } from '@tanstack/react-query'
+import { useReadAllNotifications, useNotifications, type NotificationView, useRemoveAllNotifications } from '@joutio/client/notifications'
+import { useMyRooms, type RoomView } from '@joutio/client/rooms'
 import { router } from '@/shared/navigation/router'
 import { RefreshControl, View } from 'react-native'
 import {
@@ -23,14 +24,9 @@ import {
   WarningCircleIcon,
   tabBarScrollInsets,
   useTabBarInset,
+  toast,
 } from '@/design-system'
-import { useMyChallenges } from '@/features/challenges/hooks/use-challenges'
-import { useMe } from '@/features/me'
-import { queryKeys } from '@joutio/client/query'
-import type { NotificationView } from '@/lib/realtime/personal-notifications'
-import type { PageResponse } from '@joutio/client/api-types'
-import { dayGroupLabel, dayOf, isExpired, type NotificationDay } from '../lib/notifications-service'
-import { useDeleteAllNotifications, useMarkAllRead, useNotifications } from '../hooks/use-notifications'
+import { dayGroupLabel, dayOf, isExpired, type NotificationDay } from '../lib/notification-format'
 import { NotificationItem } from './notification-item'
 import { feedFooterProps, pagedQuery } from '@/shared/utils/paging'
 import { useT } from '@/lib/i18n'
@@ -50,28 +46,24 @@ export function NotificationsScreen() {
   const t = useT()
   // Fin de liste au-dessus de la tab bar native iOS (`useTabBarInset`).
   const tabInset = useTabBarInset()
-  const client = useQueryClient()
   const { colors } = useTheme()
-  const userId = useMe(true).data?.userId ?? ''
   const list = useNotifications()
-  // Tirer remet la boîte sur sa première page : `refetch()` d'une liste infinie relit toutes les pages chargées, l'une
-  // après l'autre, et leurs bornes (numéro de page) se décalent si une notification arrive ou disparaît entre-temps.
   // Le spinner suit ce geste et non la requête : une notification reçue en temps réel relit la boîte sans le faire
   // apparaître seul.
-  const { refreshing, refresh } = useGuardedRefresh(() => {
-    client.setQueryData<InfiniteData<PageResponse<NotificationView>, number>>(queryKeys.notifications.list(), (data) =>
-      data ? { pages: data.pages.slice(0, 1), pageParams: data.pageParams.slice(0, 1) } : data,
-    )
-    return list.refetch()
-  })
-  const challenges = useMyChallenges(Boolean(userId))
-  const readAll = useMarkAllRead()
-  const removeAll = useDeleteAllNotifications()
+  const { refreshing, refresh } = useGuardedRefresh(() => list.refetch())
+  const rooms = useMyRooms()
+  const readAll = useReadAllNotifications()
+  const removeAll = useRemoveAllNotifications()
+  const clearAll = () =>
+    removeAll.mutate(undefined, {
+      onError: () => toast.error(t('notifications.deleteAllError'), { description: t('home.errorText') }),
+    })
   // Pagination par numéro de page : une notification peut figurer à la fin d'une page et au début de la suivante.
   const seen = new Set<string>()
   const items = (list.data?.pages.flatMap((page) => page.content) ?? []).filter((item) => !seen.has(item.notificationId) && seen.add(item.notificationId))
   const anyUnread = items.some((item) => item.readAt === null)
-  const byChallenge = new Map((challenges.data ?? []).map((challenge) => [challenge.challengeId, challenge]))
+  // Un défi reçu est une salle `INVITED` : la notification porte son `roomId`.
+  const byRoom = new Map<string, RoomView>((rooms.data ?? []).map((room) => [room.roomId, room]))
   const groups = DAYS.map((day) => ({
     day,
     items: items.filter((item) => dayOf(item.createdAt) === day).sort((a, b) => Number(awaiting(b)) - Number(awaiting(a))),
@@ -85,7 +77,7 @@ export function NotificationsScreen() {
       tone: 'danger',
       sheet: true,
       actions: [
-        { label: t('notifications.clear'), variant: 'filled', tone: 'destructive', onPress: () => removeAll.mutate() },
+        { label: t('notifications.clear'), variant: 'filled', tone: 'destructive', onPress: clearAll },
         { label: t('topic.cancel'), variant: 'plain', tone: 'neutral' },
       ],
     })
@@ -108,9 +100,16 @@ export function NotificationsScreen() {
                 variant="plain"
                 tone="accent"
                 disabled={!anyUnread}
-                onPress={() => readAll.mutate()}
+                onPress={() => readAll.mutate(undefined, { onError: () => toast.error(t('notifications.readAllError'), { description: t('home.errorText') }) })}
               />
-              <IconButton icon={TrashIcon} label={t('notifications.clear')} variant="plain" tone="destructive" disabled={items.length === 0} onPress={confirmClear} />
+              <IconButton
+                icon={TrashIcon}
+                label={t('notifications.clear')}
+                variant="plain"
+                tone="destructive"
+                disabled={items.length === 0}
+                onPress={confirmClear}
+              />
             </>
           }
         />
@@ -159,7 +158,7 @@ export function NotificationsScreen() {
                       <NotificationItem
                         key={item.notificationId}
                         notification={item}
-                        challenge={item.sourceId ? byChallenge.get(item.sourceId) : undefined}
+                        room={item.sourceId ? byRoom.get(item.sourceId) : undefined}
                         last={index === group.items.length - 1}
                       />
                     ))}

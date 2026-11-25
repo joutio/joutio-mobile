@@ -18,11 +18,12 @@ import {
   TopBannerFrame,
   useScreenTopInset,
 } from '@/design-system'
-import { useMe } from '@/features/me'
+import { useMe } from '@joutio/client/me'
 import { usePremiumSheet } from '@/features/premium/premium-store'
-import { useMyBadges, useMyRewards, useUpdateMe } from '@/features/profile/hooks/use-profile'
+import { useUpdateAvatarOptions } from '@joutio/client/profile'
+import { profileSaveError, useMyBadges, useMyRewards } from '@/features/profile/hooks/use-profile'
 import { t as avatarT } from '@/shared/avatar/i18n'
-import { defaultOptionsFor, getAvatarStyle, humanizeVariant, NONE_LABEL_KEY, type AvatarStyleSection } from '@/shared/avatar/styles'
+import { getAvatarStyle, humanizeVariant, NONE_LABEL_KEY, type AvatarStyleSection } from '@/shared/avatar/styles'
 import { avatarSvg, parseAvatarConfig, type AvatarConfig } from '@/shared/utils/avatar'
 import { withStyle } from '../lib/avatar-preview'
 import { avatarStylesFor, styleOf, type AvatarStyleId } from '../lib/avatar-styles'
@@ -70,11 +71,11 @@ export function AvatarEditorScreen() {
   const screenTop = useScreenTopInset()
   const { width: screenWidth } = useWindowDimensions()
   const tile = { width: tileWidth(screenWidth) }
-  const me = useMe(true)
+  const me = useMe()
   const data = me.data
   const rewards = useMyRewards()
   const badges = useMyBadges()
-  const save = useUpdateMe('avatarOptions')
+  const save = useUpdateAvatarOptions(me.data?.userId ?? '')
   const showPremium = usePremiumSheet((state) => state.show)
   const initial = useMemo<AvatarConfig>(() => {
     const parsed = parseAvatarConfig(data?.avatarOptions)
@@ -188,7 +189,7 @@ export function AvatarEditorScreen() {
           confirmDisabled={!changed || save.isPending}
           onCancel={() => router.back()}
           onConfirm={() => {
-            save.mutate(JSON.stringify(choice), { onSuccess: () => router.back() })
+            save.mutate(JSON.stringify(choice), { onSuccess: () => router.back(), onError: profileSaveError })
           }}
         />
         <View style={{ alignItems: 'center', gap: tokens.space[3], paddingVertical: tokens.space[4] }}>

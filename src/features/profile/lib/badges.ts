@@ -1,4 +1,4 @@
-import type { BadgeCollectionView, BadgeFamily, BadgeItemView, BadgeView } from '@joutio/client/api-types'
+import type { BadgeCollectionView, BadgeFamily, BadgeItemView, BadgeView } from '@joutio/client/profile'
 import {
   CalendarCheckIcon,
   CompassIcon,
@@ -90,7 +90,10 @@ function summarize(family: BadgeFamily, badges: readonly BadgeItemView[], t: T, 
   const left = current ? Math.max(0, current.target - current.progress) : 0
   const remaining = current
     ? UNITS.has(current.metric)
-      ? t(left > 1 ? 'badges.remainingMany' : 'badges.remainingOne', { count: count(left), unit: t(`badges.${left > 1 ? 'unitLong' : 'unitOne'}.${current.metric}` as MessageKey) })
+      ? t(left > 1 ? 'badges.remainingMany' : 'badges.remainingOne', {
+          count: count(left),
+          unit: t(`badges.${left > 1 ? 'unitLong' : 'unitOne'}.${current.metric}` as MessageKey),
+        })
       : t('badges.remainingPlain', { count: count(left) })
     : undefined
   const unit = (badge: BadgeItemView) => (UNITS.has(badge.metric) ? t(`badges.unit.${badge.metric}` as MessageKey) : '')

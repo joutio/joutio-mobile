@@ -7,7 +7,7 @@ import { tokens, type TierCode } from '../tokens.generated'
 import { PressableScale } from './pressable-scale'
 import { ProgressBar } from './progress-bar'
 import { Text } from './text'
-import { t, tierKey, useT } from '@/lib/i18n'
+import { tierKey, useT } from '@/lib/i18n'
 
 const TIERS = Object.keys(tokens.tier) as TierCode[]
 

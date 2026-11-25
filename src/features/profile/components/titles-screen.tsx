@@ -30,7 +30,7 @@ import {
 } from '@/design-system'
 import { useMyTitles, useWearTitle } from '@/features/topic/hooks/use-topic'
 import { tierLabel } from '@/features/topic/lib/format'
-import type { MasteryTier, TitleView } from '@joutio/client/api-types'
+import type { MasteryTier, TitleView } from '@joutio/client/profile'
 import { clientSource, feedFooterProps, loadMoreOptions } from '@/shared/utils/paging'
 import { topicName } from '@/shared/utils/topic-name'
 import { titleLabel } from '../lib/format'
@@ -121,12 +121,7 @@ export function TitlesScreen() {
           }}
         >
           <View style={{ flex: 1 }}>
-            <SearchField
-              value={query}
-              onChange={(next) => change(() => setQuery(next))}
-              placeholder={t('titles.search')}
-              label={t('titles.search')}
-            />
+            <SearchField value={query} onChange={(next) => change(() => setQuery(next))} placeholder={t('titles.search')} label={t('titles.search')} />
           </View>
           <IconButton
             icon={SlidersHorizontalIcon}
@@ -163,8 +158,7 @@ export function TitlesScreen() {
           }
         />
       )
-    if (!hasTitles)
-      return <EmptyState icon={CrownSimpleIcon} title={t('profile.noTitlesTitle')} description={t('profile.noTitlesText')} />
+    if (!hasTitles) return <EmptyState icon={CrownSimpleIcon} title={t('profile.noTitlesTitle')} description={t('profile.noTitlesText')} />
     if (query.trim())
       return (
         <EmptyState
@@ -296,7 +290,11 @@ export function TitlesScreen() {
           )}
           ListFooterComponent={
             shown.length > 0 ? (
-              <FeedFooter {...feedFooterProps(source)} endLabel={t('titles.end')} remainingLabel={t('mobile.profile.otherTopics', { count: groups.length - shown.length })} />
+              <FeedFooter
+                {...feedFooterProps(source)}
+                endLabel={t('titles.end')}
+                remainingLabel={t('mobile.profile.otherTopics', { count: groups.length - shown.length })}
+              />
             ) : undefined
           }
         />

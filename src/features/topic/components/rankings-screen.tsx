@@ -1,4 +1,4 @@
-import { countryName } from '@joutio/client/geo'
+import { countryName } from '@joutio/client/core/geo'
 import { FlashList, type FlashListRef } from '@shopify/flash-list'
 import { useLocalSearchParams } from 'expo-router'
 import { router } from '@/shared/navigation/router'
@@ -25,18 +25,20 @@ import {
   tabBarScrollInsets,
   useTabBarInset,
 } from '@/design-system'
-import { useMe, usePlayerIdentity } from '@/features/me'
+import { useMe } from '@joutio/client/me'
+import { usePlayerIdentity } from '@/features/me'
 import { tierOf } from '@/shared/utils/tier'
-import type { LeaderboardEntryView } from '@joutio/client/api-types'
+import { type LeaderboardEntryView, DEFAULT_RANKING_FILTERS, type RankingFilters } from '@joutio/client/topics'
 import { useTopicLeaderboardPage } from '../hooks/use-topic'
 import { formatNumber, monthlyLegend } from '../lib/format'
-import { DEFAULT_RANKING_FILTERS, type RankingFilterState } from '../lib/topic-service'
 import { boardSub, MyBoardRow } from './board-tab'
 import { RankingsFiltersSheet } from './rankings-filters-sheet'
 import { userAvatar } from '@/shared/utils/avatar'
 import { feedFooterProps, pagedQuery } from '@/shared/utils/paging'
 import { useRefreshActive } from '@/shared/hooks/use-refresh-active'
 import { currentLanguage, formatDate, useLanguage, useT } from '@/lib/i18n'
+
+type RankingFilterState = Pick<RankingFilters, 'period' | 'scope'>
 
 const GUTTER = tokens.space[5]
 
@@ -67,7 +69,7 @@ export function RankingsScreen() {
   const tabInset = useTabBarInset()
   const params = useLocalSearchParams<RankingsRouteParams>()
   const topicId = params.topicId
-  const me = useMe(true)
+  const me = useMe()
   const { colors, radius } = useTheme()
   const [filterState, setFilterState] = useState<RankingFilterState>(DEFAULT_RANKING_FILTERS)
   const [sheetOpen, setSheetOpen] = useState(false)
@@ -76,7 +78,7 @@ export function RankingsScreen() {
 
   const filters = useMemo(() => ({ ...filterState, month }), [filterState, month])
   const list = useTopicLeaderboardPage(topicId, filters, Boolean(topicId))
-  const pageRefresh = useRefreshActive()
+  const pageRefresh = useRefreshActive(list)
   const active = filterState.period !== DEFAULT_RANKING_FILTERS.period || filterState.scope !== DEFAULT_RANKING_FILTERS.scope
   const hasCountry = Boolean(me.data?.country)
 
@@ -94,7 +96,13 @@ export function RankingsScreen() {
   const showMeBar = Boolean(meEntry && !entries.some((entry) => entry.userId === meEntry.userId))
   const scoreOf = (entry: LeaderboardEntryView) => (filterState.period === 'MONTHLY' ? entry.monthlyXp : entry.totalXp)
   const scopeLabel =
-    filterState.scope === 'WORLD' ? t('mobile.rankings.world') : filterState.scope === 'FOLLOWING' ? t('home.followed') : me.data?.country ? countryName(me.data.country, currentLanguage()) : ''
+    filterState.scope === 'WORLD'
+      ? t('mobile.rankings.world')
+      : filterState.scope === 'FOLLOWING'
+        ? t('home.followed')
+        : me.data?.country
+          ? countryName(me.data.country, currentLanguage())
+          : ''
   const legend =
     filterState.period === 'MONTHLY' && filterState.scope === 'WORLD'
       ? monthlyLegend()
@@ -146,7 +154,11 @@ export function RankingsScreen() {
         showMeBar && meEntry ? (
           <MyBoardRow
             entry={meEntry}
-            sub={filterState.period === 'MONTHLY' ? t('mobile.rankings.xpMonth', { xp: formatNumber(meEntry.monthlyXp) }) : t('topic.totalXp', { xp: formatNumber(meEntry.totalXp) })}
+            sub={
+              filterState.period === 'MONTHLY'
+                ? t('mobile.rankings.xpMonth', { xp: formatNumber(meEntry.monthlyXp) })
+                : t('topic.totalXp', { xp: formatNumber(meEntry.totalXp) })
+            }
             trail={formatNumber(scoreOf(meEntry))}
           />
         ) : undefined
@@ -212,9 +224,7 @@ export function RankingsScreen() {
                 )}
               </View>
             }
-            ListFooterComponent={
-              <FeedFooter style={{ marginHorizontal: GUTTER }} {...feedFooterProps(pagedQuery(list))} endLabel={t('board.end')} />
-            }
+            ListFooterComponent={<FeedFooter style={{ marginHorizontal: GUTTER }} {...feedFooterProps(pagedQuery(list))} endLabel={t('board.end')} />}
             renderItem={({ item: entry, index }) => {
               const first = index === 0
               const last = index === rest.length - 1

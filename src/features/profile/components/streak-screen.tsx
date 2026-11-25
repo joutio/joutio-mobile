@@ -16,7 +16,7 @@ import {
 } from '@/design-system'
 import { formatNumber } from '@/features/topic/lib/format'
 import { useMyActivity, useMyBadges, useMyRewards } from '../hooks/use-profile'
-import { useMe } from '@/features/me'
+import { useMe } from '@joutio/client/me'
 import { useAvatarPreview } from '@/features/avatar/lib/avatar-preview'
 import { avatarStylesFor } from '@/features/avatar/lib/avatar-styles'
 import { calendarOf, streakHint, weekOf } from '../lib/streak'
@@ -35,11 +35,11 @@ function Card({ children }: { children: React.ReactNode }) {
 export function StreakScreen() {
   const t = useT()
   const activity = useMyActivity()
-  const pageRefresh = useRefreshActive()
   const badges = useMyBadges()
   const data = activity.data
-  const me = useMe(true)
+  const me = useMe()
   const rewards = useMyRewards()
+  const pageRefresh = useRefreshActive(activity, badges, rewards)
   const preview = useAvatarPreview()
   const micah = avatarStylesFor(me.data, rewards.data, badges.data).find((style) => style.id === 'micah')!
   const rewardLoading = me.isPending || rewards.isPending || badges.isPending

@@ -4,7 +4,7 @@ import { Controller, useForm } from 'react-hook-form'
 import { View } from 'react-native'
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { loginSchema } from '@joutio/client/forms'
+import { loginSchema } from '@joutio/client/me'
 import type { z } from 'zod'
 import { Button, Field, HAIRLINE, Logo, SocialButton, Text, tokens, useTheme } from '@/design-system'
 import { useOnboardingStore } from '@/features/onboarding/onboarding-store'
@@ -12,7 +12,7 @@ import { useLoginWithFacebook, useLoginWithGoogle, useRequestLoginCode } from '.
 import { isFacebookSignInAvailable } from '../lib/facebook'
 import { isGoogleSignInAvailable } from '../lib/google'
 import { LegalNotice } from './legal-notice'
-import { formError, t, useT } from '@/lib/i18n'
+import { formError, useT } from '@/lib/i18n'
 
 type LoginForm = z.infer<typeof loginSchema>
 
@@ -116,7 +116,10 @@ export function LoginScreen() {
               value={value}
               onChangeText={onChange}
               onBlur={onBlur}
-              error={(fieldState.isTouched && value !== '' && fieldState.error?.message ? formError(fieldState.error.message) : undefined) ?? requestCode.error?.message}
+              error={
+                (fieldState.isTouched && value !== '' && fieldState.error?.message ? formError(fieldState.error.message) : undefined) ??
+                requestCode.error?.message
+              }
             />
           )}
         />

@@ -1,4 +1,4 @@
-import { avatarLabel } from '@joutio/client/i18n'
+import { avatarLabel } from '@joutio/client/core/i18n'
 import { currentLanguage } from '@/lib/i18n'
 
 /** Libellé d'une clé `avatar.…` dans la langue de l'app (`{{number}}` interpolé) : dictionnaire de `@joutio/client`. */

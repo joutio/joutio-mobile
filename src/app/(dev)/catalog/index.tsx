@@ -1,7 +1,6 @@
 import { router } from '@/shared/navigation/router'
-import { ArrowRightIcon } from '@/design-system'
+import { ArrowRightIcon, ListRow, Screen, SectionHeader, tokens, useTheme } from '@/design-system'
 import { View } from 'react-native'
-import { ListRow, Screen, SectionHeader, tokens, useTheme } from '@/design-system'
 import { ThemeSwitch } from '@/dev/catalog/kit'
 import { CATALOG, ROW_TITLES } from '@/dev/catalog/registry'
 

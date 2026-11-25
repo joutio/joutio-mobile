@@ -15,7 +15,7 @@ import {
 } from '@/design-system'
 import { useLogout } from '@/features/auth'
 import { useCatalogAccess } from '@/features/auth/hooks/use-catalog-access'
-import { useMe } from '@/features/me'
+import { useMe } from '@joutio/client/me'
 import { usePremiumSheet } from '@/features/premium/premium-store'
 import { Group, openSettingsPage, SettingsFrame, useSettingsOrigin } from './settings-frame'
 import { useT } from '@/lib/i18n'
@@ -29,7 +29,7 @@ export function SettingsScreen() {
   const t = useT()
   const origin = useSettingsOrigin()
   const catalogAccess = useCatalogAccess()
-  const data = useMe(true).data
+  const data = useMe().data
   const logout = useLogout()
   const showPremium = usePremiumSheet((state) => state.show)
   const open = (page: Parameters<typeof openSettingsPage>[1]) => () => openSettingsPage(origin, page)

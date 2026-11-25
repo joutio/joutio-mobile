@@ -21,10 +21,11 @@ import {
   type Icon,
 } from '@/design-system'
 import type { BotDifficulty } from '@joutio/client/game'
+import { useContacts } from '@joutio/client/social'
+import { useSessionUserId } from '@/features/auth'
 import {
   useBotDifficulty,
   useChallengePlayer,
-  useContacts,
   useCreatePrivateRoom,
   useStartMatchmaking,
   useStartTraining,
@@ -40,23 +41,24 @@ type Step = 'modes' | 'training' | 'player'
 type Mode = 'world' | 'training' | 'room' | 'player'
 type Contacts = 'following' | 'followers'
 
-const MODES = (): { value: Mode; icon: Icon; label: string; sub: string }[] => ([
+const MODES = (): { value: Mode; icon: Icon; label: string; sub: string }[] => [
   { value: 'world', icon: GlobeHemisphereWestIcon, label: t('play.modeWorld'), sub: t('mobile.duel.worldSub') },
   { value: 'player', icon: UserPlusIcon, label: t('play.modePlayer'), sub: t('play.modePlayerSub') },
   { value: 'training', icon: RobotIcon, label: t('play.modeTraining'), sub: t('play.modeTrainingSub') },
   { value: 'room', icon: LinkIcon, label: t('play.modeRoom'), sub: t('play.modeRoomSub') },
-])
+]
 
-const LEVELS = (): { value: BotDifficulty; label: string; sub: string }[] => ([
+const LEVELS = (): { value: BotDifficulty; label: string; sub: string }[] => [
   { value: 'EASY', label: t('play.levelEasy'), sub: t('mobile.duel.easySub') },
   { value: 'NORMAL', label: t('play.levelNormal'), sub: t('play.levelNormalSub') },
   { value: 'HARD', label: t('play.levelHard'), sub: t('mobile.duel.hardSub') },
-])
+]
 
-const CONTACTS = () => ([
-  { value: 'following', label: t('play.following') },
-  { value: 'followers', label: t('play.followers') },
-] as const)
+const CONTACTS = () =>
+  [
+    { value: 'following', label: t('play.following') },
+    { value: 'followers', label: t('play.followers') },
+  ] as const
 
 /**
  * « Qui veux-tu défier ? » : choix de l'adversaire parmi les contacts, puis envoi du défi (aussi utilisé par le
@@ -67,9 +69,10 @@ export function PlayerPickerSheet({ open, onClose, topic, onSent }: { open: bool
   const identity = usePlayerIdentity()
   const [contacts, setContacts] = useState<Contacts>('following')
   const [query, setQuery] = useState('')
-  const list = useContacts(contacts, query.trim(), open)
+  const userId = useSessionUserId()
+  const list = useContacts({ userId: open ? userId : undefined, direction: contacts, query: query.trim(), sort: 'RECENT' })
   const challenge = useChallengePlayer()
-  const players = list.data?.pages.flatMap((page) => page.content) ?? []
+  const players = (list.data?.pages ?? []).flatMap((page) => page.content)
   const paged = pagedQuery(list)
 
   return (
@@ -89,7 +92,7 @@ export function PlayerPickerSheet({ open, onClose, topic, onSent }: { open: bool
               {players.map((player, index) => (
                 <PlayerRow
                   key={player.userId}
-                  loading={challenge.isPending && challenge.variables?.opponent.userId === player.userId}
+                  loading={challenge.opponentId === player.userId}
                   disabled={challenge.isPending}
                   name={player.pseudonym}
                   premium={identity.premium(player)}

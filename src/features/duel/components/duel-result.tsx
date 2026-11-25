@@ -31,28 +31,25 @@ import {
   TopBannerFrame,
   useScreenTopInset,
 } from '@/design-system'
-import { useMe } from '@/features/me'
+import { useMe } from '@joutio/client/me'
 import { useBotDifficulty, useStartMatchmaking, useStartTraining } from '@/features/play/hooks/use-play'
-import { useSendRematch } from '@/features/play/hooks/use-rematch'
+import { useRematchRequest } from '../hooks/use-rematch-request'
 import { useMyTitles, useWearTitle } from '@/features/topic/hooks/use-topic'
 import { customTitle } from '@joutio/client/authoring'
 import { formatNumber, MASTERY_TIERS, MASTERY_XP, tierLabel } from '@/features/topic/lib/format'
-import type { BadgeView, MasteryTier } from '@joutio/client/api-types'
+import { type BadgeView, type MasteryTier, nextStreakMilestone, useProfile } from '@joutio/client/profile'
 import { badgeUnlockOf } from '@/features/profile/lib/badges'
 import { tierOf } from '@/shared/utils/tier'
-import { sortedRounds } from '@joutio/client/game'
-import { isBonusRound, ROUNDS } from '@joutio/client/game'
-import type { GameState } from '@joutio/client/game'
-import type { GameResultView } from '@joutio/client/game'
-import { useGameResult, useStreakUnlock } from '../hooks/use-game'
-import { nextStreakMilestone } from '@joutio/client/profile'
+import { Arena, isBonusRound, ROUNDS, type GameState, type GameResultView } from '@joutio/client/game'
+import { useGameResult } from '@joutio/client/game'
+import { useStreakUnlock } from '../hooks/use-game'
 import { ResultPages } from './result-pages'
 import { DuelReview, reviewRoundsOf } from './duel-review'
 import { ReportPlayerSheet } from './report-sheets'
 import { useMyAvatar } from '@/features/avatar/lib/avatar-preview'
 import { BlockPlayerDialog } from '@/features/social/components/block-player-dialog'
 import { usePlayerAvatar, usePlayerPremium } from '@/features/social/hooks/use-player-avatar'
-import { useBlockPlayer, usePlayerProfile } from '@/features/social/hooks/use-social'
+import { useBlockPlayer } from '@/features/social/hooks/use-social'
 import { usePlayerIdentity } from '@/features/me'
 import { t, useLanguage, useT } from '@/lib/i18n'
 
@@ -100,7 +97,7 @@ function unlocksOf(result: GameResultView, streakDays: number | null): Unlock[] 
 }
 
 function streakOf(game: GameState, playerId: string | null): RoundResult[] {
-  const rounds = sortedRounds(game)
+  const rounds = new Arena(game).sortedRounds()
   return Array.from({ length: ROUNDS }, (_, index) => {
     const bonus = isBonusRound(index)
     const answer = playerId ? rounds[index]?.playerAnswers[playerId] : undefined
@@ -143,12 +140,12 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
   const { colors } = useTheme()
   const insets = useSafeAreaInsets()
   const screenTop = useScreenTopInset()
-  const me = useMe(true)
+  const me = useMe()
   const userId = me.data?.userId ?? ''
   const language = useLanguage()
   const myName = me.data?.pseudonym ?? t('common.me')
   const cancelled = game.status === 'CANCELED'
-  const result = useGameResult(gameId, !cancelled)
+  const result = useGameResult(cancelled ? undefined : gameId)
   const data = result.data
   const titles = useMyTitles()
   const wear = useWearTitle()
@@ -176,13 +173,13 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
   const outcome: MatchOutcome = game.forfeiterId === userId ? 'forfeit' : winner === null ? 'draw' : winner === userId ? 'win' : 'loss'
   const resolvedTopicId = data?.topic.topicId ?? topicId ?? game.topicId ?? ''
   const playTopic = { topicId: resolvedTopicId, name: topic, category }
-  const rematch = useSendRematch({ userId, opponentId, topic: playTopic, gameId })
+  const rematch = useRematchRequest({ opponentId, topic: playTopic, gameId })
   const myAvatar = useMyAvatar()
   const shareLink = useShare()
   const opponentAvatar = usePlayerAvatar(opponentId, !bot)
   const opponentPremium = usePlayerPremium(opponentId, !bot)
   // Offre de blocage après un signalement (`resultat.md` § Signalements), sauf joueur déjà bloqué.
-  const opponentBlocked = usePlayerProfile(opponentId ?? '', !bot).data?.blocked === true
+  const opponentBlocked = useProfile(bot ? undefined : (opponentId ?? undefined)).data?.blocked === true
   const block = useBlockPlayer({ userId: opponentId ?? '', pseudonym: opponentName })
   const identity = usePlayerIdentity()
   // Elo à l'instant de la partie (snapshot du bilan) : une partie consultée plus tard ne doit pas afficher l'Elo
@@ -192,7 +189,7 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
   const myTier = gameProgression ? tierOf(gameProgression.rating) : me.data?.progression ? tierOf(me.data.progression.rating) : undefined
   const opponentTier = data && data.opponentRated && data.opponentRating != null ? tierOf(data.opponentRating) : undefined
   // La série est lue avant d'ouvrir la séquence : son écran vient en premier et ne doit pas s'insérer en cours de route.
-  const streak = useStreakUnlock(gameId, userId, celebrate && !bot)
+  const streak = useStreakUnlock(userId, celebrate && !bot)
   const streakPending = celebrate && !sequenceDone && !bot && !streak.isFetched
   const unlocks = celebrate && data && !sequenceDone && !streakPending ? unlocksOf(data, streak.data ?? null) : []
 
@@ -234,7 +231,14 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
       if (unlock.kind === 'badge') {
         const shown = badgeUnlockOf(unlock.badge, t)
         return (
-          <BadgeUnlock key={`badge-${unlock.badge.code}`} tier={unlock.badge.tier} badge={shown.name} family={shown.family} icon={shown.icon} text={shown.text} />
+          <BadgeUnlock
+            key={`badge-${unlock.badge.code}`}
+            tier={unlock.badge.tier}
+            badge={shown.name}
+            family={shown.family}
+            icon={shown.icon}
+            text={shown.text}
+          />
         )
       }
       const key = `${resolvedTopicId}:${unlock.tier}`
@@ -392,13 +396,7 @@ function DuelResultContent({ gameId, game, topic, topicId, category, celebrate =
                             {t('result.replay')}
                           </Button>
                         ) : (
-                          <Button
-                            full
-                            icon={LightningIcon}
-                            loading={rematch.sending}
-                            disabled={rematch.state !== 'idle' || !opponentId}
-                            onPress={() => void rematch.send()}
-                          >
+                          <Button full icon={LightningIcon} loading={rematch.sending} disabled={rematch.state !== 'idle' || !opponentId} onPress={rematch.send}>
                             {rematch.state === 'pending' && rematch.seconds > 0
                               ? t('result.rematchWaiting', { seconds: rematch.seconds })
                               : rematch.state === 'refused'

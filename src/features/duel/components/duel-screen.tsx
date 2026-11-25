@@ -1,5 +1,3 @@
-import { useMutation } from '@tanstack/react-query'
-import { usePlaySession } from '@/features/play/hooks/play-session'
 import { useLocalSearchParams, usePreventRemove } from 'expo-router'
 import { router } from '@/shared/navigation/router'
 import { useEffect, useRef, useState } from 'react'
@@ -28,32 +26,32 @@ import {
   TopBannerFrame,
   useScreenTopInset,
 } from '@/design-system'
-import { useMe } from '@/features/me'
+import { useMe } from '@joutio/client/me'
 import { readServerNow, useServerClock } from '@/lib/realtime/server-clock'
 import { tierOf } from '@/shared/utils/tier'
-import { countryFlag, countryName } from '@joutio/client/geo'
-import { sortedRounds } from '@joutio/client/game'
+import { countryFlag, countryName } from '@joutio/client/core/geo'
 import {
+  Arena,
+  Game,
   isBonusRound,
+  useAbandonGame,
+  useGameStream,
   MAX_SCORE,
-  RESULT_DELAY_MS,
-  TRANSITION_GRACE_MS,
   ROUNDS,
   VS_DURATION_MS,
   SWOOSH_DURATION_MS,
   ROUND_INTRO_MS,
   LATE_JOIN_MS,
+  type GameState,
 } from '@joutio/client/game'
-import type { GameState } from '@joutio/client/game'
+import { useProfile } from '@joutio/client/profile'
 import { useDuelArena } from '../hooks/use-duel-arena'
-import { useGameStream, usePrefetchQuestionImages, useServerNow } from '../hooks/use-game'
-import { gameService } from '../lib/game-service'
+import { usePrefetchQuestionImages, useServerNow } from '../hooks/use-game'
 import { DuelCancelled } from './duel-cancelled'
 import { DuelResult } from './duel-result'
 import { useMyAvatar } from '@/features/avatar/lib/avatar-preview'
 import { usePlayerAvatar, usePlayerPremium } from '@/features/social/hooks/use-player-avatar'
 import { useEquippedTitle } from '../hooks/use-equipped-title'
-import { usePlayerProfile } from '@/features/social/hooks/use-social'
 import { usePlayerIdentity } from '@/features/me'
 import { currentLanguage, useT } from '@/lib/i18n'
 
@@ -67,7 +65,7 @@ export interface DuelRouteParams {
 
 /** Pastilles des manches, d'après les réponses du joueur. */
 function roundResults(game: GameState, userId: string, current: number): RoundResult[] {
-  const rounds = sortedRounds(game)
+  const rounds = new Arena(game).sortedRounds()
   return Array.from({ length: ROUNDS }, (_, index) => {
     const bonus = isBonusRound(index)
     const round = rounds[index]
@@ -101,7 +99,7 @@ function DuelScreenContent() {
   const { colors } = useTheme()
   const insets = useSafeAreaInsets()
   const screenTop = useScreenTopInset()
-  const me = useMe(true)
+  const me = useMe()
   const userId = me.data?.userId ?? ''
   const stream = useGameStream(gameId)
   const now = useServerNow()
@@ -114,19 +112,19 @@ function DuelScreenContent() {
   const opponentAvatar = usePlayerAvatar(opponentId, game?.player2Type !== 'BOT')
   const opponentPremium = usePlayerPremium(opponentId, game?.player2Type !== 'BOT')
   // Même profil en cache que l'avatar : palier, Elo et pays de l'adversaire pour le face-à-face.
-  const opponentProfile = usePlayerProfile(opponentId ?? '', Boolean(opponentId) && game?.player2Type !== 'BOT')
+  const opponentProfile = useProfile(opponentId && game?.player2Type !== 'BOT' ? opponentId : undefined)
   const { myPremium } = usePlayerIdentity()
   const myTitle = useEquippedTitle(me.data?.equippedTitle)
   const opponentTitle = useEquippedTitle(game?.player2Type === 'BOT' ? null : opponentProfile.data?.equippedTitle)
   usePrefetchQuestionImages(game?.questionImageUrls ?? [])
   const arena = useDuelArena({
     gameId,
-    game: game ?? ({ gameId, rounds: {} } as GameState),
+    game: game ?? Game.empty(gameId),
     now,
     serverNow: () => now,
     userId,
     language: me.data?.language ?? 'fr',
-    refresh: () => stream.refresh(),
+    refresh: stream.resync,
   })
   const scene = arena.scene
   // Fin de partie : la scène décide (`sceneAt`). `GAME_ENDED` arrive avec la clôture de la dernière manche, dont la
@@ -137,10 +135,10 @@ function DuelScreenContent() {
 
   // Rattrapage : une transition serveur attendue tarde, ou l'écho de ma réponse : on rejoue l'historique.
   const overdue = 'overdue' in scene && scene.overdue
+  const { resync } = stream
   useEffect(() => {
-    if (overdue || arena.pendingEchoOverdue) stream.refresh()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [overdue, arena.pendingEchoOverdue])
+    if (overdue || arena.pendingEchoOverdue) resync()
+  }, [overdue, arena.pendingEchoOverdue, resync])
 
   // Haptiques de la séquence (`specs/components/duel.md`).
   const lastScene = useRef<string>('')
@@ -156,16 +154,8 @@ function DuelScreenContent() {
 
   // Abandon : le retour système (et toute navigation arrière) ouvre la confirmation tant que la partie dure.
   const [abandoned, setAbandoned] = useState(false)
-  const { hideGame } = usePlaySession()
-  const abandon = useMutation({
-    mutationFn: () => gameService.abandon(gameId),
-    onMutate: () => hideGame(gameId, true),
-    onSuccess: () => setAbandoned(true),
-    onError: () => {
-      hideGame(gameId, false)
-      toast.error(t('duel.abandonError'))
-    },
-  })
+  // L'abandon retire tout de suite la partie des parties en cours (bande « Partie en cours »).
+  const abandon = useAbandonGame(gameId, userId)
   const [introDone, setIntroDone] = useState<number | null>(null)
   const askAbandon = () =>
     showDialog({
@@ -179,7 +169,11 @@ function DuelScreenContent() {
         {
           label: t('duel.abandon'),
           tone: 'destructive',
-          onPress: () => abandon.mutateAsync(),
+          onPress: () =>
+            abandon.mutate(undefined, {
+              onSuccess: () => setAbandoned(true),
+              onError: () => toast.error(t('duel.abandonError')),
+            }),
         },
         { label: t('onboarding.universes.continue'), variant: 'plain' },
       ],

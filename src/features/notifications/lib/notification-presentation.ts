@@ -1,4 +1,4 @@
-import type { NotificationView } from '@/lib/realtime/personal-notifications'
+import type { NotificationView } from '@joutio/client/notifications'
 import { t } from '@/lib/i18n'
 
 /** Libellés de `joutio-web` (`notifications.row`). */

@@ -1,4 +1,5 @@
-import type { ApiError } from '@joutio/client/api-types'
+import type { AbortSignalLike, HttpClient, HttpQuery } from '@joutio/client/core'
+import type { ApiError } from '@joutio/client/core/types'
 
 // Expo SDK 58 installe expo/fetch globalement. Son encodeur multipart refuse
 // les pièces RN { uri, name, type }. Le transport XHR de whatwg-fetch garde
@@ -15,9 +16,11 @@ interface ApiClientConfig {
   onRejectedAfterRefresh?: () => void
 }
 
-interface RequestOptions extends Omit<RequestInit, 'body'> {
+interface RequestOptions extends Omit<RequestInit, 'body' | 'signal'> {
   /** Paramètres d'URL ; une valeur absente (`undefined`, `null`) n'est pas envoyée. */
-  query?: Record<string, string | number | boolean | undefined | null>
+  query?: HttpQuery
+  /** Annulation : le `signal` de React Query (un `AbortSignal`, vu par la lib comme `AbortSignalLike`). */
+  signal?: AbortSignalLike
   body?: unknown
   absolute?: boolean
   /**
@@ -28,7 +31,13 @@ interface RequestOptions extends Omit<RequestInit, 'body'> {
 }
 
 /** Envoi `FormData` avec progression ; la réponse est rendue en `Response` et traitée comme les autres. */
-function sendWithProgress(url: string, method: string, headers: Record<string, string>, body: FormData, onProgress: (fraction: number) => void): Promise<Response> {
+function sendWithProgress(
+  url: string,
+  method: string,
+  headers: Record<string, string>,
+  body: FormData,
+  onProgress: (fraction: number) => void,
+): Promise<Response> {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest()
     xhr.open(method, url)
@@ -61,14 +70,15 @@ function buildUrl(baseUrl: string, path: string, query?: RequestOptions['query']
 }
 
 /**
- * Client fetch typé (React Native) : base URL, JSON, erreur centralisée, Bearer token.
+ * Client fetch typé (React Native) : base URL, JSON, erreur centralisée, Bearer token. Implémente le `HttpClient` de
+ * `@joutio/client` (`{ body, query, signal }`), fourni à `JoutioClientProvider`.
  * Volontairement sans `URL`/`URLSearchParams` (support RN hétérogène).
  */
 export function createApiClient(clientConfig: ApiClientConfig) {
   const { baseUrl, defaultHeaders = {}, onError, getAuthToken, onUnauthorized, onRejectedAfterRefresh } = clientConfig
 
   async function request<T>(method: string, path: string, options: RequestOptions = {}, retried = false): Promise<T> {
-    const { query, body, headers: reqHeaders, absolute, onUploadProgress, ...fetchOptions } = options
+    const { query, body, headers: reqHeaders, absolute, onUploadProgress, signal, ...fetchOptions } = options
     const url = buildUrl(baseUrl, path, query)
     void absolute
 
@@ -90,6 +100,7 @@ export function createApiClient(clientConfig: ApiClientConfig) {
             headers,
             body: multipart ? body : body !== undefined ? JSON.stringify(body) : undefined,
             ...fetchOptions,
+            signal: signal as AbortSignal | undefined,
           })
 
     if (!response.ok) {
@@ -119,19 +130,16 @@ export function createApiClient(clientConfig: ApiClientConfig) {
     get<T>(path: string, opts?: RequestOptions) {
       return request<T>('GET', path, opts)
     },
-    post<T>(path: string, body?: unknown, opts?: RequestOptions) {
-      return request<T>('POST', path, { ...opts, body })
+    post<T>(path: string, opts?: RequestOptions) {
+      return request<T>('POST', path, opts)
     },
-    put<T>(path: string, body?: unknown, opts?: RequestOptions) {
-      return request<T>('PUT', path, { ...opts, body })
-    },
-    patch<T>(path: string, body?: unknown, opts?: RequestOptions) {
-      return request<T>('PATCH', path, { ...opts, body })
+    put<T>(path: string, opts?: RequestOptions) {
+      return request<T>('PUT', path, opts)
     },
     delete<T>(path: string, opts?: RequestOptions) {
       return request<T>('DELETE', path, opts)
     },
-  }
+  } satisfies HttpClient
 }
 
 export type ApiClient = ReturnType<typeof createApiClient>

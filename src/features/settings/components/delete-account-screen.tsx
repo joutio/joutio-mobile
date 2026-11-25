@@ -1,18 +1,16 @@
 import { router } from '@/shared/navigation/router'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { OTP_LENGTH, otpSchema } from '@joutio/client/forms'
+import { OTP_LENGTH, otpSchema, useMe, useDeleteAccount, useRequestDeletionCode } from '@joutio/client/me'
 import { useEffect } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { View } from 'react-native'
 import { Notice, Button, CheckCircleIcon, CodeInput, EmptyState, MobileTopBar, Screen, Text, tokens, WarningIcon } from '@/design-system'
 import { useLogout } from '@/features/auth'
-import { useMe } from '@/features/me'
-import { useDeleteAccount, useMyBadges, useRequestDeletionCode } from '@/features/profile/hooks/use-profile'
+import { useMyBadges } from '@/features/profile/hooks/use-profile'
 import { useMyTitles } from '@/features/topic/hooks/use-topic'
 import { formatNumber, tierLabel } from '@/features/topic/lib/format'
 import { tierOf } from '@/shared/utils/tier'
 import { useT } from '@/lib/i18n'
-
 
 /**
  * Supprimer mon compte (`reglages.md` § 3) : ce que le joueur perd, puis le code reçu par e-mail. La suppression est
@@ -20,7 +18,7 @@ import { useT } from '@/lib/i18n'
  */
 export function DeleteAccountScreen() {
   const t = useT()
-  const me = useMe(true)
+  const me = useMe()
   const badges = useMyBadges()
   const titles = useMyTitles()
   const request = useRequestDeletionCode()
@@ -36,8 +34,7 @@ export function DeleteAccountScreen() {
   }, [])
 
   const rating = data?.progression?.rating
-  const rank =
-    data?.progression && rating !== undefined ? t('deletion.rank', { tier: tierLabel(tierOf(rating)), rating: formatNumber(rating) }) : ''
+  const rank = data?.progression && rating !== undefined ? t('deletion.rank', { tier: tierLabel(tierOf(rating)), rating: formatNumber(rating) }) : ''
   const summary = t('deletion.summary', { rank, badges: badges.data?.earnedCount ?? 0, titles: titles.data?.titles.length ?? 0 })
 
   if (remove.isSuccess) {
@@ -79,7 +76,9 @@ export function DeleteAccountScreen() {
         <Controller
           control={form.control}
           name="code"
-          render={({ field }) => <CodeInput autoFocus value={field.value} length={OTP_LENGTH} error={remove.isError} label={t('deletion.codeLabel')} onChange={field.onChange} />}
+          render={({ field }) => (
+            <CodeInput autoFocus value={field.value} length={OTP_LENGTH} error={remove.isError} label={t('deletion.codeLabel')} onChange={field.onChange} />
+          )}
         />
         {remove.isError && (
           <Text variant="caption" color="wrong">
@@ -91,7 +90,14 @@ export function DeleteAccountScreen() {
         </Button>
       </View>
       <View style={{ marginTop: 'auto', gap: tokens.space[3] }}>
-        <Button full variant="filled" tone="destructive" disabled={!form.formState.isValid} loading={remove.isPending} onPress={() => void form.handleSubmit(({ code }) => remove.mutate(code))()}>
+        <Button
+          full
+          variant="filled"
+          tone="destructive"
+          disabled={!form.formState.isValid}
+          loading={remove.isPending}
+          onPress={() => void form.handleSubmit(({ code }) => remove.mutate(code))()}
+        >
           {t('deletion.confirm')}
         </Button>
         <Button full variant="plain" tone="neutral" onPress={() => router.back()}>

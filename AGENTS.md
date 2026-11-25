@@ -11,8 +11,9 @@ de plateforme ([`design/specs/platforms/README.md`](../../design/specs/platforms
 ## Pile
 
 Expo SDK 58, React Native 0.88 (New Architecture), expo-router, Reanimated 4, Gesture Handler 3,
-TrueSheet, expo-image, Phosphor, Geist, Zustand, React Query, React Hook Form + Zod,
-expo-secure-store, expo-notifications, `@joutio/client`. **Dev build** (`expo-dev-client`), jamais
+TrueSheet, expo-image, Phosphor, Geist, Zustand, React Hook Form + Zod, expo-secure-store, expo-notifications,
+`@joutio/client` (pin exact, 11.1.0 : toutes les lectures, mutations et la synchronisation temps réel ;
+`@tanstack/react-query` n'y est qu'en dépendance pair). **Dev build** (`expo-dev-client`), jamais
 Expo Go, pas de cible web.
 
 **Expo change à chaque SDK** : avant de toucher une API Expo, EAS ou React Native, lire la version
@@ -28,22 +29,26 @@ src/
   design-system/  traduction native du lab (sans import de app/ ni dev/) : tokens.generated.*, theme/, primitives/,
                   mobile/ (Screen, MobileTopBar, JoTabBar, MobileSheet, ToastHost…), brand/, result/, duel/, vendor/ (Reacticx)
   features/<f>/   components/ hooks/ lib/ index.ts
-  lib/            config, endpoints, auth (jetons, refresh), api-client, query-client, i18n, realtime, ws
+  lib/            config, endpoints, auth (jetons, refresh), api-client (`HttpClient` de la lib), i18n, realtime (horloge
+                  serveur), ws (STOMP, `realtime` : `RealtimeTransport` de la lib)
   shared/         navigation (router protégé), stores, hooks, avatar, utils
   dev/            démos du catalogue (admin seulement)
 modules/          modules Expo locaux (bottom-load)   patches/  patch-package (réappliqués au postinstall)
 ```
 
 - Tout s'importe depuis `@/design-system`.
+- Le layout racine pose `JoutioClientProvider` (`api`, `realtime`, `Date.now`, `createJoutioQueryClient()`) avec
+  **un cache par session** (`JoutioRoot`, clé `userId` du store de session) et monte `useJoutioSync(userId)` une fois.
 - La navigation est protégée dans le layout racine : `Stack.Protected` bascule entre `(auth)`,
   `(onboarding)` et `(app)` selon la session et `me.onboardingCompleted`. Aucun écran ne
-  redirige lui-même.
+  redirige lui-même. `useMe` n'est appelé que sous session (`SignedInNavigation`, `JoinScreen`, `index` séparent leur
+  partie connectée).
 - L'étape « date de naissance » passe en premier si `MeView.birthDateRequired`.
 
 ## Règles
 
 - **Textes** : aucun texte en dur. `useT()` / `t()` de `src/lib/i18n` (dictionnaire
-  `@joutio/client/i18n`), appelés au moment de l'affichage (une liste de module devient une
+  `@joutio/client/core/i18n`), appelés au moment de l'affichage (une liste de module devient une
   fonction).
   - Clés propres au mobile : `mobile.*` ; primitives : `ds.*`.
   - Langue de l'appareil avant connexion, puis `MeView.language`. Nombres et dates :
@@ -100,7 +105,8 @@ modules/          modules Expo locaux (bottom-load)   patches/  patch-package (r
   - un rail horizontal possède le geste dès le toucher ; ne jamais désactiver le pager par un état
     React en cours de geste ;
   - pager horizontal : `@expo/ui/community/pager-view`.
-- **Pull-to-refresh** : `haptic('light')` **une seule fois**, après le verrou anti-doublon, par
+- **Pull-to-refresh** : `refetch` des seuls hooks de l'écran (`useRefreshActive(...lectures)`), jamais une relecture
+  globale. `haptic('light')` **une seule fois**, après le verrou anti-doublon, par
   `useGuardedRefresh` (déjà intégré à `Screen`, `ParallaxScreen`, `CollapsibleTabsScreen`,
   `useRefreshActive`). Interdits : un verrou ou un `setRefreshing` maison. `DragToLoadMore` vibre
   aussi une fois par chargement accepté.
@@ -108,11 +114,28 @@ modules/          modules Expo locaux (bottom-load)   patches/  patch-package (r
   - `Screen` défile dans un `KeyboardAwareScrollView` ;
   - formulaires à plusieurs champs : `FieldToolbar` et `returnKeyType="next"` ;
   - le champ entier remonte au-dessus du clavier (`field-reveal`).
-- **Mutations** : optimistes, sans relecture ([règle](../../docs/frontend/donnees-et-etat.md#mutations--optimistes-sans-relecture)).
-  `optimisticUpdate`, `queryKeys` et les mises à jour de cache partagées (`applyFollow`) viennent de
-  `@joutio/client/query`. Les événements d'un autre
-  joueur relisent les vues concernées par une table unique
-  (`features/realtime/realtime-invalidation.tsx`).
+- **Données** ([règle](../../docs/frontend/donnees-et-etat.md)) : l'app ne touche jamais au cache. Ni `useQueryClient`,
+  ni `useQuery`/`useMutation`, ni clé, ni service de lecture ou d'écriture local : uniquement les hooks de
+  `@joutio/client`, `userId` lu dans la session (`useSessionUserId`). ESLint interdit `@tanstack/react-query` hors
+  du layout racine (pont réseau `onlineManager` ← `useNetworkStore`).
+  - Toasts et navigation passent à `mutate(v, { onSuccess, onError })`, souvent dans un petit hook de feature qui
+    enveloppe la mutation de la lib (`use-authoring`, `use-topic`, `use-social`, `use-play`) ; une sortie d'écran
+    (annuler un salon, accepter un défi) se fait dès l'appel.
+  - Exceptions tenues ici : série relue une fois après un duel ; envoi d'images (`features/media`) ; rafale
+    `/api/clock` (`lib/realtime/server-clock`, ré-ancrée sur chaque trame d'agrégat par `realtime`) ; connexion
+    identity (`useCommand`, hors BFF). La récompense du résultat, la fin de partie (parties en cours, vues périmées) et
+    la grâce d'un agrégat neuf sont tenues par la lib ; l'arène en retard appelle `resync()` de son flux.
+  - Les événements d'un autre joueur et la reconnexion : `useJoutioSync` seul. Les toasts de notification lisent
+    le flux personnel par `useSubscription` (`NotificationsRuntime`).
+- **Défis** : un défi est une salle `INVITED`. Onglet sur `useDefis` (Salons rangés par `origin`), pastille
+  `useDefisBadge` ; Accepter = `useAcceptInvitation` puis la salle (même `roomId`) ; Refuser, Tout refuser, Annuler =
+  `useDeclineInvitations`, `useCancelRooms` ; Relancer = `useRemindRoom`. Revanche : `useRematchRequest`
+  (`useCreateChallenge` + `useRoomStream`, échéance du serveur) ; reçue : `IncomingRematch` (`useIncomingRematch`).
+- **Salon** : canal de présence `RoomPresenceChannel` (clé `attempt`) ; refus d'entrée `useJoinRefusal` ; relance de
+  l'absent sur `Room.reminderState` et `useRemindRoom`. La bande « Partie en cours » lit `useActiveGames` ;
+  `ActiveGamesWatch` monte le flux de chaque partie en cours pour qu'une partie finie hors de son écran en sorte.
+- **Lien partagé** : `pendingJoin` garde `/join/{roomId}` pendant la connexion et l'onboarding, vidé à l'usage ou quand
+  le salon a disparu ; le premier thème ne crée pas son salon tant qu'un lien attend.
 - **Temps réel** : STOMP unique (`lib/ws.ts`), coupé de force en arrière-plan. Pour le reste :
   [architecture](../../docs/frontend/architecture.md#temps-réel).
 - **Avatars** : DiceBear, avec les options **du joueur affiché** (`userAvatar(user)`,
@@ -141,8 +164,9 @@ npm install
 npm run ios | npm run android      # dev build (simulateur, émulateur ou appareil)
 npm run android:dev                # Android signé joutio-preview (Google et Facebook actifs), voir README
 npm start                          # Metro pour un dev build déjà installé
-npm run typecheck && npm run doctor
-npm run test:mutations test:refresh test:refresh-haptic test:push test:search-header test:api-client test:headers
+npm run typecheck && npm run lint && npm test   # npm test : tous les tests node de tests/
+npm run doctor
+npm run test:refresh | test:refresh-haptic | test:push | test:search-header | test:api-client | test:headers
 npm run tokens:sync | tokens:check | assets:sync   # après « npm run tokens » dans design/
 npm run format
 ```

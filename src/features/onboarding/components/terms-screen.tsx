@@ -1,7 +1,7 @@
 import { Linking, ScrollView, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Button, ScrollIcon, Text, toast, tokens, useTheme } from '@/design-system'
-import { useAcceptTerms, useMe } from '@/features/me'
+import { useAcceptTerms, useMe } from '@joutio/client/me'
 import { config } from '@/lib/config'
 import { useT } from '@/lib/i18n'
 
@@ -14,7 +14,7 @@ export function TermsScreen() {
   const t = useT()
   const { colors } = useTheme()
   const insets = useSafeAreaInsets()
-  const me = useMe(true)
+  const me = useMe()
   const accept = useAcceptTerms()
   const version = me.data?.termsVersion ?? ''
   const open = (path: string) => () => {

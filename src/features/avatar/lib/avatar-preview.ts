@@ -1,5 +1,5 @@
 import { useCallback } from 'react'
-import { useMe } from '@/features/me'
+import { useMe } from '@joutio/client/me'
 import { defaultOptionsFor } from '@/shared/avatar/styles'
 import { avatarSvg, parseAvatarConfig, type AvatarConfig } from '@/shared/utils/avatar'
 import type { AvatarStyleId } from './avatar-styles'
@@ -31,13 +31,13 @@ export function withStyle(config: AvatarConfig | null, style: AvatarStyleId): Av
 
 /** SVG de l'avatar du joueur connecté. */
 export function useMyAvatar(): string | undefined {
-  const me = useMe(true).data
+  const me = useMe().data
   return me ? (avatarSvg(me.avatarOptions, me.userId) ?? undefined) : undefined
 }
 
 /** Aperçu de chaque style avec les réglages actuels du joueur (cartes de récompense). */
 export function useAvatarPreview(config?: AvatarConfig | null) {
-  const me = useMe(true).data
+  const me = useMe().data
   const base = config === undefined ? parseAvatarConfig(me?.avatarOptions) : config
   const seed = me?.userId ?? 'joutio'
   return useCallback((style: AvatarStyleId) => avatarSvg(JSON.stringify(withStyle(base, style)), seed) ?? undefined, [base, seed])

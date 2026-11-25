@@ -1,6 +1,14 @@
 import { NotificationButton } from '@/features/notifications/components/notification-button'
 import { SettingsButton } from '@/features/settings/components/settings-button'
-import { useQueryClient } from '@tanstack/react-query'
+import {
+  invitationReminderDelay,
+  useAcceptInvitation,
+  useCancelRooms,
+  useDeclineInvitations,
+  useDefis,
+  useRemindRoom,
+  type RoomView,
+} from '@joutio/client/rooms'
 import { router } from '@/shared/navigation/router'
 import { useLocalSearchParams } from 'expo-router'
 import { useEffect, useState, type ReactNode } from 'react'
@@ -13,7 +21,6 @@ import {
   DragToLoadMore,
   EmptyState,
   FeedFooter,
-  IconButton,
   LightningIcon,
   ListGroup,
   ListRow,
@@ -27,29 +34,17 @@ import {
   TabsScrollView,
   tokens,
   useGuardedRefresh,
+  toast,
   useTheme,
   WarningCircleIcon,
 } from '@/design-system'
-import { useMe, usePlayerIdentity } from '@/features/me'
+import { usePlayerIdentity } from '@/features/me'
 import { useCreatePrivateRoom } from '@/features/play/hooks/use-play'
 import { readServerNow } from '@/lib/realtime/server-clock'
-import { queryKeys } from '@joutio/client/query'
 import { TopicPickerSheet } from '@/features/topics/components/topic-picker-sheet'
-import type { ChallengeView } from '@joutio/client/api-types'
-import { remindDelay, splitRoomsByOrigin } from '@joutio/client/rooms'
 import { avatarSvg } from '@/shared/utils/avatar'
 import { topicName } from '@/shared/utils/topic-name'
-import {
-  resumableRooms,
-  splitChallenges,
-  useAcceptChallenge,
-  useCancelChallenge,
-  useDeclineChallenges,
-  useMyChallenges,
-  useMyRooms,
-  useRemindChallenge,
-} from '../hooks/use-challenges'
-import { duration } from '../lib/challenges-service'
+import { duration } from '../lib/duration'
 import { clientSource, feedFooterProps } from '@/shared/utils/paging'
 import type { ChallengesTab } from '@/features/notifications/lib/notification-target'
 import { t, useT } from '@/lib/i18n'
@@ -57,11 +52,17 @@ import { t, useT } from '@/lib/i18n'
 const GUTTER = tokens.space[5]
 /** Reçus : liste paginée, 10 par page. */
 const RECEIVED_PAGE = 10
-const TABS = (): readonly { value: ChallengesTab; label: string }[] => ([
+const TABS = (): readonly { value: ChallengesTab; label: string }[] => [
   { value: 'received', label: t('challenges.received') },
   { value: 'sent', label: t('challenges.sent') },
   { value: 'rooms', label: t('challenges.rooms') },
-])
+]
+/** Onglet Salons, deux sections selon l'origine (`defis.md` § 1) : défis acceptés (défi, revanche, appariement), salons privés. */
+const byOrigin = (rooms: readonly RoomView[]) => ({
+  challenges: rooms.filter((room) => room.origin !== 'SHARED'),
+  shared: rooms.filter((room) => room.origin === 'SHARED'),
+})
+
 const PAGE = { gap: tokens.space[6], paddingHorizontal: GUTTER, paddingTop: tokens.space[4], paddingBottom: tokens.space[7] }
 
 function Loading() {
@@ -84,15 +85,11 @@ export function ChallengesScreen() {
   const t = useT()
   const identity = usePlayerIdentity()
   const { colors } = useTheme()
-  const client = useQueryClient()
-  const me = useMe(true)
-  const userId = me.data?.userId ?? ''
-  const challenges = useMyChallenges(Boolean(userId))
-  const rooms = useMyRooms(Boolean(userId))
-  const accept = useAcceptChallenge()
-  const decline = useDeclineChallenges()
-  const cancel = useCancelChallenge()
-  const remind = useRemindChallenge()
+  const defis = useDefis()
+  const accept = useAcceptInvitation()
+  const decline = useDeclineInvitations()
+  const cancel = useCancelRooms()
+  const remind = useRemindRoom()
   const createRoom = useCreatePrivateRoom()
   const [tab, setTab] = useState<ChallengesTab>('received')
   // Onglet demandé par une notification : appliqué puis effacé, pour qu'une même demande rejoue plus tard.
@@ -106,28 +103,41 @@ export function ChallengesScreen() {
   const [receivedPages, setReceivedPages] = useState(1)
   const [pickerOpen, setPickerOpen] = useState(false)
 
-  const { received, sent } = splitChallenges(challenges.data, userId)
-  const salons = resumableRooms(rooms.data)
-  const roomSections = splitRoomsByOrigin(salons)
+  const received = defis.data?.received ?? []
+  const sent = defis.data?.sent ?? []
+  const salons = defis.data?.waiting ?? []
+  const roomSections = byOrigin(salons)
   const now = readServerNow()
   // Décompte des relances (10 min) : l'écran se re-rend toutes les 15 s tant qu'un défi envoyé attend sa relance.
-  const remindPending = sent.some((challenge) => remindDelay(challenge, now) > 0)
+  const remindPending = sent.some((room) => invitationReminderDelay(room, now) > 0)
   const [, setTick] = useState(0)
   useEffect(() => {
     if (!remindPending) return
     const timer = setInterval(() => setTick((tick) => tick + 1), 15_000)
     return () => clearInterval(timer)
   }, [remindPending])
-  const loading = challenges.isPending || rooms.isPending
-  const failed = challenges.isError || rooms.isError
+  const loading = defis.isPending
+  const failed = defis.isError
   const empty = !loading && !failed && received.length + sent.length + salons.length === 0
   const receivedRows = received.slice(0, receivedPages * RECEIVED_PAGE)
   const receivedSource = clientSource(receivedPages, setReceivedPages, receivedRows.length < received.length)
   const counts: Record<ChallengesTab, number> = { received: received.length, sent: sent.length, rooms: salons.length }
 
-  // Relecture des défis et des salons. Les onglets la passent telle quelle à `TabsScrollView`, qui la garde lui-même
+  // Relecture des salles (défis compris). Les onglets la passent telle quelle à `TabsScrollView`, qui la garde lui-même
   // (`usePageRefresh`) : lui passer `refresh`, déjà gardé et sans promesse, arrêtait l'indicateur aussitôt.
-  const reload = () => Promise.all([client.refetchQueries({ queryKey: queryKeys.challenges() }), client.refetchQueries({ queryKey: queryKeys.myRooms() })])
+  const reload = () => defis.refetch()
+  const declineAll = (roomIds: string[]) =>
+    decline.mutate(roomIds, { onError: () => toast.error(t('challenges.declineError'), { description: t('challenges.retryText') }) })
+  const openRoom = (room: RoomView) =>
+    router.push({
+      pathname: '/room/[roomId]',
+      params: { roomId: room.roomId, topicId: room.topic.topicId, topicName: topicName(room.topic.names), category: room.topic.category ?? '' },
+    })
+  // Accepter ouvre aussitôt la salle du défi (même `roomId`) ; un refus du serveur s'affiche en toast.
+  const acceptInvitation = (room: RoomView) => {
+    accept.mutate(room.roomId, { onError: () => toast.error(t('challenges.acceptError')) })
+    openRoom(room)
+  }
   const { refreshing, refresh } = useGuardedRefresh(reload)
 
   const refuseAll = () =>
@@ -141,55 +151,63 @@ export function ChallengesScreen() {
           label: t('challenges.refuseAll'),
           variant: 'filled',
           tone: 'destructive',
-          onPress: () => decline.mutateAsync(received.map((challenge) => challenge.challengeId)),
+          onPress: () => declineAll(received.map((room) => room.roomId)),
         },
         { label: t('topic.cancel'), variant: 'plain', tone: 'neutral' },
       ],
     })
 
-  const row = (challenge: ChallengeView, kind: 'received' | 'sent', index: number, total: number) => {
-    const player = kind === 'received' ? challenge.challenger : challenge.opponent
-    const topic = topicName(challenge.topic.names)
+  const row = (room: RoomView, kind: 'received' | 'sent', index: number, total: number) => {
+    const player = room.opponent
+    const topic = topicName(room.topic.names)
     const status =
-      kind === 'received' ? t('challenges.expiresIn', { duration: duration(Date.parse(challenge.expiresAt) - now) }) : t('challenges.waiting', { duration: duration(now - Date.parse(challenge.createdAt)) })
+      kind === 'received'
+        ? t('challenges.expiresIn', { duration: duration(Date.parse(room.expiresAt) - now) })
+        : t('challenges.waiting', { duration: duration(now - Date.parse(room.createdAt)) })
+    const remindIn = invitationReminderDelay(room, now)
     return (
       <ChallengeListRow
-        key={challenge.challengeId}
-        name={player.pseudonym}
+        key={room.roomId}
+        name={player?.pseudonym ?? t('topic.opponent')}
         premium={identity.premium(player)}
-        onPress={identity.open(player.userId)}
-        src={avatarSvg(player.avatarOptions, player.userId) ?? undefined}
+        onPress={identity.open(player?.userId)}
+        src={player ? (avatarSvg(player.avatarOptions, player.userId) ?? undefined) : undefined}
         sub={`${topic} · ${status}`}
         last={index === total - 1}
         {...(kind === 'received'
           ? {
               primary: {
                 label: t('challenges.accept'),
-                loading: accept.isPending && accept.variables?.challengeId === challenge.challengeId,
+                loading: accept.isPending && accept.variables === room.roomId,
                 disabled: accept.isPending,
-                onPress: () => accept.mutate(challenge),
+                onPress: () => acceptInvitation(room),
               },
               secondary: {
                 label: t('challenges.decline'),
                 disabled: decline.isPending,
-                loading: decline.isPending && Boolean(decline.variables?.includes(challenge.challengeId)),
-                onPress: () => decline.mutate([challenge.challengeId]),
+                loading: decline.isPending && Boolean(decline.variables?.includes(room.roomId)),
+                onPress: () => declineAll([room.roomId]),
               },
             }
           : {
               primaryVariant: 'tinted' as const,
               // Relance au plus toutes les 10 min (`defis.md` § 5) : le décompte s'affiche dans le bouton.
               primary: {
-                label: remindDelay(challenge, now) > 0 ? t('challenges.remindIn', { duration: duration(remindDelay(challenge, now)) }) : t('challenges.remind'),
-                loading: remind.isPending && remind.variables === challenge.challengeId,
-                disabled: remindDelay(challenge, now) > 0 || remind.isPending || challenge.challengeId.startsWith('pending-'),
-                onPress: () => remind.mutate(challenge.challengeId),
+                label: remindIn > 0 ? t('challenges.remindIn', { duration: duration(remindIn) }) : t('challenges.remind'),
+                loading: remind.isPending && remind.variables === room.roomId,
+                disabled: remindIn > 0 || remind.isPending,
+                onPress: () =>
+                  remind.mutate(room.roomId, {
+                    onSuccess: () => toast.success(t('challenges.reminded')),
+                    onError: () => toast.error(t('challenges.remindError'), { description: t('challenges.retryText') }),
+                  }),
               },
               secondary: {
                 label: t('topic.cancel'),
-                disabled: cancel.isPending || challenge.challengeId.startsWith('pending-'),
-                loading: cancel.isPending && Boolean(cancel.variables?.includes(challenge.challengeId)),
-                onPress: () => cancel.mutate([challenge.challengeId]),
+                disabled: cancel.isPending,
+                loading: cancel.isPending && Boolean(cancel.variables?.includes(room.roomId)),
+                onPress: () =>
+                  cancel.mutate([room.roomId], { onError: () => toast.error(t('challenges.cancelError'), { description: t('challenges.retryText') }) }),
               },
             })}
       />
@@ -283,7 +301,7 @@ export function ChallengesScreen() {
                 </Button>
               }
             />
-            <ListGroup surface="surface">{receivedRows.map((challenge, index) => row(challenge, 'received', index, receivedRows.length))}</ListGroup>
+            <ListGroup surface="surface">{receivedRows.map((room, index) => row(room, 'received', index, receivedRows.length))}</ListGroup>
             <FeedFooter {...feedFooterProps(receivedSource)} endLabel={t('challenges.receivedEnd')} />
           </View>
         )}
@@ -298,7 +316,7 @@ export function ChallengesScreen() {
       ) : (
         <View style={{ gap: tokens.space[4] }}>
           <SectionHeader title={t('challenges.sent')} />
-          <ListGroup surface="surface">{sent.map((challenge, index) => row(challenge, 'sent', index, sent.length))}</ListGroup>
+          <ListGroup surface="surface">{sent.map((room, index) => row(room, 'sent', index, sent.length))}</ListGroup>
         </View>
       )}
     </TabScrollView>
@@ -340,18 +358,7 @@ export function ChallengesScreen() {
                         return room.expiresAt ? t('challenges.roomSub', { who, duration: duration(Date.parse(room.expiresAt) - now) }) : who
                       })()}
                       control="chevron"
-                      disabled={room.roomId.startsWith('pending-')}
-                      onPress={() =>
-                        router.push({
-                          pathname: '/room/[roomId]',
-                          params: {
-                            roomId: room.roomId,
-                            topicId: room.topic.topicId,
-                            topicName: topicName(room.topic.names),
-                            category: room.topic.category ?? '',
-                          },
-                        })
-                      }
+                      onPress={() => openRoom(room)}
                       last={index === list.length - 1}
                     />
                   ))}
@@ -374,7 +381,11 @@ export function ChallengesScreen() {
         onChange={setTab}
         onRefresh={reload}
         // Le nombre suit le libellé (« Reçus · 5 ») ; sans élément, le libellé seul.
-        pages={TABS().map((item) => ({ value: item.value, label: counts[item.value] > 0 ? t('common.labelCount', { label: item.label, count: counts[item.value] }) : item.label, content: content[item.value] }))}
+        pages={TABS().map((item) => ({
+          value: item.value,
+          label: counts[item.value] > 0 ? t('common.labelCount', { label: item.label, count: counts[item.value] }) : item.label,
+          content: content[item.value],
+        }))}
       />
     </Screen>
   )

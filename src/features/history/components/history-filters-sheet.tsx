@@ -1,25 +1,25 @@
 import { View } from 'react-native'
 import { Button, ListGroup, ListRow, MobileSheet, RadioGroup, SectionHeader, tokens } from '@/design-system'
-import type { HistoryFilterState, HistoryOpponentType, HistoryOutcome, HistorySort } from '../lib/history-service'
+import type { HistoryFilterState, HistoryOpponentType, HistoryOutcome, HistorySort } from '@joutio/client/profile'
 import { t, useT } from '@/lib/i18n'
 
-const TYPES = (): { value: HistoryOpponentType | undefined; label: string }[] => ([
+const TYPES = (): { value: HistoryOpponentType | undefined; label: string }[] => [
   { value: undefined, label: t('pending.games') },
   { value: 'HUMAN', label: t('history.typeDuels') },
   { value: 'BOT', label: t('history.typeTraining') },
-])
+]
 
-const OUTCOMES = (): { value: HistoryOutcome; label: string }[] => ([
+const OUTCOMES = (): { value: HistoryOutcome; label: string }[] => [
   { value: 'ALL', label: t('home.all') },
   { value: 'WIN', label: t('profile.wins') },
   { value: 'LOSS', label: t('profile.losses') },
   { value: 'DRAW', label: t('profile.draws') },
-])
+]
 
-export const HISTORY_SORTS = (): { value: HistorySort; label: string }[] => ([
+export const HISTORY_SORTS = (): { value: HistorySort; label: string }[] => [
   { value: 'RECENT', label: t('history.sortRecent') },
   { value: 'OLDEST', label: t('history.sortOldest') },
-])
+]
 
 const countLabel = (count: number) => t(count > 1 ? 'history.countMany' : 'history.countOne', { count })
 

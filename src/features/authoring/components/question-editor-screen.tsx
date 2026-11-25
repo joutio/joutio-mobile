@@ -2,7 +2,21 @@ import { getUserId } from '@/lib/auth'
 import { useLocalSearchParams } from 'expo-router'
 import { router } from '@/shared/navigation/router'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { questionDraftSchema } from '@joutio/client/forms'
+import {
+  questionDraftSchema,
+  MAX_ALT,
+  MAX_ANSWER,
+  MAX_QUESTION,
+  buildQuestionPlan,
+  draftFromQuestion,
+  emptyDraft,
+  frenchFilled,
+  missingAlt,
+  translationStatus,
+  type QuestionDraft,
+  questionActions,
+  workshopRole,
+} from '@joutio/client/authoring'
 import { useEffect, useState } from 'react'
 import { useForm, useFormState, useWatch } from 'react-hook-form'
 import { View } from 'react-native'
@@ -34,18 +48,7 @@ import {
   useScreenTopInset,
 } from '@/design-system'
 import { pickImage, uploadImage } from '@/features/media/media-service'
-import type { Language } from '@joutio/client/api-types'
-import { MAX_ALT, MAX_ANSWER, MAX_QUESTION } from '@joutio/client/authoring'
-import {
-  buildQuestionPlan,
-  draftFromQuestion,
-  emptyDraft,
-  frenchFilled,
-  missingAlt,
-  translationStatus,
-  type QuestionDraft,
-} from '@joutio/client/authoring'
-import { questionActions, workshopRole } from '@joutio/client/authoring'
+import type { Language } from '@joutio/client/core/types'
 import { useArchiveQuestion, useCreationLimits, useDeleteQuestion, useFrozen, useMyTopic, useSaveQuestion, useTopicQuestions } from '../hooks/use-authoring'
 import { FrozenNotice } from './frozen-notice'
 import { LANGUAGES } from './topic-sheets'
@@ -279,7 +282,7 @@ export function QuestionEditorScreen() {
                     label={t('workshop.restoreQuestion')}
                     control="chevron"
                     onPress={() => {
-                      lifecycle.mutate({ id: questionId, restore: true })
+                      lifecycle.mutate({ questionId, restore: true })
                       router.back()
                     }}
                     last={!actions.includes('delete')}
@@ -305,7 +308,7 @@ export function QuestionEditorScreen() {
                 {
                   label: t('workshop.archive'),
                   onPress: () => {
-                    lifecycle.mutate({ id: questionId })
+                    lifecycle.mutate({ questionId })
                     router.back()
                   },
                 },

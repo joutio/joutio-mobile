@@ -163,7 +163,8 @@ variables (connexions Google et Facebook) sont décrites dans `.env`.
 ```bash
 npm run typecheck        # TypeScript
 npm run doctor           # cohérence des versions Expo
-npm run test:mutations   # tests unitaires (un script par fichier de tests/, voir package.json)
+npm run lint             # ESLint (dont : aucun import de @tanstack/react-query hors du layout racine)
+npm test                 # tests unitaires node (tous les fichiers de tests/)
 ```
 
 Les releases sont automatiques : chaque push sur `main` passe par semantic-release (commits conventionnels) et

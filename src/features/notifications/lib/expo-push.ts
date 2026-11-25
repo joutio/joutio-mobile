@@ -110,15 +110,10 @@ export function syncExpoPush(): Promise<void> {
       const controller = new AbortController()
       const timeout = setTimeout(() => controller.abort(), 8000)
       try {
-        await api.put(
-          PATH,
-          {
-            installationId: installation,
-            token,
-            platform: Platform.OS === 'ios' ? 'IOS' : 'ANDROID',
-          },
-          { signal: controller.signal },
-        )
+        await api.put(PATH, {
+          body: { installationId: installation, token, platform: Platform.OS === 'ios' ? 'IOS' : 'ANDROID' },
+          signal: controller.signal,
+        })
       } finally {
         clearTimeout(timeout)
       }

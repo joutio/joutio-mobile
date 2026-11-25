@@ -1,8 +1,8 @@
 import { config } from './config'
 
 /**
- * Surface BFF (`/api/**`, relative à `config.apiUrl`) et auth native de `joutio-identity` (absolue).
- * L'auth mobile retourne directement les tokens ; seul le refresh passe par `/oauth2/token`.
+ * Ce que l'app appelle elle-même : auth native de `joutio-identity` (absolue ; l'auth mobile retourne directement les
+ * jetons, seul le refresh passe par `/oauth2/token`), envoi d'images et canaux de présence. Tout le reste du BFF est décrit par les services de la lib.
  */
 export const ENDPOINTS = {
   auth: {
@@ -13,104 +13,13 @@ export const ENDPOINTS = {
     logout: `${config.identityUrl}/api/auth/mobile/logout`,
     token: `${config.identityUrl}/oauth2/token`,
   },
-  me: '/api/me',
-  /** Recherche globale : sujets et joueurs. */
-  suggestions: '/api/suggestions',
   media: '/api/media',
-  meInterests: '/api/me/interests',
-  meDeletionCode: '/api/me/deletion-code',
-  notificationPreferences: {
-    update: (category: string) => `/api/notification-preferences/${category}`,
-  },
-  topics: {
-    list: '/api/topics',
-    facets: '/api/topics/facets',
-    leaderboard: (topicId: string) => `/api/topics/${topicId}/leaderboard`,
-    follow: (topicId: string) => `/api/topics/${topicId}/follow`,
-    name: (topicId: string) => `/api/topics/${topicId}/name`,
-    category: (topicId: string) => `/api/topics/${topicId}/category`,
-    imageUrl: (topicId: string) => `/api/topics/${topicId}/image-url`,
-    pictogramUrl: (topicId: string) => `/api/topics/${topicId}/pictogram-url`,
-    description: (topicId: string) => `/api/topics/${topicId}/description`,
-    titles: (topicId: string) => `/api/topics/${topicId}/titles`,
-    publish: (topicId: string) => `/api/topics/${topicId}/publish`,
-    questions: (topicId: string) => `/api/topics/${topicId}/questions`,
-  },
-  questions: {
-    translations: (questionId: string) => `/api/questions/${questionId}/translations`,
-    text: (questionId: string) => `/api/questions/${questionId}/text`,
-    answers: (questionId: string) => `/api/questions/${questionId}/answers`,
-    correctAnswer: (questionId: string) => `/api/questions/${questionId}/correct-answer`,
-    imageUrl: (questionId: string) => `/api/questions/${questionId}/image-url`,
-    imageAlt: (questionId: string) => `/api/questions/${questionId}/image-alt`,
-    approve: (questionId: string) => `/api/questions/${questionId}/approve`,
-    reject: (questionId: string) => `/api/questions/${questionId}/reject`,
-    reports: (questionId: string) => `/api/questions/${questionId}/reports`,
-    resolveReports: (questionId: string) => `/api/questions/${questionId}/reports/resolve`,
-  },
   rooms: {
-    create: '/api/rooms',
-    bot: '/api/rooms/bot',
-    cancel: (roomId: string) => `/api/rooms/${roomId}/cancel`,
-    wizz: (roomId: string) => `/api/rooms/${roomId}/wizz`,
-    notifications: (roomId: string) => `/api/rooms/${roomId}/notifications`,
-    topic: (roomId: string) => `/topic/rooms/${roomId}`,
     /** Canal de présence : abonné = dans le salon ; le serveur observe l'abonnement, l'app ne déclare rien. */
     presence: (roomId: string) => `/topic/rooms/${roomId}/presence`,
-    /** Refus d'entrée dans un salon (salle pleine, non invité…), poussé au joueur. */
-    presenceErrors: '/user/queue/room-presence',
   },
   matchmaking: {
-    tickets: '/api/matchmaking/tickets',
-    cancel: (ticketId: string) => `/api/matchmaking/tickets/${ticketId}/cancel`,
-    notifications: (ticketId: string) => `/api/matchmaking/tickets/${ticketId}/notifications`,
-    topic: (ticketId: string) => `/topic/matchmaking/tickets/${ticketId}`,
     /** Canal de présence du ticket : quitter l'écran ou perdre la connexion annule la recherche côté serveur. */
     presence: (ticketId: string) => `/topic/matchmaking/tickets/${ticketId}/presence`,
-  },
-  challenges: {
-    create: '/api/challenges',
-    get: (challengeId: string) => `/api/challenges/${challengeId}`,
-    accept: (challengeId: string) => `/api/challenges/${challengeId}/accept`,
-    decline: (challengeId: string) => `/api/challenges/${challengeId}/decline`,
-    cancel: (challengeId: string) => `/api/challenges/${challengeId}/cancel`,
-    remind: (challengeId: string) => `/api/challenges/${challengeId}/remind`,
-  },
-  reports: {
-    player: (userId: string) => `/api/profiles/${userId}/reports`,
-    question: (questionId: string) => `/api/questions/${questionId}/reports`,
-  },
-  games: {
-    answer: (gameId: string) => `/api/games/${gameId}/answer`,
-    abandon: (gameId: string) => `/api/games/${gameId}/abandon`,
-    notifications: (gameId: string) => `/api/games/${gameId}/notifications`,
-    topic: (gameId: string) => `/topic/games/${gameId}`,
-  },
-  profiles: {
-    profile: (userId: string) => `/api/profiles/${userId}`,
-    follow: (userId: string) => `/api/profiles/${userId}/follow`,
-    block: (userId: string) => `/api/profiles/${userId}/block`,
-    following: (userId: string) => `/api/profiles/${userId}/following`,
-    followers: (userId: string) => `/api/profiles/${userId}/followers`,
-    autoTrain: (userId: string) => `/api/profiles/${userId}/auto-train`,
-    games: (userId: string) => `/api/profiles/${userId}/games`,
-    title: (userId: string) => `/api/profiles/${userId}/title`,
-    activity: (userId: string) => `/api/profiles/${userId}/activity`,
-    pseudonym: (userId: string) => `/api/profiles/${userId}/pseudonym`,
-    bio: (userId: string) => `/api/profiles/${userId}/bio`,
-    country: (userId: string) => `/api/profiles/${userId}/country`,
-    banner: (userId: string) => `/api/profiles/${userId}/banner`,
-    language: (userId: string) => `/api/profiles/${userId}/language`,
-    avatarOptions: (userId: string) => `/api/profiles/${userId}/avatar-options`,
-  },
-  notifications: {
-    list: '/api/notifications',
-    readAll: '/api/notifications/read-all',
-    read: (notificationId: string) => `/api/notifications/${notificationId}/read`,
-    remove: (notificationId: string) => `/api/notifications/${notificationId}`,
-  },
-  onboarding: {
-    interests: '/api/me/interests',
-    complete: '/api/me/onboarding/complete',
   },
 } as const

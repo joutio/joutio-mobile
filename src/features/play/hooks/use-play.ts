@@ -1,34 +1,37 @@
-import { CHALLENGE_REMINDER_COOLDOWN_MS } from '@joutio/client/rooms'
-import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { router } from '@/shared/navigation/router'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { create } from 'zustand'
-import { haptic, toast } from '@/design-system'
-import { showQuotaDialog } from '@/features/challenges/lib/quota'
-import { quotaProblemOf } from '@joutio/client/premium'
-import { useMe } from '@/features/me'
-import { ENDPOINTS } from '@/lib/endpoints'
-import { optimisticId, optimisticUpdate, queryKeys, roomQuery } from '@joutio/client/query'
-import { readServerNow } from '@/lib/realtime/server-clock'
-import { subscribeStomp } from '@/lib/ws'
-import { useNotificationStream } from '@/lib/realtime/use-notification-stream'
-import { getItem, setItem } from '@/lib/storage'
-import type { MeView, PeopleSort, ChallengeView } from '@joutio/client/api-types'
+import { useSubscription } from '@joutio/client/core/realtime'
 import type { BotDifficulty } from '@joutio/client/game'
-import { applyMatchmakingNotification, emptyMatchmaking, type Matchmaking } from '@joutio/client/rooms'
-import type { MatchmakingNotification } from '@joutio/client/rooms'
-import { applyRoomNotification, emptyRoom, type Room } from '@joutio/client/rooms'
-import type { RoomView } from '@joutio/client/rooms'
-import type { RoomNotification } from '@joutio/client/rooms'
-import { CONTACTS_PAGE_SIZE, playService } from '../lib/play-service'
-import { t, useT } from '@/lib/i18n'
-import { api } from '@/lib/api'
+import { useMe, useSetAutoTrain } from '@joutio/client/me'
+import { quotaProblemOf } from '@joutio/client/premium'
+import {
+  useCreateBotRoom,
+  useCreateChallenge,
+  useCreateRoom,
+  useEnqueueMatchmaking,
+  useJoinRefusal,
+  useMatchmakingStream,
+  useRoom as useRoomView,
+  useRoomStream,
+  type JoinRefusal,
+} from '@joutio/client/rooms'
+import { toast } from '@/design-system'
+import { showQuotaDialog } from '@/features/challenges/lib/quota'
+import { ENDPOINTS } from '@/lib/endpoints'
+import { getItem, setItem } from '@/lib/storage'
+import { router } from '@/shared/navigation/router'
+import { t } from '@/lib/i18n'
 
 /** Contexte du sujet passé d'écran en écran : l'en-tête s'affiche sans attendre le serveur. */
 export interface PlayTopic {
   topicId: string
   name: string
   category?: string
+}
+
+/** Suite donnée par l'écran appelant (fermer une feuille) une fois la commande acceptée. */
+interface Then {
+  onSuccess?: () => void
 }
 
 const topicParams = (topic: PlayTopic) => ({ topicId: topic.topicId, topicName: topic.name, category: topic.category ?? '' })
@@ -57,252 +60,149 @@ void getItem(DIFFICULTY_KEY).then((stored) => {
 
 /* ───────────────────────── Préférence « entraînement si aucun adversaire » (profil) ───────────────────────── */
 
-/** `true` par défaut, y compris tant que le BFF n'expose pas encore le champ. */
+/** `true` par défaut ; mutation optimiste de la lib (`useSetAutoTrain`), un refus s'affiche en toast. */
 export function useAutoTrain() {
-  const t = useT()
-  const me = useMe(true)
-  const client = useQueryClient()
-  const enabled = me.data?.autoTrainOnTimeout ?? true
-  const mutation = useMutation({
-    mutationFn: (next: boolean) => playService.setAutoTrain(me.data?.userId ?? '', next),
-    onMutate: (next: boolean) =>
-      optimisticUpdate(client, [queryKeys.me()], () => client.setQueryData<MeView>(queryKeys.me(), (me) => (me ? { ...me, autoTrainOnTimeout: next } : me))),
-    onError: (_error, _next, context) => {
-      context?.rollback()
-      toast.error(t('play.settingError'))
-    },
-  })
-  return { enabled, pending: mutation.isPending, set: (next: boolean) => mutation.mutate(next) }
+  const me = useMe()
+  const command = useSetAutoTrain(me.data?.userId ?? '')
+  return {
+    enabled: me.data?.autoTrainOnTimeout ?? true,
+    pending: command.isPending,
+    set: (next: boolean) => command.mutate(next, { onError: () => toast.error(t('play.settingError')) }),
+  }
 }
 
 /* ───────────────────────── Lancements ───────────────────────── */
 
-const launchError = (title: string) => () => toast.error(title, { description: t('home.errorText') })
+const launchError = (title: string) => toast.error(title, { description: t('home.errorText') })
 
 /** Échec de création d'un salon bot : garde-fou anti-spam identique pour tous (P22), Premium n'y change rien. */
-const botRoomError = (error: unknown) =>
-  quotaProblemOf(error) === 'rooms'
-    ? toast.error(t('play.botQuotaError'), { description: t('play.botQuotaText') })
-    : launchError(t('play.trainingError'))()
+export const botRoomError = (error: unknown) =>
+  quotaProblemOf(error) === 'rooms' ? toast.error(t('play.botQuotaError'), { description: t('play.botQuotaText') }) : launchError(t('play.trainingError'))
 
 /** Ouvre le salon d'un sujet (paramètres d'en-tête passés, l'écran s'affiche sans attendre le serveur). */
 export const openRoom = (roomId: string, topic: PlayTopic) => router.push({ pathname: '/room/[roomId]', params: { roomId, ...topicParams(topic) } })
 
 /** Entraînement contre le robot : la salle bot se prépare, puis le duel s'ouvre. */
 export function useStartTraining() {
-  return useMutation({
-    mutationFn: ({ topic, difficulty }: { topic: PlayTopic; difficulty: BotDifficulty }) => playService.createBotRoom(topic.topicId, difficulty),
-    onSuccess: ({ id }, { topic }) => openRoom(id, topic),
-    onError: botRoomError,
-  })
-}
-
-/**
- * Salon bot créé sans navigation : l'appelant attend la réponse (commande traitée) et choisit quand l'ouvrir — après la
- * fin de l'onboarding, qui doit d'abord être enregistrée.
- */
-export function useCreateBotRoom() {
-  return useMutation({
-    mutationFn: ({ topicId, difficulty }: { topicId: string; difficulty: BotDifficulty }) => playService.createBotRoom(topicId, difficulty),
-    onError: botRoomError,
-  })
+  const create = useCreateBotRoom()
+  return {
+    isPending: create.isPending,
+    mutate: ({ topic, difficulty }: { topic: PlayTopic; difficulty: BotDifficulty }, then?: Then) =>
+      create.mutate(
+        { topicId: topic.topicId, difficulty },
+        {
+          onSuccess: ({ id }) => {
+            then?.onSuccess?.()
+            openRoom(id, topic)
+          },
+          onError: botRoomError,
+        },
+      ),
+  }
 }
 
 /** « Défier le monde » : ticket d'appariement, puis l'écran de recherche. */
 export function useStartMatchmaking() {
-  const t = useT()
-  return useMutation({
-    mutationFn: (topic: PlayTopic) => playService.enqueue(topic.topicId),
-    onSuccess: (ticket, topic) => router.push({ pathname: '/matchmaking/[ticketId]', params: { ticketId: ticket.ticketId, ...topicParams(topic) } }),
-    onError: launchError(t('play.matchmakingError')),
-  })
+  const enqueue = useEnqueueMatchmaking()
+  return {
+    isPending: enqueue.isPending,
+    mutate: (topic: PlayTopic, then?: Then) =>
+      enqueue.mutate(topic.topicId, {
+        onSuccess: (ticket) => {
+          then?.onSuccess?.()
+          router.push({ pathname: '/matchmaking/[ticketId]', params: { ticketId: ticket.ticketId, ...topicParams(topic) } })
+        },
+        onError: () => launchError(t('play.matchmakingError')),
+      }),
+  }
 }
 
-/** Salon privé à partager par lien. */
+/** Salon privé à partager par lien : il s'ouvre dès que le serveur renvoie son `id`. */
 export function useCreatePrivateRoom() {
-  const t = useT()
-  const client = useQueryClient()
-  return useMutation({
-    mutationFn: (topic: PlayTopic) => playService.createRoom(topic.topicId),
-    onMutate: async (topic) => {
-      const tempId = optimisticId()
-      const transaction = await optimisticUpdate(client, [queryKeys.myRooms()], () => {
-        const room: RoomView = {
-          roomId: tempId,
-          topic: { topicId: topic.topicId, names: { fr: topic.name }, category: topic.category ?? null, imageUrl: null, pictogramUrl: null },
-          status: 'WAITING_PLAYERS',
-          vsBot: false,
-          origin: 'SHARED',
-          canCancel: true,
-          opponent: null,
-          initiatorPresent: false,
-          participantPresent: false,
-          gameId: null,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          expiresAt: '',
-        }
-        client.setQueryData<RoomView[]>(queryKeys.myRooms(), (rooms) => [...(rooms ?? []), room])
-      })
-      return { ...transaction, tempId }
-    },
-    onSuccess: ({ id }, topic, context) => {
-      client.setQueryData<RoomView[]>(queryKeys.myRooms(), (rooms) => rooms?.map((room) => (room.roomId === context.tempId ? { ...room, roomId: id } : room)))
-      router.push({ pathname: '/room/[roomId]', params: { roomId: id, ...topicParams(topic) } })
-    },
-    onError: (error, _topic, context) => {
-      context?.rollback()
-      showQuotaDialog(error, client.getQueryData<MeView>(queryKeys.me())) || launchError(t('play.roomError'))()
-    },
-  })
+  const me = useMe()
+  const create = useCreateRoom()
+  return {
+    isPending: create.isPending,
+    mutate: (topic: PlayTopic, then?: Then) =>
+      create.mutate(
+        { topicId: topic.topicId },
+        {
+          onSuccess: ({ id }) => {
+            then?.onSuccess?.()
+            openRoom(id, topic)
+          },
+          onError: (error) => showQuotaDialog(error, me.data) || launchError(t('play.roomError')),
+        },
+      ),
+  }
 }
 
-/** Défi nominatif : envoyé, l'invité l'accepte depuis ses Défis. */
+/**
+ * Défi nominatif : une salle `INVITED`, que l'invité accepte depuis ses Défis. Elle rejoint les défis envoyés par le
+ * flux personnel (`ROOM_STATUS`).
+ */
 export function useChallengePlayer() {
-  const t = useT()
-  const client = useQueryClient()
-  const me = useMe(true)
-  return useMutation({
-    mutationFn: ({ topic, opponent }: { topic: PlayTopic; opponent: { userId: string; pseudonym: string } }) =>
-      playService.challenge(topic.topicId, opponent.userId),
-    onMutate: async ({ topic, opponent }) => {
-      const tempId = optimisticId()
-      const transaction = await optimisticUpdate(client, [queryKeys.challenges()], () => {
-        const challenge: ChallengeView = {
-          challengeId: tempId,
-          topic: { topicId: topic.topicId, names: { fr: topic.name }, category: topic.category ?? null, imageUrl: null, pictogramUrl: null },
-          challenger: { userId: me.data?.userId ?? '', pseudonym: me.data?.pseudonym ?? '', avatarOptions: me.data?.avatarOptions ?? null, suspended: false, premium: me.data?.premium === true },
-          opponent: { ...opponent, avatarOptions: null, suspended: false, premium: false },
-          status: 'PENDING',
-          roomId: null,
-          gameId: null,
-          createdAt: new Date().toISOString(),
-          expiresAt: '',
-          remindableAt: new Date(Date.now() + CHALLENGE_REMINDER_COOLDOWN_MS).toISOString(),
-        }
-        client.setQueryData<ChallengeView[]>(queryKeys.challenges(), (items) => [challenge, ...(items ?? [])])
-      })
-      return { ...transaction, tempId }
-    },
-    onSuccess: ({ id }, { topic, opponent }, context) => {
-      client.setQueryData<ChallengeView[]>(queryKeys.challenges(), (items) =>
-        items?.map((item) => (item.challengeId === context.tempId ? { ...item, challengeId: id } : item)),
-      )
-      toast.success(t('play.challengeSent'), { description: t('common.dotPair', { a: opponent.pseudonym, b: topic.name }) })
-    },
-    onError: (error, _variables, context) => {
-      context?.rollback()
-      showQuotaDialog(error, me.data) || launchError(t('play.challengeError'))()
-    },
-  })
-}
-
-/* ───────────────────────── Contacts (Défier un joueur) ───────────────────────── */
-
-export function useContacts(direction: 'following' | 'followers', query: string, enabled: boolean, sort: PeopleSort = 'RECENT') {
-  const me = useMe(true)
-  const userId = me.data?.userId ?? ''
-  return useInfiniteQuery({
-    queryKey: queryKeys.contacts.list(userId, direction, query, sort),
-    queryFn: ({ pageParam }) => playService.contacts(userId, direction, query, sort, pageParam),
-    initialPageParam: 0,
-    getNextPageParam: (last) => (last.last ? undefined : last.page + 1),
-    enabled: enabled && Boolean(userId),
-    staleTime: 60_000,
-    meta: { pageSize: CONTACTS_PAGE_SIZE },
-  })
+  const me = useMe()
+  const create = useCreateChallenge()
+  return {
+    isPending: create.isPending,
+    opponentId: create.isPending ? create.variables?.opponentId : undefined,
+    mutate: ({ topic, opponent }: { topic: PlayTopic; opponent: { userId: string; pseudonym: string } }, then?: Then) =>
+      create.mutate(
+        { topicId: topic.topicId, opponentId: opponent.userId },
+        {
+          onSuccess: () => {
+            then?.onSuccess?.()
+            toast.success(t('play.challengeSent'), { description: t('common.dotPair', { a: opponent.pseudonym, b: topic.name }) })
+          },
+          onError: (error) => showQuotaDialog(error, me.data) || launchError(t('play.challengeError')),
+        },
+      ),
+  }
 }
 
 /* ───────────────────────── Temps réel ───────────────────────── */
 
-/** Salle : vue REST (sujet, adversaire) et état replié des notifications (REST à l'ouverture, puis STOMP). */
+/** Salle : vue REST (sujet, adversaire) et salle repliée de ses événements (REST à l'ouverture, puis STOMP). */
 export function useRoom(roomId: string) {
-  const view = useQuery({ ...roomQuery(api, roomId), staleTime: Infinity, retry: 2 })
-  const stream = useNotificationStream<RoomNotification, Room>(
-    roomId
-      ? {
-          aggregateId: roomId,
-          topic: ENDPOINTS.rooms.topic(roomId),
-          initial: emptyRoom,
-          load: playService.roomNotifications,
-          apply: applyRoomNotification,
-          notFoundGraceMs: 5_000,
-        }
-      : null,
-  )
+  const view = useRoomView(roomId)
+  const stream = useRoomStream(roomId)
   return { view, room: stream.state, status: stream.status }
 }
 
-/** Ticket d'appariement, replié de ses notifications. */
-export function useTicket(ticketId: string) {
-  return useNotificationStream<MatchmakingNotification, Matchmaking>(
-    ticketId
-      ? {
-          aggregateId: ticketId,
-          topic: ENDPOINTS.matchmaking.topic(ticketId),
-          initial: emptyMatchmaking,
-          load: playService.ticketNotifications,
-          apply: applyMatchmakingNotification,
-          notFoundGraceMs: 5_000,
-        }
-      : null,
-  )
-}
+/** Ticket d'appariement, replié de ses événements. */
+export const useTicket = (ticketId: string) => useMatchmakingStream(ticketId)
 
-type PresenceProblem = { type?: string; title?: string; detail?: string }
+/** Abonnement sans message : seul le serveur en déduit quelque chose (canal de présence). */
+const silent = () => undefined
 
 /**
- * Présence dans le salon tant que l'écran est monté (comme joutio-web, 2026-11-11) : l'app s'abonne au canal de
- * présence et le serveur en déduit l'entrée, la sortie (écran quitté) et la déconnexion (arrière-plan, réseau,
- * après une grâce). Rien n'est déclaré par l'app. Un refus d'entrée arrive sur la file personnelle ; `retry` se
- * réabonne.
+ * Présence dans le salon tant que l'écran est monté (comme joutio-web, 2026-11-11) : l'écran rend
+ * `RoomPresenceChannel` (abonnement au canal de présence) et le serveur en déduit l'entrée, la sortie (écran quitté)
+ * et la déconnexion (arrière-plan, réseau, après une grâce). Rien n'est déclaré par l'app. Un refus d'entrée arrive
+ * sur la file personnelle (`useJoinRefusal`) ; `retry` remonte le canal (`attempt` sert de clé).
  */
 export function useRoomPresence(roomId: string) {
+  const [refusal, setRefusal] = useState<JoinRefusal | null>(null)
   const [attempt, setAttempt] = useState(0)
-  const [failure, setFailure] = useState<{ attempt: number; problem: PresenceProblem } | null>(null)
-  useEffect(() => {
-    const offErrors = subscribeStomp(ENDPOINTS.rooms.presenceErrors, (message) => {
-      try {
-        const body = JSON.parse(message.body) as { roomId?: string; problem?: PresenceProblem }
-        if (body.roomId === roomId) setFailure({ attempt, problem: body.problem ?? {} })
-      } catch {
-        // Trame illisible : ignorée.
-      }
-    })
-    const offPresence = subscribeStomp(ENDPOINTS.rooms.presence(roomId), () => undefined)
-    return () => {
-      offPresence()
-      offErrors()
-    }
-  }, [roomId, attempt])
-  const current = failure?.attempt === attempt ? failure.problem : null
-  return { failed: current !== null, problem: current, retry: () => setAttempt((value) => value + 1) }
+  useJoinRefusal(roomId, setRefusal)
+  return {
+    refusal,
+    attempt,
+    retry: () => {
+      setRefusal(null)
+      setAttempt((value) => value + 1)
+    },
+  }
+}
+
+/** Canal de présence d'un salon : abonné = dans le salon. À rendre avec `key={attempt}` (`useRoomPresence`). */
+export function RoomPresenceChannel({ roomId }: { roomId: string }) {
+  useSubscription(ENDPOINTS.rooms.presence(roomId), silent, silent)
+  return null
 }
 
 /** Recherche en cours tant que l'écran est monté : le quitter (ou perdre la connexion) l'annule côté serveur. */
 export function useTicketPresence(ticketId: string, enabled: boolean) {
-  useEffect(() => {
-    if (!enabled || !ticketId) return
-    return subscribeStomp(ENDPOINTS.matchmaking.presence(ticketId), () => undefined)
-  }, [ticketId, enabled])
-}
-
-/** Relance de l'adversaire absent. */
-export function useWizzRoom(roomId: string) {
-  const t = useT()
-  const [sentAt, setSentAt] = useState<number | null>(null)
-  const mutation = useMutation({
-    mutationFn: () => playService.wizzRoom(roomId),
-    onMutate: () => {
-      const previous = sentAt
-      setSentAt(readServerNow())
-      return { previous }
-    },
-    onError: (_error, _variables, context) => {
-      setSentAt(context?.previous ?? null)
-      toast.error(t('play.wizzError'))
-    },
-    onSuccess: () => haptic('light'),
-  })
-  return { ...mutation, sentAt }
+  useSubscription(enabled ? ENDPOINTS.matchmaking.presence(ticketId) : undefined, silent, silent)
 }

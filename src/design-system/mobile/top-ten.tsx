@@ -1,4 +1,4 @@
-import { useId, type ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { View, type StyleProp, type ViewStyle } from 'react-native'
 import Svg, { Text as SvgText } from 'react-native-svg'
 import { alpha } from '../theme/color'
@@ -68,7 +68,6 @@ const digitWidth = (rank: number) => (rank >= MAX ? DIGIT_WIDTH.double : rank ==
 /** Chiffre plein au contour clair, assombri près de la carte par l'ombre qu'elle porte. */
 function RankNumeral({ rank }: { rank: number }) {
   const { colors } = useTheme()
-  const id = useId().replace(/:/g, '')
   const { fontSize, letterSpacing } = tokens.typography.numericRank
   const width = digitWidth(rank) + UNDER_CARD
   const ten = rank >= MAX

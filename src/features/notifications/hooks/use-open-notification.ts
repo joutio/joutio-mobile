@@ -1,73 +1,54 @@
-import { router } from '@/shared/navigation/router'
+import { useReadNotification } from '@joutio/client/notifications'
 import { useCallback } from 'react'
 import { toast } from '@/design-system'
-import { clearSession, getUserId } from '@/lib/auth'
 import { useSessionStore } from '@/features/auth/session-store'
+import { clearSession, getUserId } from '@/lib/auth'
+import { router } from '@/shared/navigation/router'
 import { notificationTarget, type NotificationLink } from '../lib/notification-target'
-import { notificationsService } from '../lib/notifications-service'
-import { useMarkRead } from './use-notifications'
 import { useT } from '@/lib/i18n'
 
-/** Une seule action d'ouverture, quel que soit le point d'entrée. */
+/**
+ * Une seule action d'ouverture, quel que soit le point d'entrée. La cible s'ouvre tout de suite : un contenu disparu
+ * s'affiche dans l'écran visé (son propre état d'erreur), jamais par une lecture préalable.
+ */
 export function useOpenNotification() {
   const t = useT()
-  const read = useMarkRead()
-  const markRead = read.mutate
+  const { mutate: markRead } = useReadNotification()
   return useCallback(
     async (notice: NotificationLink, recipient = getUserId()) => {
       if (!recipient || recipient !== getUserId() || !useSessionStore.getState().authenticated) return
       const target = notificationTarget(notice)
       markRead(notice.notificationId)
-      if (target.kind === 'none') return
-      const fallback = (message: string) => {
-        if (target.kind === 'fallback' && target.challenges) router.navigate({ pathname: '/challenges', params: { tab: target.challenges } })
-        else router.navigate('/home/notifications')
-        toast.info(message)
-      }
-      let resolved: { questionId?: string } = {}
-      try {
-        resolved = (await notificationsService.checkTarget(target)) ?? {}
-      } catch (error) {
-        if (recipient !== getUserId() || !useSessionStore.getState().authenticated) return
-        const status = (error as { statusCode?: number }).statusCode
-        fallback(
-          status === 403 || status === 404 || status === 410
-            ? t('mobile.notifications.contentGone')
-            : t('mobile.notifications.openFailed'),
-        )
-        return
-      }
-      if (recipient !== getUserId() || !useSessionStore.getState().authenticated) return
       switch (target.kind) {
+        case 'none':
+          return
         case 'player':
           router.push({ pathname: '/home/player/[id]', params: { id: target.id } })
-          break
+          return
         case 'challenges':
           router.navigate({ pathname: '/challenges', params: { tab: target.tab } })
-          break
+          return
         case 'room':
           router.push({ pathname: '/room/[roomId]', params: { roomId: target.id, fromPush: '1' } })
-          break
+          return
         // Tâches ciblées (`navigation.md`) : poussées par-dessus l'écran courant, hors onglets ; le retour y revient.
         case 'moderation':
-          if (target.reportId && resolved.questionId)
-            router.push({
-              pathname: '/workshop/[id]/reports/[questionId]',
-              params: { id: target.id, questionId: resolved.questionId, highlight: target.reportId, from: 'notifications' },
-            })
+          if (target.reportId)
+            router.push({ pathname: '/workshop/[id]/report/[reportId]', params: { id: target.id, reportId: target.reportId, from: 'notifications' } })
           else router.push({ pathname: '/workshop/[id]/moderation', params: { id: target.id, tab: 'reports' } })
-          break
+          return
         case 'edit-topic':
           router.push({ pathname: '/workshop/[id]', params: { id: target.id } })
-          break
+          return
         case 'suspended':
           await clearSession('suspended')
-          break
+          return
         case 'fallback':
-          fallback(target.expired ? t('notifications.expired') : t('mobile.notifications.gone'))
-          break
+          if (target.challenges) router.navigate({ pathname: '/challenges', params: { tab: target.challenges } })
+          else router.navigate('/home/notifications')
+          toast.info(target.expired ? t('notifications.expired') : t('mobile.notifications.gone'))
       }
     },
-    [markRead],
+    [markRead, t],
   )
 }

@@ -1,7 +1,7 @@
 import { useSegments } from 'expo-router'
 import { router } from '@/shared/navigation/router'
 import { useCallback } from 'react'
-import { useMe } from './use-me'
+import { useMe } from '@joutio/client/me'
 
 /** Vue joueur du BFF (`premium` sur toutes les vues joueur depuis le 2026-11-20) ou objet d'écran qui la recopie. */
 type PlayerLike = object | null | undefined
@@ -26,7 +26,7 @@ type Stack = keyof typeof PLAYER_PATHS
  *   Défis), le Profil pour soi. Les écrans immersifs (duel, salon, matchmaking) ne l'utilisent pas.
  */
 export function usePlayerIdentity() {
-  const me = useMe(true).data
+  const me = useMe().data
   const segments = useSegments() as string[]
   const myId = me?.userId ?? null
   const myPremium = me?.premium === true

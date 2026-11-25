@@ -27,7 +27,7 @@ import {
 import { usePlayerIdentity } from '@/features/me'
 import { openTopic } from '@/features/topic'
 import { useOnline } from '@/shared/hooks/use-online'
-import type { SuggestionView } from '@joutio/client/api-types'
+import type { SuggestionView } from '@joutio/client/search'
 import { avatarSvg } from '@/shared/utils/avatar'
 import { topicName } from '@/shared/utils/topic-name'
 import { useRecentSearches, useSuggestions } from './use-search'

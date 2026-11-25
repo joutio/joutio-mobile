@@ -1,5 +1,5 @@
 import { ListGroup, TabScrollView, TitleRow, tokens } from '@/design-system'
-import type { TopicOverviewView } from '@joutio/client/api-types'
+import type { TopicOverviewView } from '@joutio/client/topics'
 import { topicName } from '@/shared/utils/topic-name'
 import { titleLabel } from '@joutio/client/authoring'
 import { useMyTitles, useWearTitle } from '../hooks/use-topic'

@@ -16,10 +16,12 @@ import {
   tokens,
   useTheme,
 } from '@/design-system'
-import type { TopicCardView } from '@joutio/client/api-types'
-import { openRoom, useCreateBotRoom } from '@/features/play/hooks/use-play'
+import type { TopicCardView } from '@joutio/client/topics'
+import { useCompleteOnboarding, useRecommendations } from '@joutio/client/onboarding'
+import { useCreateBotRoom } from '@joutio/client/rooms'
+import { botRoomError, openRoom } from '@/features/play/hooks/use-play'
+import { usePendingJoin } from '@/shared/stores/pending-join-store'
 import { topicName } from '@/shared/utils/topic-name'
-import { useCompleteOnboarding, useRecommendations } from '../hooks/use-onboarding'
 import { useOnboardingStore } from '../onboarding-store'
 import { Steps } from './steps'
 import { useT } from '@/lib/i18n'
@@ -46,25 +48,22 @@ export function FirstTopicStep() {
   const [scroll, setScroll] = useState({ offset: 0, layout: 0, content: 0 })
   const more = scroll.offset + scroll.layout < scroll.content - 4
 
-  const finish = () => complete.mutate()
-  const play = async () => {
+  // Lien de salon ouvert avant l'inscription : l'onboarding ne crée pas son propre salon, l'entrée y ramène.
+  const pendingJoin = usePendingJoin((state) => state.roomId)
+  const finish = () => complete.mutate(universes)
+  const play = () => {
     if (!picked) return
+    if (pendingJoin) return finish()
     const topic = { topicId: picked.topicId, name: topicName(picked.names), category: toCategoryCode(picked.category) }
-    // Salon d'abord : la commande est traitée, le salon existe quand l'écran s'ouvre.
-    let roomId: string
-    try {
-      roomId = (await botRoom.mutateAsync({ topicId: topic.topicId, difficulty: 'EASY' })).id
-    } catch {
-      return
-    }
-    try {
-      await complete.mutateAsync()
-    } catch {
-      return
-    }
-    // Laisse la navigation protégée basculer vers l'app connectée, puis ouvre le salon déjà créé.
-    await new Promise((resolve) => setTimeout(resolve, 0))
-    openRoom(roomId, topic)
+    // Salon d'abord : la commande est traitée, le salon existe quand l'écran s'ouvre. Puis l'onboarding se termine,
+    // la navigation protégée bascule vers l'app connectée et le salon déjà créé s'ouvre.
+    botRoom.mutate(
+      { topicId: topic.topicId, difficulty: 'EASY' },
+      {
+        onSuccess: ({ id }) => complete.mutate(universes, { onSuccess: () => setTimeout(() => openRoom(id, topic), 0) }),
+        onError: botRoomError,
+      },
+    )
   }
 
   return (
@@ -79,7 +78,7 @@ export function FirstTopicStep() {
       footer={
         <View style={{ gap: tokens.space[3] }}>
           {complete.isError && <Notice title={t('onboarding.first.completeError')} message={t('common.checkConnection')} />}
-          <Button full icon={LightningIcon} disabled={!picked} loading={complete.isPending || botRoom.isPending} onPress={() => void play()}>
+          <Button full icon={LightningIcon} disabled={!picked} loading={complete.isPending || botRoom.isPending} onPress={play}>
             {t('onboarding.first.play')}
           </Button>
         </View>

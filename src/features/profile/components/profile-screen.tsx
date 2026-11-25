@@ -1,7 +1,6 @@
-import { useQueryClient } from '@tanstack/react-query'
 import { router } from '@/shared/navigation/router'
 import { useMemo, useState } from 'react'
-import { countryFlag, countryName } from '@joutio/client/geo'
+import { countryFlag, countryName } from '@joutio/client/core/geo'
 import { ScrollView, View } from 'react-native'
 import {
   Avatar,
@@ -24,9 +23,8 @@ import {
   WarningCircleIcon,
 } from '@/design-system'
 import { useMyAvatar } from '@/features/avatar/lib/avatar-preview'
-import { useHistoryGames } from '@/features/history/hooks/use-history'
-import { DEFAULT_HISTORY_FILTERS } from '@/features/history/lib/history-service'
-import { useMe } from '@/features/me'
+import { DEFAULT_HISTORY_FILTERS, useHistory } from '@joutio/client/profile'
+import { useMe } from '@joutio/client/me'
 import { ProfileNotificationButton } from '@/features/notifications/components/profile-notification-button'
 import { useMyTitles } from '@/features/topic/hooks/use-topic'
 import { formatNumber, tierLabel } from '@/features/topic/lib/format'
@@ -49,15 +47,14 @@ type Tab = 'stats' | 'badges' | 'titles' | 'history'
 export function ProfileScreen() {
   const t = useT()
   const language = useLanguage()
-  const client = useQueryClient()
-  const me = useMe(true)
+  const me = useMe()
   const data = me.data
   const userId = data?.userId ?? ''
   const badges = useMyBadges()
   const activity = useMyActivity()
   const topics = useMyTopics()
   const titles = useMyTitles()
-  const games = useHistoryGames(userId, DEFAULT_HISTORY_FILTERS)
+  const games = useHistory(userId || undefined, DEFAULT_HISTORY_FILTERS)
   const avatar = useMyAvatar()
   const [tab, setTab] = useState<Tab>('stats')
   const [ranksOpen, setRanksOpen] = useState(false)
@@ -132,7 +129,9 @@ export function ProfileScreen() {
                 {!data ? (
                   <Skeleton shape="row" style={{ width: 160 }} />
                 ) : tier ? (
-                  <Badge variant="tier" tier={tier}>{t('common.dotPair', { a: tierLabel(tier), b: formatNumber(rating) })}</Badge>
+                  <Badge variant="tier" tier={tier}>
+                    {t('common.dotPair', { a: tierLabel(tier), b: formatNumber(rating) })}
+                  </Badge>
                 ) : null}
                 {data?.country && <Pill>{`${countryFlag(data.country)} ${countryName(data.country, currentLanguage())}`}</Pill>}
               </View>
@@ -223,7 +222,7 @@ export function ProfileScreen() {
             label: t('profile.tabHistory'),
             content: (
               <HistoryTab
-                games={games.data?.pages[0]?.content}
+                games={(games.data?.pages ?? [])[0]?.content}
                 loading={games.isPending}
                 error={games.isError}
                 retrying={games.isRefetching}
@@ -233,7 +232,7 @@ export function ProfileScreen() {
           },
         ]}
         // Tout ce que la page affiche (profil, statistiques, badges, titres, historique), pas seulement l'en-tête.
-        onRefresh={() => client.refetchQueries({ type: 'active' })}
+        onRefresh={() => Promise.all([me.refetch(), badges.refetch(), activity.refetch(), topics.refetch(), titles.refetch(), games.refetch()])}
       />
       <RanksSheet open={ranksOpen} onClose={() => setRanksOpen(false)} name={name} avatar={avatar} tier={tier} />
       <BadgeFamilySheet open={familyOpen} family={family} onClose={() => setFamilyOpen(false)} />

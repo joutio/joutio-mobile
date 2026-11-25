@@ -4,7 +4,8 @@ const fs = require('node:fs')
 const ts = require('typescript')
 function load(path, mocks = {}, fetch) {
   const source = ts.transpileModule(fs.readFileSync(path, 'utf8'), {
-    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+    fileName: path,
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX },
   }).outputText
   const mod = { exports: {} }
   new Function('require', 'module', 'exports', 'fetch', source)(
@@ -12,6 +13,8 @@ function load(path, mocks = {}, fetch) {
       // `router` protégé contre le double appui : relaie le mock d'expo-router.
       if (id === '@/shared/navigation/router' && !(id in mocks) && 'expo-router' in mocks) return mocks['expo-router']
       if (id === '@/lib/i18n' && !(id in mocks)) return require('./i18n-mock.cjs')
+      // Élément JSX rendu par un composant : sa description suffit, le harnais rend l'enfant lui-même.
+      if (id === 'react/jsx-runtime' && !(id in mocks)) return { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) }
       if (!(id in mocks)) throw new Error(`Unexpected dependency: ${id}`)
       return mocks[id]
     },
@@ -48,7 +51,7 @@ function runtime({ granted = true, configured = true } = {}) {
     storage = new Map()
   let token = async () => ({ data: 'ExpoPushToken[abc]' })
   const api = {
-    put: async (path, body) => {
+    put: async (path, { body }) => {
       requests.push({ method: 'PUT', path, body })
     },
     delete: async (path, options) => {
@@ -323,9 +326,7 @@ function pushRuntime() {
     beforeClear,
     lastResolve
   const opened = [],
-    clears = [],
-    refreshed = []
-  const client = { invalidateQueries: ({ queryKey }) => refreshed.push(queryKey.join('/')) }
+    clears = []
   const notifications = {
     DEFAULT_ACTION_IDENTIFIER: 'default',
     setNotificationHandler: () => {},
@@ -358,14 +359,9 @@ function pushRuntime() {
       useRootNavigationState: () => ({ key: 'root' }),
     },
     react: h.react,
-    '@tanstack/react-query': { useQueryClient: () => client },
-    '@/features/challenges/hooks/use-challenges': {
-      refreshChallenges: (target) => ['challenges/mine', 'rooms/mine'].forEach((key) => target.invalidateQueries({ queryKey: key.split('/') })),
-    },
-    '@joutio/client/query': { queryKeys: { notifications: { all: () => ['notifications'] } } },
+    '@joutio/client/me': { useMe: () => ({ data: me }) },
     'react-native': { AppState: { addEventListener: () => ({ remove() {} }) } },
     '@/features/auth/session-store': { useSessionStore: (select) => select(state) },
-    '@/features/me': { useMe: () => ({ data: me }) },
     '@/lib/auth': {
       getUserId: () => 'u',
       onBeforeSessionClear: (callback) => {
@@ -379,13 +375,16 @@ function pushRuntime() {
     '../lib/push-target': targets,
   })
   const response = (data = notice) => ({ actionIdentifier: 'default', notification: { request: { content: { data } } } })
-  h.mount(runtime.ExpoPushRuntime)
+  // Le runtime rend `PendingPush` une fois la session ouverte : ses hooks suivent ceux du runtime.
+  h.mount(() => {
+    const pending = runtime.ExpoPushRuntime()
+    return pending ? pending.type(pending.props) : null
+  })
   return {
     ...h,
     state,
     opened,
     clears,
-    refreshed,
     response,
     emit: (data) => responseListener(response(data)),
     last: (data) => lastResolve(data ? response(data) : null),
@@ -423,8 +422,6 @@ test('cold-start click waits for auth, onboarding and the app route before navig
   await r.flush()
   assert.equal(r.opened.length, 1)
   assert.equal(r.opened[0][0].notificationId, notice.notificationId)
-  // Reçu flux STOMP fermé : défis, salons et boîte relus avant d'ouvrir l'écran.
-  assert.deepEqual(r.refreshed, ['challenges/mine', 'rooms/mine', 'notifications'])
   r.emit(notice)
   await r.flush()
   assert.equal(r.opened.length, 1)
@@ -458,12 +455,10 @@ test('logout clears pending clicks and the native last response', async () => {
   assert.equal(r.clears.length, 1)
 })
 
-test('opening a notification marks read, routes correctly, and falls back for unavailable content', async () => {
+test('opening a notification marks read and routes at once, without a preliminary read', async () => {
   const routes = [],
     reads = [],
     messages = []
-  let current = 'u',
-    check = async () => {}
   const mod = load('src/features/notifications/hooks/use-open-notification.ts', {
     'expo-router': {
       router: {
@@ -472,12 +467,11 @@ test('opening a notification marks read, routes correctly, and falls back for un
       },
     },
     react: { useCallback: (callback) => callback },
+    '@joutio/client/notifications': { useReadNotification: () => ({ mutate: (id) => reads.push(id) }) },
     '@/design-system': { toast: { info: (message) => messages.push(message) } },
-    '@/lib/auth': { getUserId: () => current, clearSession: async () => {} },
+    '@/lib/auth': { getUserId: () => 'u', clearSession: async () => {} },
     '@/features/auth/session-store': { useSessionStore: { getState: () => ({ authenticated: true }) } },
     '../lib/notification-target': policy,
-    '../lib/notifications-service': { notificationsService: { checkTarget: (...args) => check(...args) } },
-    './use-notifications': { useMarkRead: () => ({ mutate: (id) => reads.push(id) }) },
   })
   const open = mod.useOpenNotification()
   await open(notice)
@@ -485,29 +479,24 @@ test('opening a notification marks read, routes correctly, and falls back for un
   assert.deepEqual(reads, ['n'])
   await open({ ...notice, type: 'WIZZ' })
   assert.deepEqual(routes.at(-1), { pathname: '/room/[roomId]', params: { roomId: 's', fromPush: '1' } })
-  // Signalement : l'écran des Signalements de la question, poussé hors onglets, signalement mis en avant.
-  check = async () => ({ questionId: 'q' })
+  // Signalement : la route de résolution lit le signalement, puis ouvre l'écran de sa question.
   await open({ ...notice, type: 'QUESTION_REPORTED', topicId: 't' })
   assert.deepEqual(routes.at(-1), {
-    pathname: '/workshop/[id]/reports/[questionId]',
-    params: { id: 't', questionId: 'q', highlight: 's', from: 'notifications' },
+    pathname: '/workshop/[id]/report/[reportId]',
+    params: { id: 't', reportId: 's', from: 'notifications' },
   })
-  // Question introuvable : la file Signalements du sujet.
-  check = async () => ({})
-  await open({ ...notice, type: 'QUESTION_REPORTED', topicId: 't' })
+  // Sans signalement : la file Signalements du sujet.
+  await open({ ...notice, type: 'QUESTION_REPORTED', topicId: 't', sourceId: null })
   assert.deepEqual(routes.at(-1), { pathname: '/workshop/[id]/moderation', params: { id: 't', tab: 'reports' } })
-  check = async () => {
-    throw { statusCode: 404 }
-  }
-  await open({ ...notice, type: 'FOLLOW', actorId: 'gone' })
-  assert.equal(routes.at(-1), '/home/notifications')
-  assert.match(messages.at(-1), /disponible/)
+  await open({ ...notice, type: 'FOLLOW', actorId: 'p' })
+  assert.deepEqual(routes.at(-1), { pathname: '/home/player/[id]', params: { id: 'p' } })
+  // Expirée : retombée sur l'onglet des défis, avec son message.
+  await open({ ...notice, expiresAt: new Date(Date.now() - 1000).toISOString() })
+  assert.deepEqual(routes.at(-1), { pathname: '/challenges', params: { tab: 'received' } })
+  assert.equal(messages.length, 1)
   const count = routes.length
-  check = async () => {
-    current = 'other'
-  }
-  await open(notice, 'u')
-  assert.equal(routes.length, count) // no navigation across account changes during I/O
+  await open(notice, 'other')
+  assert.equal(routes.length, count) // destinataire d'un autre compte : rien ne s'ouvre
 })
 
 test('Expo and STOMP reception share one foreground toast, excluding background, duel and rematches', async () => {
@@ -533,13 +522,17 @@ test('Expo and STOMP reception share one foreground toast, excluding background,
       },
     },
     '@/design-system': { toast: { show: (notice) => shown.push(notice) }, useToastStore: { getState: () => ({ suspended: immersive ? 1 : 0 }) } },
-    '@/features/me': { useMe: () => ({ data: { userId: 'u' } }) },
-    '@/lib/auth': { getUserId: () => 'u' },
-    '../hooks/use-notifications': {
-      useNotificationsRealtime: (callback) => {
-        stomp = callback
+    '@joutio/client/core/realtime': {
+      parseEnvelope: (body) => JSON.parse(body),
+      useSubscription: (destination, parse, handler) => {
+        stomp = (notification) => {
+          const event = parse(JSON.stringify({ eventType: notification.type, payload: notification }))
+          if (destination && event) handler(event)
+        }
       },
     },
+    '@/features/auth': { useSessionUserId: () => 'u' },
+    '@/lib/auth': { getUserId: () => 'u' },
     '../hooks/use-open-notification': { useOpenNotification: () => async () => {} },
     '../lib/notification-target': policy,
     '../lib/notification-presentation': load('src/features/notifications/lib/notification-presentation.ts'),

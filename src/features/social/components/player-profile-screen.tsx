@@ -1,5 +1,4 @@
-import { countryFlag, countryName } from '@joutio/client/geo'
-import { useQueryClient } from '@tanstack/react-query'
+import { countryFlag, countryName } from '@joutio/client/core/geo'
 import { useLocalSearchParams } from 'expo-router'
 import { router } from '@/shared/navigation/router'
 import { useState } from 'react'
@@ -34,16 +33,17 @@ import {
   useTheme,
   WarningCircleIcon,
   type MatchOutcome,
+  type TierCode,
 } from '@/design-system'
 import { ReportPlayerSheet } from '@/features/duel/components/report-sheets'
-import { useHistoryGames } from '@/features/history/hooks/use-history'
-import { useMe, usePlayerIdentity } from '@/features/me'
+import { useHistory, type PlayerCardView } from '@joutio/client/profile'
+import { useMe } from '@joutio/client/me'
+import { usePlayerIdentity } from '@/features/me'
 import { useTopicOverview } from '@/features/topic/hooks/use-topic'
 import { dayLabel, formatNumber, tierLabel } from '@/features/topic/lib/format'
-import type { GameOutcome, PlayerCardView } from '@joutio/client/api-types'
+import type { GameOutcome } from '@joutio/client/game'
 import { tierOf } from '@/shared/utils/tier'
 import { topicName } from '@/shared/utils/topic-name'
-import type { TierCode } from '@/design-system'
 import { useBlockPlayer, useFollowPlayer, useHeadToHead, usePlayerProfile } from '../hooks/use-social'
 import { presenceLine } from '../lib/presence'
 import { BlockPlayerDialog } from './block-player-dialog'
@@ -77,10 +77,9 @@ export function PlayerProfileScreen() {
   const identity = usePlayerIdentity()
   const params = useLocalSearchParams<{ id: string }>()
   const id = params.id ?? ''
-  const me = useMe(true)
+  const me = useMe()
   const { colors, radius } = useTheme()
   const profile = usePlayerProfile(id)
-  const client = useQueryClient()
   const follow = useFollowPlayer(id)
   const head = useHeadToHead(id)
   const [challengeOpen, setChallengeOpen] = useState(false)
@@ -89,7 +88,7 @@ export function PlayerProfileScreen() {
   const data = profile.data
   const blocked = Boolean(data?.blocked)
   const blockMutation = useBlockPlayer({ userId: id, pseudonym: data?.pseudonym ?? '' })
-  const games = useHistoryGames(id, { opponentId: me.data?.userId ?? '', outcome: 'ALL', sort: 'RECENT' }, Boolean(id && me.data?.userId))
+  const games = useHistory(id && me.data?.userId ? id : undefined, { opponentId: me.data?.userId, outcome: 'ALL', sort: 'RECENT' })
 
   // Le titre porté n'a que topicId:TIER : le nom du titre vient du sujet, comme dans le lab.
   const equipped = data?.equippedTitle?.split(':')
@@ -101,12 +100,10 @@ export function PlayerProfileScreen() {
   const rating = data?.progression?.rating
   const tier = rating != null ? tierOf(rating) : undefined
   const canAct = Boolean(data && !data.isMe && !data.suspended && !blocked)
-  const latest =
-    games.data?.pages
-      .flatMap((page) => page.content)
-      .filter((game) => outcomeOf(game.outcome))
-      .slice(0, 10) ?? []
-  const stats = data?.stats
+  const latest = (games.data?.pages ?? [])
+    .flatMap((page) => page.content)
+    .filter((game) => outcomeOf(game.outcome))
+    .slice(0, 10)
   const challengePlayer: PlayerCardView | null = data
     ? {
         userId: data.userId,
@@ -166,7 +163,7 @@ export function PlayerProfileScreen() {
         centered
         barTitleStart
         onBack={() => router.back()}
-        onRefresh={() => client.refetchQueries({ type: 'active' })}
+        onRefresh={() => Promise.all([profile.refetch(), head.refetch(), games.refetch()])}
         right={
           data && !data.isMe ? (
             <>
@@ -198,7 +195,11 @@ export function PlayerProfileScreen() {
                   </ScrollView>
                 )}
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: tokens.space[3] }}>
-                  {tier && <Badge variant="tier" tier={tier}>{t('common.dotPair', { a: tierLabel(tier), b: formatNumber(rating ?? 0) })}</Badge>}
+                  {tier && (
+                    <Badge variant="tier" tier={tier}>
+                      {t('common.dotPair', { a: tierLabel(tier), b: formatNumber(rating ?? 0) })}
+                    </Badge>
+                  )}
                   {data.country && <Pill>{`${countryFlag(data.country)} ${countryName(data.country, currentLanguage())}`}</Pill>}
                   {data.suspended && <Pill tone="suspended">{t('onboarding.ended.suspendedTitle')}</Pill>}
                   {blocked && <Pill tone="wrong">{t('player.blockedBadge')}</Pill>}

@@ -26,15 +26,6 @@ export const WALL_PAGE_SIZE = 20
 export const COMMENTS_PAGE_SIZE = 20
 
 const TIERS: TierCode[] = ['FER', 'BRONZE', 'ARGENT', 'OR', 'PLATINE', 'EMERAUDE', 'DIAMANT']
-const TIER_LABEL: Record<TierCode, string> = {
-  FER: 'Fer',
-  BRONZE: 'Bronze',
-  ARGENT: 'Argent',
-  OR: 'Or',
-  PLATINE: 'Platine',
-  EMERAUDE: 'Émeraude',
-  DIAMANT: 'Diamant',
-}
 const NAMES = ['Idriss B.', 'Yanis M.', 'Sofia R.', 'Léa P.', 'Noah T.', 'Hugo D.', 'Inès K.', 'Malik S.', 'Chloé V.', 'Adam L.', 'Jade F.', 'Rayan O.']
 const ANECDOTES = [
   'La phrase la plus citée de ce sujet apparaît pour la première fois bien après la mort de son auteur supposé.',

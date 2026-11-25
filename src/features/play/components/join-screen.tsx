@@ -1,4 +1,6 @@
-import { useQuery } from '@tanstack/react-query'
+import { useEffect } from 'react'
+import { useMe, type MeView } from '@joutio/client/me'
+import { useRoom } from '@joutio/client/rooms'
 import { useLocalSearchParams } from 'expo-router'
 import { router } from '@/shared/navigation/router'
 import { View } from 'react-native'
@@ -30,7 +32,6 @@ import {
   type TierCode,
 } from '@/design-system'
 import { useSessionStore } from '@/features/auth'
-import { useMe, usePlayerIdentity } from '@/features/me'
 import { useMyAvatar } from '@/features/avatar/lib/avatar-preview'
 import { usePendingJoin } from '@/shared/stores/pending-join-store'
 import { tierOf } from '@/shared/utils/tier'
@@ -38,15 +39,13 @@ import { topicName } from '@/shared/utils/topic-name'
 import { userAvatar } from '@/shared/utils/avatar'
 import { countdownOf, useServerNow } from '../lib/countdown'
 import { currentLanguage, formatNumber, t, tierKey, useT } from '@/lib/i18n'
-import { roomQuery } from '@joutio/client/query'
-import { api } from '@/lib/api'
 
 /** Conditions du duel, en `ListRow` informatives (`lancer-partie.md` § 2). */
-const RULES = (): readonly { icon: Icon; label: string }[] => ([
+const RULES = (): readonly { icon: Icon; label: string }[] => [
   { icon: TimerIcon, label: t('join.ruleRounds') },
   { icon: LightningIcon, label: t('join.ruleSpeed') },
   { icon: NumberCircleTwoIcon, label: t('join.ruleDouble') },
-])
+]
 
 /** Colonne de 370 pt au plus (face-à-face, sujet, conditions, bouton) : sur un grand écran, la page garde une taille de téléphone. */
 const COLUMN = { width: '100%', maxWidth: 370, alignSelf: 'center' } as const
@@ -84,7 +83,9 @@ function Seat({ name, src, rating, premium, guest }: SeatProps) {
           {guest}
         </Text>
       ) : tier && rating != null ? (
-        <Badge variant="tier" tier={tier}>{t('common.dotPair', { a: t(tierKey(tier)), b: formatNumber(rating, currentLanguage()) })}</Badge>
+        <Badge variant="tier" tier={tier}>
+          {t('common.dotPair', { a: t(tierKey(tier)), b: formatNumber(rating, currentLanguage()) })}
+        </Badge>
       ) : null}
     </View>
   )
@@ -102,20 +103,33 @@ function close() {
  * duel » en bas. Sans compte, la connexion ramène ici.
  */
 export function JoinScreen() {
+  const authenticated = useSessionStore((state) => state.authenticated)
+  return authenticated ? <SignedInJoin /> : <JoinContent />
+}
+
+/** Session ouverte : le compte et la salle se lisent. */
+function SignedInJoin() {
+  const me = useMe()
+  const myAvatar = useMyAvatar()
+  return <JoinContent me={me.data} myAvatar={myAvatar} />
+}
+
+function JoinContent({ me, myAvatar }: { me?: MeView; myAvatar?: string }) {
   const t = useT()
   const { roomId } = useLocalSearchParams<{ roomId: string }>()
   const { colors } = useTheme()
   const insets = useSafeAreaInsets()
   const authenticated = useSessionStore((state) => state.authenticated)
-  const me = useMe(authenticated)
-  const identity = usePlayerIdentity()
-  const myAvatar = useMyAvatar()
   const now = useServerNow()
   const setPending = usePendingJoin((state) => state.set)
-  const room = useQuery({ ...roomQuery(api, roomId), enabled: authenticated, retry: 1 })
+  const room = useRoom(authenticated ? roomId : undefined)
 
   const view = room.data
   const unavailable = room.isError || (view && (view.status !== 'WAITING_PLAYERS' || view.gameId !== null))
+  // Salon disparu ou déjà pris : le lien en attente est oublié (`partage.md` § 3).
+  useEffect(() => {
+    if (unavailable) setPending(null)
+  }, [unavailable, setPending])
   const host = view?.opponent
   const countdown = countdownOf(view?.expiresAt, now)
   const join = () => {
@@ -132,7 +146,16 @@ export function JoinScreen() {
   }
 
   const header = (
-    <View style={{ height: 52, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingLeft: tokens.space[3], paddingRight: tokens.space[5] }}>
+    <View
+      style={{
+        height: 52,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingLeft: tokens.space[3],
+        paddingRight: tokens.space[5],
+      }}
+    >
       <IconButton icon={XIcon} label={t('play.close')} variant="plain" tone="neutral" onPress={close} />
       {countdown && !unavailable && (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: tokens.space[2] }}>
@@ -166,7 +189,7 @@ export function JoinScreen() {
     )
 
   const loading = authenticated && room.isPending
-  const progression = me.data?.progression
+  const progression = me?.progression
   return (
     <Screen
       header={header}
@@ -175,7 +198,7 @@ export function JoinScreen() {
         // 370 pt de bouton, centré : la colonne de la page.
         <View style={[COLUMN, { gap: tokens.space[3], paddingTop: tokens.space[3], paddingBottom: Math.max(0, tokens.space[3] - insets.bottom) }]}>
           <View style={{ paddingHorizontal: tokens.space[5] }}>
-            <Button full icon={LightningIcon} disabled={authenticated && (room.isPending || (me.data ? !me.data.onboardingCompleted : false))} onPress={join}>
+            <Button full icon={LightningIcon} disabled={authenticated && (room.isPending || (me ? !me.onboardingCompleted : false))} onPress={join}>
               {authenticated ? t('join.join') : t('join.signIn')}
             </Button>
           </View>
@@ -196,13 +219,15 @@ export function JoinScreen() {
             <Skeleton shape="circle" width={SEAT} />
           </View>
         ) : (
-          <Seat name={host.pseudonym} src={userAvatar(host)} rating={host.rating} premium={identity.premium(host)} />
+          <Seat name={host.pseudonym} src={userAvatar(host)} rating={host.rating} premium={host.premium} />
         )}
-        <View style={{ marginTop: 30, width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accent }}>
+        <View
+          style={{ marginTop: 30, width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accent }}
+        >
           <LightningIcon size={14} weight="fill" color={colors.onAccent} />
         </View>
-        {authenticated && me.data ? (
-          <Seat name={me.data.pseudonym} src={myAvatar} rating={progression?.rating} premium={identity.myPremium} />
+        {authenticated && me ? (
+          <Seat name={me.pseudonym} src={myAvatar} rating={progression?.rating} premium={me.premium} />
         ) : (
           <Seat name={t('join.guest')} guest={t('join.guestLogin')} />
         )}

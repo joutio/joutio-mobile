@@ -1,14 +1,17 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { CONTENT_NOTICE_CATEGORIES, CONTENT_NOTICES_ENDPOINT, type ContentNoticeCategory, type ContentNoticeRequest } from '@joutio/client/api-types'
-import { contentNoticeSchema, MAX_NOTICE_DESCRIPTION } from '@joutio/client/forms'
-import { buildShareUrl } from '@joutio/client/share'
-import { useMutation } from '@tanstack/react-query'
+import {
+  CONTENT_NOTICE_CATEGORIES,
+  type ContentNoticeCategory,
+  contentNoticeSchema,
+  MAX_NOTICE_DESCRIPTION,
+  useSubmitContentNotice,
+} from '@joutio/client/authoring'
+import { buildShareUrl } from '@joutio/client/core/share'
 import { useEffect, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { View } from 'react-native'
 import { Button, Field, ListGroup, ListRow, MobileSheet, Text, toast, tokens } from '@/design-system'
-import { useMe } from '@/features/me'
-import { api } from '@/lib/api'
+import { useMe } from '@joutio/client/me'
 import { useT, type MessageKey } from '@/lib/i18n'
 
 /**
@@ -27,20 +30,23 @@ export function ReportTopicSheet({ open, onClose, topicId, name }: { open: boole
     reset()
     setSent(false)
   }, [open, reset])
-  const report = useMutation({
-    mutationFn: ({ category, description, goodFaith }: { category: ContentNoticeCategory; description: string; goodFaith: boolean }) =>
-      api.post<unknown>(CONTENT_NOTICES_ENDPOINT, {
-        name: me.data?.pseudonym ?? '',
-        email: me.data?.email ?? '',
-        quality: category === 'COPYRIGHT' || category === 'IMAGE_RIGHTS' ? 'RIGHTS_HOLDER' : 'THIRD_PARTY',
-        contentUrl: buildShareUrl({ kind: 'topic', id: topicId }),
-        category,
-        description,
-        goodFaith,
-      } satisfies ContentNoticeRequest),
-    onSuccess: () => setSent(true),
-    onError: () => toast.error(t('report.error'), { description: t('home.errorText') }),
-  })
+  const notice = useSubmitContentNotice()
+  const report = {
+    isPending: notice.isPending,
+    mutate: ({ category, description, goodFaith }: { category: ContentNoticeCategory; description: string; goodFaith: boolean }) =>
+      notice.mutate(
+        {
+          name: me.data?.pseudonym ?? '',
+          email: me.data?.email ?? '',
+          quality: category === 'COPYRIGHT' || category === 'IMAGE_RIGHTS' ? 'RIGHTS_HOLDER' : 'THIRD_PARTY',
+          contentUrl: buildShareUrl({ kind: 'topic', id: topicId }),
+          category,
+          description,
+          goodFaith,
+        },
+        { onSuccess: () => setSent(true), onError: () => toast.error(t('report.error'), { description: t('home.errorText') }) },
+      ),
+  }
   const ready = form.formState.isValid && Boolean(me.data?.email)
   return (
     <MobileSheet
@@ -89,7 +95,14 @@ export function ReportTopicSheet({ open, onClose, topicId, name }: { open: boole
             control={form.control}
             name="description"
             render={({ field }) => (
-              <Field label={t('topicReport.description')} placeholder={t('topicReport.placeholder')} multiline value={field.value} maxLength={MAX_NOTICE_DESCRIPTION} onChangeText={field.onChange} />
+              <Field
+                label={t('topicReport.description')}
+                placeholder={t('topicReport.placeholder')}
+                multiline
+                value={field.value}
+                maxLength={MAX_NOTICE_DESCRIPTION}
+                onChangeText={field.onChange}
+              />
             )}
           />
           <Controller

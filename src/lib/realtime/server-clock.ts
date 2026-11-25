@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useSyncExternalStore } from 'react'
 import { AppState } from 'react-native'
 import { addLiveFrame, addRoundTrip, CLOCK_BURST, clockOffset, emptyClock, type ClockState, type RoundTrip } from '@joutio/client/game'
-import type { ServerTimeView } from '@joutio/client/query'
 import { api } from '../api'
 
 /**
@@ -40,7 +39,7 @@ export function syncServerClock(): Promise<void> {
     for (let n = 0; n < CLOCK_BURST; n += 1) {
       const sentAt = Date.now()
       try {
-        const { epochMillis } = await api.get<ServerTimeView>('/api/clock')
+        const { epochMillis } = await api.get<{ epochMillis: number }>('/api/clock')
         trips.push({ sentAt, receivedAt: Date.now(), serverEpochMs: epochMillis })
       } catch {
         // Mesure perdue : les autres suffisent, la rafale suivante réessaie.

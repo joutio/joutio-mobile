@@ -1,8 +1,10 @@
 import { Client, ReconnectionTimeMode, type IMessage, type StompSubscription } from '@stomp/stompjs'
+import type { RealtimeTransport } from '@joutio/client/core/realtime'
 import { AppState } from 'react-native'
 import { create } from 'zustand'
 import { ensureFreshAccessToken } from './auth'
 import { config } from './config'
+import { recordServerInstant } from './realtime/server-clock'
 
 /**
  * Connexion STOMP unique au BFF (`/ws/websocket`, transport WebSocket brut), portée de `joutio-web/src/lib/ws.ts`.
@@ -170,7 +172,6 @@ export async function reconnectStomp({ evenIfConnected = false }: { evenIfConnec
 function watchNetwork() {
   let network: typeof import('expo-network') | undefined
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
     network = require('expo-network') as typeof import('expo-network')
   } catch {
     return
@@ -194,7 +195,7 @@ watchNetwork()
  * Abonne `handler` à une destination ; `onConnect` est rappelé à chaque (re)connexion, et tout de suite si la connexion
  * est déjà établie. Renvoie la fonction de désabonnement.
  */
-export function subscribeStomp(destination: string, handler: MessageHandler, onConnect?: () => void): () => void {
+function subscribeStomp(destination: string, handler: MessageHandler, onConnect?: () => void): () => void {
   let handlers = destinations.get(destination)
   if (!handlers) {
     handlers = new Set()
@@ -233,6 +234,35 @@ export function subscribeStomp(destination: string, handler: MessageHandler, onC
       if (set?.size === 0) connectHandlers.delete(destination)
     }
     deactivateIfIdle()
+  }
+}
+
+/** Transport temps réel de `@joutio/client` (`JoutioClientProvider`) : les flux et la synchronisation passent par lui. */
+export const realtime: RealtimeTransport = {
+  subscribe: (destination, onMessage, onConnect) =>
+    subscribeStomp(
+      destination,
+      (message) => {
+        recordFrameInstant(message.body)
+        onMessage(message)
+      },
+      onConnect,
+    ),
+}
+
+/**
+ * Trame d'agrégat live (enveloppe `timestamp`) : échantillon d'horloge serveur, borne basse du décalage
+ * (`ClockState`). Les autres trames (présence, flux personnels) n'en portent pas.
+ */
+function recordFrameInstant(body: string) {
+  const receivedAt = Date.now()
+  try {
+    const frame = JSON.parse(body) as { timestamp?: unknown; sequenceNumber?: unknown }
+    if (typeof frame.timestamp !== 'string' || typeof frame.sequenceNumber !== 'number') return
+    const instant = Date.parse(frame.timestamp)
+    if (Number.isFinite(instant)) recordServerInstant(instant, receivedAt)
+  } catch {
+    // Trame illisible : le flux l'ignore aussi.
   }
 }
 

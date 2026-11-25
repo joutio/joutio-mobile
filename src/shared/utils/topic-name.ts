@@ -1,4 +1,4 @@
-import type { TopicNames } from '@joutio/client/api-types'
+import type { TopicNames } from '@joutio/client/topics'
 import { currentLanguage } from '@/lib/i18n'
 
 /** Nom d'un sujet dans la langue demandée (par défaut celle de l'app), avec repli sur le français, l'anglais, puis le premier nom. */

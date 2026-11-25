@@ -1,14 +1,14 @@
 import { ListGroup, ListRow, MobileSheet, RadioGroup } from '@/design-system'
-import type { PeopleSort } from '@joutio/client/api-types'
+import type { PeopleSort } from '@joutio/client/profile'
 import { t, useT } from '@/lib/i18n'
 
 /** Libellés seuls, comme le lab (`SOCIAL_SORTS()`). */
-export const SOCIAL_SORTS = (): { value: PeopleSort; label: string }[] => ([
+export const SOCIAL_SORTS = (): { value: PeopleSort; label: string }[] => [
   { value: 'PRESENCE', label: t('social.sortPresence') },
   { value: 'RECENT', label: t('social.sortRecent') },
   { value: 'ELO', label: t('social.sortElo') },
   { value: 'ALPHA', label: t('social.sortAlpha') },
-])
+]
 
 /** Feuille « Trier par » de l'annuaire Social (`social.md` § 2). */
 export function SocialSortSheet({

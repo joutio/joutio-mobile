@@ -1,6 +1,6 @@
 import { router } from 'expo-router'
 import { BellIcon, ParallaxIconButton } from '@/design-system'
-import { useUnreadCount } from '@/features/home/hooks/use-home'
+import { useUnreadCount } from '@joutio/client/notifications'
 import { useT } from '@/lib/i18n'
 
 /** Cloche posée sur l'image du Profil (`ParallaxIconButton`), avec le nombre de notifications non lues. */

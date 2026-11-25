@@ -1,13 +1,10 @@
-import { useMe } from '@/features/me'
-import { PlaySessionProvider } from '@/features/play/hooks/play-session'
-import { ActiveGameBanner, useBannerGame } from '@/features/play/components/active-game-banner'
+import { ActiveGameBanner, ActiveGamesWatch, useBannerGame } from '@/features/play/components/active-game-banner'
+import { IncomingRematch } from '@/features/play/components/incoming-rematch'
 import { Stack } from 'expo-router'
 import { useRef } from 'react'
 import { View } from 'react-native'
 import { nativeHeaderOptions, TopBannerProvider, useTheme } from '@/design-system'
 import { NotificationsRuntime } from '@/features/notifications/components/notifications-runtime'
-import { RealtimeInvalidation } from '@/features/realtime/realtime-invalidation'
-import { RematchHost } from '@/features/play/components/rematch-host'
 import { PremiumHost } from '@/features/premium/premium-host'
 import { ConnectionBanner } from '@/shared/components/connection-banner'
 import { useConnectionBanner } from '@/shared/hooks/use-connection-banner'
@@ -16,16 +13,6 @@ export const unstable_settings = { anchor: '(tabs)' }
 
 /** Écrans du joueur connecté : les 5 onglets, puis les écrans poussés par-dessus. */
 export default function AppLayout() {
-  const me = useMe(true)
-  const userId = me.data?.userId ?? ''
-  return (
-    <PlaySessionProvider key={userId} userId={userId}>
-      <AppNavigation />
-    </PlaySessionProvider>
-  )
-}
-
-function AppNavigation() {
   const theme = useTheme()
   const connection = useConnectionBanner()
   const bannerGame = useBannerGame()
@@ -69,11 +56,12 @@ function AppNavigation() {
           <Stack.Screen name="question-editor" options={{ headerShown: false, presentation: 'fullScreenModal' }} />
         </Stack>
       </TopBannerProvider>
-      {/* Demandes de revanche reçues, au-dessus de tout écran (sauf pendant un duel). */}
-      {/* Événements poussés par le serveur : chaque type relit les vues qu'il touche (table unique). */}
-      <RealtimeInvalidation />
+      {/* Toasts des notifications reçues ; le cache suit `useJoutioSync`, monté à la racine. */}
       <NotificationsRuntime />
-      <RematchHost />
+      {/* Parties en cours : leur fin retire la bande « Partie en cours ». */}
+      <ActiveGamesWatch />
+      {/* Revanche reçue, au-dessus de tout écran (sauf pendant un duel). */}
+      <IncomingRematch />
       {/* Feuille Premium, ouverte depuis Réglages, Maîtrise ou l'éditeur d'avatar. */}
       <PremiumHost />
     </View>

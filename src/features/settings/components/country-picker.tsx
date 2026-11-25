@@ -1,4 +1,4 @@
-import { countryFlag, countryName, regionOfLocale, searchCountries, suggestedCountries } from '@joutio/client/geo'
+import { countryFlag, countryName, regionOfLocale, searchCountries, suggestedCountries } from '@joutio/client/core/geo'
 import { useMemo, useState } from 'react'
 import { View } from 'react-native'
 import {
@@ -98,14 +98,7 @@ export function CountryPicker({
             <RadioGroup label={t('mobile.country.suggestedLabel')}>
               <ListGroup>
                 {suggested.map((code) => row(code, false))}
-                <ListRow
-                  label={t('mobile.country.hide')}
-                  sub={t('country.hiddenSub')}
-                  control="radio"
-                  on={value === null}
-                  onToggle={() => pick(null)}
-                  last
-                />
+                <ListRow label={t('mobile.country.hide')} sub={t('country.hiddenSub')} control="radio" on={value === null} onToggle={() => pick(null)} last />
               </ListGroup>
             </RadioGroup>
             <SectionHeader title={t('country.all')} />

@@ -1,19 +1,20 @@
 import { View } from 'react-native'
 import { Button, ListGroup, ListRow, MobileSheet, RadioGroup, SectionHeader, tokens } from '@/design-system'
-import type { LeaderboardPeriod, LeaderboardScope } from '@joutio/client/api-types'
-import type { RankingFilterState } from '../lib/topic-service'
+import type { LeaderboardPeriod, LeaderboardScope, RankingFilters } from '@joutio/client/topics'
 import { t, useT } from '@/lib/i18n'
 
-const PERIODS = (): { value: LeaderboardPeriod; label: string }[] => ([
+type RankingFilterState = Pick<RankingFilters, 'period' | 'scope'>
+
+const PERIODS = (): { value: LeaderboardPeriod; label: string }[] => [
   { value: 'ALL_TIME', label: t('board.allTime') },
   { value: 'MONTHLY', label: t('mobile.rankings.month') },
-])
+]
 
-const SCOPES = (): { value: LeaderboardScope; label: string }[] => ([
+const SCOPES = (): { value: LeaderboardScope; label: string }[] => [
   { value: 'WORLD', label: t('mobile.rankings.world') },
   { value: 'FOLLOWING', label: t('home.followed') },
   { value: 'COUNTRY', label: t('settings.country') },
-])
+]
 
 export interface RankingsFiltersSheetProps {
   open: boolean

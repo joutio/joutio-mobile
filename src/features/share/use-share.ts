@@ -1,4 +1,4 @@
-import { buildShareUrl, type ShareKind } from '@joutio/client/share'
+import { buildShareUrl, type ShareKind } from '@joutio/client/core/share'
 import * as Clipboard from 'expo-clipboard'
 import { useCallback } from 'react'
 import { Platform, Share } from 'react-native'
@@ -19,15 +19,12 @@ export interface ShareTarget {
  * `go.joutio.com/…`. iOS passe le lien en `url` (aperçu riche dans Messages) ; Android l'ajoute au message.
  */
 export function useShare() {
-  return useCallback(
-    ({ kind, id, message, title }: ShareTarget) => {
-      const url = buildShareUrl({ kind, id })
-      const content = Platform.OS === 'ios' ? { message, url, title } : { message: `${message}\n${url}`, title }
-      void Share.share(content).catch(() => undefined)
-      return url
-    },
-    [],
-  )
+  return useCallback(({ kind, id, message, title }: ShareTarget) => {
+    const url = buildShareUrl({ kind, id })
+    const content = Platform.OS === 'ios' ? { message, url, title } : { message: `${message}\n${url}`, title }
+    void Share.share(content).catch(() => undefined)
+    return url
+  }, [])
 }
 
 /** Copie d'un lien, confirmée par un toast. */

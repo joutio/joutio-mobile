@@ -3,7 +3,7 @@ import { Linking, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Notice, Button, ClockIcon, ProhibitIcon, Text, tokens, useTheme } from '@/design-system'
 import type { SessionEndReason, SuspensionInfo } from '@/shared/types/session'
-import type { Language } from '@joutio/client/api-types'
+import type { Language } from '@joutio/client/core/types'
 import { formatDate, isMessageKey, translate, useLanguage, useT } from '@/lib/i18n'
 
 const SUPPORT = 'mailto:contact@joutio.com'

@@ -1,10 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { topicTitlesSchema } from '@joutio/client/forms'
-import { Controller, useForm, useWatch } from 'react-hook-form'
-import { useEffect, useState } from 'react'
-import { View } from 'react-native'
-import { Badge, Button, Field, MobileSheet, Segmented, Text, tokens } from '@/design-system'
 import {
+  topicTitlesSchema,
   MASTERY_TIERS,
   normalizeTitles,
   TITLE_MAX_LENGTH,
@@ -14,6 +10,10 @@ import {
   type TitleLanguage,
   type TopicTitles,
 } from '@joutio/client/authoring'
+import { Controller, useForm, useWatch } from 'react-hook-form'
+import { useEffect, useState } from 'react'
+import { View } from 'react-native'
+import { Badge, Button, Field, MobileSheet, Segmented, Text, tokens } from '@/design-system'
 import { formatNumber, MASTERY_XP } from '@/features/topic/lib/format'
 import { LANGUAGES } from './topic-sheets'
 import { tierKey, useT } from '@/lib/i18n'
@@ -57,7 +57,12 @@ export function TopicTitlesSheet({
       subtitle={topicName}
       tall
       footer={
-        <Button full loading={busy} disabled={!form.formState.isValid || !titlesChanged(titles, draft)} onPress={() => void form.handleSubmit((values) => onSave(normalizeTitles(values)))()}>
+        <Button
+          full
+          loading={busy}
+          disabled={!form.formState.isValid || !titlesChanged(titles, draft)}
+          onPress={() => void form.handleSubmit((values) => onSave(normalizeTitles(values)))()}
+        >
           {t('settings.save')}
         </Button>
       }
@@ -84,7 +89,11 @@ export function TopicTitlesSheet({
                 render={({ field }) => (
                   <Field
                     label={t(language === 'en' ? 'workshop.titleLabelEn' : 'workshop.titleLabel', { tier: t(tierKey(tier)) })}
-                    placeholder={language === 'en' ? titleLabel(normalizeTitles(draft), tier, topicName, 'fr') : t('workshop.tierTitle', { tier: t(tierKey(tier)), topic: topicName })}
+                    placeholder={
+                      language === 'en'
+                        ? titleLabel(normalizeTitles(draft), tier, topicName, 'fr')
+                        : t('workshop.tierTitle', { tier: t(tierKey(tier)), topic: topicName })
+                    }
                     value={field.value}
                     maxLength={TITLE_MAX_LENGTH}
                     counter={t('common.counter', { count: field.value.length, max: TITLE_MAX_LENGTH })}

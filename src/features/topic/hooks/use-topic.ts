@@ -1,153 +1,61 @@
-import { keepPreviousData, useInfiniteQuery, useMutation, useQuery, useQueryClient, type InfiniteData } from '@tanstack/react-query'
-import type { TopicPage } from '@/features/topics/lib/topics-service'
+import { useHistory, useTitles, useWearTitle as useLibWearTitle } from '@joutio/client/profile'
+import {
+  useFollowTopic as useLibFollowTopic,
+  useTopicBoard,
+  useTopicLeaderboard as useLibTopicLeaderboard,
+  useTopicOverview as useLibTopicOverview,
+  type RankingFilters,
+} from '@joutio/client/topics'
 import { toast } from '@/design-system'
-import { useMe } from '@/features/me'
-import { optimisticUpdate, queryKeys, titlesQuery, topicLeaderboardQuery, topicOverviewQuery } from '@joutio/client/query'
-import type { HomeView, TitlesView, TopicCardView, TopicOverviewView, MeView, PlayerProfileView } from '@joutio/client/api-types'
-import { topicService, type RankingFilters } from '../lib/topic-service'
+import { useSessionUserId } from '@/features/auth'
 import { useT } from '@/lib/i18n'
-import { api } from '@/lib/api'
+
+/** Dernières parties de l'onglet Parties ; l'historique complet vit dans `historique.md`. */
+const GAMES_SIZE = 10
 
 /** En-tête, statistiques et progression du sujet. */
 export function useTopicOverview(topicId: string, enabled = Boolean(topicId)) {
-  return useQuery({ ...topicOverviewQuery(api, topicId), enabled, staleTime: 30_000 })
+  return useLibTopicOverview(enabled && topicId ? topicId : undefined)
 }
 
 /** Top 10 depuis toujours et ma ligne. */
 export function useTopicLeaderboard(topicId: string, enabled = true) {
-  return useQuery({ ...topicLeaderboardQuery(api, topicId), enabled, staleTime: 60_000 })
+  return useLibTopicLeaderboard(enabled && topicId ? topicId : undefined)
 }
 
 /** Classement complet d'un sujet (période, portée, pagination). */
 export function useTopicLeaderboardPage(topicId: string, filters: RankingFilters, enabled = true) {
-  return useInfiniteQuery({
-    queryKey: queryKeys.topic.board(topicId, filters),
-    queryFn: ({ pageParam }) => topicService.leaderboardPage(topicId, filters, pageParam),
-    initialPageParam: 0,
-    getNextPageParam: (last, pages) => (last.entries.last ? undefined : pages.length),
-    enabled: enabled && Boolean(topicId),
-    placeholderData: keepPreviousData,
-    staleTime: 60_000,
-  })
+  return useTopicBoard(enabled && topicId ? topicId : undefined, filters)
 }
 
-/** Mes 10 dernières parties du sujet. */
-export function useTopicGames(topicId: string, enabled = true) {
-  const me = useMe(true)
-  const userId = me.data?.userId
-  return useQuery({
-    queryKey: queryKeys.topic.games(topicId, userId ?? ''),
-    queryFn: () => topicService.games(userId ?? '', topicId),
-    enabled: enabled && Boolean(userId),
-    staleTime: 60_000,
-  })
+/** Mes dernières parties du sujet : la première page de mon historique filtré sur le sujet. */
+export function useTopicGames(topicId: string) {
+  const games = useHistory(useSessionUserId(), { topicId, outcome: 'ALL', sort: 'RECENT' })
+  return { ...games, games: (games.data?.pages ?? [])[0]?.content.slice(0, GAMES_SIZE) }
 }
 
 /** Mes titres (pour savoir lequel est porté). */
-export function useMyTitles(enabled = true) {
-  const me = useMe(true)
-  const userId = me.data?.userId
-  return useQuery({
-    ...titlesQuery(api, userId ?? ''),
-    enabled: enabled && Boolean(userId),
-    staleTime: 60_000,
-  })
-}
+export const useMyTitles = () => useTitles(useSessionUserId())
 
-/** Suivre / ne plus suivre, appliqué tout de suite (et annulé si le BFF refuse). */
+/** Suivre / ne plus suivre un sujet (mutation optimiste de la lib) ; un refus s'affiche en toast. */
 export function useFollowTopic(topicId: string) {
   const t = useT()
-  const client = useQueryClient()
-  const key = queryKeys.topic.overview(topicId)
-  return useMutation({
-    mutationFn: (follow: boolean) => topicService.follow(topicId, follow),
-    onMutate: (follow: boolean) =>
-      optimisticUpdate(client, [key, ['topics'], queryKeys.home()], () => {
-        const previous = client.getQueryData<TopicOverviewView>(key)
-        if (previous)
-          client.setQueryData<TopicOverviewView>(key, {
-            ...previous,
-            topic: {
-              ...previous.topic,
-              followed: follow,
-              followersCount: Math.max(0, previous.topic.followersCount + (previous.topic.followed === follow ? 0 : follow ? 1 : -1)),
-            },
-          })
-        // Mise à jour sur place des listes déjà chargées (catalogue, rails de l'Accueil) : pas de rechargement complet,
-        // donc pas d'attente au retour sur Sujets. Appartenance et compteurs sont corrigés localement.
-        const flip = (topic: TopicCardView) =>
-          topic.topicId === topicId
-            ? { ...topic, followed: follow, followersCount: Math.max(0, topic.followersCount + (topic.followed === follow ? 0 : follow ? 1 : -1)) }
-            : topic
-        for (const [key, data] of client.getQueriesData<InfiniteData<TopicPage>>({ queryKey: queryKeys.topics.lists() })) {
-          const filters = key[2] as { followed?: boolean; hideFollowed?: boolean; query?: string; categories?: readonly string[] }
-          const card = previous?.topic
-          const add =
-            follow &&
-            filters.followed &&
-            card &&
-            !data?.pages.some((page) => page.topics.some((topic) => topic.topicId === topicId)) &&
-            (!filters.query || Object.values(card.names).some((name) => name.toLowerCase().includes(filters.query!.toLowerCase()))) &&
-            (!filters.categories?.length || filters.categories.includes(card.category ?? ''))
-          client.setQueryData(
-            key,
-            data
-              ? {
-                  ...data,
-                  pages: data.pages.map((page, index) => ({
-                    ...page,
-                    topics: [...(add && index === 0 ? [flip(card)] : []), ...page.topics.map(flip)].filter(
-                      (topic) => !((filters.followed && !topic.followed) || (filters.hideFollowed && topic.followed)),
-                    ),
-                  })),
-                }
-              : data,
-          )
-        }
-        const card = previous?.topic
-        client.setQueryData<HomeView>(queryKeys.home(), (data) =>
-          data
-            ? {
-                ...data,
-                followedTopics: follow
-                  ? data.followedTopics.some((topic) => topic.topicId === topicId)
-                    ? data.followedTopics.map(flip)
-                    : card
-                      ? [...data.followedTopics, flip(card)]
-                      : data.followedTopics
-                  : data.followedTopics.filter((topic) => topic.topicId !== topicId),
-                trendingTopics: data.trendingTopics.map(flip),
-                newTopics: data.newTopics.map(flip),
-                recommendedTopics: data.recommendedTopics.map(flip),
-              }
-            : data,
-        )
-      }),
-    onError: (_error, follow, context) => {
-      context?.rollback()
-      toast.error(follow ? t('topic.followError') : t('topic.unfollowError'), { description: t('home.errorText') })
-    },
-  })
+  const follow = useLibFollowTopic(topicId)
+  return {
+    isPending: follow.isPending,
+    mutate: (next: boolean) =>
+      follow.mutate(next, { onError: () => toast.error(next ? t('topic.followError') : t('topic.unfollowError'), { description: t('home.errorText') }) }),
+  }
 }
 
-/** Porter un titre du sujet. */
+/** Porter un titre du sujet (`null` : retirer le titre porté). */
 export function useWearTitle() {
   const t = useT()
-  const client = useQueryClient()
-  const me = useMe(true)
-  const userId = me.data?.userId ?? ''
-  const key = queryKeys.profiles.titles(userId)
-  return useMutation({
-    mutationFn: (titleKey: string | null) => topicService.wearTitle(userId, titleKey),
-    onMutate: (titleKey: string | null) =>
-      optimisticUpdate(client, [key, queryKeys.me(), queryKeys.profiles.profile(userId)], () => {
-        client.setQueryData<TitlesView>(key, (titles) => (titles ? { ...titles, equippedKey: titleKey } : titles))
-        client.setQueryData<MeView>(queryKeys.me(), (me) => (me ? { ...me, equippedTitle: titleKey } : me))
-        client.setQueryData<PlayerProfileView>(queryKeys.profiles.profile(userId), (profile) => (profile ? { ...profile, equippedTitle: titleKey } : profile))
-      }),
-    onError: (_error, _key, context) => {
-      context?.rollback()
-      toast.error(_key === null ? t('topic.removeTitleError') : t('topic.wearTitleError'))
-    },
-  })
+  const wear = useLibWearTitle(useSessionUserId() ?? '')
+  return {
+    isPending: wear.isPending,
+    variables: wear.variables,
+    mutate: (titleKey: string | null) =>
+      wear.mutate(titleKey, { onError: () => toast.error(titleKey === null ? t('topic.removeTitleError') : t('topic.wearTitleError')) }),
+  }
 }

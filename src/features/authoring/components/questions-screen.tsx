@@ -43,10 +43,10 @@ import {
   type QuestionEditorView,
   type QuestionSort,
   type QuestionStatus,
+  MIN_QUESTIONS,
+  workshopRole,
 } from '@joutio/client/authoring'
-import { MIN_QUESTIONS } from '@joutio/client/authoring'
 import { useCreationLimits, useFrozen, useMyTopic, useTopicQuestions } from '../hooks/use-authoring'
-import { workshopRole } from '@joutio/client/authoring'
 import { FrozenNotice } from './frozen-notice'
 import { clientSource, feedFooterProps, loadMoreOptions } from '@/shared/utils/paging'
 import { STATUS_LABEL, questionsLabel, reportsLabel, t, type MessageKey, useT } from '@/lib/i18n'
@@ -168,7 +168,6 @@ export function QuestionsScreen() {
   const all = useMemo(() => questions.data ?? [], [questions.data])
   const draft = (topic?.status ?? 'DRAFT') === 'DRAFT'
   const count = all.length
-  const approved = all.filter((question) => questionStatus(question) === 'approved').length
   const atCeiling = premium && count >= limits.questionsPerTopic
   const search = query.trim().toLowerCase()
   const filtered = useMemo(
@@ -314,8 +313,18 @@ export function QuestionsScreen() {
               value={sort}
               onChange={(next) => change(() => setSort(next))}
             />
-            <FilterOptions label={t('workshop.status')} options={STATUS_FILTERS.map((option) => ({ ...option, label: t(option.label) }))} value={status} onChange={(next) => change(() => setStatus(next))} />
-            <FilterOptions label={t('workshop.translation')} options={TRANSLATION_FILTERS.map((option) => ({ ...option, label: t(option.label) }))} value={translation} onChange={(next) => change(() => setTranslation(next))} />
+            <FilterOptions
+              label={t('workshop.status')}
+              options={STATUS_FILTERS.map((option) => ({ ...option, label: t(option.label) }))}
+              value={status}
+              onChange={(next) => change(() => setStatus(next))}
+            />
+            <FilterOptions
+              label={t('workshop.translation')}
+              options={TRANSLATION_FILTERS.map((option) => ({ ...option, label: t(option.label) }))}
+              value={translation}
+              onChange={(next) => change(() => setTranslation(next))}
+            />
           </View>
         </MobileSheet>
       }
@@ -323,15 +332,14 @@ export function QuestionsScreen() {
       {questions.data ? (
         <View style={{ gap: tokens.space[3] }}>
           {/* Brouillon : l'avancement vers la publication est sur Mon sujet. */}
-          {!draft && <ProgressBar label={t('workshop.ceiling', { count, max: limits.questionsPerTopic })} value={Math.min(100, (count * 100) / limits.questionsPerTopic)} />}
-          {locked && <FrozenNotice published={published} limit={limits.publishedTopics} />}
-          {atCeiling && (
-            <Notice
-              tone="info"
-              title={t('workshop.fullTitle')}
-              message={t('workshop.fullText', { max: limits.questionsPerTopic })}
+          {!draft && (
+            <ProgressBar
+              label={t('workshop.ceiling', { count, max: limits.questionsPerTopic })}
+              value={Math.min(100, (count * 100) / limits.questionsPerTopic)}
             />
           )}
+          {locked && <FrozenNotice published={published} limit={limits.publishedTopics} />}
+          {atCeiling && <Notice tone="info" title={t('workshop.fullTitle')} message={t('workshop.fullText', { max: limits.questionsPerTopic })} />}
         </View>
       ) : null}
       {shown.length === 0 ? (

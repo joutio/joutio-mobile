@@ -1,4 +1,4 @@
-import type { PresenceStatus } from '@joutio/client/api-types'
+import type { PresenceStatus } from '@joutio/client/profile'
 import { t } from '@/lib/i18n'
 
 /** Présence d'un joueur, telle que la portent `PlayerCardView` et `PlayerProfileView`. */

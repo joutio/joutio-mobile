@@ -2,7 +2,7 @@ import { router } from '@/shared/navigation/router'
 import { useState } from 'react'
 import { View } from 'react-native'
 import { Notice, Button, CategoryTile, Text, tokens, type CategoryCode } from '@/design-system'
-import { useSaveInterests } from '../hooks/use-onboarding'
+import { useUpdateInterests } from '@joutio/client/me'
 import { MAX_UNIVERSES, useOnboardingStore } from '../onboarding-store'
 import { Steps } from './steps'
 import { useT } from '@/lib/i18n'
@@ -16,7 +16,7 @@ export function UniversesStep() {
   const selected = useOnboardingStore((state) => state.universes)
   const setUniverses = useOnboardingStore((state) => state.setUniverses)
   const setSkipped = useOnboardingStore((state) => state.setSkipped)
-  const save = useSaveInterests()
+  const save = useUpdateInterests()
   const full = selected.length === MAX_UNIVERSES
   // Largeur mesurée : trois colonnes égales, y compris sur la dernière rangée incomplète.
   const [gridWidth, setGridWidth] = useState(0)

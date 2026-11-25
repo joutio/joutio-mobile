@@ -15,7 +15,7 @@ import { useReducedMotion } from '../motion'
 import { useTheme } from '../theme/theme-provider'
 import { fontFace } from '../theme/fonts'
 import { Text } from './text'
-import { t, useT } from '@/lib/i18n'
+import { t } from '@/lib/i18n'
 
 /* Géométrie dans une boîte de 100 × 100 unités, le viewBox du SVG (reprise du lab). */
 const R_OUTER = 23
@@ -161,7 +161,6 @@ function Arc({ color, length, rotation, progress }: { color: string; length: num
 
 /** Répartition par sujet : parts colorées, compteur dans chaque part, libellés reliés à l'anneau. */
 export const TopicsDonut = memo(function TopicsDonut({ data, label, maxSegments = 6, otherLabel = t('profile.others'), play = true, style }: TopicsDonutProps) {
-  const t = useT()
   const { colors } = useTheme()
   const segments = useMemo(() => plan(data, maxSegments, otherLabel, colors.border), [data, maxSegments, otherLabel, colors.border])
   const progress = useReveal(play)

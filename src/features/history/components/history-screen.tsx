@@ -28,11 +28,10 @@ import {
   useTabBarInset,
 } from '@/design-system'
 import { dayLabel, formatNumber } from '@/features/topic/lib/format'
-import { useMe } from '@/features/me'
-import type { GameHistoryItemView, GameOutcome } from '@joutio/client/api-types'
+import { useMe } from '@joutio/client/me'
+import { type GameHistoryItemView, DEFAULT_HISTORY_FILTERS, useHistory, type HistoryFilterState } from '@joutio/client/profile'
+import type { GameOutcome } from '@joutio/client/game'
 import { topicName } from '@/shared/utils/topic-name'
-import { useHistoryGames } from '../hooks/use-history'
-import { DEFAULT_HISTORY_FILTERS, type HistoryFilterState } from '../lib/history-service'
 import { HistoryFiltersSheet, HISTORY_SORTS } from './history-filters-sheet'
 import { feedFooterProps, pagedQuery } from '@/shared/utils/paging'
 import { useRefreshActive } from '@/shared/hooks/use-refresh-active'
@@ -73,18 +72,18 @@ export function HistoryScreen() {
   // Fin de liste au-dessus de la tab bar native iOS (`useTabBarInset`).
   const tabInset = useTabBarInset()
   const params = useLocalSearchParams<HistoryRouteParams>()
-  const me = useMe(true)
+  const me = useMe()
   const userId = params.userId ?? me.data?.userId ?? ''
   const [filterState, setFilterState] = useState<HistoryFilterState>(DEFAULT_HISTORY_FILTERS)
   const [sheetOpen, setSheetOpen] = useState(false)
   const listRef = useRef<FlashListRef<DayGroup>>(null)
 
   const filters = useMemo(() => ({ ...filterState, topicId: params.topicId, opponentId: params.opponentId }), [filterState, params.topicId, params.opponentId])
-  const list = useHistoryGames(userId, filters, Boolean(userId))
-  const pageRefresh = useRefreshActive()
+  const list = useHistory(userId || undefined, filters)
+  const pageRefresh = useRefreshActive(list)
   const active = filterState.opponentType !== undefined || filterState.outcome !== 'ALL' || filterState.sort !== 'RECENT'
 
-  const games = useMemo(() => list.data?.pages.flatMap((page) => page.content).filter((game) => OUTCOMES[game.outcome]) ?? [], [list.data])
+  const games = useMemo(() => (list.data?.pages ?? []).flatMap((page) => page.content).filter((game) => OUTCOMES[game.outcome]), [list.data])
   const groups = useMemo(() => {
     const result: DayGroup[] = []
     for (const game of games) {
@@ -96,7 +95,7 @@ export function HistoryScreen() {
     return result
   }, [games])
 
-  const count = list.data?.pages[0]?.totalElements ?? 0
+  const count = (list.data?.pages ?? [])[0]?.totalElements ?? 0
   const reset = () => setFilterState(DEFAULT_HISTORY_FILTERS)
   const change = (patch: Partial<HistoryFilterState>) => setFilterState((current) => ({ ...current, ...patch }))
 
@@ -225,9 +224,7 @@ export function HistoryScreen() {
                 </Chip>
               </View>
             }
-            ListFooterComponent={
-              <FeedFooter style={{ marginHorizontal: GUTTER }} {...feedFooterProps(pagedQuery(list))} endLabel={t('history.end')} />
-            }
+            ListFooterComponent={<FeedFooter style={{ marginHorizontal: GUTTER }} {...feedFooterProps(pagedQuery(list))} endLabel={t('history.end')} />}
             renderItem={({ item: group }) => (
               <View style={{ gap: tokens.space[3], paddingHorizontal: GUTTER, paddingBottom: tokens.space[4] }}>
                 <Text variant="caption" weight="600" color="muted">

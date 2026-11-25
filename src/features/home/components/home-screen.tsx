@@ -1,7 +1,7 @@
 import { NotificationButton } from '@/features/notifications/components/notification-button'
 import { useScrollToTop } from 'expo-router'
 import { router } from '@/shared/navigation/router'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { ScrollView, View } from 'react-native'
 import Animated, { interpolate, useAnimatedStyle, useDerivedValue, useSharedValue } from 'react-native-reanimated'
 import {
@@ -42,17 +42,17 @@ import {
   type CollapsibleTabsRef,
   TOP_BAR_HEIGHT,
 } from '@/design-system'
-import { useMe } from '@/features/me'
+import { useMe } from '@joutio/client/me'
 import { MyTopicsList } from '@/features/authoring'
 import { openSettingsPage } from '@/features/settings/components/settings-frame'
 import { useMyActivity } from '@/features/profile/hooks/use-profile'
-import type { TopicCardView } from '@joutio/client/api-types'
+import type { TopicCardView, CatalogueFilters as TopicFilters } from '@joutio/client/topics'
 import { tierOf } from '@/shared/utils/tier'
 import { topicName } from '@/shared/utils/topic-name'
 import { openTopic } from '@/features/topic'
 import { useTopicFacets, useTopics } from '@/features/topics/hooks/use-topics'
-import type { TopicFilters } from '@/features/topics/lib/topics-service'
-import { useHome, useUnreadCount } from '../hooks/use-home'
+import { useHome } from '@joutio/client/home'
+import { useUnreadCount } from '@joutio/client/notifications'
 import { feedFooterProps, pagedQuery } from '@/shared/utils/paging'
 import { categoryKey, t, tierKey, useT } from '@/lib/i18n'
 
@@ -273,7 +273,7 @@ function FeedPage({ tab, home }: { tab: Exclude<Tab, 'creation'>; home: ReturnTy
   const followed = tab === 'followed'
   const data = home.data
   const [selected, setSelected] = useState<CategoryCode[]>([])
-  const list = useTopics(followedFilters(selected), followed)
+  const list = useTopics(followedFilters(selected))
   // Un échec (rafraîchissement compris) remplace la vue : jamais le message d'erreur au-dessus d'anciennes sections.
   const failed = home.isError
   const empty = !failed && data && (followed ? data.followedTopics.length === 0 : data.trendingTopics.length === 0 && data.newTopics.length === 0)
@@ -395,13 +395,7 @@ export function HomeScreen() {
         </Animated.View>
       </View>
       <View style={{ flexDirection: 'row', gap: tokens.space[3] }}>
-        <IconButton
-          icon={MagnifyingGlassIcon}
-          label={t('search.label')}
-          variant="plain"
-          tone="neutral"
-          onPress={() => router.push('/home/search')}
-        />
+        <IconButton icon={MagnifyingGlassIcon} label={t('search.label')} variant="plain" tone="neutral" onPress={() => router.push('/home/search')} />
         <NotificationButton />
         <IconButton icon={GearSixIcon} label={t('profile.settings')} variant="plain" tone="neutral" onPress={() => router.push('/home/settings')} />
       </View>

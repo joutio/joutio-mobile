@@ -2,9 +2,7 @@ import { Tabs } from 'expo-router/js-tabs'
 import { NativeTabs, type SFSymbolIcon } from 'expo-router/native-tabs'
 import { Platform } from 'react-native'
 import { CompassIcon, HouseIcon, JoTabBar, SwordIcon, UserIcon, UsersIcon, type Icon, useTheme } from '@/design-system'
-import { roomsWaitingForViewer } from '@joutio/client/rooms'
-import { splitChallenges, useChallengesRealtime, useMyChallenges, useMyRooms } from '@/features/challenges'
-import { useMe } from '@/features/me'
+import { useDefisBadge } from '@joutio/client/rooms'
 import { useT, type MessageKey } from '@/lib/i18n'
 
 /** Navigation principale (`accueil.md` § 3) : 5 onglets, dans cet ordre. */
@@ -25,13 +23,9 @@ const ICONS = Object.fromEntries(TABS.map((tab) => [tab.name, tab.icon]))
 export default function TabsLayout() {
   const t = useT()
   const { colors } = useTheme()
-  const userId = useMe(true).data?.userId ?? ''
   // Badge Défis : défis reçus en attente + salons où l'adversaire attend le joueur (2026-11-16), tenus à jour par le
-  // flux personnel STOMP.
-  const challenges = useMyChallenges(Boolean(userId))
-  const rooms = useMyRooms(Boolean(userId))
-  useChallengesRealtime()
-  const received = splitChallenges(challenges.data, userId).received.length + roomsWaitingForViewer(rooms.data)
+  // flux personnel STOMP (`useJoutioSync`).
+  const received = useDefisBadge().data ?? 0
 
   if (Platform.OS === 'ios')
     return (

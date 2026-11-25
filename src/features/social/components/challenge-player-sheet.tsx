@@ -1,7 +1,7 @@
 import { useRef } from 'react'
 import { useChallengePlayer } from '@/features/play/hooks/use-play'
 import { TopicPickerSheet } from '@/features/topics/components/topic-picker-sheet'
-import type { PlayerCardView } from '@joutio/client/api-types'
+import type { PlayerCardView } from '@joutio/client/profile'
 import { useT } from '@/lib/i18n'
 
 /**

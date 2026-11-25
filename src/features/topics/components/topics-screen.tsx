@@ -1,4 +1,4 @@
-import { useUnreadCount } from '@/features/home/hooks/use-home'
+import { useUnreadCount } from '@joutio/client/notifications'
 import { NotificationButton } from '@/features/notifications/components/notification-button'
 import { SettingsButton } from '@/features/settings/components/settings-button'
 import { useScrollToTop } from 'expo-router'
@@ -42,9 +42,9 @@ import {
   useTabBarInset,
 } from '@/design-system'
 import { openTopic } from '@/features/topic'
-import { DEFAULT_TOPIC_SORT, pageSizeFor, type TopicScope } from '../lib/topics-service'
+import { DEFAULT_TOPIC_SORT, type TopicScope, type TopicCardView, type TopicSort } from '@joutio/client/topics'
+import { pageSizeFor } from '../lib/catalogue'
 import { useDebounced } from '@/shared/hooks/use-debounced'
-import type { TopicCardView, TopicSort } from '@joutio/client/api-types'
 import { topicName } from '@/shared/utils/topic-name'
 import { useTopicFacets, useTopics } from '../hooks/use-topics'
 import { useOnline } from '@/shared/hooks/use-online'
@@ -59,18 +59,18 @@ const GAP_Y = tokens.space[5]
 const MIN_COLUMN = 96
 const columnsFor = (width: number) => Math.max(1, Math.floor((width - GUTTER * 2 + GAP_X) / (MIN_COLUMN + GAP_X)))
 const UNIVERSES = Object.keys(tokens.category) as CategoryCode[]
-const SORTS = (): { value: TopicSort; label: string }[] => ([
+const SORTS = (): { value: TopicSort; label: string }[] => [
   { value: 'POPULAR', label: t('topics.sortPopular') },
   { value: 'MOST_PLAYED', label: t('topics.sortPlayed') },
   { value: 'RECENT', label: t('topics.sortRecent') },
-])
+]
 const DEFAULT_SORT: TopicSort = DEFAULT_TOPIC_SORT
 /** « Mes thèmes » (`sujets.md` § 2, 2026-11-13, remplace « Masquer les sujets suivis »). */
-const SCOPES = (): { value: TopicScope; label: string; icon: NonNullable<ListRowProps['icon']> }[] => ([
+const SCOPES = (): { value: TopicScope; label: string; icon: NonNullable<ListRowProps['icon']> }[] => [
   { value: 'ALL', label: t('topics.scopeAll'), icon: SquaresFourIcon },
   { value: 'FOLLOWED', label: t('topics.scopeFollowed'), icon: HeartIcon },
   { value: 'MINE', label: t('topics.scopeMine'), icon: PencilSimpleIcon },
-])
+]
 
 const countLabel = (count: number) => `${count} ${count > 1 ? 'sujets' : 'sujet'}`
 const toggle = (list: readonly CategoryCode[], category: CategoryCode) =>

@@ -1,6 +1,6 @@
 import { router } from '@/shared/navigation/router'
 import { NotificationBell } from '@/design-system'
-import { useUnreadCount } from '@/features/home/hooks/use-home'
+import { useUnreadCount } from '@joutio/client/notifications'
 
 export function NotificationButton() {
   const unread = useUnreadCount()

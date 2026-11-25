@@ -1,22 +1,26 @@
-import { QueryClientProvider } from '@tanstack/react-query'
+import { onlineManager } from '@tanstack/react-query'
+import { createJoutioQueryClient, JoutioClientProvider } from '@joutio/client/core'
+import { useMe } from '@joutio/client/me'
+import { useJoutioSync } from '@joutio/client/sync'
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider as NavigationThemeProvider } from 'expo-router'
 import * as SplashScreen from 'expo-splash-screen'
 import { StatusBar } from 'expo-status-bar'
 import * as SystemUI from 'expo-system-ui'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { View } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { KeyboardProvider } from 'react-native-keyboard-controller'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { Notice, Button, DialogHost, ThemeProvider, ToastHost, tokens, useJoutioFonts, useTheme } from '@/design-system'
-import { LaunchScreen, SessionRuntime, useLogout, useSessionStore } from '@/features/auth'
-import { useLanguageSync, useMe } from '@/features/me'
+import { LaunchScreen, SessionRuntime, useLogout, useSessionStore, useSessionUserId } from '@/features/auth'
+import { useLanguageSync } from '@/features/me'
 import { ExpoPushRuntime } from '@/features/notifications/components/expo-push-runtime'
 import { useCatalogAccess } from '@/features/auth/hooks/use-catalog-access'
 import { BirthDateScreen } from '@/features/onboarding/components/birth-date-screen'
 import { TermsScreen } from '@/features/onboarding/components/terms-screen'
-import { createQueryClient } from '@/lib/query-client'
-import { useNetworkBridge } from '@/shared/hooks/use-online'
+import { api } from '@/lib/api'
+import { realtime } from '@/lib/ws'
+import { useNetworkStore, useNetworkWatch } from '@/shared/hooks/use-online'
 import { useT } from '@/lib/i18n'
 
 SplashScreen.preventAutoHideAsync().catch(() => undefined)
@@ -60,23 +64,33 @@ function BootError({ onRetry }: { onRetry: () => void }) {
 }
 
 function Navigation() {
-  const { colors } = useTheme()
   const ready = useSessionStore((state) => state.ready)
   const authenticated = useSessionStore((state) => state.authenticated)
-  const me = useMe(ready && authenticated)
-  const catalogAccess = useCatalogAccess()
   const launchMinElapsed = useLaunchMinElapsed()
+
+  if (!launchMinElapsed || !ready) return <LaunchScreen />
+  return authenticated ? <SignedInNavigation /> : <Routes authenticated={false} onboarded={false} />
+}
+
+/** Session ouverte : le compte (`GET /api/me`) décide des étapes obligatoires et de l'onboarding. */
+function SignedInNavigation() {
+  const me = useMe()
   useLanguageSync(me.data?.language)
 
-  if (!launchMinElapsed || !ready || (authenticated && me.isPending)) return <LaunchScreen />
-  if (authenticated && me.isError && !me.data) return <BootError onRetry={() => void me.refetch()} />
+  if (me.isPending) return <LaunchScreen />
+  if (me.isError && !me.data) return <BootError onRetry={() => void me.refetch()} />
 
   // Compte récent sans date de naissance : demandée une fois avant tout le reste (`onboarding.md`).
-  if (authenticated && me.data?.birthDateRequired) return <BirthDateScreen />
+  if (me.data.birthDateRequired) return <BirthDateScreen />
   // CGU en vigueur pas encore acceptées (première connexion ou nouvelle version) : présentées avant de jouer.
-  if (authenticated && me.data?.termsUpToDate === false) return <TermsScreen />
+  if (me.data.termsUpToDate === false) return <TermsScreen />
 
-  const onboarded = me.data?.onboardingCompleted ?? false
+  return <Routes authenticated onboarded={me.data.onboardingCompleted} />
+}
+
+function Routes({ authenticated, onboarded }: { authenticated: boolean; onboarded: boolean }) {
+  const { colors } = useTheme()
+  const catalogAccess = useCatalogAccess()
   return (
     <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg } }}>
       <Stack.Screen name="index" />
@@ -103,9 +117,33 @@ function Navigation() {
   )
 }
 
+/** Synchronisation du cache sur les flux personnels du joueur connecté, montée une fois. */
+function SessionSync() {
+  useJoutioSync(useSessionUserId())
+  return null
+}
+
+// Hors connexion, les lectures attendent le réseau au lieu d'échouer, puis partent à son retour.
+onlineManager.setEventListener((setOnline) => useNetworkStore.subscribe((state) => setOnline(state.online)))
+
+/**
+ * Racine de `@joutio/client` : client HTTP, transport STOMP, horloge et un cache **par session** — un autre compte ne
+ * voit jamais les données du précédent, sans que l'app touche au cache.
+ */
+function JoutioRoot({ children }: { children: ReactNode }) {
+  const userId = useSessionStore((state) => state.userId)
+  const [cache, setCache] = useState(() => ({ userId, client: createJoutioQueryClient() }))
+  if (cache.userId !== userId) setCache({ userId, client: createJoutioQueryClient() })
+  return (
+    <JoutioClientProvider http={api} realtime={realtime} clock={Date.now} queryClient={cache.client}>
+      {children}
+    </JoutioClientProvider>
+  )
+}
+
 function Root() {
   const { colors, scheme } = useTheme()
-  useNetworkBridge()
+  useNetworkWatch()
 
   // Fond natif derrière les transitions : sans lui, la navigation montre un fond clair.
   useEffect(() => {
@@ -126,6 +164,7 @@ function Root() {
     <NavigationThemeProvider value={navigationTheme}>
       <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
       <SessionRuntime />
+      <SessionSync />
       <Navigation />
       <ExpoPushRuntime />
       <ToastHost />
@@ -136,7 +175,6 @@ function Root() {
 
 export default function RootLayout() {
   const fontsReady = useJoutioFonts()
-  const [queryClient] = useState(createQueryClient)
 
   useEffect(() => {
     if (fontsReady) SplashScreen.hideAsync().catch(() => undefined)
@@ -147,11 +185,11 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <KeyboardProvider statusBarTranslucent navigationBarTranslucent preserveEdgeToEdge>
-          <QueryClientProvider client={queryClient}>
+          <JoutioRoot>
             <ThemeProvider>
               <Root />
             </ThemeProvider>
-          </QueryClientProvider>
+          </JoutioRoot>
         </KeyboardProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

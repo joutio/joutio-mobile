@@ -17,7 +17,7 @@ import {
 import { useDebounced } from '@/shared/hooks/use-debounced'
 import { topicName } from '@/shared/utils/topic-name'
 import { useTopics } from '../hooks/use-topics'
-import { DEFAULT_TOPIC_SORT } from '../lib/topics-service'
+import { DEFAULT_TOPIC_SORT } from '@joutio/client/topics'
 import { feedFooterProps, loadMoreOptions, pagedQuery } from '@/shared/utils/paging'
 import { useT } from '@/lib/i18n'
 
@@ -50,7 +50,7 @@ export function TopicPickerSheet({
   const t = useT()
   const [query, setQuery] = useState('')
   const search = useDebounced(query.trim())
-  const topics = useTopics({ query: search, categories: [], sort: DEFAULT_TOPIC_SORT, hideFollowed: false }, open)
+  const topics = useTopics({ query: search, categories: [], sort: DEFAULT_TOPIC_SORT, hideFollowed: false })
   const list = topics.data?.pages.flatMap((page) => page.topics) ?? []
   const paged = pagedQuery(topics)
 

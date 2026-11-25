@@ -13,7 +13,7 @@ import { alpha } from '../theme/color'
 import { ForceDark, useTheme } from '../theme/theme-provider'
 import { keyframe, useTimeline } from '../timeline'
 import { tokens, type CategoryCode, type TierCode } from '../tokens.generated'
-import { currentLanguage, t, tierKey, translate, useT } from '@/lib/i18n'
+import { currentLanguage, tierKey, translate, useT } from '@/lib/i18n'
 
 export interface VersusPlayer {
   name: string

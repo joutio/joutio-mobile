@@ -17,9 +17,9 @@ import {
   type ViewInstance,
   type StyleProp,
   type ViewStyle,
+  Platform,
 } from 'react-native'
 import { HeaderHeightContext } from 'expo-router/react-navigation'
-import { Platform } from 'react-native'
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { StickyHeaderContext } from './sticky-header'

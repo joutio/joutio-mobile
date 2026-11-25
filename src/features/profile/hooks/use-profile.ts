@@ -1,168 +1,29 @@
-import { PSEUDONYM_PROBLEMS, pseudonymIssue, pseudonymKey, type PseudonymIssue } from '@joutio/client/profile'
-import { useMutation, useQuery, useQueryClient, type InfiniteData } from '@tanstack/react-query'
+import { PSEUDONYM_PROBLEMS, pseudonymIssue, useActivity, useBadges, usePlayedTopics, type PseudonymIssue } from '@joutio/client/profile'
+import { usePseudonymAvailability, useRewards } from '@joutio/client/me'
+import type { ApiError } from '@joutio/client/core/types'
 import { useEffect, useState } from 'react'
 import { toast } from '@/design-system'
-import { useMe } from '@/features/me'
-import { activityQuery, badgesQuery, notificationPreferencesQuery, optimisticUpdate, playedTopicsQuery, pseudonymAvailabilityQuery, queryKeys, rewardsQuery } from '@joutio/client/query'
-import type {
-  ApiError,
-  HomeView,
-  MeView,
-  PlayerProfileView,
-  PageResponse,
-  PlayerCardView,
-  ChallengeView,
-  NotificationCategory,
-  NotificationPreferenceView,
-} from '@joutio/client/api-types'
-import { profileService } from '../lib/profile-service'
-import { t, useT } from '@/lib/i18n'
-import { api } from '@/lib/api'
-
-const useUserId = () => useMe(true).data?.userId ?? ''
+import { useSessionUserId } from '@/features/auth'
+import { t } from '@/lib/i18n'
 
 /** Collection de badges du joueur connecté. */
-export function useMyBadges(enabled = true) {
-  const userId = useUserId()
-  return useQuery({
-    ...badgesQuery(api, userId),
-    enabled: enabled && Boolean(userId),
-    staleTime: 60_000,
-  })
-}
+export const useMyBadges = () => useBadges(useSessionUserId())
 
 /** Série et jours joués sur 365 jours. */
-export function useMyActivity(enabled = true) {
-  const userId = useUserId()
-  return useQuery({
-    ...activityQuery(api, userId),
-    enabled: enabled && Boolean(userId),
-    staleTime: 60_000,
-  })
-}
+export const useMyActivity = () => useActivity(useSessionUserId())
 
 /** Sujets joués (donut et maîtrise par sujet). */
-export function useMyTopics(enabled = true) {
-  const userId = useUserId()
-  return useQuery({
-    ...playedTopicsQuery(api, userId),
-    enabled: enabled && Boolean(userId),
-    staleTime: 60_000,
-  })
-}
+export const useMyTopics = () => usePlayedTopics(useSessionUserId())
 
 /** Catalogue des récompenses (styles d'avatar). */
-export function useMyRewards(enabled = true) {
-  return useQuery({ ...rewardsQuery(api), enabled, staleTime: 60_000 })
-}
+export const useMyRewards = () => useRewards()
 
-type MeField = 'pseudonym' | 'bio' | 'country' | 'bannerUrl' | 'language' | 'avatarOptions' | 'interests'
-
-const SAVERS: { [K in MeField]: (userId: string, value: NonNullable<MeView[K]> | null) => Promise<void> } = {
-  pseudonym: (userId, value) => profileService.pseudonym(userId, value ?? ''),
-  bio: (userId, value) => profileService.bio(userId, value ?? ''),
-  country: (userId, value) => profileService.country(userId, value),
-  bannerUrl: (userId, value) => profileService.banner(userId, value),
-  language: (userId, value) => profileService.language(userId, value ?? 'fr'),
-  avatarOptions: (userId, value) => profileService.avatarOptions(userId, value),
-  interests: (_userId, value) => profileService.interests(value ?? []),
-}
-
-/**
- * Modifie un champ du profil : `me` est mis à jour sur place (le Profil et les Réglages le lisent), restauré si le BFF
- * refuse ; la fiche publique et les listes connues suivent la même transaction optimiste.
- */
-export function useUpdateMe<K extends MeField>(field: K) {
-  const t = useT()
-  const client = useQueryClient()
-  const userId = useUserId()
-  return useMutation({
-    mutationFn: (value: MeView[K]) => SAVERS[field](userId, value as never),
-    onMutate: (value) =>
-      optimisticUpdate(client, [queryKeys.me(), queryKeys.profiles.profile(userId), ['contacts'], queryKeys.challenges(), queryKeys.home()], () => {
-        client.setQueryData<MeView>(queryKeys.me(), (me) => (me ? { ...me, [field]: value } : me))
-        // Rail « Selon tes centres d'intérêt » de l'Accueil : un univers retiré sort aussitôt de la sélection. Les sujets
-        // d'un univers ajouté sont calculés par le BFF et arrivent avec la relecture suivante de l'Accueil.
-        if (field === 'interests') {
-          const interests = (value as string[] | null) ?? []
-          client.setQueryData<HomeView>(queryKeys.home(), (home) =>
-            home
-              ? { ...home, recommendedTopics: (home.recommendedTopics ?? []).filter((topic) => topic.category !== null && interests.includes(topic.category)) }
-              : home,
-          )
-        }
-        if (field !== 'interests')
-          client.setQueryData<PlayerProfileView>(queryKeys.profiles.profile(userId), (profile) => (profile ? { ...profile, [field]: value } : profile))
-        if (field === 'pseudonym' || field === 'avatarOptions') {
-          client.setQueriesData<InfiniteData<PageResponse<PlayerCardView>>>({ queryKey: queryKeys.contacts.all() }, (data) =>
-            data
-              ? {
-                  ...data,
-                  pages: data.pages.map((page) => ({
-                    ...page,
-                    content: page.content.map((player) => (player.userId === userId ? { ...player, [field]: value } : player)),
-                  })),
-                }
-              : data,
-          )
-          client.setQueryData<ChallengeView[]>(queryKeys.challenges(), (items) =>
-            items?.map((challenge) => ({
-              ...challenge,
-              challenger: challenge.challenger.userId === userId ? { ...challenge.challenger, [field]: value } : challenge.challenger,
-              opponent: challenge.opponent.userId === userId ? { ...challenge.opponent, [field]: value } : challenge.opponent,
-            })),
-          )
-        }
-      }),
-    onError: (error, _value, context) => {
-      context?.rollback()
-      const type = (error as ApiError | undefined)?.type
-      if (field === 'pseudonym' && type === PSEUDONYM_PROBLEMS.taken) {
-        toast.error(t('settings.pseudonymTaken'))
-        return
-      }
-      if (field === 'pseudonym' && type === PSEUDONYM_PROBLEMS.invalid) {
-        toast.error(pseudonymRules())
-        return
-      }
-      toast.error(t('settings.saveError'), { description: t('home.errorText') })
-    },
-  })
-}
-
-/** Préférences de notification persistées (`FOLLOW|ROOM|QUESTION`). */
-export function useNotificationPreferences() {
-  return useQuery({ ...notificationPreferencesQuery(api), staleTime: 60_000 })
-}
-
-export function useSetNotificationPreference() {
-  const t = useT()
-  const client = useQueryClient()
-  const key = queryKeys.notificationPreferences()
-  return useMutation({
-    mutationFn: ({ category, enabled }: { category: NotificationCategory; enabled: boolean }) => profileService.setNotificationPreference(category, enabled),
-    onMutate: ({ category, enabled }) =>
-      optimisticUpdate(client, [key], () => {
-        client.setQueryData<NotificationPreferenceView[]>(key, (items) => [
-          ...(items ?? []).filter((item) => item.category !== category),
-          { category, enabled },
-        ])
-      }),
-    onError: (_error, _value, context) => {
-      context?.rollback()
-      toast.error(t('settings.preferenceError'))
-    },
-  })
-}
-
-/** Code de suppression envoyé par e-mail. */
-export function useRequestDeletionCode() {
-  return useMutation({ mutationFn: profileService.requestDeletionCode })
-}
-
-/** Suppression définitive du compte (code à 6 chiffres). */
-export function useDeleteAccount() {
-  return useMutation({ mutationFn: (code: string) => profileService.deleteAccount(code) })
+/** Refus d'un champ du profil : pseudonyme pris ou invalide, sinon l'erreur générique. Passé à `mutate(v, { onError })`. */
+export function profileSaveError(error: unknown) {
+  const type = (error as ApiError | undefined)?.type
+  if (type === PSEUDONYM_PROBLEMS.taken) toast.error(t('settings.pseudonymTaken'))
+  else if (type === PSEUDONYM_PROBLEMS.invalid) toast.error(pseudonymRules())
+  else toast.error(t('settings.saveError'), { description: t('home.errorText') })
 }
 
 /** Règle du pseudonyme, dans la langue courante (lue à l'appel). */
@@ -183,11 +44,8 @@ export function usePseudonymCheck(value: string, current: string | undefined): P
     return () => clearTimeout(timer)
   }, [trimmed])
   const settled = debounced === trimmed
-  const query = useQuery({
-    ...pseudonymAvailabilityQuery(api, debounced, pseudonymKey(debounced)),
-    enabled: !unchanged && issue === null && settled,
-    staleTime: 10_000,
-  })
+  // Saisie vide : la lib ne lit rien. La temporisation reste dans l'app.
+  const query = usePseudonymAvailability(!unchanged && issue === null && settled ? debounced : '')
   if (unchanged) return { state: 'unchanged' }
   if (issue) return { state: 'invalid', issue }
   if (!settled || query.isPending || query.isFetching) return { state: 'checking' }

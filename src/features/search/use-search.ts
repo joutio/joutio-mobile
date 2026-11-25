@@ -1,24 +1,15 @@
-import { useQuery } from '@tanstack/react-query'
+import { MIN_SEARCH_LENGTH, useSuggestions as useLibSuggestions } from '@joutio/client/search'
 import { useCallback, useEffect, useState } from 'react'
 import { getItem, setItem } from '@/lib/storage'
 import { useDebounced } from '@/shared/hooks/use-debounced'
-import { searchService } from './search-service'
-import { queryKeys } from '@joutio/client/query'
 
-/** Recherche lancée à partir de 2 caractères, 250 ms après la dernière frappe. */
-export const MIN_QUERY = 2
-
+/** Recherche lancée à partir de 2 caractères, 250 ms après la dernière frappe : la temporisation reste dans l'app. */
 export function useSuggestions(query: string) {
   const term = useDebounced(query.trim(), 250)
-  const enabled = term.length >= MIN_QUERY
-  const result = useQuery({
-    queryKey: queryKeys.suggestions.term(term),
-    queryFn: () => searchService.suggestions(term),
-    enabled,
-    staleTime: 60_000,
-  })
+  const enabled = term.length >= MIN_SEARCH_LENGTH
+  const result = useLibSuggestions(term)
   // Résultat de la saisie en cours : tant que l'attente court, on montre le chargement plutôt que l'ancien terme.
-  const settling = query.trim() !== term && query.trim().length >= MIN_QUERY
+  const settling = query.trim() !== term && query.trim().length >= MIN_SEARCH_LENGTH
   return { ...result, term, searching: enabled || settling, settling }
 }
 

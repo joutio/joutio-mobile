@@ -2,8 +2,7 @@ import { Redirect, useLocalSearchParams } from 'expo-router'
 import { router } from '@/shared/navigation/router'
 import * as WebBrowser from 'expo-web-browser'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { birthDateSchema } from '@joutio/client/forms'
-import { isoDay } from '@joutio/client/profile'
+import { birthDateSchema, isoDay } from '@joutio/client/profile'
 import { useState } from 'react'
 import { Controller, useForm, useFormState } from 'react-hook-form'
 import { Linking, View } from 'react-native'
@@ -42,17 +41,16 @@ import {
   VibrateIcon,
   type CategoryCode,
 } from '@/design-system'
-import type { NotificationCategory } from '@joutio/client/api-types'
-import { useMe, useSetBirthDate } from '@/features/me'
+import { type NotificationCategory, useNotificationPreferences, useSetNotificationPreference } from '@joutio/client/notifications'
+import { useMe, useSetBirthDate, useUpdateInterests, useUpdateLanguage, useBlockedPlayers } from '@joutio/client/me'
 import { PushPermissionRow } from '@/features/notifications/components/push-permission-row'
 import { useAutoTrain } from '@/features/play/hooks/use-play'
 import { usePremiumSheet } from '@/features/premium/premium-store'
-import { useNotificationPreferences, useSetNotificationPreference, useUpdateMe } from '@/features/profile/hooks/use-profile'
+import { profileSaveError } from '@/features/profile/hooks/use-profile'
 import { config } from '@/lib/config'
 import { appVersion } from '@/shared/utils/app-info'
 import { BirthDatePicker, formatBirthDate } from '@/shared/components/birth-date-picker'
 import { APPEARANCE, LANGUAGES } from '../lib/settings-options'
-import { useBlockedPlayers } from '@/features/social/hooks/use-social'
 import { Group, openBlockedPlayers, SettingsFrame, useSettingsOrigin, type SettingsPage } from './settings-frame'
 import { useT } from '@/lib/i18n'
 
@@ -132,7 +130,7 @@ function BirthDateSheet({ open, value, onClose }: { open: boolean; value: string
 
 function AccountPage() {
   const t = useT()
-  const data = useMe(true).data
+  const data = useMe().data
   const showPremium = usePremiumSheet((state) => state.show)
   const [birthOpen, setBirthOpen] = useState(false)
   return (
@@ -141,10 +139,24 @@ function AccountPage() {
         <ListRow icon={EnvelopeSimpleIcon} label="E-mail" value={data?.email} control="value" last />
       </Group>
       <Group footer={t('account.birthDateFooter')}>
-        <ListRow icon={CakeIcon} label={t('account.birthDate')} value={formatBirthDate(data?.birthDate)} control="chevron" onPress={() => setBirthOpen(true)} last />
+        <ListRow
+          icon={CakeIcon}
+          label={t('account.birthDate')}
+          value={formatBirthDate(data?.birthDate)}
+          control="chevron"
+          onPress={() => setBirthOpen(true)}
+          last
+        />
       </Group>
       <Group>
-        <ListRow icon={CrownSimpleIcon} label={t('pending.premium')} value={data?.premium ? t('settings.premiumActive') : t('settings.premiumSoon')} control="chevron" onPress={() => showPremium()} last />
+        <ListRow
+          icon={CrownSimpleIcon}
+          label={t('pending.premium')}
+          value={data?.premium ? t('settings.premiumActive') : t('settings.premiumSoon')}
+          control="chevron"
+          onPress={() => showPremium()}
+          last
+        />
       </Group>
       <Group>
         <ListRow icon={TrashIcon} label={t('settings.deleteAccount')} control="none" destructive onPress={() => router.push('/delete-account')} last />
@@ -171,14 +183,7 @@ function PrivacyPage() {
       </Group>
       <Group title={t('privacy.data')}>
         <ListRow icon={ShieldCheckIcon} label={t('privacy.policy')} control="chevron" onPress={openPage('/privacy')} />
-        <ListRow
-          icon={DatabaseIcon}
-          label={t('privacy.myData')}
-          sub={t('privacy.myDataSub')}
-          control="chevron"
-          onPress={openPage('/data-deletion')}
-          last
-        />
+        <ListRow icon={DatabaseIcon} label={t('privacy.myData')} sub={t('privacy.myDataSub')} control="chevron" onPress={openPage('/data-deletion')} last />
       </Group>
     </SettingsFrame>
   )
@@ -194,7 +199,7 @@ function NotificationsPage() {
     control: 'toggle' as const,
     on: enabled(category),
     disabled: setPreference.isPending,
-    onToggle: (on: boolean) => setPreference.mutate({ category, enabled: on }),
+    onToggle: (on: boolean) => setPreference.mutate({ category, enabled: on }, { onError: () => toast.error(t('settings.preferenceError')) }),
   })
   return (
     <SettingsFrame title={t('home.notifications')}>
@@ -213,10 +218,10 @@ function NotificationsPage() {
 
 function GamePage() {
   const t = useT()
-  const data = useMe(true).data
+  const data = useMe().data
   const device = useDeviceSettings()
   const autoTrain = useAutoTrain()
-  const saveInterests = useUpdateMe('interests')
+  const saveInterests = useUpdateInterests()
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState<string[]>([])
   const interests = data?.interests ?? []
@@ -236,7 +241,7 @@ function GamePage() {
               full
               disabled={draft.join() === interests.join()}
               loading={saveInterests.isPending}
-              onPress={() => saveInterests.mutate(draft, { onSuccess: () => setOpen(false) })}
+              onPress={() => saveInterests.mutate(draft, { onSuccess: () => setOpen(false), onError: profileSaveError })}
             >
               {t('settings.save')}
             </Button>
@@ -309,8 +314,8 @@ function GamePage() {
 
 function DisplayPage() {
   const t = useT()
-  const data = useMe(true).data
-  const language = useUpdateMe('language')
+  const data = useMe().data
+  const language = useUpdateLanguage(data?.userId ?? '')
   const appearance = useThemeStore((state) => state.preference)
   const setAppearance = useThemeStore((state) => state.setPreference)
   const [sheet, setSheet] = useState<'language' | 'appearance'>()
@@ -332,7 +337,7 @@ function DisplayPage() {
                     last={index === LANGUAGES.length - 1}
                     onToggle={() => {
                       if (option.value === (data?.language ?? 'fr')) setSheet(undefined)
-                      else language.mutate(option.value, { onSuccess: () => setSheet(undefined) })
+                      else language.mutate(option.value, { onSuccess: () => setSheet(undefined), onError: profileSaveError })
                     }}
                   />
                 ))}

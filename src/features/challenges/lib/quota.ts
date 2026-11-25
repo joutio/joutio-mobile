@@ -1,7 +1,7 @@
 import { router } from '@/shared/navigation/router'
 import { LightningIcon, showDialog } from '@/design-system'
 import { usePremiumSheet } from '@/features/premium/premium-store'
-import type { MeView } from '@joutio/client/api-types'
+import type { MeView } from '@joutio/client/me'
 import { planLimits, problemLimit, quotaProblemOf } from '@joutio/client/premium'
 import { t } from '@/lib/i18n'
 
@@ -18,13 +18,16 @@ export function showQuotaDialog(error: unknown, me?: Pick<MeView, 'premium' | 'l
   const limit = problemLimit(error) ?? (rooms ? limits.openRooms : limits.pendingChallenges)
   showDialog({
     title: rooms ? t('play.roomQuotaTitle') : t('play.challengeQuotaTitle'),
-    message: rooms
-      ? t('play.roomQuotaText', { limit })
-      : t('play.challengeQuotaText', { limit }),
+    message: rooms ? t('play.roomQuotaText', { limit }) : t('play.challengeQuotaText', { limit }),
     icon: LightningIcon,
     tone: 'accent',
     actions: [
-      { label: t('play.seeChallenges'), variant: 'filled', tone: 'accent', onPress: () => router.navigate({ pathname: '/challenges', params: { tab: 'sent' } }) },
+      {
+        label: t('play.seeChallenges'),
+        variant: 'filled',
+        tone: 'accent',
+        onPress: () => router.navigate({ pathname: '/challenges', params: { tab: 'sent' } }),
+      },
       ...(me?.premium
         ? []
         : [{ label: t('play.goPremium'), variant: 'tinted' as const, tone: 'accent' as const, onPress: () => usePremiumSheet.getState().show('quota') }]),

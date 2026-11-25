@@ -1,7 +1,6 @@
-import { tokens, type StreakCalendarProps, type StreakDay, type TierCode } from '@/design-system'
-import type { ActivityView, BadgeCollectionView } from '@joutio/client/api-types'
+import type { StreakCalendarProps, StreakDay, TierCode } from '@/design-system'
+import type { ActivityView, BadgeCollectionView } from '@joutio/client/profile'
 import { currentLanguage, formatDate, t, tierKey } from '@/lib/i18n'
-
 
 /** `YYYY-MM-DD` d'une date locale (fuseau de l'appareil, celui de l'activité du profil). */
 export const isoDay = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`

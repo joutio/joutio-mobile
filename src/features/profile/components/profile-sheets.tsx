@@ -2,7 +2,7 @@ import { View } from 'react-native'
 import { Avatar, HAIRLINE, MobileSheet, Pill, RankLadder, Text, tokens, useTheme, type TierCode } from '@/design-system'
 import type { BadgeFamilySummary } from '../lib/badges'
 import { RANKS, rankRule } from '../lib/format'
-import { t, tierKey, useT } from '@/lib/i18n'
+import { tierKey, useT } from '@/lib/i18n'
 
 /** Rangs : les 7 rangs et leur seuil, le rang du joueur agrandi, les suivants verrouillés. */
 export function RanksSheet({

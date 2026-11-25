@@ -1,6 +1,6 @@
 import { type TierCode } from '@/design-system'
 import { currentLanguage, dayLabel as sharedDayLabel, formatDate, formatNumber as formatNumberIn, t, tierKey } from '@/lib/i18n'
-import type { MasteryTier } from '@joutio/client/api-types'
+import type { MasteryTier } from '@joutio/client/profile'
 
 /** `2 418` en français, `2,418` en anglais : langue courante de l'app. */
 export const formatNumber = (value: number) => formatNumberIn(value, currentLanguage())

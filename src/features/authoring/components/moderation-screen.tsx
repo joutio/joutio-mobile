@@ -1,7 +1,17 @@
 import { useLocalSearchParams } from 'expo-router'
 import { router } from '@/shared/navigation/router'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { rejectQuestionSchema } from '@joutio/client/forms'
+import {
+  rejectQuestionSchema,
+  contentFor,
+  questionStatus,
+  questionText,
+  QUESTION_CHOICES,
+  type QuestionEditorView,
+  type ReportedQuestion,
+  type QuestionReportReason,
+  MAX_REJECT,
+} from '@joutio/client/authoring'
 import { useEffect, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { View } from 'react-native'
@@ -26,17 +36,7 @@ import {
   tokens,
   WarningIcon,
 } from '@/design-system'
-import { useMe } from '@/features/me'
-import {
-  contentFor,
-  questionStatus,
-  questionText,
-  QUESTION_CHOICES,
-  type QuestionEditorView,
-  type ReportedQuestion,
-} from '@joutio/client/authoring'
-import type { QuestionReportReason } from '@joutio/client/api-types'
-import { MAX_REJECT } from '@joutio/client/authoring'
+import { useMe } from '@joutio/client/me'
 import { useMyTopic, useModerateQuestion, useReportQueue, useTopicQuestions } from '../hooks/use-authoring'
 import { openQuestionEditor } from './questions-screen'
 import { clientSource, feedFooterProps, loadMoreOptions } from '@/shared/utils/paging'
@@ -63,10 +63,10 @@ export function ModerationScreen() {
   const t = useT()
   const params = useLocalSearchParams<{ id: string; name?: string; tab?: string }>()
   const topicId = params.id
-  const me = useMe(true)
+  const me = useMe()
   const workshop = useMyTopic(topicId)
   const questions = useTopicQuestions(topicId)
-  const reports = useReportQueue(topicId, workshop.permissions?.canManage === true)
+  const reports = useReportQueue(workshop.permissions?.canManage === true ? topicId : '')
   const moderate = useModerateQuestion(topicId)
   const [tab, setTab] = useState<Tab>(params.tab === 'reports' ? 'reports' : 'pending')
   useEffect(() => {
@@ -85,7 +85,8 @@ export function ModerationScreen() {
   const pendingSource = clientSource(pendingPages, setPendingPages, shownPending.length < pending.length)
   const reportSource = clientSource(reportPages, setReportPages, shownReports.length < reported.length)
   const numberOf = (question: QuestionEditorView) => all.indexOf(question) + 1
-  const author = (question: QuestionEditorView) => (question.creatorId === me.data?.userId ? (me.data?.pseudonym ?? t('mobile.authoring.me')) : t('workshop.roleWriter'))
+  const author = (question: QuestionEditorView) =>
+    question.creatorId === me.data?.userId ? (me.data?.pseudonym ?? t('mobile.authoring.me')) : t('workshop.roleWriter')
 
   const loading = (
     <View style={{ gap: tokens.space[3] }}>
@@ -224,7 +225,8 @@ export function ModerationScreen() {
                 loading={moderate.isPending}
                 onPress={() =>
                   void rejectForm.handleSubmit(({ reason }) => {
-                    if (rejecting) moderate.mutate({ questionId: rejecting.questionId, decision: 'reject', reason }, { onSuccess: () => setRejecting(undefined) })
+                    if (rejecting)
+                      moderate.mutate({ questionId: rejecting.questionId, decision: 'reject', reason }, { onSuccess: () => setRejecting(undefined) })
                   })()
                 }
               >

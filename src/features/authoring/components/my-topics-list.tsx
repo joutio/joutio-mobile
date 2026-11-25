@@ -14,17 +14,18 @@ import {
   TopicRow,
   WarningCircleIcon,
 } from '@/design-system'
-import type { TopicCardView } from '@joutio/client/api-types'
+import type { TopicCardView } from '@joutio/client/topics'
 import { topicName } from '@/shared/utils/topic-name'
-import { MIN_QUESTIONS } from '@joutio/client/authoring'
-import { todoTotal } from '@joutio/client/authoring'
+import { MIN_QUESTIONS, todoTotal } from '@joutio/client/authoring'
 import { useCreateTopic, useCreationLimits, useFrozen, useMyTopics, useTopicTodo } from '../hooks/use-authoring'
 import { FrozenNotice } from './frozen-notice'
 import { CreateTopicSheet } from './topic-sheets'
 import { t, useT } from '@/lib/i18n'
 
 const topicSub = (topic: TopicCardView) =>
-  topic.status === 'DRAFT' ? t('workshop.draftSub', { count: topic.questionsCount, min: MIN_QUESTIONS }) : t(topic.questionsCount > 1 ? 'workshop.publishedSubMany' : 'workshop.publishedSubOne', { count: topic.questionsCount })
+  topic.status === 'DRAFT'
+    ? t('workshop.draftSub', { count: topic.questionsCount, min: MIN_QUESTIONS })
+    : t(topic.questionsCount > 1 ? 'workshop.publishedSubMany' : 'workshop.publishedSubOne', { count: topic.questionsCount })
 
 /** Ouvre « Mon sujet » tout de suite : nom, univers et vignette passent par la navigation. */
 export function openMyTopic(topicId: string, name: string, category: string | null, imageUrl: string | null) {

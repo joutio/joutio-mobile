@@ -26,7 +26,7 @@ export interface RoundIntroProps {
 
 function Body({ round, total, topic, category, results, bonus = false, animated = false, duration = 1900, elapsedMs, onComplete }: RoundIntroProps) {
   const tr = useT()
-  const { colors, radius, categoryColor, scheme } = useTheme()
+  const { colors, radius, categoryColor } = useTheme()
   const reduced = useReducedMotion()
   const t = useTimeline({ duration, elapsedMs, animated: animated && !reduced, held: 0.5, onComplete })
 

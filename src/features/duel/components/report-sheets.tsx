@@ -1,30 +1,35 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { MAX_REPORT_COMMENT, questionReportSchema, userReportSchema } from '@joutio/client/forms'
-import { useMutation } from '@tanstack/react-query'
+import {
+  MAX_REPORT_COMMENT,
+  questionReportSchema,
+  userReportSchema,
+  useReportQuestion,
+  useReportUser,
+  type QuestionReportReason,
+  type QuestionReportRequest,
+  type UserReportReason,
+  type UserReportRequest,
+} from '@joutio/client/authoring'
 import { Controller, useForm } from 'react-hook-form'
 import { useEffect, useRef, useState } from 'react'
 import { View } from 'react-native'
 import { Button, Field, ListGroup, ListRow, MobileSheet, Text, toast, tokens } from '@/design-system'
-import { api } from '@/lib/api'
-import { ENDPOINTS } from '@/lib/endpoints'
-import type { QuestionReportReason, UserReportReason } from '@joutio/client/api-types'
 import { currentLanguage, t, useT } from '@/lib/i18n'
 
-
-const PLAYER_REASONS = (): { value: UserReportReason; label: string; sub: string }[] => ([
+const PLAYER_REASONS = (): { value: UserReportReason; label: string; sub: string }[] => [
   { value: 'HARASSMENT', label: t('report.player.HARASSMENT'), sub: t('report.player.HARASSMENT.sub') },
   { value: 'HATE_SPEECH', label: t('report.player.HATE_SPEECH'), sub: t('report.player.HATE_SPEECH.sub') },
   { value: 'INAPPROPRIATE_CONTENT', label: t('report.player.INAPPROPRIATE_CONTENT'), sub: t('report.player.INAPPROPRIATE_CONTENT.sub') },
   { value: 'CHEATING', label: t('report.player.CHEATING'), sub: t('report.player.CHEATING.sub') },
   { value: 'SPAM', label: t('report.player.SPAM'), sub: t('report.player.SPAM.sub') },
   { value: 'OTHER', label: t('report.player.OTHER'), sub: t('report.player.OTHER.sub') },
-])
+]
 
-const QUESTION_REASONS = (): { value: QuestionReportReason; label: string; sub: string }[] => ([
+const QUESTION_REASONS = (): { value: QuestionReportReason; label: string; sub: string }[] => [
   { value: 'QUESTION', label: t('report.question.QUESTION'), sub: t('report.question.QUESTION.sub') },
   { value: 'IMAGE', label: t('report.question.IMAGE'), sub: t('report.question.IMAGE.sub') },
   { value: 'ANSWERS', label: t('report.question.ANSWERS'), sub: t('report.question.ANSWERS.sub') },
-])
+]
 
 function Reasons<T extends string>({
   items,
@@ -94,16 +99,17 @@ export function ReportPlayerSheet({
     form.reset()
     setSent(false)
   })
-  const report = useMutation({
-    mutationFn: ({ reasons, comment }: { reasons: UserReportReason[]; comment: string }) =>
-      api.post<unknown>(ENDPOINTS.reports.player(userId), {
-        reasons,
-        comment: comment || undefined,
-        gameId: gameId || undefined,
-      }),
-    onSuccess: () => setSent(true),
-    onError: () => toast.error(t('report.error'), { description: t('home.errorText') }),
-  })
+  const command = useReportUser()
+  const report = {
+    isPending: command.isPending,
+    mutate: ({ reasons, comment }: { reasons: UserReportReason[]; comment: string }) => {
+      const request: UserReportRequest = { reasons, comment: comment || undefined, gameId: gameId || undefined }
+      command.mutate(
+        { userId, report: request },
+        { onSuccess: () => setSent(true), onError: () => toast.error(t('report.error'), { description: t('home.errorText') }) },
+      )
+    },
+  }
   return (
     <MobileSheet
       open={open}
@@ -140,7 +146,12 @@ export function ReportPlayerSheet({
             </Button>
           )
         ) : (
-          <Button full disabled={!form.formState.isValid} loading={report.isPending} onPress={() => void form.handleSubmit((values) => report.mutate(values))()}>
+          <Button
+            full
+            disabled={!form.formState.isValid}
+            loading={report.isPending}
+            onPress={() => void form.handleSubmit((values) => report.mutate(values))()}
+          >
             {t('report.send')}
           </Button>
         )
@@ -152,7 +163,11 @@ export function ReportPlayerSheet({
         </Text>
       ) : (
         <View style={{ gap: tokens.space[4] }}>
-          <Controller control={form.control} name="reasons" render={({ field }) => <Reasons items={PLAYER_REASONS()} value={field.value} onChange={field.onChange} />} />
+          <Controller
+            control={form.control}
+            name="reasons"
+            render={({ field }) => <Reasons items={PLAYER_REASONS()} value={field.value} onChange={field.onChange} />}
+          />
           <Controller
             control={form.control}
             name="comment"
@@ -205,15 +220,28 @@ export function ReportQuestionSheet({
     form.reset()
     setSent(false)
   })
-  const report = useMutation({
-    mutationFn: ({ question, reasons, comment }: { question: string; reasons: QuestionReportReason[]; comment: string }) =>
-      api.post<unknown>(ENDPOINTS.reports.question(question), { gameId, reasons, comment: comment || undefined, language: currentLanguage() }),
-    onSuccess: () => {
-      setSent(true)
-      onSent()
+  const command = useReportQuestion()
+  const report = {
+    isPending: command.isPending,
+    mutate: ({ question, reasons, comment }: { question: string; reasons: QuestionReportReason[]; comment: string }) => {
+      const request: QuestionReportRequest = {
+        gameId,
+        reasons,
+        comment: comment || undefined,
+        language: currentLanguage(),
+      }
+      command.mutate(
+        { questionId: question, report: request },
+        {
+          onSuccess: () => {
+            setSent(true)
+            onSent()
+          },
+          onError: () => toast.error(t('report.error'), { description: t('home.errorText') }),
+        },
+      )
     },
-    onError: () => toast.error(t('report.error'), { description: t('home.errorText') }),
-  })
+  }
   const items = QUESTION_REASONS().filter((item) => hasImage || item.value !== 'IMAGE')
   return (
     <MobileSheet

@@ -16,15 +16,14 @@ import {
   type ReviewAnswer,
   type ReviewRoundTab,
 } from '@/design-system'
-import { sortedRounds } from '@joutio/client/game'
-import { localizedQuestion, type GameRoundState, type GameState } from '@joutio/client/game'
+import { Arena, localizedQuestion, type GameRoundState, type GameState } from '@joutio/client/game'
 import { ReportQuestionSheet } from './report-sheets'
 import { currentLanguage, useT } from '@/lib/i18n'
 
 const GUTTER = tokens.space[5]
 
 /** Manches jouées à revoir : sans aucune, le résultat n'a pas de page « Détails du duel ». */
-export const reviewRoundsOf = (game: GameState): GameRoundState[] => sortedRounds(game).filter((round) => round.phase === 'CLOSED')
+export const reviewRoundsOf = (game: GameState): GameRoundState[] => new Arena(game).sortedRounds().filter((round) => round.phase === 'CLOSED')
 
 const answerOf = (round: GameRoundState, playerId: string | null): ReviewAnswer => {
   const answer = playerId ? round.playerAnswers[playerId] : undefined

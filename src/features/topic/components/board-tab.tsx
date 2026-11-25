@@ -13,7 +13,7 @@ import {
   TrophyIcon,
   WarningCircleIcon,
 } from '@/design-system'
-import type { LeaderboardEntryView } from '@joutio/client/api-types'
+import type { LeaderboardEntryView } from '@joutio/client/topics'
 import { usePlayerIdentity } from '@/features/me'
 import { tierOf } from '@/shared/utils/tier'
 import { useTopicLeaderboard } from '../hooks/use-topic'
@@ -36,7 +36,6 @@ export function MyBoardRow({
   sub?: string
   trail?: string
 }) {
-  const t = useT()
   const identity = usePlayerIdentity()
   return (
     <PlayerRow
@@ -86,7 +85,11 @@ export function BoardTab({
       <SectionHeader
         title={t('topic.top10')}
         action={
-          <Button variant="plain" size="S" onPress={() => router.push({ pathname: rankingsPath, params: { topicId, topicName, backLabel: t('pending.topic') } })}>
+          <Button
+            variant="plain"
+            size="S"
+            onPress={() => router.push({ pathname: rankingsPath, params: { topicId, topicName, backLabel: t('pending.topic') } })}
+          >
             {t('topic.allRankings')}
           </Button>
         }

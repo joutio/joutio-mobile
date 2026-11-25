@@ -1,17 +1,18 @@
 import type { RewardState } from '@/design-system'
 import { formatNumber } from '@/features/topic/lib/format'
-import type { BadgeCollectionView, MeView, RewardsView } from '@joutio/client/api-types'
+import type { BadgeCollectionView, RewardsView } from '@joutio/client/profile'
+import type { MeView } from '@joutio/client/me'
 import { currentLanguage, formatDate, t } from '@/lib/i18n'
 
 export type AvatarStyleId = 'base' | 'micah' | 'lorelei' | 'notionists'
 
 /** Styles d'avatar et leurs droits, comme `AvatarEntitlementPolicy` du BFF : base gratuit, Micah par récompense ou Premium, le reste Premium. */
-export const AVATAR_STYLES = (): { id: AvatarStyleId; title: string }[] => ([
+export const AVATAR_STYLES = (): { id: AvatarStyleId; title: string }[] => [
   { id: 'base', title: t('mobile.avatar.styleBase') },
   { id: 'micah', title: 'Micah' },
   { id: 'lorelei', title: 'Lorelei' },
   { id: 'notionists', title: 'Notionists' },
-])
+]
 
 const MICAH_REWARD = 'MICAH_AVATAR'
 
@@ -51,7 +52,9 @@ export function avatarStylesFor(me: MeView | undefined, rewards: RewardsView | u
     const state: RewardState = id === current && usable ? 'active' : usable ? 'unlocked' : id === 'micah' ? 'locked' : 'premium'
     if (id === 'base') return { id, title, state, usable, rule: t('avatar.ruleFree') }
     if (id !== 'micah') return { id, title, state, usable, rule: t('avatar.rulePremium') }
-    const badgeRule = condition ? t('avatar.ruleMicah', { badge: condition.badgeLabel, count: formatNumber(condition.target) }) : t('mobile.avatar.ruleMicahDefault')
+    const badgeRule = condition
+      ? t('avatar.ruleMicah', { badge: condition.badgeLabel, count: formatNumber(condition.target) })
+      : t('mobile.avatar.ruleMicahDefault')
     if (usable) {
       const when = micah?.unlockedAt
         ? ` ${t('avatar.unlockedOn', { date: formatDate(new Date(micah.unlockedAt), currentLanguage(), { day: 'numeric', month: 'short' }) })}`
@@ -62,6 +65,14 @@ export function avatarStylesFor(me: MeView | undefined, rewards: RewardsView | u
     }
     const target = badge?.target ?? condition?.target ?? 7
     const done = Math.min(badge?.progress ?? 0, target)
-    return { id, title, state, usable, rule: badgeRule, progress: Math.round((done / Math.max(1, target)) * 100), progressLabel: t('mobile.common.progress', { done, target }) }
+    return {
+      id,
+      title,
+      state,
+      usable,
+      rule: badgeRule,
+      progress: Math.round((done / Math.max(1, target)) * 100),
+      progressLabel: t('mobile.common.progress', { done, target }),
+    }
   })
 }

@@ -1,13 +1,10 @@
-import { MAX_DESCRIPTION } from '@joutio/client/authoring'
+import { MAX_DESCRIPTION, createTopicSchema, topicDescriptionsSchema, topicNamesSchema, MAX_NAME, type Localized } from '@joutio/client/authoring'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { createTopicSchema, topicDescriptionsSchema, topicNamesSchema } from '@joutio/client/forms'
 import { useEffect, useState } from 'react'
 import { Controller, useForm, useFormState, useWatch } from 'react-hook-form'
 import { View } from 'react-native'
 import { Button, Field, ListGroup, ListRow, MobileSheet, Notice, RadioGroup, Segmented, Text, toCategoryCode, tokens, type CategoryCode } from '@/design-system'
-import type { Language } from '@joutio/client/api-types'
-import { MAX_NAME } from '@joutio/client/authoring'
-import type { Localized } from '@joutio/client/authoring'
+import type { Language } from '@joutio/client/core/types'
 import { LANGUAGE_NAME, categoryKey, t, useT } from '@/lib/i18n'
 import { router } from '@/shared/navigation/router'
 import { topicName } from '@/shared/utils/topic-name'
@@ -91,7 +88,11 @@ export function CreateTopicSheet({
         onClose={onClose}
         title={t('workshop.newTopic')}
         footer={
-          <Button full size="L" loading={busy} disabled={!form.formState.isValid}
+          <Button
+            full
+            size="L"
+            loading={busy}
+            disabled={!form.formState.isValid}
             onPress={() => void form.handleSubmit((values) => onCreate({ name: values.name, category: toCategoryCode(values.category) }))()}
           >
             {t('workshop.createDraft')}
@@ -135,7 +136,12 @@ export function CreateTopicSheet({
           </Text>
         </View>
       </MobileSheet>
-      <UniverseSheet open={open && universeOpen} value={category} onClose={() => setUniverseOpen(false)} onChange={(code) => form.setValue('category', code, { shouldValidate: true })} />
+      <UniverseSheet
+        open={open && universeOpen}
+        value={category}
+        onClose={() => setUniverseOpen(false)}
+        onChange={(code) => form.setValue('category', code, { shouldValidate: true })}
+      />
     </>
   )
 }

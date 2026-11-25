@@ -1,8 +1,8 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { MAX_BIO, profileSchema } from '@joutio/client/forms'
-import { countryFlag, countryName } from '@joutio/client/geo'
-import { MAX_PSEUDONYM } from '@joutio/client/profile'
-import type { ApiError } from '@joutio/client/api-types'
+import { MAX_BIO, MAX_PSEUDONYM, useUpdateBanner } from '@joutio/client/profile'
+import { profileSchema, useMe, useUpdateMyProfile } from '@joutio/client/me'
+import { countryFlag, countryName } from '@joutio/client/core/geo'
+import type { ApiError } from '@joutio/client/core/types'
 import { useNavigation, usePreventRemove } from 'expo-router'
 import { router } from '@/shared/navigation/router'
 import { useEffect, useRef, useState } from 'react'
@@ -25,10 +25,9 @@ import {
 } from '@/design-system'
 import { useMyAvatar } from '@/features/avatar/lib/avatar-preview'
 import { pickImage, uploadImage } from '@/features/media/media-service'
-import { useMe } from '@/features/me'
 import { CountryPicker } from '@/features/settings/components/country-picker'
 import { pseudonymError, pseudonymHint } from '@/features/settings/lib/pseudonym-messages'
-import { usePseudonymCheck, useUpdateMe } from '../hooks/use-profile'
+import { profileSaveError, usePseudonymCheck } from '../hooks/use-profile'
 import { currentLanguage, useT } from '@/lib/i18n'
 
 /** Ratio de la bannière du profil (lab : 320 de haut sur la largeur du téléphone). */
@@ -50,7 +49,7 @@ const schema = profileSchema.extend({ pseudonym: z.string().trim(), bannerUrl: z
 export function EditProfileScreen() {
   const t = useT()
   const navigation = useNavigation()
-  const me = useMe(true).data
+  const me = useMe().data
   const avatar = useMyAvatar()
   const initial = { pseudonym: me?.pseudonym ?? '', bio: me?.bio ?? '', country: me?.country ?? null, bannerUrl: me?.bannerUrl ?? null }
   const form = useForm({ resolver: zodResolver(schema), mode: 'onChange', defaultValues: initial })
@@ -70,10 +69,9 @@ export function EditProfileScreen() {
   const [progress, setProgress] = useState<number | undefined>(undefined)
   const uploading = progress !== undefined
   const [saving, setSaving] = useState(false)
-  const savePseudonym = useUpdateMe('pseudonym')
-  const saveBio = useUpdateMe('bio')
-  const saveCountry = useUpdateMe('country')
-  const saveBanner = useUpdateMe('bannerUrl')
+  const userId = me?.userId ?? ''
+  const saveProfile = useUpdateMyProfile(userId)
+  const saveBanner = useUpdateBanner(userId)
   const check = usePseudonymCheck(draft.pseudonym, me?.pseudonym)
   const changed = {
     pseudonym: draft.pseudonym.trim() !== initial.pseudonym,
@@ -126,14 +124,15 @@ export function EditProfileScreen() {
   const save = form.handleSubmit(async (values) => {
     setSaving(true)
     try {
-      if (changed.pseudonym) await savePseudonym.mutateAsync(values.pseudonym)
-      if (changed.bio) await saveBio.mutateAsync(values.bio || null)
-      if (changed.country) await saveCountry.mutateAsync(values.country)
+      // Pseudonyme, bio et pays partent ensemble (`useUpdateMyProfile`) ; la bannière à part.
+      if (changed.pseudonym || changed.bio || changed.country)
+        await saveProfile.mutateAsync({ pseudonym: values.pseudonym, bio: values.bio, country: values.country })
       if (changed.bannerUrl) await saveBanner.mutateAsync(values.bannerUrl)
       toast.success(t('editProfile.saved'))
       router.back()
-    } catch {
-      // Chaque mutation affiche sa propre erreur ; la page reste ouverte avec le brouillon.
+    } catch (error) {
+      // La page reste ouverte avec le brouillon.
+      profileSaveError(error)
       setSaving(false)
     }
   })
@@ -151,9 +150,7 @@ export function EditProfileScreen() {
           onConfirm={() => void save()}
         />
       }
-      overlay={
-        <CountryPicker open={countryOpen} onClose={() => setCountryOpen(false)} value={draft.country} onChange={setCountry} />
-      }
+      overlay={<CountryPicker open={countryOpen} onClose={() => setCountryOpen(false)} value={draft.country} onChange={setCountry} />}
       contentStyle={{ gap: tokens.space[6], paddingHorizontal: tokens.space[5], paddingTop: tokens.space[3], paddingBottom: tokens.space[7] }}
     >
       <ImagePicker

@@ -1,4 +1,13 @@
-import { descriptionsDraft, topicDescription } from '@joutio/client/authoring'
+import {
+  descriptionsDraft,
+  topicDescription,
+  questionStatus,
+  workshopRole,
+  customizedTierCount,
+  MASTERY_TIERS,
+  MIN_QUESTIONS,
+  playableCount,
+} from '@joutio/client/authoring'
 import { useLocalSearchParams } from 'expo-router'
 import { router } from '@/shared/navigation/router'
 import { useState } from 'react'
@@ -32,12 +41,10 @@ import {
   type CategoryCode,
   ProgressBar,
   Notice,
+  toast,
 } from '@/design-system'
 import { pickImage, uploadImage } from '@/features/media/media-service'
-import { toast } from '@/design-system'
 import { topicName } from '@/shared/utils/topic-name'
-import { questionStatus, workshopRole } from '@joutio/client/authoring'
-import { customizedTierCount, MASTERY_TIERS, MIN_QUESTIONS, playableCount } from '@joutio/client/authoring'
 import { TopicTitlesSheet } from './topic-titles-sheet'
 
 import {
@@ -84,14 +91,15 @@ export function MyTopicScreen() {
   const base = '/workshop/[id]' as const
   const params = useLocalSearchParams<MyTopicRouteParams>()
   const topicId = params.id
-  const { topic, permissions, titles, closedReason, isError, refetch } = useMyTopic(topicId)
+  const workshop = useMyTopic(topicId)
+  const { topic, permissions, titles, closedReason, isError, refetch } = workshop
   const draftTopic = useDraftTopic(topicId)
   const deleteTopic = useDeleteTopic(topicId)
   const role = workshopRole(permissions)
   const manager = permissions?.canManage === true
   const team = useTeam(topicId)
-  const pageRefresh = useRefreshActive()
   const questions = useTopicQuestions(topicId)
+  const pageRefresh = useRefreshActive(workshop, team, questions)
   const { premium, limits, askPremium } = useCreationLimits()
   const { frozen, published, locks } = useFrozen()
   const names = useUpdateTopicNames(topicId)
@@ -127,8 +135,7 @@ export function MyTopicScreen() {
     setProgress(0)
     try {
       const media = await uploadImage(asset, setProgress)
-      await image.mutateAsync(media.url)
-      close()
+      image.mutate(media.url, { onSuccess: close })
     } catch {
       toast.error(t('mobile.authoring.thumbnailUploadFailed'), { description: t('mobile.authoring.imageFormat') })
     } finally {
@@ -147,8 +154,7 @@ export function MyTopicScreen() {
     setProgress(0)
     try {
       const media = await uploadImage(asset, setProgress)
-      await pictogram.mutateAsync(media.url)
-      close()
+      pictogram.mutate(media.url, { onSuccess: close })
     } catch {
       toast.error(t('mobile.authoring.pictogramUploadFailed'), { description: t('mobile.authoring.pictogramFormat') })
     } finally {
@@ -242,8 +248,7 @@ export function MyTopicScreen() {
               onPress={() =>
                 showDialog({
                   title: t('workshop.unpublishTitle'),
-                  message:
-                    t('workshop.unpublishText'),
+                  message: t('workshop.unpublishText'),
                   icon: FileDashedIcon,
                   actions: [
                     { label: t('workshop.unpublish'), onPress: () => draftTopic.mutate() },
@@ -379,9 +384,8 @@ export function MyTopicScreen() {
         onClose={close}
         onSave={(changes) => {
           if (changes.length === 0) return close()
-          void Promise.all(changes.map((change) => description.mutateAsync(change)))
-            .then(close)
-            .catch(() => undefined)
+          // Une commande par langue modifiée ; la feuille se ferme quand la dernière est acceptée.
+          changes.forEach((change, index) => description.mutate(change, index === changes.length - 1 ? { onSuccess: close } : undefined))
         }}
       />
       <UniverseSheet
@@ -389,7 +393,7 @@ export function MyTopicScreen() {
         value={code}
         onClose={close}
         busy={category.isPending}
-        onChange={(next) => (next !== code ? category.mutateAsync(next) : undefined)}
+        onChange={(next) => (next !== code ? category.mutate(next) : undefined)}
       />
       <MobileSheet open={sheet === 'image'} onClose={close} title={t('workshop.thumbnail')} subtitle={t('workshop.optional')}>
         <ImagePicker

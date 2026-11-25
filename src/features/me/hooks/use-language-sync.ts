@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import type { Language } from '@joutio/client/api-types'
+import type { Language } from '@joutio/client/core/types'
 import { useLanguageStore } from '@/lib/i18n'
 
 /**

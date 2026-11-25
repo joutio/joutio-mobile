@@ -1,12 +1,20 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { gameService } from '../lib/game-service'
-import { sendAnswer } from '../lib/send-answer'
+import {
+  answerDeadlineMs,
+  Arena,
+  firstAnswerPct,
+  isGameChoice,
+  LATE_JOIN_MS,
+  localizedQuestion,
+  PENDING_ECHO_GRACE_MS,
+  ROUND_SECONDS,
+  useAnswerQuestion,
+  type ArenaScene,
+  type GameChoice,
+  type GameState,
+} from '@joutio/client/game'
 
 type GaugeState = 'idle' | 'correct' | 'wrong'
-import { sceneAt, type ArenaScene } from '@joutio/client/game'
-import { answerDeadlineMs, firstAnswerPct, localizedQuestion, type GameState } from '@joutio/client/game'
-import { isGameChoice, type GameChoice } from '@joutio/client/game'
-import { LATE_JOIN_MS, PENDING_ECHO_GRACE_MS, ROUND_SECONDS } from '@joutio/client/game'
 
 /** Option de réponse affichée (`A`→`D`, libellé localisé). */
 export interface AnswerOption {
@@ -50,7 +58,9 @@ export function useDuelArena({ gameId, game, now, serverNow, userId, language, r
     sentAt: number
   } | null>(null)
 
-  const scene: ArenaScene = useMemo(() => sceneAt(game, now), [game, now])
+  const scene: ArenaScene = useMemo(() => new Arena(game).sceneAt(now), [game, now])
+  // Renvoi de la réponse par la lib (idempotent par manche, tentatives de 2,5 s, jamais sur une 4xx).
+  const answer = useAnswerQuestion(gameId)
 
   const roundIndex = scene.kind === 'question' || scene.kind === 'reveal' ? scene.round : scene.kind === 'roundIntro' ? scene.round : 0
   const currentRound = scene.kind === 'question' || scene.kind === 'reveal' ? scene.roundState : null
@@ -134,16 +144,17 @@ export function useDuelArena({ gameId, game, now, serverNow, userId, language, r
     const round = roundIndex
     const clientElapsedMs = Math.max(0, Date.now() - (answersShownAt.current[round] ?? Date.now()))
     setPending({ round, choice, sentAt: serverNow() })
-    sendAnswer({
-      send: (signal) => gameService.answer(gameId, round + 1, choice, clientElapsedMs, signal),
-      serverNow,
-      deadline: answerDeadlineMs(currentRound),
-    }).catch(() => {
-      // Refus ou échéance atteinte sans accusé : la sélection est levée (le joueur peut retenter tant que la manche
-      // est ouverte) et l'historique dit si la réponse a tout de même été enregistrée.
-      setPending((current) => (current?.round === round ? null : current))
-      refresh()
-    })
+    answer.mutate(
+      { round: round + 1, choice, clientElapsedMs },
+      {
+        // Refus ou tentatives épuisées : la sélection est levée (le joueur peut retenter tant que la manche est
+        // ouverte) et l'historique dit si la réponse a tout de même été enregistrée.
+        onError: () => {
+          setPending((current) => (current?.round === round ? null : current))
+          refresh()
+        },
+      },
+    )
   }
 
   return {

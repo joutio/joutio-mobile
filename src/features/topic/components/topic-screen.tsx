@@ -1,6 +1,5 @@
 import { topicDescription } from '@joutio/client/authoring'
 import { useShare } from '@/features/share'
-import { useQueryClient } from '@tanstack/react-query'
 import { useLocalSearchParams } from 'expo-router'
 import { router } from '@/shared/navigation/router'
 import { useState } from 'react'
@@ -32,8 +31,7 @@ import {
   tokens,
   WarningCircleIcon,
 } from '@/design-system'
-import { useMe } from '@/features/me'
-import { queryKeys } from '@joutio/client/query'
+import { useMe } from '@joutio/client/me'
 import { topicName } from '@/shared/utils/topic-name'
 import { useFollowTopic, useTopicLeaderboard, useTopicOverview } from '../hooks/use-topic'
 import { formatNumber, tierLabel } from '../lib/format'
@@ -49,13 +47,13 @@ import { categoryKey, t, useT } from '@/lib/i18n'
 // MVP : conserver le Mur et ses maquettes pour sa réactivation.
 const WALL_ENABLED: boolean = false
 
-const TABS = [
+const _TABS = [
   { value: 'games', label: 'topic.tabGames' },
   { value: 'board', label: 'topic.tabBoard' },
   ...(WALL_ENABLED ? [{ value: 'wall' as const, label: 'mobile.topic.wall' }] : []),
   { value: 'progress', label: 'topic.tabProgress' },
 ] as const
-type Tab = (typeof TABS)[number]['value']
+type Tab = (typeof _TABS)[number]['value']
 
 /** Paramètres de navigation : l'en-tête s'affiche sans attendre l'overview. */
 export interface TopicRouteParams {
@@ -101,8 +99,7 @@ export function TopicScreen({ stack = 'home' }: { stack?: TopicStack }) {
   const t = useT()
   const params = useLocalSearchParams<TopicRouteParams>()
   const topicId = params.id
-  const client = useQueryClient()
-  const me = useMe(true)
+  const me = useMe()
   const pseudonym = me.data?.pseudonym ?? t('mobile.authoring.me')
   const overview = useTopicOverview(topicId)
   // L'écran s'ouvre tout de suite (titre et image viennent de la navigation) ; le contenu lourd attend la fin de la
@@ -187,7 +184,7 @@ export function TopicScreen({ stack = 'home' }: { stack?: TopicStack }) {
         eyebrow={<Pill category={category}>{t(categoryKey(category))}</Pill>}
         onBack={() => router.back()}
         barTitleStart
-        right={(
+        right={
           <>
             {overview.data?.permissions?.canContribute && (
               <ParallaxIconButton
@@ -203,14 +200,12 @@ export function TopicScreen({ stack = 'home' }: { stack?: TopicStack }) {
               </Menu>
             )}
           </>
-        )}
+        }
         intro={
           <View style={{ gap: tokens.space[4] }}>
             {/* Description du sujet, sous le titre de l'image (2026-11-13), saisie dans l'atelier. */}
             {!!description && <Text color="muted">{description}</Text>}
-            <View
-              style={{ flexDirection: 'row', gap: tokens.space[3] }}
-            >
+            <View style={{ flexDirection: 'row', gap: tokens.space[3] }}>
               {/* 65 / 35 : le duel est l'action principale. */}
               <Button full icon={LightningIcon} style={{ flex: 65 }} disabled={topic?.status !== 'PUBLISHED'} onPress={() => setDuelOpen(true)}>
                 {t('topic.duel')}
@@ -265,11 +260,18 @@ export function TopicScreen({ stack = 'home' }: { stack?: TopicStack }) {
         ]}
         floating={
           WALL_ENABLED && tab === 'wall' ? (
-            <IconButton icon={PencilSimpleIcon} label={t('mobile.topic.shareAnecdote')} variant="filled" tone="accent" size="L" onPress={() => setPostOpen(true)} />
+            <IconButton
+              icon={PencilSimpleIcon}
+              label={t('mobile.topic.shareAnecdote')}
+              variant="filled"
+              tone="accent"
+              size="L"
+              onPress={() => setPostOpen(true)}
+            />
           ) : undefined
         }
         bottomBar={showMyRow ? <MyBoardRow entry={myEntry} /> : undefined}
-        onRefresh={() => client.refetchQueries({ queryKey: queryKeys.topic.all(topicId) })}
+        onRefresh={() => Promise.all([overview.refetch(), board.refetch()])}
       />
       <DuelSheet open={duelOpen} onClose={() => setDuelOpen(false)} topic={{ topicId, name, category }} />
       <ReportTopicSheet open={reportOpen} onClose={() => setReportOpen(false)} topicId={topicId} name={name} />

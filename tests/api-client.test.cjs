@@ -64,7 +64,7 @@ test('local-file multipart uses the actual XHR transport and keeps the native fi
   withTransport(async (createClient, requests, jsonCalls) => {
     const client = createClient({ baseUrl: 'https://api.example', getAuthToken: () => 'test-token' })
     const body = form()
-    assert.deepEqual(await client.post('/api/media', body), { url: 'https://media.example/banner.jpg' })
+    assert.deepEqual(await client.post('/api/media', { body }), { url: 'https://media.example/banner.jpg' })
     assert.equal(jsonCalls.length, 0)
     assert.equal(requests.length, 1)
     assert.equal(requests[0].body, body)
@@ -85,7 +85,7 @@ test('multipart authentication refresh retries the same file through the same tr
           return true
         },
       })
-      await client.post('/api/media', form())
+      await client.post('/api/media', { body: form() })
       assert.equal(requests.length, 2)
       assert.equal(requests[0].body, requests[1].body)
       assert.equal(requests[1].headers.authorization, 'Bearer new-token')
@@ -96,7 +96,7 @@ test('multipart authentication refresh retries the same file through the same tr
 test('JSON keeps the default fetch and JSON serialization', () =>
   withTransport(async (createClient, requests, jsonCalls) => {
     const client = createClient({ baseUrl: 'https://api.example' })
-    await client.put('/profile/banner', { bannerUrl: 'https://media.example/banner.jpg' })
+    await client.put('/profile/banner', { body: { bannerUrl: 'https://media.example/banner.jpg' } })
     assert.equal(requests.length, 0)
     assert.equal(jsonCalls.length, 1)
     assert.equal(jsonCalls[0][1].headers['Content-Type'], 'application/json')

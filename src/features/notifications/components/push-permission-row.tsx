@@ -1,6 +1,5 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { AppState, Linking } from 'react-native'
-import { useMutation } from '@tanstack/react-query'
 import { BellIcon, ListRow, toast } from '@/design-system'
 import { refreshPushPermission, requestPushPermission, usePushState } from '../lib/expo-push'
 import { useT } from '@/lib/i18n'
@@ -19,12 +18,26 @@ export function PushPermissionRow() {
     })
     return () => subscription.remove()
   }, [])
-  const activate = useMutation({
-    mutationFn: () => (permission === 'denied' || (permission === 'granted' && !failed) ? Linking.openSettings() : requestPushPermission()),
-    onError: () => toast.warning(t('mobile.notifications.push.failed')),
-  })
-  const label = failed ? t('mobile.notifications.push.retry') : permission === 'granted' ? t('mobile.notifications.push.allowed') : permission === 'denied' ? t('mobile.notifications.push.denied') : t('mobile.notifications.push.toEnable')
+  // Permission du système (aucune donnée serveur) : un simple état d'attente.
+  const [pending, setPending] = useState(false)
+  const activate = async () => {
+    setPending(true)
+    try {
+      await (permission === 'denied' || (permission === 'granted' && !failed) ? Linking.openSettings() : requestPushPermission())
+    } catch {
+      toast.warning(t('mobile.notifications.push.failed'))
+    } finally {
+      setPending(false)
+    }
+  }
+  const label = failed
+    ? t('mobile.notifications.push.retry')
+    : permission === 'granted'
+      ? t('mobile.notifications.push.allowed')
+      : permission === 'denied'
+        ? t('mobile.notifications.push.denied')
+        : t('mobile.notifications.push.toEnable')
   return (
-    <ListRow icon={BellIcon} label={t('mobile.notifications.push.system')} value={label} control="chevron" disabled={activate.isPending} onPress={() => activate.mutate()} />
+    <ListRow icon={BellIcon} label={t('mobile.notifications.push.system')} value={label} control="chevron" disabled={pending} onPress={() => void activate()} />
   )
 }

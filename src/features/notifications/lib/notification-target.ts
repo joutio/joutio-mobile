@@ -1,4 +1,4 @@
-import type { NotificationView } from '@/lib/realtime/personal-notifications'
+import type { NotificationView } from '@joutio/client/notifications'
 
 export type NotificationLink = Pick<NotificationView, 'notificationId' | 'type' | 'sourceId' | 'gameId' | 'expiresAt'> &
   Partial<Pick<NotificationView, 'actorId' | 'topicId'>>

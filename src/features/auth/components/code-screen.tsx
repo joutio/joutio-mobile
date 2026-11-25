@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { OTP_LENGTH, OTP_RESEND_SECONDS, otpSchema } from '@joutio/client/forms'
+import { OTP_LENGTH, OTP_RESEND_SECONDS, otpSchema } from '@joutio/client/me'
 import { useEffect, useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { View } from 'react-native'
@@ -54,7 +54,8 @@ export function CodeScreen() {
           {t('onboarding.code.title')}
         </Text>
         <Text color="muted">
-          {t('onboarding.code.sentTo')} <Text weight="600">{email}</Text>{t('mobile.auth.code.validity')}
+          {t('onboarding.code.sentTo')} <Text weight="600">{email}</Text>
+          {t('mobile.auth.code.validity')}
         </Text>
       </View>
       <View style={{ gap: tokens.space[3] }}>

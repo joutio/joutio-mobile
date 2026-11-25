@@ -1,11 +1,10 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { birthDateSchema } from '@joutio/client/forms'
-import { BIRTH_DATE_PROBLEMS, isoDay } from '@joutio/client/profile'
+import { birthDateSchema, BIRTH_DATE_PROBLEMS, isoDay } from '@joutio/client/profile'
 import { Controller, useForm } from 'react-hook-form'
 import { ScrollView, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Button, CakeIcon, Notice, ProhibitIcon, Text, toast, tokens, useTheme } from '@/design-system'
-import { useSetBirthDate } from '@/features/me'
+import { useSetBirthDate } from '@joutio/client/me'
 import { BirthDatePicker } from '@/shared/components/birth-date-picker'
 import { useT } from '@/lib/i18n'
 
@@ -63,14 +62,7 @@ export function BirthDateScreen() {
           name="birthDate"
           render={({ field }) => <BirthDatePicker value={field.value || null} onChange={(value) => field.onChange(value ?? '')} />}
         />
-        {tooYoung && (
-          <Notice
-            tone="error"
-            icon={ProhibitIcon}
-            title={t('tooYoung.title')}
-            message={t('tooYoung.message')}
-          />
-        )}
+        {tooYoung && <Notice tone="error" icon={ProhibitIcon} title={t('tooYoung.title')} message={t('tooYoung.message')} />}
       </ScrollView>
       <View style={{ paddingHorizontal: tokens.space[5], paddingTop: tokens.space[3], paddingBottom: insets.bottom + tokens.space[5] }}>
         <Button full disabled={!form.formState.isValid} loading={save.isPending} onPress={() => void submit()}>

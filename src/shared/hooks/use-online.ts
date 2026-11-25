@@ -1,6 +1,6 @@
-import { onlineManager } from '@tanstack/react-query'
-import { useEffect, useSyncExternalStore } from 'react'
+import { useEffect } from 'react'
 import { AppState } from 'react-native'
+import { create } from 'zustand'
 
 type NetworkModule = typeof import('expo-network')
 
@@ -10,7 +10,6 @@ type NetworkModule = typeof import('expo-network')
  */
 function loadNetwork(): NetworkModule | undefined {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
     return require('expo-network') as NetworkModule
   } catch {
     return undefined
@@ -19,58 +18,54 @@ function loadNetwork(): NetworkModule | undefined {
 
 const network = loadNetwork()
 
+/** Réseau de l'appareil, tel que le système le rapporte. Lu par la bannière de connexion et par React Query (racine). */
+export const useNetworkStore = create<{ online: boolean }>(() => ({ online: true }))
+
 /** Hors ligne seulement si le système le dit : un `isInternetReachable` inconnu ne compte pas comme une coupure. */
 const onlineOf = (state: { isConnected?: boolean; isInternetReachable?: boolean }) => state.isConnected !== false && state.isInternetReachable !== false
 
+const setOnline = (online: boolean) => {
+  if (useNetworkStore.getState().online !== online) useNetworkStore.setState({ online })
+}
+
 /**
- * Relit l'état du réseau et le pousse dans `onlineManager`. Renvoie l'état lu (vrai sans module natif). Sert au retour au
- * premier plan — un changement survenu pendant que l'app dormait n'est pas toujours émis — et au « Réessayer ».
+ * Relit l'état du réseau. Renvoie l'état lu (vrai sans module natif). Sert au retour au premier plan — un changement
+ * survenu pendant que l'app dormait n'est pas toujours émis — et au « Réessayer ».
  */
 export async function refreshNetworkState(): Promise<boolean> {
   if (!network) return true
   try {
     const online = onlineOf(await network.getNetworkStateAsync())
-    onlineManager.setOnline(online)
+    setOnline(online)
     return online
   } catch {
-    return onlineManager.isOnline()
+    return useNetworkStore.getState().online
   }
 }
 
-/**
- * Relie React Query au réseau (`onlineManager`) : hors connexion, les requêtes se mettent en pause au lieu d'échouer,
- * puis reprennent seules au retour du réseau. À appeler une fois, dans le layout racine.
- */
-export function useNetworkBridge() {
+/** Suit le réseau de l'appareil dans `useNetworkStore`. À appeler une fois, dans le layout racine. */
+export function useNetworkWatch() {
   useEffect(() => {
     if (!network) return
-    return onlineManager.setEventListener((setOnline) => {
-      let subscription: { remove: () => void } | undefined
-      try {
-        network.getNetworkStateAsync().then(
-          (state) => setOnline(onlineOf(state)),
-          () => undefined,
-        )
-        subscription = network.addNetworkStateListener((state) => setOnline(onlineOf(state)))
-      } catch {
-        // Module natif absent malgré l'import : on reste en ligne.
-      }
-      // Retour au premier plan : l'état gardé peut dater d'avant la mise en veille (fausse coupure après inactivité).
-      const appState = AppState.addEventListener('change', (state) => {
-        if (state === 'active') void refreshNetworkState()
-      })
-      return () => {
-        subscription?.remove()
-        appState.remove()
-      }
+    let subscription: { remove: () => void } | undefined
+    try {
+      void refreshNetworkState()
+      subscription = network.addNetworkStateListener((state) => setOnline(onlineOf(state)))
+    } catch {
+      // Module natif absent malgré l'import : on reste en ligne.
+    }
+    // Retour au premier plan : l'état gardé peut dater d'avant la mise en veille (fausse coupure après inactivité).
+    const appState = AppState.addEventListener('change', (state) => {
+      if (state === 'active') void refreshNetworkState()
     })
+    return () => {
+      subscription?.remove()
+      appState.remove()
+    }
   }, [])
 }
 
 /** Vrai tant que l'appareil a du réseau (`etats-systeme.md`, Hors connexion). */
 export function useOnline(): boolean {
-  return useSyncExternalStore(
-    (listener) => onlineManager.subscribe(listener),
-    () => onlineManager.isOnline(),
-  )
+  return useNetworkStore((state) => state.online)
 }

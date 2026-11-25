@@ -6,7 +6,7 @@ import { Text } from '../primitives/text'
 import { tokens, type TierCode } from '../tokens.generated'
 import { LockBadge, LOCKED_STYLE } from './lock-badge'
 import { RIBBON_ASSETS, RIBBON_PART_ASSETS } from './tier-assets'
-import { t, tierKey, useT } from '@/lib/i18n'
+import { tierKey, useT } from '@/lib/i18n'
 
 export interface TitleRibbonProps {
   tier: TierCode

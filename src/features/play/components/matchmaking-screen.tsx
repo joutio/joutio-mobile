@@ -1,5 +1,5 @@
-import { countryName } from '@joutio/client/geo'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { countryName } from '@joutio/client/core/geo'
+import { useCancelMatchmaking, useCancelRooms, useCreateBotRoom, useEnqueueMatchmaking, useRoom } from '@joutio/client/rooms'
 import { useLocalSearchParams } from 'expo-router'
 import { router } from '@/shared/navigation/router'
 import { useEffect, useRef, useState } from 'react'
@@ -30,12 +30,9 @@ import { PlayerPickerSheet } from '@/features/topic/components/duel-sheet'
 import { formatNumber } from '@/features/topic/lib/format'
 import { readServerNow, useServerClock } from '@/lib/realtime/server-clock'
 import { tierOf } from '@/shared/utils/tier'
-import { useAutoTrain, useBotDifficulty, useTicket, useTicketPresence, type PlayTopic } from '../hooks/use-play'
-import { playService } from '../lib/play-service'
+import { botRoomError, useAutoTrain, useBotDifficulty, useTicket, useTicketPresence, type PlayTopic } from '../hooks/use-play'
 import { userAvatar } from '@/shared/utils/avatar'
-import { currentLanguage, t, tierKey, useT } from '@/lib/i18n'
-import { roomQuery } from '@joutio/client/query'
-import { api } from '@/lib/api'
+import { currentLanguage, tierKey, useT } from '@/lib/i18n'
 
 /** Joueurs décoratifs qui apparaissent sur la carte pendant la recherche (le BFF n'expose pas la file d'attente). */
 const PINS: MapPlayer[] = [
@@ -111,7 +108,7 @@ function MatchmakingScreenContent() {
   const [pickerOpen, setPickerOpen] = useState(false)
 
   const roomId = ticket.state?.roomId ?? null
-  const room = useQuery({ ...roomQuery(api, roomId ?? ''), enabled: Boolean(roomId) })
+  const room = useRoom(roomId ?? undefined)
   // La notification MATCHED porte déjà l'adversaire enrichi ; la salle reste le repli (ancien BFF, reprise REST).
   const opponent = ticket.state?.opponent ?? room.data?.opponent
   const opponentRating = opponent?.rating ?? null
@@ -132,26 +129,31 @@ function MatchmakingScreenContent() {
     },
     [],
   )
+  const cancelRooms = useCancelRooms()
+  const cancelTicket = useCancelMatchmaking()
   const toRoom = (id: string) => {
     // Écran quitté entre-temps (« Annuler l'entraînement ») : la salle créée trop tard est fermée.
     if (!mounted.current) {
-      playService.cancelRoom(id).catch(() => undefined)
+      cancelRooms.mutate([id])
       return
     }
     router.replace({ pathname: '/room/[roomId]', params: { roomId: id, topicId: topic.topicId, topicName: topic.name, category: topic.category ?? '' } })
   }
-  const training = useMutation({
-    mutationFn: () => playService.createBotRoom(topic.topicId, difficulty),
-    onSuccess: ({ id }) => toRoom(id),
-    onError: () => toast.error(t('play.trainingError'), { description: t('home.errorText') }),
-  })
-  const retry = useMutation({
-    mutationFn: () => playService.enqueue(topic.topicId),
-    onSuccess: (next) => {
-      router.replace({ pathname: '/matchmaking/[ticketId]', params: { ...params, ticketId: next.ticketId } })
-    },
-    onError: () => toast.error(t('mobile.play.searchRestartFailed')),
-  })
+  const botRoom = useCreateBotRoom()
+  const training = {
+    isPending: botRoom.isPending,
+    isSuccess: botRoom.isSuccess,
+    mutate: () => botRoom.mutate({ topicId: topic.topicId, difficulty }, { onSuccess: ({ id }) => toRoom(id), onError: botRoomError }),
+  }
+  const enqueue = useEnqueueMatchmaking()
+  const retry = {
+    isPending: enqueue.isPending,
+    mutate: () =>
+      enqueue.mutate(topic.topicId, {
+        onSuccess: (next) => router.replace({ pathname: '/matchmaking/[ticketId]', params: { ...params, ticketId: next.ticketId } }),
+        onError: () => toast.error(t('mobile.play.searchRestartFailed')),
+      }),
+  }
 
   // Adversaire trouvé : 1,2 s sur sa carte, puis la salle prépare le duel.
   useEffect(() => {
@@ -175,7 +177,7 @@ function MatchmakingScreenContent() {
   // Quitter l'écran pendant la recherche (ou perdre la connexion) l'annule : le serveur le constate.
   // « Annuler la recherche » est une intention du joueur : la commande part, l'écran se ferme sans attendre.
   const cancelSearch = () => {
-    playService.cancelTicket(params.ticketId).catch(() => undefined)
+    cancelTicket.mutate(params.ticketId)
     router.back()
   }
   useTicketPresence(params.ticketId, status === 'SEARCHING')

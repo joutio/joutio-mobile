@@ -8,7 +8,7 @@ import { Text } from '../primitives/text'
 import { alpha, mix } from '../theme/color'
 import { useTheme } from '../theme/theme-provider'
 import { tokens, type TierCode } from '../tokens.generated'
-import { t, tierKey, useT } from '@/lib/i18n'
+import { tierKey, useT } from '@/lib/i18n'
 
 /** Au-delà, le titre passe en `heroSmall` pour tenir sur deux lignes. */
 const LONG_HEADLINE = 12

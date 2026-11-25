@@ -3,7 +3,7 @@ import { router } from '@/shared/navigation/router'
 import { View } from 'react-native'
 import { Button, EmptyState, SplashLogo, tokens, useTheme, WarningCircleIcon } from '@/design-system'
 import { topicName } from '@/shared/utils/topic-name'
-import { useGameHistory, useGameResult } from '../hooks/use-game'
+import { useGameResult, useGameStream } from '@joutio/client/game'
 import { DuelResult } from './duel-result'
 import { useT } from '@/lib/i18n'
 
@@ -24,10 +24,12 @@ export function ResultScreen() {
   const params = useLocalSearchParams<ResultRouteParams>()
   const gameId = params.gameId
   const { colors } = useTheme()
-  const game = useGameHistory(gameId)
-  const result = useGameResult(gameId, Boolean(gameId), false)
+  // Partie passée repliée de son historique (le flux reste muet : la partie est terminée).
+  const stream = useGameStream(gameId)
+  const result = useGameResult(gameId || undefined)
+  const loaded = stream.status?.loaded === true
 
-  if (!gameId || game.isPending || result.isPending) {
+  if (!gameId || (!loaded && !stream.status?.notFound) || result.isPending) {
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bg }}>
         <SplashLogo variant="loading" />
@@ -35,7 +37,7 @@ export function ResultScreen() {
     )
   }
 
-  if (game.isError || result.isError || !game.data || !result.data) {
+  if (!loaded || !stream.state || result.isError || !result.data) {
     return (
       <View style={{ flex: 1, backgroundColor: colors.bg, padding: tokens.space[5], justifyContent: 'center' }}>
         <EmptyState
@@ -44,14 +46,7 @@ export function ResultScreen() {
           description={t('home.errorText')}
           action={
             <View style={{ gap: tokens.space[3], alignSelf: 'stretch' }}>
-              <Button
-                style={{ alignSelf: 'center' }}
-                loading={game.isRefetching || result.isRefetching}
-                onPress={() => {
-                  void game.refetch()
-                  void result.refetch()
-                }}
-              >
+              <Button style={{ alignSelf: 'center' }} loading={result.isRefetching} onPress={() => void result.refetch()}>
                 {t('callback.retry')}
               </Button>
               <Button variant="plain" tone="neutral" onPress={() => router.back()}>
@@ -68,7 +63,7 @@ export function ResultScreen() {
   return (
     <DuelResult
       gameId={gameId}
-      game={game.data}
+      game={stream.state}
       topic={params.topicName ?? topicName(data.topic.names)}
       topicId={params.topicId ?? data.topic.topicId}
       category={params.category ?? data.topic.category ?? undefined}

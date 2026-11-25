@@ -3,7 +3,7 @@ import { router } from '@/shared/navigation/router'
 import { useState } from 'react'
 import { View } from 'react-native'
 import { ArrowCounterClockwiseIcon, BellRingingIcon, Button, LightningIcon, ListRow, Text, tokens, UserPlusIcon, useTheme } from '@/design-system'
-import { useCompleteOnboarding } from '../hooks/use-onboarding'
+import { useCompleteOnboarding } from '@joutio/client/onboarding'
 import { useOnboardingStore } from '../onboarding-store'
 import { Steps } from './steps'
 import { useT } from '@/lib/i18n'
@@ -14,11 +14,12 @@ export function NotificationsStep() {
   const { colors, radius } = useTheme()
   const skipped = useOnboardingStore((state) => state.skipped)
   const complete = useCompleteOnboarding()
+  const universes = useOnboardingStore((state) => state.universes)
   const [asking, setAsking] = useState(false)
 
   // Après « Passer » : pas de premier thème, l'onboarding se termine ici.
   const next = () => {
-    if (skipped) complete.mutate()
+    if (skipped) complete.mutate(universes)
     else router.push('/first-topic')
   }
 

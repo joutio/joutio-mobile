@@ -1,4 +1,3 @@
-import { useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { AppState } from 'react-native'
 import { haptic } from '@/design-system'
@@ -27,7 +26,6 @@ export function useConnectionBanner() {
   const online = useOnline()
   const realtimeDown = useConnectionStore((state) => state.status === 'reconnecting')
   const problem = !online || realtimeDown
-  const queryClient = useQueryClient()
 
   const [alerting, setAlerting] = useState(false)
   const [phase, setPhase] = useState<'idle' | 'retrying' | 'failed' | 'restored'>('idle')
@@ -63,10 +61,9 @@ export function useConnectionBanner() {
     setPhase('retrying')
     const started = Date.now()
     const networkOk = await refreshNetworkState()
-    if (networkOk) {
-      void reconnectStomp()
-      void queryClient.refetchQueries({ type: 'active' })
-    }
+    // La reconnexion STOMP rejoue les flux et resynchronise les vues personnelles (`useJoutioSync`) ; les lectures
+    // en pause hors connexion repartent seules avec le réseau.
+    if (networkOk) void reconnectStomp()
     // On laisse au socket le temps de rouvrir, sans dépasser `RETRY_TIMEOUT_MS`.
     while (problemRef.current && Date.now() - started < RETRY_TIMEOUT_MS) await sleep(250)
     const elapsed = Date.now() - started
@@ -76,7 +73,7 @@ export function useConnectionBanner() {
       setPhase('failed')
     }
     // Rétabli : l'effet ci-dessus passe en `restored`.
-  }, [queryClient])
+  }, [])
 
   let state: ConnectionBannerState = 'hidden'
   if (phase === 'restored') state = 'restored'

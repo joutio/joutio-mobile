@@ -1,15 +1,17 @@
-import { useQueryClient } from '@tanstack/react-query'
-import { useCallback } from 'react'
 import { useGuardedRefresh } from '@/design-system/mobile/guarded-refresh'
 
+/** Ce qu'un hook de lecture de `@joutio/client` offre au tiré pour rafraîchir. */
+interface Refetchable {
+  refetch: () => Promise<unknown>
+}
+
 /**
- * Tirer pour rafraîchir une page entière (2026-11-07) : recharge toutes les requêtes affichées, pas seulement l'en-tête.
+ * Tirer pour rafraîchir une page : `refetch` des seules lectures de l'écran (aucune relecture globale du cache).
  * `refresh` sert à `Screen`/`ParallaxScreen`/`CollapsibleTabsScreen` (`onRefresh`) ; `refreshing` et `onRefresh` aux
  * listes (`FlashList`, `FlatList`).
  */
-export function useRefreshActive() {
-  const client = useQueryClient()
-  const refresh = useCallback(() => client.refetchQueries({ type: 'active' }), [client])
+export function useRefreshActive(...queries: Refetchable[]) {
+  const refresh = () => Promise.all(queries.map((query) => query.refetch()))
   const { refreshing, refresh: onRefresh } = useGuardedRefresh(refresh)
   return { refresh, refreshing, onRefresh }
 }

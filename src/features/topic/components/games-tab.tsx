@@ -15,7 +15,8 @@ import {
   WarningCircleIcon,
   type MatchOutcome,
 } from '@/design-system'
-import type { GameHistoryItemView, GameOutcome } from '@joutio/client/api-types'
+import type { GameHistoryItemView } from '@joutio/client/profile'
+import type { GameOutcome } from '@joutio/client/game'
 import { topicName as formatTopicName } from '@/shared/utils/topic-name'
 import { useTopicGames } from '../hooks/use-topic'
 import { dayLabel, formatNumber } from '../lib/format'
@@ -42,7 +43,7 @@ export function GamesTab({
   const t = useT()
   const games = useTopicGames(topicId)
   // Parties terminées seulement : une partie en attente ou annulée n'a pas d'issue à montrer.
-  const finished = (games.data?.content ?? []).filter((game) => OUTCOMES[game.outcome])
+  const finished = (games.games ?? []).filter((game) => OUTCOMES[game.outcome])
   const groups: { day: string; games: GameHistoryItemView[] }[] = []
   for (const game of finished) {
     const day = dayLabel(new Date(game.playedAt))
@@ -59,7 +60,11 @@ export function GamesTab({
       <SectionHeader
         title={t('topic.lastGames')}
         action={
-          <Button variant="plain" size="S" onPress={() => router.push({ pathname: historyPath, params: { topicId, topicName, backLabel: t('pending.topic') } })}>
+          <Button
+            variant="plain"
+            size="S"
+            onPress={() => router.push({ pathname: historyPath, params: { topicId, topicName, backLabel: t('pending.topic') } })}
+          >
             {t('home.seeAll')}
           </Button>
         }

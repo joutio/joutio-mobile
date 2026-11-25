@@ -1,20 +1,8 @@
 import { router } from '@/shared/navigation/router'
-import { useState } from 'react'
 import { View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import {
-  Button,
-  EmptyState,
-  ForceDark,
-  HourglassLowIcon,
-  toast,
-  tokens,
-  useTheme,
-  UserCircleDashedIcon,
-  TopBannerFrame,
-  useScreenTopInset,
-} from '@/design-system'
-import { playService } from '@/features/play/lib/play-service'
+import { Button, EmptyState, ForceDark, HourglassLowIcon, tokens, useTheme, UserCircleDashedIcon, TopBannerFrame, useScreenTopInset } from '@/design-system'
+import { useStartMatchmaking } from '@/features/play/hooks/use-play'
 import { useT } from '@/lib/i18n'
 
 /**
@@ -25,18 +13,11 @@ export function DuelCancelled({ started, topicId, topicName, category }: { start
   const t = useT()
   const insets = useSafeAreaInsets()
   const screenTop = useScreenTopInset()
-  const [searching, setSearching] = useState(false)
-
-  const search = async () => {
+  const matchmaking = useStartMatchmaking()
+  // Refaire une recherche remplace le duel par l'appariement : le duel est quitté, puis la recherche s'ouvre.
+  const search = () => {
     if (!topicId) return router.back()
-    setSearching(true)
-    try {
-      const ticket = await playService.enqueue(topicId)
-      router.replace({ pathname: '/matchmaking/[ticketId]', params: { ticketId: ticket.ticketId, topicId, topicName, category: category ?? '' } })
-    } catch {
-      setSearching(false)
-      toast.error(t('play.matchmakingError'), { description: t('home.errorText') })
-    }
+    matchmaking.mutate({ topicId, name: topicName, category }, { onSuccess: () => router.back() })
   }
 
   return (
@@ -48,7 +29,7 @@ export function DuelCancelled({ started, topicId, topicName, category }: { start
           description={started ? t('duel.expiredText') : t('duel.absentText')}
           action={
             <View style={{ alignSelf: 'stretch', gap: tokens.space[2] }}>
-              <Button full loading={searching} onPress={() => void search()}>
+              <Button full loading={matchmaking.isPending} onPress={search}>
                 {t('duel.searchAgain')}
               </Button>
               <Button full variant="plain" tone="neutral" onPress={() => router.back()}>

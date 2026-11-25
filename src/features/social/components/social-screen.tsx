@@ -25,9 +25,10 @@ import {
   WarningCircleIcon,
 } from '@/design-system'
 import { usePlayerIdentity } from '@/features/me'
-import { useContacts } from '@/features/play/hooks/use-play'
+import { useContacts } from '@joutio/client/social'
+import { useSessionUserId } from '@/features/auth'
 import { formatNumber } from '@/features/topic/lib/format'
-import type { PeopleSort, PlayerCardView } from '@joutio/client/api-types'
+import type { PeopleSort, PlayerCardView } from '@joutio/client/profile'
 import { tierOf } from '@/shared/utils/tier'
 import { useMyProfile } from '../hooks/use-social'
 import { presenceOf, presenceSub } from '../lib/presence'
@@ -61,7 +62,7 @@ function PeopleList({
 }) {
   const t = useT()
   const identity = usePlayerIdentity()
-  const players = list.data?.pages.flatMap((page) => page.content) ?? []
+  const players = (list.data?.pages ?? []).flatMap((page) => page.content)
   const emptyTitle = query
     ? direction === 'following'
       ? t('mobile.social.noFollowingFound')
@@ -69,11 +70,7 @@ function PeopleList({
     : direction === 'following'
       ? t('social.followingEmptyTitle')
       : t('social.followersEmptyTitle')
-  const emptyDescription = query
-    ? t('play.noPlayerText')
-    : direction === 'following'
-      ? t('social.followingEmptyText')
-      : t('social.followersEmptyText')
+  const emptyDescription = query ? t('play.noPlayerText') : direction === 'following' ? t('social.followingEmptyText') : t('social.followersEmptyText')
 
   return (
     <DragToLoadMore enabled={Boolean(list.hasNextPage) && !list.isFetchNextPageError} loading={list.isFetchingNextPage} onLoadMore={() => list.fetchNextPage()}>
@@ -96,9 +93,10 @@ function PeopleList({
           <Text variant="callout" color="muted">
             {list.data
               ? (() => {
-                  const total = list.data.pages[0]?.totalElements ?? 0
+                  const total = (list.data?.pages ?? [])[0]?.totalElements ?? 0
                   const many = total > 1
-                  const key = direction === 'following' ? (many ? 'social.followingMany' : 'social.followingOne') : many ? 'social.followerMany' : 'social.followerOne'
+                  const key =
+                    direction === 'following' ? (many ? 'social.followingMany' : 'social.followingOne') : many ? 'social.followerMany' : 'social.followerOne'
                   return t(key, { count: formatNumber(total) })
                 })()
               : '…'}
@@ -186,8 +184,9 @@ export function SocialScreen() {
   const [sortOpen, setSortOpen] = useState(false)
   const [challenged, setChallenged] = useState<PlayerCardView | null>(null)
 
-  const following = useContacts('following', query, true, sort)
-  const followers = useContacts('followers', query, true, sort)
+  const userId = useSessionUserId()
+  const following = useContacts({ userId, direction: 'following', query, sort })
+  const followers = useContacts({ userId, direction: 'followers', query, sort })
 
   const openPlayer = (player: PlayerCardView) => {
     router.push({ pathname: '/social/player/[id]', params: { id: player.userId } })

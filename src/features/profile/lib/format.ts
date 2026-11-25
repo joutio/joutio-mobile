@@ -1,6 +1,6 @@
 import { tokens, type TierCode } from '@/design-system'
 import { formatNumber, MASTERY_TIERS, MASTERY_XP, tierLabel } from '@/features/topic/lib/format'
-import type { MasteryTier, TitleView } from '@joutio/client/api-types'
+import type { MasteryTier, TitleView } from '@joutio/client/profile'
 import { topicName } from '@/shared/utils/topic-name'
 import { titleLabel as sharedTitleLabel } from '@joutio/client/authoring'
 import { t } from '@/lib/i18n'

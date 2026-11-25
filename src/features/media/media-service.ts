@@ -87,5 +87,5 @@ export async function uploadImage(asset: ImagePicker.ImagePickerAsset, onProgres
   // Déclaration faite dans `pickImage` : le BFF la conserve avec l'image.
   form.append('rightsDeclared', 'true')
   form.append('termsVersion', TERMS_VERSION)
-  return api.post<MediaView>(ENDPOINTS.media, form, onProgress ? { onUploadProgress: (fraction) => onProgress(Math.round(fraction * 100)) } : undefined)
+  return api.post<MediaView>(ENDPOINTS.media, { body: form, onUploadProgress: onProgress ? (fraction) => onProgress(Math.round(fraction * 100)) : undefined })
 }

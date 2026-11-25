@@ -2,13 +2,13 @@ import { getLocales } from 'expo-localization'
 import { useCallback } from 'react'
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
-import type { Language } from '@joutio/client/api-types'
-import { isMessageKey, languageOf, translate, type MessageKey, type MessageValues } from '@joutio/client/i18n'
+import type { Language } from '@joutio/client/core/types'
+import { isMessageKey, languageOf, translate, type MessageKey, type MessageValues } from '@joutio/client/core/i18n'
 import { safeStorage } from '@/design-system/theme/theme-store'
 
 /**
  * Textes de l'app, en français et en anglais. Dictionnaires et `translate` partagés avec le web dans
- * `@joutio/client/i18n` (ADR 0002). Langue : celle de l'appareil avant la connexion, puis `MeView.language`
+ * `@joutio/client/core/i18n` (ADR 0002). Langue : celle de l'appareil avant la connexion, puis `MeView.language`
  * (`useLanguageSync`), mémorisée pour le lancement suivant.
  */
 export { translate, type MessageKey, type MessageValues }

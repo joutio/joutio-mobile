@@ -28,10 +28,11 @@ import {
   type MatchOutcome,
   type TierCode,
 } from '@/design-system'
-import { useMe } from '@/features/me'
+import { useMe } from '@joutio/client/me'
 import { useWearTitle } from '@/features/topic/hooks/use-topic'
 import { dayLabel, formatNumber } from '@/features/topic/lib/format'
-import type { GameHistoryItemView, GameOutcome, TitleView, TopicStatView } from '@joutio/client/api-types'
+import type { GameHistoryItemView, TitleView, TopicStatView } from '@joutio/client/profile'
+import type { GameOutcome } from '@joutio/client/game'
 import { topicName } from '@/shared/utils/topic-name'
 import type { BadgeFamilySummary } from '../lib/badges'
 import { rankProgress, titleLabel } from '../lib/format'
@@ -299,7 +300,7 @@ export interface HistoryTabProps {
 
 export function HistoryTab({ games, loading, error, retrying, onRetry }: HistoryTabProps) {
   const t = useT()
-  const me = useMe(true)
+  const me = useMe()
   if (loading) return <Loading />
   if (error && !games) return <Failed title={t('topic.gamesError')} onRetry={onRetry} retrying={retrying} />
   const finished = (games ?? []).filter((game) => OUTCOMES[game.outcome]).slice(0, 10)

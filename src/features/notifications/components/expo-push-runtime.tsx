@@ -1,13 +1,10 @@
-import { useQueryClient } from '@tanstack/react-query'
+import { useMe } from '@joutio/client/me'
 import * as Notifications from 'expo-notifications'
 import { useRootNavigationState, useSegments } from 'expo-router'
 import { router } from '@/shared/navigation/router'
 import { useEffect, useRef, useState } from 'react'
 import { AppState } from 'react-native'
 import { useSessionStore } from '@/features/auth/session-store'
-import { refreshChallenges } from '@/features/challenges/hooks/use-challenges'
-import { useMe } from '@/features/me'
-import { queryKeys } from '@joutio/client/query'
 import { getUserId, onBeforeSessionClear } from '@/lib/auth'
 import { useOpenNotification } from '../hooks/use-open-notification'
 import { devicePushTokenChanged, syncExpoPush, unregisterExpoPush } from '../lib/expo-push'
@@ -21,13 +18,6 @@ Notifications.setNotificationHandler({
 export function ExpoPushRuntime() {
   const ready = useSessionStore((state) => state.ready)
   const authenticated = useSessionStore((state) => state.authenticated)
-  const me = useMe(ready && authenticated)
-  const navigation = useRootNavigationState()
-  const segments = useSegments() as string[]
-  const inApp = segments[0] === '(app)'
-  const outsidePlayerFlow = segments[0] === '(dev)' || segments[0] === 'join'
-  const open = useOpenNotification()
-  const client = useQueryClient()
   const [pending, setPending] = useState<PushNotice | null>(null)
   const receiveOnce = useRef(createNotificationDeduplicator())
   const responseEpoch = useRef(0)
@@ -87,22 +77,34 @@ export function ExpoPushRuntime() {
     }
   }, [ready, authenticated])
 
+  if (!pending || !ready || !authenticated) return null
+  return <PendingPush pending={pending} onOpened={() => setPending(null)} />
+}
+
+/**
+ * Ouvre le push touché, une fois la redirection initiale terminée et le parcours joueur monté. Le flux STOMP, rouvert
+ * au retour au premier plan, resynchronise lui-même défis et notifications (`useJoutioSync`).
+ */
+function PendingPush({ pending, onOpened }: { pending: PushNotice; onOpened: () => void }) {
+  const me = useMe()
+  const navigation = useRootNavigationState()
+  const segments = useSegments() as string[]
+  const inApp = segments[0] === '(app)'
+  const outsidePlayerFlow = segments[0] === '(dev)' || segments[0] === 'join'
+  const open = useOpenNotification()
+
   useEffect(() => {
-    // Attendre la fin de la redirection initiale et le montage du parcours joueur.
-    if (!pending || !ready || !navigation?.key || !authenticated || !me.data?.onboardingCompleted) return
+    if (!navigation?.key || !me.data?.onboardingCompleted) return
     if (me.data.userId !== getUserId()) return
     if (pending.userId === getUserId() && outsidePlayerFlow) {
       router.replace('/home')
       return
     }
     if (!inApp) return
-    setPending(null)
+    onOpened()
     void Notifications.clearLastNotificationResponseAsync().catch(() => undefined)
     if (pending.userId !== getUserId()) return
-    // Le push a été reçu flux STOMP fermé (arrière-plan) : l'écran ouvert ne doit pas montrer un cache d'avant.
-    refreshChallenges(client)
-    void client.invalidateQueries({ queryKey: queryKeys.notifications.all() })
     void open(pending, pending.userId)
-  }, [pending, ready, navigation?.key, authenticated, me.data?.userId, me.data?.onboardingCompleted, inApp, outsidePlayerFlow, open, client])
+  }, [pending, navigation?.key, me.data?.userId, me.data?.onboardingCompleted, inApp, outsidePlayerFlow, open, onOpened])
   return null
 }

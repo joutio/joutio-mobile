@@ -4,7 +4,7 @@ export interface SegmentedOption<T extends string> {
   value: T
   label: string
 }
-export interface SegmentedProps<T extends string> extends NativeSegmentedProps<T> {}
+export type SegmentedProps<T extends string> = NativeSegmentedProps<T>
 
 /** Choix exclusif natif. La navigation entre pages utilise JoutioTabs. */
 export function Segmented<T extends string>(props: SegmentedProps<T>) {
