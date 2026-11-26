@@ -1,3 +1,9 @@
+## [1.61.0](https://github.com/joutio/joutio-mobile/compare/v1.60.0...v1.61.0) (2026-11-26)
+
+### Features
+
+* **challenges:** my rooms from the live view of @joutio/client 13 ([5cd99ec](https://github.com/joutio/joutio-mobile/commit/5cd99ec1bce623aa52cc08070d70fdbb05636afd))
+
 ## [1.60.0](https://github.com/joutio/joutio-mobile/compare/v1.59.0...v1.60.0) (2026-11-25)
 
 ### Features
