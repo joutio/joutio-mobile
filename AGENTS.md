@@ -12,7 +12,7 @@ de plateforme ([`design/specs/platforms/README.md`](../../design/specs/platforms
 
 Expo SDK 58, React Native 0.88 (New Architecture), expo-router, Reanimated 4, Gesture Handler 3,
 TrueSheet, expo-image, Phosphor, Geist, Zustand, React Hook Form + Zod, expo-secure-store, expo-notifications,
-`@joutio/client` (pin exact, 11.1.0 : toutes les lectures, mutations et la synchronisation temps réel ;
+`@joutio/client` (pin exact, 13.0.0 : toutes les lectures, mutations et la synchronisation temps réel ;
 `@tanstack/react-query` n'y est qu'en dépendance pair). **Dev build** (`expo-dev-client`), jamais
 Expo Go, pas de cible web.
 

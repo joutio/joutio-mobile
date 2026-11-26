@@ -8,9 +8,10 @@ import { userAvatar } from '@/shared/utils/avatar'
 import { topicName } from '@/shared/utils/topic-name'
 import { useSecondsUntil } from '../lib/countdown'
 import { useT } from '@/lib/i18n'
+import { useSessionUserId } from '@/features/auth'
 
 /**
- * Revanche reçue (`useIncomingRematch` : salle `INVITED` d'origine `REMATCH`, tenue à jour par `ROOM_STATUS`) :
+ * Revanche reçue (`useIncomingRematch` : salle `INVITED` d'origine `REMATCH`, poussée par la vue vivante `my-rooms`) :
  * `RematchPrompt` sur un voile. Jamais pendant un duel (écrans immersifs, toasts suspendus) : la demande attend la fin
  * s'il reste du temps. Accepter ouvre la salle (même `roomId`) ; refuser, ou laisser filer l'échéance du serveur, ferme
  * la proposition.
@@ -20,7 +21,7 @@ export function IncomingRematch() {
   const { colors } = useTheme()
   const identity = usePlayerIdentity()
   const immersive = useToastStore((state) => state.suspended > 0)
-  const request = useIncomingRematch().data
+  const request = useIncomingRematch(useSessionUserId()).data
   const seconds = useSecondsUntil(request?.expiresAt)
   const pathname = usePathname()
   const accept = useAcceptInvitation()

@@ -48,6 +48,7 @@ import { duration } from '../lib/duration'
 import { clientSource, feedFooterProps } from '@/shared/utils/paging'
 import type { ChallengesTab } from '@/features/notifications/lib/notification-target'
 import { t, useT } from '@/lib/i18n'
+import { useSessionUserId } from '@/features/auth'
 
 const GUTTER = tokens.space[5]
 /** Reçus : liste paginée, 10 par page. */
@@ -79,13 +80,13 @@ function Loading() {
 /**
  * Défis (`design/specs/screens/defis.md`) : barre « Défis » (cloche, Réglages), puis onglets Reçus / Envoyés / Salons
  * balayables comme l'Accueil (2026-11-14), leur nombre dans le libellé. Reçus (par défaut) : liste paginée et « Tout
- * refuser ». Une notification ouvre l'onglet voulu (`?tab=`). Rafraîchi par le flux personnel STOMP et au tiré.
+ * refuser ». Une notification ouvre l'onglet voulu (`?tab=`). Poussé par la vue vivante `my-rooms` et relu au tiré.
  */
 export function ChallengesScreen() {
   const t = useT()
   const identity = usePlayerIdentity()
   const { colors } = useTheme()
-  const defis = useDefis()
+  const defis = useDefis(useSessionUserId())
   const accept = useAcceptInvitation()
   const decline = useDeclineInvitations()
   const cancel = useCancelRooms()

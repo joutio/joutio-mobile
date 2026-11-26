@@ -138,8 +138,8 @@ export function useCreatePrivateRoom() {
 }
 
 /**
- * Défi nominatif : une salle `INVITED`, que l'invité accepte depuis ses Défis. Elle rejoint les défis envoyés par le
- * flux personnel (`ROOM_STATUS`).
+ * Défi nominatif : une salle `INVITED`, que l'invité accepte depuis ses Défis. Elle rejoint les défis envoyés par la
+ * vue vivante `my-rooms`.
  */
 export function useChallengePlayer() {
   const me = useMe()

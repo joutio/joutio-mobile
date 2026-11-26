@@ -1,6 +1,7 @@
 import { useGuardedRefresh } from '@/design-system/mobile/guarded-refresh'
 import { useReadAllNotifications, useNotifications, type NotificationView, useRemoveAllNotifications } from '@joutio/client/notifications'
 import { useMyRooms, type RoomView } from '@joutio/client/rooms'
+import { useSessionUserId } from '@/features/auth'
 import { router } from '@/shared/navigation/router'
 import { RefreshControl, View } from 'react-native'
 import {
@@ -51,7 +52,7 @@ export function NotificationsScreen() {
   // Le spinner suit ce geste et non la requête : une notification reçue en temps réel relit la boîte sans le faire
   // apparaître seul.
   const { refreshing, refresh } = useGuardedRefresh(() => list.refetch())
-  const rooms = useMyRooms()
+  const rooms = useMyRooms(useSessionUserId())
   const readAll = useReadAllNotifications()
   const removeAll = useRemoveAllNotifications()
   const clearAll = () =>

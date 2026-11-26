@@ -4,6 +4,7 @@ import { Platform } from 'react-native'
 import { CompassIcon, HouseIcon, JoTabBar, SwordIcon, UserIcon, UsersIcon, type Icon, useTheme } from '@/design-system'
 import { useDefisBadge } from '@joutio/client/rooms'
 import { useT, type MessageKey } from '@/lib/i18n'
+import { useSessionUserId } from '@/features/auth'
 
 /** Navigation principale (`accueil.md` § 3) : 5 onglets, dans cet ordre. */
 const TABS: { name: string; title: MessageKey; icon: Icon; sf: SFSymbolIcon['sf'] }[] = [
@@ -23,9 +24,9 @@ const ICONS = Object.fromEntries(TABS.map((tab) => [tab.name, tab.icon]))
 export default function TabsLayout() {
   const t = useT()
   const { colors } = useTheme()
-  // Badge Défis : défis reçus en attente + salons où l'adversaire attend le joueur (2026-11-16), tenus à jour par le
-  // flux personnel STOMP (`useJoutioSync`).
-  const received = useDefisBadge().data ?? 0
+  // Badge Défis : défis reçus en attente + salons où l'adversaire attend le joueur (2026-11-16), poussés par la
+  // vue vivante `my-rooms`.
+  const received = useDefisBadge(useSessionUserId()).data ?? 0
 
   if (Platform.OS === 'ios')
     return (
